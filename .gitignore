@@ -1,0 +1,23 @@
+# Maven
+target/
+*.class
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android Studio
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
