@@ -14,6 +14,8 @@ El proyecto se compone de:
 
 ## Descripción
 
+> Actualmente se ha completado la fase de análisis y diseño; las funcionalidades descritas corresponden al alcance funcional definido para la implementación.
+
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
 - Fichaje de entrada y salida (desde app o terminal con PIN)
@@ -187,14 +189,27 @@ develop → db03d55  feat: add health check endpoint
 
 ---
 
+## Estado actual
+
+El proyecto tiene completados los siguientes entregables de análisis y diseño:
+
+- Requisitos funcionales (49 RF) y no funcionales (29 RNF)
+- Modelo de datos relacional (7 tablas, script DDL MySQL validado)
+- Especificación completa de la API REST (52 endpoints, design-first)
+- Wireframes Android (24 pantallas, 8 flujos de navegación)
+
+La siguiente fase es la implementación del backend con Spring Boot.
+
+---
+
 ## Estado del proyecto
 
 | Fase | Descripción | Estado |
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso |
-| Fase 3 | Desarrollo de la app Android (Kotlin, 26 Fragments, MVVM) | ⏳ Pendiente |
+| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | ⏳ Pendiente |
+| Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
 
