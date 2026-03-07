@@ -1,6 +1,51 @@
 package com.staffflow.domain.enums;
 
+/**
+ * Tipo de jornada registrada en un fichaje.
+ *
+ * Cada fichaje tiene exactamente un tipo que describe la naturaleza de esa jornada.
+ * El proceso diario automático (@Scheduled 00:01) asigna el tipo correcto al
+ * convertir ausencias planificadas en fichajes.
+ *
+ * IMPORTANTE: este enum reemplaza la versión provisional de Fase 0 que contenía
+ * ENTRADA y SALIDA. Esos valores eran incorrectos: el fichaje es el registro
+ * completo del día (con hora_entrada y hora_salida en la misma fila), no eventos
+ * separados. Se eliminan para evitar errores de mapeo con Hibernate.
+ *
+ * Valores alineados con la columna ENUM de la tabla fichajes (DDL v4).
+ * Referencia: RF-17, RF-18, RF-19, RNF-L01, RNF-L02.
+ */
 public enum TipoFichaje {
-    ENTRADA,
-    SALIDA
+
+    /** Jornada laboral ordinaria. */
+    NORMAL,
+
+    /** Jornada trabajada en festivo nacional (genera derecho a compensación). */
+    FESTIVO_NACIONAL,
+
+    /** Jornada trabajada en festivo local (genera derecho a compensación). */
+    FESTIVO_LOCAL,
+
+    /** Día de vacaciones anuales reglamentarias del empleado. */
+    VACACIONES,
+
+    /** Día de asunto propio (permiso personal retribuido de corta duración). */
+    ASUNTO_PROPIO,
+
+    /** Permiso retribuido por causa justificada (matrimonio, fallecimiento familiar, etc.). */
+    PERMISO_RETRIBUIDO,
+
+    /** Baja médica por enfermedad o accidente. */
+    BAJA_MEDICA,
+
+    /**
+     * Día libre para compensar saldo de horas positivo acumulado,
+     * o día libre por haber trabajado un festivo.
+     * Decisión de diseño nº13: ambas situaciones tienen el mismo tratamiento
+     * contable, por lo que se unifican en un único valor.
+     */
+    DIA_LIBRE_COMPENSATORIO,
+
+    /** Ausencia sin justificación registrada. Detectado por RF-31 (parte diario). */
+    AUSENCIA_INJUSTIFICADA
 }
