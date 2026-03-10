@@ -59,7 +59,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7 (informes PDF firmables)
-- JUnit + JaCoCo (cobertura ≥ 70% en capa service)
+- JUnit + JaCoCo (foco en servicios de cálculo crítico)
 
 ### Cliente Android
 
@@ -183,8 +183,8 @@ staffflow/
 ### Estado actual del repositorio
 
 ```
-master  → b2af932  feat: initial project structure - fase 0
-develop → db03d55  feat: add health check endpoint
+master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
+develop → ad7be84  feat: actualizar enums definitivos - inicio fase 2
 ```
 
 ---
@@ -193,7 +193,7 @@ develop → db03d55  feat: add health check endpoint
 
 El proyecto tiene completados los siguientes entregables de análisis y diseño:
 
-- Requisitos funcionales (49 RF) y no funcionales (29 RNF)
+- Requisitos funcionales (54 RF) y no funcionales (29 RNF)
 - Modelo de datos relacional (7 tablas, script DDL MySQL validado)
 - Especificación completa de la API REST (52 endpoints, design-first)
 - Wireframes Android (24 pantallas, 8 flujos de navegación)
