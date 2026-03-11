@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Actualmente se ha completado la fase de análisis y diseño; las funcionalidades descritas corresponden al alcance funcional definido para la implementación.
+> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: el Bloque 1 de la Fase 2 está cerrado con 32 DTOs, 7 Repositories y 13 Services esqueleto compilando contra MySQL 8.0.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -184,7 +184,7 @@ staffflow/
 
 ```
 master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
-develop → ad7be84  feat: actualizar enums definitivos - inicio fase 2
+develop → 284b918  feat: DTOs, repositories y services esqueleto - bloque 1
 ```
 
 ---
@@ -208,7 +208,7 @@ La siguiente fase es la implementación del backend con Spring Boot.
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | ⏳ Pendiente |
+| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 1 cerrado |
 | Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
@@ -238,6 +238,27 @@ Los 4 endpoints de terminal (`/api/v1/terminal/`) no requieren JWT. Se identific
 ### 5. Single Activity + Navigation Component en Android
 
 La app Android usa una única `MainActivity` con `NavHostFragment`. Cada pantalla es un `Fragment`. Navigation Component gestiona el back stack automáticamente desde `nav_graph.xml`. El Navigation Drawer vive en `MainActivity` y se infla dinámicamente según el rol del JWT.
+
+
+### 6. Implementación Android por patrones de Fragment
+
+Las 24 pantallas de la app Android se implementan reutilizando **Fragments base con variantes derivadas** para pantallas del mismo patrón visual. Cada patrón define una vez la estructura, el ViewModel y las llamadas a la API; las pantallas derivadas solo sobreescriben los detalles que cambian (título, endpoint, campos visibles).
+
+Los patrones definidos son:
+
+| Patrón | Fragment base | Pantallas que lo usan |
+|---|---|---|
+| Terminal PIN | P01 | — (única) |
+| Formulario simple (login / password) | P02 | P03, P04, P05, P38 |
+| Dashboard por rol | P09 | P13, P17 |
+| Lista con RecyclerView | P14 | P21, P23 |
+| Formulario de creación | P15 | P20, P24 |
+| Detalle y edición | P16 | P22 |
+| WebView de informe | P35 | P36, P37 |
+
+Esta estrategia reduce el tiempo estimado de implementación de ~60–70 horas (una pantalla desde cero cada vez) a ~30 horas, sin ningún impacto visible para el usuario: los wireframes no cambian, el patrón es una decisión interna de implementación.
+
+Las pantallas se implementarán en orden de prioridad para garantizar el vídeo de defensa (50 % de la nota) antes de completar las pantallas secundarias.
 
 ---
 
