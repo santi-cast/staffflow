@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: el Bloque 1 de la Fase 2 está cerrado con 32 DTOs, 7 Repositories y 13 Services esqueleto compilando contra MySQL 8.0.
+> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1, 2 y 3 de la Fase 2 están cerrados. La API REST cuenta con 7 endpoints operativos (E01–E07): autenticación JWT completa, gestión de contraseñas con recuperación por token, y configuración de empresa. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -184,8 +184,17 @@ staffflow/
 
 ```
 master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
-develop → 284b918  feat: DTOs, repositories y services esqueleto - bloque 1
+develop → 25d6824  Bloque 3 cierre: EmpresaController E06-E07 + GlobalExceptionHandler
 ```
+
+Commits de Fase 2 en develop:
+
+| Hash | Descripción |
+|---|---|
+| `284b918` | Bloque 1 — DTOs, repositories y services esqueleto |
+| `cba406a` | Bloque 2 — JWT + SecurityConfig |
+| `a0416d4` | Bloque 3 parcial — AuthController E02-E05 + OpenApiConfig |
+| `25d6824` | Bloque 3 cierre — EmpresaController E06-E07 + GlobalExceptionHandler |
 
 ---
 
@@ -208,7 +217,7 @@ La siguiente fase es la implementación del backend con Spring Boot.
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 1 cerrado |
+| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 3 cerrado (E01–E07 operativos) |
 | Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
