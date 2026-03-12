@@ -6,3 +6,16 @@ jwt:
   secret: staffflow-secret-key-para-desarrollo-debe-tener-al-menos-256-bits-ok
   expiration: 3600000
   refresh-expiration: 604800000
+
+# =========================================================================
+# CONFIGURACION JWT — añadir a application.yml (nivel raiz, mismo nivel que spring:)
+# =========================================================================
+staffflow:
+  jwt:
+    # Clave secreta para firmar los tokens HS256.
+    # DEBE tener minimo 32 caracteres (256 bits para HS256).
+    # En produccion se inyecta como variable de entorno JWT_SECRET, nunca en texto plano.
+    secret: staffflow-secret-key-desarrollo-2026-minimo32chars
+    # Validez del token en milisegundos. 28800000 = 8 horas (decision de diseno 18).
+    expiration-ms: 28800000
+
