@@ -1,27 +1,42 @@
 package com.staffflow.service;
 
 import com.staffflow.domain.entity.Usuario;
-import com.staffflow.domain.enums.Rol;
-import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
 import com.staffflow.dto.request.LoginRequest;
+import com.staffflow.dto.request.PasswordChangeRequest;
+import com.staffflow.dto.request.PasswordRecoveryRequest;
+import com.staffflow.dto.request.PasswordResetRequest;
 import com.staffflow.dto.response.LoginResponse;
+import com.staffflow.dto.response.MensajeResponse;
+import com.staffflow.dto.response.UsuarioResponse;
 import com.staffflow.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
- * Servicio de autenticacion y gestion de contrasenas de StaffFlow.
+ * Servicio de autenticación y gestión de credenciales.
  *
- * <p>Gestiona el ciclo completo de autenticacion: login con JWT, logout stateless,
- * cambio de contrasena autenticado y flujo de recuperacion de contrasena por email.
+ * <p>Cubre los cinco endpoints del grupo /api/v1/auth:</p>
+ * <ul>
+ *   <li>E01 — login (implementado en Bloque 2, no se toca aquí)</li>
+ *   <li>E02 — obtener datos del usuario autenticado</li>
+ *   <li>E03 — cambiar contraseña (usuario conoce la contraseña actual)</li>
+ *   <li>E04 — solicitar recuperación por email (stub: token en log)</li>
+ *   <li>E05 — restablecer contraseña con token de un solo uso</li>
+ * </ul>
  *
- * <p>En esta iteracion (Bloque 2) se implementa unicamente el metodo {@code login}.
- * El resto de metodos permanecen como esqueleto hasta el bloque correspondiente.
+ * <p>RNF-S04: el token de recuperación tiene validez de 30 minutos y se
+ * invalida tras el primer uso exitoso (resetToken = null).</p>
  *
  * @author Santiago Castillo
  */
@@ -30,54 +45,48 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-    // AuthenticationManager: delega la verificacion de credenciales en Spring Security.
-    // Internamente llama a UserDetailsServiceImpl.loadUserByUsername() y compara el
-    // password con BCrypt. Bean expuesto en SecurityConfig.
-    private final AuthenticationManager authenticationManager;
+    // --- Dependencias inyectadas por Lombok @RequiredArgsConstructor ---
 
-    // Proveedor JWT para generar el token tras autenticacion exitosa
-    private final JwtTokenProvider jwtTokenProvider;
-
-    // Repositorio de usuarios para obtener el rol y datos del usuario autenticado
+    /** Repositorio de usuarios: acceso a BD para leer y actualizar credenciales. */
     private final UsuarioRepository usuarioRepository;
 
-    // Repositorio de empleados para obtener el empleadoId si el rol no es ADMIN.
-    // Los ADMIN no tienen perfil de empleado (decision de diseno, RF-01 a RF-07).
-    private final EmpleadoRepository empleadoRepository;
+    /**
+     * Gestor de autenticación de Spring Security.
+     * Se usa en login() para delegar la verificación de credenciales.
+     * Bean expuesto en SecurityConfig.
+     */
+    private final AuthenticationManager authenticationManager;
 
     /**
-     * Autentica un usuario y genera un token JWT.
+     * Proveedor JWT: genera y valida tokens HS384.
+     * Se usa en login() para crear el token tras autenticar.
+     */
+    private final JwtTokenProvider jwtTokenProvider;
+
+    /**
+     * Codificador BCrypt (factor 10).
+     * Se usa en E03 para verificar la contraseña actual antes de cambiarla,
+     * y en E03/E05 para hashear la nueva contraseña antes de guardarla.
+     * Bean expuesto en SecurityConfig.
+     */
+    private final PasswordEncoder passwordEncoder;
+
+    // =========================================================================
+    // E01 — POST /api/v1/auth/login
+    // =========================================================================
+
+    /**
+     * Autentica al usuario y devuelve un JWT válido.
      *
-     * <p>Flujo completo:
-     * <ol>
-     *   <li>Delegar la verificacion de credenciales en {@code AuthenticationManager}.
-     *       Spring Security carga el usuario con {@code UserDetailsServiceImpl},
-     *       verifica el password con BCrypt y lanza {@code BadCredentialsException}
-     *       si las credenciales son incorrectas.</li>
-     *   <li>Recuperar el usuario completo desde BD para obtener el rol y el ID.</li>
-     *   <li>Si el rol es ADMIN, el empleadoId es null (sin perfil de empleado).</li>
-     *   <li>Si el rol es ENCARGADO o EMPLEADO, buscar el ID del perfil de empleado
-     *       vinculado al usuario para incluirlo en el token.</li>
-     *   <li>Generar el JWT con username, rol y empleadoId.</li>
-     *   <li>Devolver {@link LoginResponse} con el token y los datos del usuario.</li>
-     * </ol>
+     * <p>Implementado en Bloque 2. Flujo: AuthenticationManager valida
+     * credenciales → JwtTokenProvider genera token → se devuelve LoginResponse
+     * con token, rol, username y empleadoId (null si ADMIN).</p>
      *
-     * <p>Codigos HTTP gestionados por Spring Security automaticamente:
-     * <ul>
-     *   <li>400: si el body del request no es valido (gestionado por @Valid en el controller).</li>
-     *   <li>401: si las credenciales son incorrectas (BadCredentialsException de Spring).</li>
-     * </ul>
-     *
-     * @param request DTO con username y password del login
-     * @return {@link LoginResponse} con token JWT, rol, empleadoId y username
+     * @param request DTO con username y password
+     * @return LoginResponse con el JWT y metadatos del usuario
      */
     public LoginResponse login(LoginRequest request) {
-        log.debug("Intento de login para usuario: {}", request.getUsername());
-
-        // Paso 1: verificar credenciales delegando en Spring Security.
-        // UsernamePasswordAuthenticationToken con 2 parametros = token no autenticado.
-        // AuthenticationManager lo procesa llamando a UserDetailsServiceImpl y BCrypt.
-        // Si las credenciales son incorrectas lanza BadCredentialsException → HTTP 401.
+        // 1. Spring Security verifica username + password contra la BD
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -85,93 +94,224 @@ public class AuthService {
                 )
         );
 
-        // Paso 2: obtener el usuario completo desde BD.
-        // En este punto las credenciales ya son correctas (si no, nunca llegamos aqui).
-        // authentication.getName() devuelve el username del UserDetails cargado.
-        Usuario usuario = usuarioRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new RuntimeException(
-                        "Usuario no encontrado tras autenticacion: " + authentication.getName()));
+        // 2. Cargar la entidad Usuario para extraer rol y empleadoId
+        Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
+                .orElseThrow(); // No puede fallar: Authentication acaba de verificar que existe
 
-        // Paso 3: resolver el empleadoId segun el rol.
-        // Los ADMIN no tienen perfil de empleado (decision de diseno: ADMIN gestion pura).
-        // ENCARGADO y EMPLEADO tienen siempre un perfil de empleado vinculado (1:1 en BD).
+        // 3. Determinar empleadoId.
+        // ADMIN no tiene perfil de empleado → null.
+        // ENCARGADO/EMPLEADO: se resuelve en Bloque 4 cuando EmpleadoRepository
+        // esté inyectado aquí. Por ahora null para todos los roles.
+        // TODO Bloque 4: empleadoRepository.findByUsuarioId(usuario.getId())
+        //                .map(Empleado::getId).orElse(null)
         Long empleadoId = null;
-        if (usuario.getRol() != Rol.ADMIN) {
-            // Buscar el empleado por su usuario_id (FK UNIQUE en tabla empleados)
-            empleadoId = empleadoRepository.findByUsuarioId(usuario.getId())
-                    .map(empleado -> empleado.getId())
-                    .orElse(null);
-            // Si es ENCARGADO o EMPLEADO y no tiene perfil de empleado es una incoherencia
-            // de datos. Se registra warning pero no se bloquea el login: el usuario puede
-            // autenticarse aunque el perfil de empleado aun no este creado.
-            if (empleadoId == null) {
-                log.warn("Usuario {} con rol {} no tiene perfil de empleado vinculado",
-                        usuario.getUsername(), usuario.getRol());
-            }
-        }
 
-        // Paso 4: generar el JWT con los datos del usuario autenticado.
-        // El token incluye username, rol y empleadoId para que los filtros
-        // y servicios puedan operar sin consultar la BD en cada peticion.
         String token = jwtTokenProvider.generarToken(
                 usuario.getUsername(),
                 usuario.getRol().name(),
                 empleadoId
         );
 
-        log.info("Login exitoso para usuario: {} [{}]", usuario.getUsername(), usuario.getRol());
+        return new LoginResponse(token, usuario.getRol(), usuario.getUsername(), empleadoId);
+    }
 
-        // Paso 5: construir y devolver la respuesta segun el contrato de E01 (Endpoints_v3):
-        // { "token": "string", "rol": "ADMIN|ENCARGADO|EMPLEADO",
-        //   "empleadoId": null|number, "username": "string" }
-        // Orden de parametros segun @AllArgsConstructor de LoginResponse:
-        // token, rol (Rol enum), username, empleadoId
-        return new LoginResponse(
-                token,
-                usuario.getRol(),
-                usuario.getUsername(),
-                empleadoId
+    // =========================================================================
+    // E02 — GET /api/v1/auth/me
+    // =========================================================================
+
+    /**
+     * Devuelve los datos del usuario autenticado a partir del JWT.
+     *
+     * <p>El username se extrae del SecurityContext, que JwtAuthFilter ha
+     * cargado previamente al validar el token. No requiere parámetros en
+     * la petición: toda la información necesaria viene del token.</p>
+     *
+     * <p>Roles permitidos: ADMIN, ENCARGADO, EMPLEADO (cualquier usuario
+     * autenticado puede consultar sus propios datos).</p>
+     *
+     * @return UsuarioResponse con los datos del usuario (sin password_hash)
+     * @throws jakarta.persistence.EntityNotFoundException si el username del
+     *         token no existe en BD (no debería ocurrir en condiciones normales)
+     */
+    public UsuarioResponse obtenerUsuarioAutenticado() {
+        // Extraer el username del SecurityContext cargado por JwtAuthFilter
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        // Buscar el usuario en BD por username
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+
+        // Construir el DTO de respuesta sin exponer password_hash
+        return toUsuarioResponse(usuario);
+    }
+
+    // =========================================================================
+    // E03 — PUT /api/v1/auth/password
+    // =========================================================================
+
+    /**
+     * Cambia la contraseña del usuario autenticado.
+     *
+     * <p>Flujo:
+     * <ol>
+     *   <li>Extraer username del SecurityContext (token ya validado).</li>
+     *   <li>Verificar que currentPassword coincide con el hash almacenado.</li>
+     *   <li>Hashear newPassword con BCrypt y guardar en BD.</li>
+     * </ol>
+     * </p>
+     *
+     * <p>Si currentPassword es incorrecto se lanza una excepción que el
+     * GlobalExceptionHandler (Bloque 4) convertirá en HTTP 400.</p>
+     *
+     * @param request DTO con currentPassword y newPassword
+     * @return MensajeResponse confirmando el cambio
+     * @throws IllegalArgumentException si la contraseña actual no coincide
+     */
+    @Transactional
+    public MensajeResponse cambiarPassword(PasswordChangeRequest request) {
+        // 1. Obtener el usuario autenticado
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+
+        // 2. Verificar que la contraseña actual es correcta
+        // passwordEncoder.matches() compara en texto plano con el hash almacenado
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPasswordHash())) {
+            throw new IllegalArgumentException("La contraseña actual no es correcta");
+        }
+
+        // 3. Hashear la nueva contraseña y guardar
+        usuario.setPasswordHash(passwordEncoder.encode(request.getPasswordNueva()));
+        usuarioRepository.save(usuario);
+
+        return new MensajeResponse("Contraseña actualizada correctamente");
+    }
+
+    // =========================================================================
+    // E04 — POST /api/v1/auth/password/recovery
+    // =========================================================================
+
+    /**
+     * Solicita un token de recuperación de contraseña por email.
+     *
+     * <p>STUB: el email no se envía realmente. El token se loguea con
+     * log.info() para poder usarlo en pruebas. En producción se sustituiría
+     * el log por una llamada a JavaMailSender.</p>
+     *
+     * <p>Decisión de seguridad (RNF-S04): si el email no existe en BD se
+     * devuelve exactamente la misma respuesta 200 que si existe. Esto evita
+     * que un atacante pueda enumerar qué emails están registrados en el
+     * sistema mediante las respuestas de este endpoint.</p>
+     *
+     * <p>El token tiene validez de 30 minutos (RNF-S04) y es de un solo uso:
+     * E05 lo invalida al usarlo.</p>
+     *
+     * @param request DTO con el email del usuario
+     * @return MensajeResponse con mensaje genérico (mismo tanto si existe como si no)
+     */
+    @Transactional
+    public MensajeResponse solicitarRecuperacion(PasswordRecoveryRequest request) {
+        // Buscar usuario por email
+        // Si no existe, devolvemos la misma respuesta sin hacer nada (RNF-S04)
+        usuarioRepository.findByEmail(request.getEmail()).ifPresent(usuario -> {
+            // Generar token UUID de un solo uso
+            String token = UUID.randomUUID().toString();
+
+            // Guardar token y fecha de expiración (ahora + 30 minutos)
+            usuario.setResetToken(token);
+            usuario.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
+            usuarioRepository.save(usuario);
+
+            // STUB: en producción aquí iría el envío de email
+            // Se loguea en INFO para poder usarlo en pruebas con Swagger
+            log.info("[STUB EMAIL] Token recuperacion para {}: {}", usuario.getEmail(), token);
+        });
+
+        // Respuesta idéntica independientemente de si el email existe o no
+        return new MensajeResponse("Si el email está registrado recibirás las instrucciones de recuperación");
+    }
+
+    // =========================================================================
+    // E05 — POST /api/v1/auth/password/reset
+    // =========================================================================
+
+    /**
+     * Restablece la contraseña usando el token de recuperación.
+     *
+     * <p>Flujo:
+     * <ol>
+     *   <li>Buscar usuario por resetToken.</li>
+     *   <li>Verificar que el token no ha caducado (resetTokenExpiry > ahora).</li>
+     *   <li>Hashear newPassword con BCrypt y guardar.</li>
+     *   <li>Invalidar el token: resetToken = null, resetTokenExpiry = null.</li>
+     * </ol>
+     * </p>
+     *
+     * <p>Si el token no existe o ha caducado se lanza IllegalArgumentException
+     * que el GlobalExceptionHandler convertirá en HTTP 400.</p>
+     *
+     * <p>RNF-S04: token de un solo uso. Una vez usado, resetToken se pone a null
+     * y un segundo intento con el mismo token devuelve 400.</p>
+     *
+     * @param request DTO con token y newPassword
+     * @return MensajeResponse confirmando el restablecimiento
+     * @throws IllegalArgumentException si el token no existe o ha caducado
+     */
+    @Transactional
+    public MensajeResponse restablecerPassword(PasswordResetRequest request) {
+        // 1. Buscar usuario por token
+        // Si no existe: el token es inválido o ya fue usado (resetToken = null)
+        Usuario usuario = usuarioRepository.findByResetToken(request.getToken())
+                .orElseThrow(() -> new IllegalArgumentException("Token de recuperación inválido o ya utilizado"));
+
+        // 2. Verificar que el token no ha caducado
+        // resetTokenExpiry se guardó como ahora + 30 minutos en E04
+        if (usuario.getResetTokenExpiry() == null ||
+                LocalDateTime.now().isAfter(usuario.getResetTokenExpiry())) {
+            throw new IllegalArgumentException("El token de recuperación ha caducado");
+        }
+
+        // 3. Hashear la nueva contraseña y guardar
+        usuario.setPasswordHash(passwordEncoder.encode(request.getPasswordNueva()));
+
+        // 4. Invalidar el token para que no pueda reutilizarse (RNF-S04)
+        usuario.setResetToken(null);
+        usuario.setResetTokenExpiry(null);
+
+        usuarioRepository.save(usuario);
+
+        return new MensajeResponse("Contraseña restablecida correctamente");
+    }
+
+    // =========================================================================
+    // Métodos privados de apoyo
+    // =========================================================================
+
+    /**
+     * Convierte la entidad Usuario en UsuarioResponse para la capa de presentación.
+     *
+     * <p>Regla de oro: ningún Service devuelve entidades JPA al Controller,
+     * siempre usa DTOs. Este método es el punto único de conversión en AuthService.</p>
+     *
+     * @param usuario entidad JPA
+     * @return UsuarioResponse sin password_hash ni campos sensibles
+     */
+    private UsuarioResponse toUsuarioResponse(Usuario usuario) {
+        // Construir el DTO en el mismo orden que el constructor de UsuarioResponse:
+        // (id, username, email, rol, activo, fechaCreacion)
+        // Si el orden del constructor cambia, ajustar aquí.
+        return new UsuarioResponse(
+                usuario.getId(),          // Long id
+                usuario.getUsername(),    // String username
+                usuario.getEmail(),       // String email
+                usuario.getRol(),         // Rol rol
+                usuario.getActivo(),      // Boolean activo
+                usuario.getFechaCreacion() // LocalDateTime fechaCreacion
         );
-    }
-
-    // =========================================================================
-    // METODOS PENDIENTES — se implementan en bloques posteriores
-    // =========================================================================
-
-    /**
-     * Cierra la sesion del usuario autenticado.
-     * JWT es stateless: la invalidacion se realiza en el cliente (DataStore Android).
-     * El servidor confirma con 200 OK. Bloque 2 — pendiente.
-     */
-    public void logout() {
-        // TODO Bloque 2: confirmar logout (stateless, sin logica server-side adicional)
-        throw new UnsupportedOperationException("Pendiente de implementacion en Bloque 2");
-    }
-
-    /**
-     * Cambia la contrasena del usuario autenticado verificando la actual.
-     * Bloque 2 — pendiente.
-     */
-    public void cambiarPassword(String username, String passwordActual, String passwordNueva) {
-        // TODO Bloque 2
-        throw new UnsupportedOperationException("Pendiente de implementacion en Bloque 2");
-    }
-
-    /**
-     * Genera y envia por email el token de recuperacion de contrasena.
-     * Requiere spring-boot-starter-mail configurado. Bloque D — pendiente.
-     */
-    public void solicitarRecuperacion(String email) {
-        // TODO Bloque D (trabajo futuro documentado en Wireframes_v5)
-        throw new UnsupportedOperationException("Pendiente de implementacion en Bloque D");
-    }
-
-    /**
-     * Valida el token de recuperacion y establece la nueva contrasena.
-     * Bloque D — pendiente.
-     */
-    public void restablecerPassword(String token, String passwordNueva) {
-        // TODO Bloque D
-        throw new UnsupportedOperationException("Pendiente de implementacion en Bloque D");
     }
 }

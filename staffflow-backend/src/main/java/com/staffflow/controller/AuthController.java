@@ -1,133 +1,162 @@
 package com.staffflow.controller;
 
 import com.staffflow.dto.request.LoginRequest;
+import com.staffflow.dto.request.PasswordChangeRequest;
+import com.staffflow.dto.request.PasswordRecoveryRequest;
+import com.staffflow.dto.request.PasswordResetRequest;
 import com.staffflow.dto.response.LoginResponse;
+import com.staffflow.dto.response.MensajeResponse;
+import com.staffflow.dto.response.UsuarioResponse;
 import com.staffflow.service.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller de autenticacion y gestion de contrasenas de StaffFlow.
+ * Controlador REST para autenticación y gestión de credenciales.
  *
- * <p>Gestiona los endpoints E01-E05 del grupo Autenticacion (Endpoints_v3):
+ * <p>Cubre el grupo /api/v1/auth con cinco endpoints:</p>
  * <ul>
- *   <li>E01 POST /api/v1/auth/login — PUBLICO, implementado en Bloque 2.</li>
- *   <li>E02 POST /api/v1/auth/logout — TODOS, pendiente Bloque 2.</li>
- *   <li>E03 PUT  /api/v1/auth/password — TODOS, pendiente Bloque 2.</li>
- *   <li>E04 POST /api/v1/auth/password/recovery — PUBLICO, pendiente Bloque D.</li>
- *   <li>E05 POST /api/v1/auth/password/reset — PUBLICO, pendiente Bloque D.</li>
+ *   <li>E01 POST /login         — login público, devuelve JWT</li>
+ *   <li>E02 GET  /me            — datos del usuario autenticado</li>
+ *   <li>E03 PUT  /password      — cambio de contraseña (requiere actual)</li>
+ *   <li>E04 POST /password/recovery — solicitud de recuperación por email</li>
+ *   <li>E05 POST /password/reset    — restablecimiento con token</li>
  * </ul>
  *
- * <p>Regla de arquitectura: este controller no contiene logica de negocio.
- * Recibe la peticion, valida el body con {@code @Valid} y delega en {@link AuthService}.
+ * <p>E01, E04 y E05 son rutas públicas (declaradas en SecurityConfig y en
+ * shouldNotFilter de JwtAuthFilter). E02 y E03 requieren JWT válido.</p>
+ *
+ * <p>Este controlador no accede directamente a repositorios ni a entidades JPA.
+ * Toda la lógica está en AuthService (regla de oro de la arquitectura).</p>
  *
  * @author Santiago Castillo
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@Tag(name = "Autenticacion", description = "Login, logout y gestion de contrasenas")
 public class AuthController {
 
-    // Servicio de autenticacion que contiene toda la logica de negocio
+    /** Servicio que contiene toda la lógica de autenticación. */
     private final AuthService authService;
 
+    // =========================================================================
+    // E01 — POST /api/v1/auth/login
+    // =========================================================================
+
     /**
-     * E01 — Autentica al usuario y devuelve un token JWT valido 8 horas.
+     * Autentica al usuario y devuelve un JWT válido.
      *
-     * <p>Endpoint publico: no requiere JWT. Es el primer endpoint que debe
-     * llamarse; sin un token valido el resto de endpoints protegidos devuelven 401.
+     * <p>Ruta pública: no requiere token. Implementado en Bloque 2.</p>
      *
-     * <p>El token devuelto debe incluirse en la cabecera de todas las peticiones
-     * protegidas: {@code Authorization: Bearer <token>}.
+     * <p>Spring valida el DTO con @Valid antes de llamar al servicio.
+     * Si username o password están ausentes, Bean Validation devuelve 400
+     * antes de llegar a AuthService.</p>
      *
-     * @param request body con username y password del usuario
-     * @return 200 OK con token JWT, rol, empleadoId y username
+     * @param request DTO con username y password
+     * @return 200 OK con LoginResponse (token, rol, username, empleadoId)
      */
-    @Operation(
-        summary = "Login de usuario",
-        description = "Autentica con username y password. Devuelve JWT valido 8 horas. " +
-                      "El token debe enviarse en Authorization: Bearer <token> en el resto de peticiones."
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Login exitoso",
-            content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Datos de entrada invalidos",
-            content = @Content),
-        @ApiResponse(responseCode = "401", description = "Credenciales incorrectas",
-            content = @Content)
-    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Delegar completamente en AuthService: este controller no toma decisiones de negocio
-        LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.login(request));
     }
 
     // =========================================================================
-    // ENDPOINTS PENDIENTES — esqueleto para compilacion
+    // E02 — GET /api/v1/auth/me
     // =========================================================================
 
     /**
-     * E02 — Cierra la sesion del usuario autenticado.
-     * JWT stateless: la invalidacion es en cliente (DataStore Android).
-     * Pendiente de implementacion en Bloque 2.
+     * Devuelve los datos del usuario que realiza la petición.
+     *
+     * <p>Requiere JWT válido en el header Authorization: Bearer {token}.
+     * El username se extrae del SecurityContext cargado por JwtAuthFilter,
+     * no de la URL ni del body: el usuario solo puede ver sus propios datos.</p>
+     *
+     * <p>Roles: ADMIN, ENCARGADO, EMPLEADO (cualquier usuario autenticado).</p>
+     *
+     * @return 200 OK con UsuarioResponse (sin password_hash)
      */
-    @Operation(summary = "Logout", description = "Pendiente de implementacion en Bloque 2")
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        // TODO Bloque 2
-        return ResponseEntity.ok().build();
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UsuarioResponse> me() {
+        return ResponseEntity.ok(authService.obtenerUsuarioAutenticado());
     }
 
-    /**
-     * E03 — Cambia la contrasena del usuario autenticado.
-     * Requiere la contrasena actual como verificacion.
-     * Pendiente de implementacion en Bloque 2.
-     */
-    @Operation(summary = "Cambiar contrasena", description = "Pendiente de implementacion en Bloque 2")
-    @org.springframework.web.bind.annotation.PutMapping("/password")
-    public ResponseEntity<Void> cambiarPassword() {
-        // TODO Bloque 2
-        return ResponseEntity.ok().build();
-    }
+    // =========================================================================
+    // E03 — PUT /api/v1/auth/password
+    // =========================================================================
 
     /**
-     * E04 — Solicita el token de recuperacion de contrasena por email.
-     * Devuelve siempre 200 OK para evitar enumeracion de usuarios.
-     * Pendiente de implementacion en Bloque D (trabajo futuro).
+     * Cambia la contraseña del usuario autenticado.
+     *
+     * <p>Requiere JWT válido. El usuario debe proporcionar su contraseña
+     * actual para confirmar la identidad antes del cambio (doble verificación).
+     * Si currentPassword no coincide, AuthService lanza IllegalArgumentException
+     * que se convierte en 400 (GlobalExceptionHandler, Bloque 4).</p>
+     *
+     * <p>Usa PUT porque el contrato establece que /auth/password es un
+     * formulario completo que sustituye el valor existente (convención
+     * PUT/PATCH cerrada en Fase 1).</p>
+     *
+     * <p>Roles: ADMIN, ENCARGADO, EMPLEADO.</p>
+     *
+     * @param request DTO con currentPassword y newPassword
+     * @return 200 OK con MensajeResponse confirmando el cambio
      */
-    @Operation(summary = "Solicitar recuperacion de contrasena",
-               description = "Pendiente de implementacion en Bloque D")
+    @PutMapping("/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MensajeResponse> cambiarPassword(
+            @Valid @RequestBody PasswordChangeRequest request) {
+        return ResponseEntity.ok(authService.cambiarPassword(request));
+    }
+
+    // =========================================================================
+    // E04 — POST /api/v1/auth/password/recovery
+    // =========================================================================
+
+    /**
+     * Solicita el envío de un token de recuperación de contraseña al email.
+     *
+     * <p>Ruta pública: no requiere token (el usuario no puede autenticarse
+     * si ha olvidado su contraseña).</p>
+     *
+     * <p>Siempre devuelve 200 con el mismo mensaje, exista o no el email en
+     * la BD. Esto impide la enumeración de usuarios registrados (RNF-S04).</p>
+     *
+     * <p>STUB: el token no se envía por email. Se loguea en el servidor
+     * con log.info() para poder probarlo en Swagger durante el desarrollo.</p>
+     *
+     * @param request DTO con el email del usuario
+     * @return 200 OK con MensajeResponse (mensaje genérico)
+     */
     @PostMapping("/password/recovery")
-    public ResponseEntity<Void> solicitarRecuperacion() {
-        // TODO Bloque D
-        return ResponseEntity.ok().build();
+    public ResponseEntity<MensajeResponse> solicitarRecuperacion(
+            @Valid @RequestBody PasswordRecoveryRequest request) {
+        return ResponseEntity.ok(authService.solicitarRecuperacion(request));
     }
 
+    // =========================================================================
+    // E05 — POST /api/v1/auth/password/reset
+    // =========================================================================
+
     /**
-     * E05 — Restablece la contrasena usando el token recibido por email.
-     * Token de un solo uso, caduca en 30 minutos (RNF-S04).
-     * Pendiente de implementacion en Bloque D (trabajo futuro).
+     * Restablece la contraseña usando el token de recuperación.
+     *
+     * <p>Ruta pública: el usuario llega aquí desde el enlace del email (en el
+     * stub, desde el token que aparece en el log del servidor).</p>
+     *
+     * <p>Si el token no existe, ya fue usado o ha caducado (más de 30 minutos
+     * desde E04), AuthService lanza IllegalArgumentException que se convierte
+     * en 400. El token se invalida tras el primer uso exitoso (RNF-S04).</p>
+     *
+     * @param request DTO con token y newPassword
+     * @return 200 OK con MensajeResponse confirmando el restablecimiento
      */
-    @Operation(summary = "Restablecer contrasena con token",
-               description = "Pendiente de implementacion en Bloque D")
     @PostMapping("/password/reset")
-    public ResponseEntity<Void> restablecerPassword() {
-        // TODO Bloque D
-        return ResponseEntity.ok().build();
+    public ResponseEntity<MensajeResponse> restablecerPassword(
+            @Valid @RequestBody PasswordResetRequest request) {
+        return ResponseEntity.ok(authService.restablecerPassword(request));
     }
 }
