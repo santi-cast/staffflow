@@ -1,6 +1,8 @@
 package com.staffflow.service;
 
+import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.Usuario;
+import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
 import com.staffflow.dto.request.LoginRequest;
 import com.staffflow.dto.request.PasswordChangeRequest;
@@ -49,6 +51,9 @@ public class AuthService {
 
     /** Repositorio de usuarios: acceso a BD para leer y actualizar credenciales. */
     private final UsuarioRepository usuarioRepository;
+
+    /** Repositorio de empleados: necesario para resolver empleadoId en el login. */
+    private final EmpleadoRepository empleadoRepository;
 
     /**
      * Gestor de autenticación de Spring Security.
@@ -100,11 +105,10 @@ public class AuthService {
 
         // 3. Determinar empleadoId.
         // ADMIN no tiene perfil de empleado → null.
-        // ENCARGADO/EMPLEADO: se resuelve en Bloque 4 cuando EmpleadoRepository
-        // esté inyectado aquí. Por ahora null para todos los roles.
-        // TODO Bloque 4: empleadoRepository.findByUsuarioId(usuario.getId())
-        //                .map(Empleado::getId).orElse(null)
-        Long empleadoId = null;
+        // ENCARGADO/EMPLEADO: se resuelve consultando EmpleadoRepository.
+        Long empleadoId = empleadoRepository.findByUsuarioId(usuario.getId())
+                .map(Empleado::getId)
+                .orElse(null);
 
         String token = jwtTokenProvider.generarToken(
                 usuario.getUsername(),

@@ -58,8 +58,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidationException(
             MethodArgumentNotValidException ex, WebRequest request) {
 
-        // Obtener el primer error de campo — en caso de múltiples errores
-        // se devuelve solo el primero para no sobrecargar la respuesta
         String campo = ex.getBindingResult().getFieldErrors().isEmpty()
                 ? "desconocido"
                 : ex.getBindingResult().getFieldErrors().get(0).getField();
@@ -81,9 +79,6 @@ public class GlobalExceptionHandler {
      * condiciones de error controladas: contraseña incorrecta (E03),
      * token de recuperación inválido o expirado (E05), etc.
      *
-     * <p>Se mapea a 400 y no a 500 porque es un error del cliente
-     * (datos incorrectos), no un error del servidor.
-     *
      * @param ex excepción con el mensaje descriptivo del error
      * @param request información de la petición HTTP
      * @return 400 con { error, timestamp, path }
@@ -102,14 +97,9 @@ public class GlobalExceptionHandler {
      * Maneja violaciones de constraints de integridad de BD (400).
      *
      * <p>DataIntegrityViolationException la lanza Hibernate cuando se
-     * viola una constraint UNIQUE o NOT NULL en la BD: username duplicado,
-     * email duplicado, CIF duplicado (E07), PIN duplicado, etc.
-     *
-     * <p>Se mapea a 400 porque el dato enviado por el cliente viola
-     * una regla de unicidad del dominio.
-     *
-     * <p>El mensaje genérico evita exponer nombres de constraints
-     * internas de la BD al cliente.
+     * viola una constraint UNIQUE o NOT NULL en la BD sin que el servicio
+     * lo haya detectado antes. El mensaje genérico evita exponer nombres
+     * de constraints internas de la BD al cliente.
      *
      * @param ex excepción de integridad de datos
      * @param request información de la petición HTTP
@@ -130,12 +120,8 @@ public class GlobalExceptionHandler {
     /**
      * Maneja credenciales incorrectas en el login (401).
      *
-     * <p>BadCredentialsException la lanza Spring Security cuando
-     * AuthenticationManager no puede autenticar al usuario: username
-     * inexistente, contraseña incorrecta, o usuario inactivo.
-     *
-     * <p>El mensaje es genérico intencionadamente (no revela si fue
-     * el username o la contraseña lo incorrecto — RNF-S04).
+     * <p>El mensaje es genérico intencionadamente: no revela si fue
+     * el username o la contraseña lo incorrecto (RNF-S04).
      *
      * @param ex excepción de credenciales inválidas
      * @param request información de la petición HTTP
@@ -158,11 +144,7 @@ public class GlobalExceptionHandler {
      *
      * <p>AccessDeniedException la lanza Spring Security cuando un usuario
      * autenticado intenta acceder a un endpoint para el que no tiene
-     * el rol requerido (@PreAuthorize). Ejemplo: EMPLEADO intentando
-     * acceder a GET /api/v1/empresa (solo ADMIN).
-     *
-     * <p>Este handler complementa al Http403ForbiddenEntryPoint de
-     * SecurityConfig, que maneja el caso de usuario no autenticado.
+     * el rol requerido (@PreAuthorize).
      *
      * @param ex excepción de acceso denegado
      * @param request información de la petición HTTP
@@ -183,13 +165,9 @@ public class GlobalExceptionHandler {
     /**
      * Maneja recursos no encontrados en BD (404).
      *
-     * <p>IllegalStateException se usa en los servicios cuando un recurso
-     * solicitado por id no existe en la BD: empleado no encontrado,
-     * usuario no encontrado, configuración no inicializada, etc.
-     *
-     * <p>Se usa IllegalStateException (no una excepción custom) para
-     * mantener el código simple en la fase actual del proyecto.
-     * En una versión futura se podría crear ResourceNotFoundException.
+     * <p>IllegalStateException se usa exclusivamente para "recurso no
+     * encontrado". Los conflictos de unicidad se gestionan con
+     * ConflictException (HTTP 409) para distinguir claramente ambos casos.
      *
      * @param ex excepción con el mensaje descriptivo del recurso ausente
      * @param request información de la petición HTTP
@@ -205,6 +183,34 @@ public class GlobalExceptionHandler {
                 .body(buildError(ex.getMessage(), null, request));
     }
 
+    // ─── 409 CONFLICT ────────────────────────────────────────────────────────
+
+    /**
+     * Maneja conflictos de unicidad en datos del dominio (409).
+     *
+     * <p>ConflictException la lanzan los servicios cuando detectan
+     * de forma preventiva que un dato ya existe en otro registro:
+     * username, email, DNI, PIN, CIF, etc.
+     *
+     * <p>Se usa validación preventiva en el servicio (existsBy...)
+     * en lugar de dejar explotar DataIntegrityViolationException,
+     * lo que permite devolver un mensaje claro al cliente Android
+     * con el dato concreto que genera el conflicto.
+     *
+     * @param ex excepción con el mensaje descriptivo del conflicto
+     * @param request información de la petición HTTP
+     * @return 409 con { error, timestamp, path }
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(
+            ConflictException ex, WebRequest request) {
+
+        log.warn("Conflicto de unicidad: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(buildError(ex.getMessage(), null, request));
+    }
+
     // ─── 423 LOCKED ──────────────────────────────────────────────────────────
 
     /**
@@ -212,15 +218,8 @@ public class GlobalExceptionHandler {
      *
      * <p>HTTP 423 Locked se usa cuando un dispositivo ha superado
      * los 5 intentos fallidos de PIN y está bloqueado 30 segundos
-     * (RNF-S05). El bloqueo es por dispositivo, no por empleado.
-     *
-     * <p>Se usa una excepción personalizada RuntimeException con
-     * mensaje específico. En Bloque 5 se puede crear PinBloqueadoException
-     * si se considera necesario para mayor claridad.
-     *
-     * <p>Nota: 423 no es un código estándar de Spring Security —
-     * se lanza manualmente desde TerminalService cuando detecta
-     * el bloqueo (Bloque 5).
+     * (RNF-S05). El bloqueo es por dispositivo, no por empleado
+     * (decisión de diseño nº16).
      *
      * @param ex excepción de PIN bloqueado
      * @param request información de la petición HTTP
@@ -241,10 +240,6 @@ public class GlobalExceptionHandler {
     /**
      * Manejador de último recurso para excepciones no controladas (500).
      *
-     * <p>Captura cualquier excepción no manejada por los handlers
-     * anteriores. Evita que Spring devuelva stack traces o mensajes
-     * internos al cliente.
-     *
      * <p>El mensaje genérico es intencionado: no se exponen detalles
      * internos al cliente por seguridad. El log.error() registra
      * el stack trace completo para diagnóstico interno.
@@ -257,7 +252,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGenericException(
             Exception ex, WebRequest request) {
 
-        // Log completo con stack trace para diagnóstico — NO se expone al cliente
         log.error("Error interno no controlado", ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -269,16 +263,9 @@ public class GlobalExceptionHandler {
     /**
      * Construye el mapa de error con el formato del contrato de la API.
      *
-     * <p>Formato definido en StaffFlow_Endpoints_v3.docx:
-     * { error: String, campo?: String, timestamp: LocalDateTime, path: String }
-     *
-     * <p>LinkedHashMap mantiene el orden de inserción de las claves,
-     * lo que produce un JSON con las claves en el orden definido
-     * (error → campo → timestamp → path).
-     *
-     * <p>El campo "campo" solo se incluye si no es null — evita
-     * contaminar la respuesta con "campo: null" cuando el error
-     * no está asociado a un campo concreto.
+     * <p>Formato: { error: String, campo?: String, timestamp: LocalDateTime, path: String }
+     * LinkedHashMap mantiene el orden de inserción de las claves.
+     * El campo "campo" solo se incluye si no es null.
      *
      * @param mensaje descripción del error
      * @param campo   nombre del campo problemático (puede ser null)
@@ -289,14 +276,11 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("error", mensaje);
 
-        // "campo" solo se incluye cuando es relevante (errores de validación de campo)
         if (campo != null) {
             body.put("campo", campo);
         }
 
         body.put("timestamp", LocalDateTime.now());
-
-        // WebRequest.getDescription(false) devuelve "uri=/api/v1/..." sin el host
         body.put("path", request.getDescription(false).replace("uri=", ""));
 
         return body;

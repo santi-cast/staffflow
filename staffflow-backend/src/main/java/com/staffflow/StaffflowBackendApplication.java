@@ -9,10 +9,6 @@ public class StaffflowBackendApplication {
 	public static void main(String[] args) {
 
       SpringApplication.run(StaffflowBackendApplication.class, args);
-
-
-
-
 	}
 
 }
