@@ -7,17 +7,12 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Respuesta del servidor tras registrar la entrada de un empleado
- * desde el terminal compartido con PIN.
- * Usado en E48 (POST /api/v1/terminal/entrada), endpoint público sin JWT
- * porque el terminal no tiene sesión de usuario (decisión nº21).
+ * Respuesta del terminal al registrar la entrada del empleado (E48).
+ * Contiene los datos mínimos que el terminal muestra en pantalla:
+ * nombre del empleado para confirmación visual y hora de entrada registrada.
  *
- * Los datos del empleado se incluyen para que el terminal muestre
- * una confirmación visual personalizada tras el fichaje,
- * sin necesidad de una segunda petición al servidor.
- *
- * Nunca se expone la entidad directamente: siempre se mapea
- * a este DTO en la capa service (regla de arquitectura).
+ * No expone empleadoId ni pinTerminal por seguridad: el terminal
+ * solo necesita confirmar la acción al empleado presente físicamente.
  *
  * @author Santiago Castillo
  */
@@ -26,19 +21,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TerminalEntradaResponse {
 
-    private Long empleadoId;
-
-    // Nombre y primer apellido para mostrar en la pantalla del terminal.
-    // Solo se exponen los datos mínimos necesarios (RNF-S01).
+    /** Nombre del empleado, para confirmación visual en el terminal. */
     private String nombre;
 
-    private String apellido1;
-
-    // Hora exacta en que se registró la entrada.
-    // Se muestra en el terminal como confirmación del fichaje.
+    /** Hora en que se registró la entrada. */
     private LocalDateTime horaEntrada;
 
-    // Mensaje de confirmación para mostrar en el terminal.
-    // Ejemplo: "Bienvenido, Juan García. Entrada registrada a las 08:02."
+    /** Mensaje de confirmación para mostrar en pantalla del terminal. */
     private String mensaje;
 }

@@ -11,6 +11,16 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    # Necesario para que data.sql se ejecute DESPUÉS de que Hibernate
+    # crea el esquema con ddl-auto: create-drop. Sin esta línea,
+    # Spring Boot intenta ejecutar data.sql antes de que existan las tablas
+    # y falla con "Table not found".
+    defer-datasource-initialization: true
+  sql:
+    init:
+      # Ejecutar data.sql siempre que arranque con este perfil.
+      # 'always' es necesario porque el datasource es embebido (H2 en memoria).
+      mode: always
   h2:
     console:
       enabled: true
