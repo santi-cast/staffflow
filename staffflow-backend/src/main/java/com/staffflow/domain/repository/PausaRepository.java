@@ -1,7 +1,10 @@
 package com.staffflow.domain.repository;
 
 import com.staffflow.domain.entity.Pausa;
+import com.staffflow.domain.enums.TipoPausa;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -13,11 +16,14 @@ import java.util.Optional;
  *
  * <p>Las pausas son inmutables igual que los fichajes (RNF-L01):
  * no existe DELETE ni modificación de campos de registro. Solo se
- * permite PATCH en observaciones (E29).</p>
+ * permite PATCH en observaciones (E28).</p>
  *
  * <p>Una pausa con horaFin=null es una pausa activa en curso. Este
  * estado es imprescindible para los endpoints de terminal E50 y E51,
  * que detectan si hay pausa activa antes de registrar inicio o fin.</p>
+ *
+ * <p>Métodos añadidos en Bloque 5 (sesión 10):
+ *   - findByFiltros → E29 filtros combinables</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.Pausa
@@ -25,10 +31,14 @@ import java.util.Optional;
 @Repository
 public interface PausaRepository extends JpaRepository<Pausa, Long> {
 
+    // ---------------------------------------------------------------
+    // Métodos existentes (Bloque 1)
+    // ---------------------------------------------------------------
+
     /**
      * Devuelve todas las pausas de un empleado.
      *
-     * <p>Lo usa PausaService en E28 (GET /pausas) cuando el filtro
+     * <p>Lo usa PausaService en E29 (GET /pausas) cuando el filtro
      * incluye solo empleadoId sin filtro de fecha.</p>
      *
      * @param empleadoId id del empleado
@@ -64,4 +74,40 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
      * @return Optional con la pausa activa, vacío si no hay ninguna
      */
     Optional<Pausa> findByEmpleadoIdAndFechaAndHoraFinIsNull(Long empleadoId, LocalDate fecha);
+
+    // ---------------------------------------------------------------
+    // Métodos añadidos en Bloque 5 (sesión 10)
+    // ---------------------------------------------------------------
+
+    /**
+     * Busca pausas aplicando filtros opcionales y combinables.
+     *
+     * <p>Lo usa PausaService en E29 (GET /pausas, RF-24): ADMIN y ENCARGADO
+     * con cualquier combinación de filtros, incluyendo sin filtros para
+     * obtener todas las pausas.</p>
+     *
+     * <p>El patrón (:param IS NULL OR campo = :param) hace que cada filtro
+     * sea opcional: si llega null, la condición siempre es verdadera.
+     * Cuando todos los parámetros son null, devuelve todas las pausas.</p>
+     *
+     * <p>JOIN FETCH empleado evita el problema N+1: carga el empleado en
+     * la misma query para que toPausaResponse() acceda a empleado.getId()
+     * sin consulta adicional por cada pausa.</p>
+     *
+     * @param empleadoId filtro opcional por ID de empleado (null = todos)
+     * @param desde      filtro opcional fecha inicio, inclusive (null = sin límite)
+     * @param hasta      filtro opcional fecha fin, inclusive (null = sin límite)
+     * @param tipoPausa  filtro opcional por tipo de pausa (null = todos los tipos)
+     * @return lista de pausas que cumplen todos los filtros activos
+     */
+    @Query("SELECT p FROM Pausa p JOIN FETCH p.empleado e WHERE " +
+           "(:empleadoId IS NULL OR e.id = :empleadoId) AND " +
+           "(:desde IS NULL OR p.fecha >= :desde) AND " +
+           "(:hasta IS NULL OR p.fecha <= :hasta) AND " +
+           "(:tipoPausa IS NULL OR p.tipoPausa = :tipoPausa)")
+    List<Pausa> findByFiltros(
+            @Param("empleadoId") Long empleadoId,
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta,
+            @Param("tipoPausa") TipoPausa tipoPausa);
 }
