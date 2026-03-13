@@ -4,6 +4,7 @@ import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.Fichaje;
 import com.staffflow.domain.entity.Pausa;
 import com.staffflow.domain.entity.Usuario;
+import com.staffflow.domain.enums.TipoFichaje;
 import com.staffflow.domain.enums.TipoPausa;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
@@ -144,6 +145,7 @@ public class TerminalService {
         fichaje.setHoraSalida(null);           // jornada abierta
         fichaje.setTotalPausasMinutos(0);
         fichaje.setJornadaEfectivaMinutos(0);
+        fichaje.setTipo(TipoFichaje.NORMAL);   // entrada desde terminal → siempre NORMAL
         fichaje.setObservaciones(null);
         fichaje.setUsuario(usuarioSistema);
 
