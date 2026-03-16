@@ -31,7 +31,8 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 ## Funcionalidades principales
 
-- Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). La validez de 12h cubre una jornada laboral completa incluyendo pausas prolongadas, evitando que el empleado tenga que reautenticarse en mitad del turno. La solución de mayor seguridad es el mecanismo de refresh token (token de acceso de vida corta renovado automáticamente), documentado como mejora prevista para v2.0
+- Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). El JWT no afecta al fichaje, que siempre se realiza por PIN. Afecta a la app de gestión: el ENCARGADO hace login una vez al día y el token persiste en DataStore, evitando reautenticaciones mientras dure la jornada. Un token más
+  corto obligaría a hacer login repetidamente cada vez que se consulta o gestiona algo. La solución para combinar tokens cortos con buena usabilidad es el refresh token, documentado como mejora para v2.0
 - Registro de jornada laboral mediante fichaje de entrada y salida
 - Terminal de fichaje con PIN de 4 dígitos para dispositivo compartido (sin JWT)
 - Gestión de pausas durante la jornada
