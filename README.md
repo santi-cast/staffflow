@@ -2,7 +2,7 @@
 
 Sistema de control horario y gestión de ausencias para pequeñas y medianas empresas, desarrollado como **Proyecto Final del Grado Superior en Desarrollo de Aplicaciones Multiplataforma (DAM)**.
 
-StaffFlow digitaliza el registro de jornada laboral y la gestión de ausencias en PYMEs, cumpliendo con el **Real Decreto‑ley 8/2019**, que obliga a registrar diariamente el horario de trabajo de los empleados.
+StaffFlow digitaliza el registro de jornada laboral y la gestión de ausencias en Pymes, cumpliendo con el **Real Decreto‑ley 8/2019**, que obliga a registrar diariamente el horario de trabajo de los empleados.
 
 El proyecto se compone de:
 
@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1–5 de la Fase 2 están cerrados. La API REST cuenta con 33 endpoints operativos (E01–E29 + E48–E51): autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas y terminal PIN. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. Verificación funcional completa con MySQL 8.0.
+> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1–6 de la Fase 2 están cerrados. La API REST cuenta con 41 endpoints operativos (E01–E41 + E48–E51): autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real y saldos anuales. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. Verificación funcional completa con MySQL 8.0.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -31,7 +31,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 ## Funcionalidades principales
 
-- Autenticación con JWT (8h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO)
+- Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). La validez de 12h cubre una jornada laboral completa incluyendo pausas prolongadas, evitando que el empleado tenga que reautenticarse en mitad del turno
 - Registro de jornada laboral mediante fichaje de entrada y salida
 - Terminal de fichaje con PIN de 4 dígitos para dispositivo compartido (sin JWT)
 - Gestión de pausas durante la jornada
@@ -40,7 +40,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Cálculo de saldo anual: vacaciones, asuntos propios y saldo de horas
 - Parte diario de presencia (Fichado · En pausa · Ausencia registrada · Ausencia planificada · Sin justificar)
 - Informes operativos de horas trabajadas y ausencias en JSON y HTML imprimible
-- Generación de informes PDF firmables con iText 7 (mensual, anual, vacaciones)
+- Generación de informes PDF para firmar con iText 7 (mensual, anual, vacaciones)
 - Recuperación de contraseña por email con token de un solo uso (30 min)
 
 ---
@@ -58,7 +58,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - SpringDoc OpenAPI (Swagger UI)
 - Lombok
 - spring-boot-starter-mail
-- iText 7 (informes PDF firmables)
+- iText 7 (informes PDF para firmar)
 - JUnit + JaCoCo (foco en servicios de cálculo crítico)
 
 ### Cliente Android
@@ -94,7 +94,7 @@ Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
 staffflow-backend/src/main/resources/staffflow_v5_ddl_mysql.sql
 ```
 
-Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto: validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
+Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
 
 ### Perfil `dev` (desarrollo con H2)
 
@@ -157,14 +157,14 @@ La especificación incluye:
 | Fichajes | `/api/v1/fichajes` | E22–E26 | ✅ Operativos |
 | Pausas | `/api/v1/pausas` | E27–E29 | ✅ Operativos |
 | Terminal PIN | `/api/v1/terminal` | E48–E51 | ✅ Operativos |
-| Ausencias | `/api/v1/ausencias` | E30–E34 | ⏳ Pendiente |
-| Presencia | `/api/v1/presencia` | E35–E37 | ⏳ Pendiente |
-| Saldos | `/api/v1/saldos` | E38–E41 | ⏳ Pendiente |
+| Ausencias | `/api/v1/ausencias` | E30–E34 | ✅ Operativos |
+| Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
+| Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
 | Informes | `/api/v1/informes` | E42–E44 | ⏳ Pendiente |
-| PDF firmables | `/api/v1/informes/pdf` | E45–E47 | ⏳ Pendiente |
+| PDF para firmar | `/api/v1/informes/pdf` | E45–E47 | ⏳ Pendiente |
 | Health | `/api/health` | E52 | ✅ Operativo |
 
-**33 de 52 endpoints operativos** (verificados con MySQL 8.0 y H2).
+**41 de 52 endpoints operativos** (verificados con MySQL 8.0 y H2).
 
 ### Convención PUT / PATCH
 
@@ -219,6 +219,7 @@ staffflow/
 ```
 master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
 develop → e4e188e  Bloque 5 verificación: corrección D-022 TerminalService
+          (Bloque 6 pendiente commit — Tareas 4-6 en curso)
 ```
 
 Commits de Fase 2 en develop:
@@ -233,6 +234,7 @@ Commits de Fase 2 en develop:
 | `ae5fa86` | Bloque 5 — FichajeService/Controller E22-E26 + PausaService/Controller E27-E29 |
 | `0e2136c` | Bloque 5 — TerminalService/Controller E48-E51 + data.sql + application-dev.yml |
 | `e4e188e` | Bloque 5 verificación — corrección D-022 TerminalService |
+| *(pendiente)* | Bloque 6 — AusenciaController E30-E34 + PresenciaController E35-E37 + SaldoController E38-E41 + ProcesoDiario @Scheduled |
 
 ---
 
@@ -242,7 +244,7 @@ Commits de Fase 2 en develop:
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 5 cerrado (33 endpoints operativos) |
+| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 6 cerrado (41 endpoints operativos) |
 | Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
