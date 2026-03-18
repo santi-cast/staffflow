@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1–6 de la Fase 2 están cerrados. La API REST cuenta con 41 endpoints operativos (E01–E41 + E48–E51): autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real y saldos anuales. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. Verificación funcional completa con MySQL 8.0.
+> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1–6 de la Fase 2 están cerrados. La API REST cuenta con 41 endpoints operativos (E01–E41 + E48–E51): autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales y proceso nocturno automático de cierre de jornada. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. El ENCARGADO tiene restricción de fecha: solo puede gestionar registros del día actual. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -31,8 +31,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 ## Funcionalidades principales
 
-- Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). El JWT no afecta al fichaje, que siempre se realiza por PIN. Afecta a la app de gestión: el ENCARGADO hace login una vez al día y el token persiste en DataStore, evitando reautenticaciones mientras dure la jornada. Un token más
-  corto obligaría a hacer login repetidamente cada vez que se consulta o gestiona algo. La solución para combinar tokens cortos con buena usabilidad es el refresh token, documentado como mejora para v2.0
+- Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). El JWT no afecta al fichaje, que siempre se realiza por PIN. Afecta a la app de gestión: el ENCARGADO hace login una vez al día y el token persiste en DataStore, evitando reautenticaciones mientras dure la jornada. Un token más corto obligaría a hacer login repetidamente cada vez que se consulta o gestiona algo. La solución para combinar tokens cortos con buena usabilidad es el refresh token, documentado como mejora para v2.0
 - Registro de jornada laboral mediante fichaje de entrada y salida
 - Terminal de fichaje con PIN de 4 dígitos para dispositivo compartido (sin JWT)
 - Gestión de pausas durante la jornada
@@ -220,7 +219,7 @@ staffflow/
 ```
 master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
 develop → e4e188e  Bloque 5 verificación: corrección D-022 TerminalService
-          (Bloque 6 pendiente commit — Tareas 4-6 en curso)
+          (Bloque 6 cerrado — commit pendiente al cerrar Bloque 7)
 ```
 
 Commits de Fase 2 en develop:
@@ -235,7 +234,7 @@ Commits de Fase 2 en develop:
 | `ae5fa86` | Bloque 5 — FichajeService/Controller E22-E26 + PausaService/Controller E27-E29 |
 | `0e2136c` | Bloque 5 — TerminalService/Controller E48-E51 + data.sql + application-dev.yml |
 | `e4e188e` | Bloque 5 verificación — corrección D-022 TerminalService |
-| *(pendiente)* | Bloque 6 — AusenciaController E30-E34 + PresenciaController E35-E37 + SaldoController E38-E41 + ProcesoDiario @Scheduled |
+| *(pendiente)* | Bloque 6+7 — AusenciaController E30-E34 + PresenciaController E35-E37 + SaldoController E38-E41 + ProcesoCierreDiario @Scheduled + restricción fecha ENCARGADO (D-026) + Informes E42-E47 |
 
 ---
 
@@ -245,7 +244,7 @@ Commits de Fase 2 en develop:
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloque 6 cerrado (41 endpoints operativos) |
+| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloques 1–6 cerrados (41/52 endpoints operativos). Bloque 7 en curso (E42–E47 pendientes) |
 | Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
