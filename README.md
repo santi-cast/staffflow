@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> La fase de análisis y diseño está completada. El backend se encuentra en implementación activa: los Bloques 1–6 de la Fase 2 están cerrados. La API REST cuenta con 41 endpoints operativos (E01–E41 + E48–E51): autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales y proceso nocturno automático de cierre de jornada. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. El ENCARGADO tiene restricción de fecha: solo puede gestionar registros del día actual. Verificación funcional completa con MySQL 8.0 y H2.
+> La fase de análisis y diseño está completada. El backend está completamente implementado y verificado: los 7 Bloques de la Fase 2 están cerrados. La API REST cuenta con 53 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por token, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. Spring Security, GlobalExceptionHandler y Swagger UI con autorización Bearer están operativos. El ENCARGADO tiene restricción de fecha: solo puede gestionar registros del día actual. Verificación funcional completa con MySQL 8.0 y H2. Commit final de Fase 2: cd196e8.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -91,7 +91,7 @@ El backend soporta dos perfiles Spring:
 Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
 
 ```
-staffflow-backend/src/main/resources/staffflow_v5_ddl_mysql.sql
+staffflow-backend/src/main/resources/staffflow_v7_ddl_mysql.sql
 ```
 
 Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
@@ -160,11 +160,11 @@ La especificación incluye:
 | Ausencias | `/api/v1/ausencias` | E30–E34 | ✅ Operativos |
 | Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
 | Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
-| Informes | `/api/v1/informes` | E42–E44 | ⏳ Pendiente |
-| PDF para firmar | `/api/v1/informes/pdf` | E45–E47 | ⏳ Pendiente |
+| Informes | `/api/v1/informes` | E42–E44 | ✅ Operativos |
+| PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E53 | ✅ Operativos |
 | Health | `/api/health` | E52 | ✅ Operativo |
 
-**41 de 52 endpoints operativos** (verificados con MySQL 8.0 y H2).
+**53 endpoints operativos** (verificados con MySQL 8.0 y H2).
 
 ### Convención PUT / PATCH
 
@@ -218,8 +218,7 @@ staffflow/
 
 ```
 master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
-develop → e4e188e  Bloque 5 verificación: corrección D-022 TerminalService
-          (Bloque 6 cerrado — commit pendiente al cerrar Bloque 7)
+develop → cd196e8  Bloque 7 completo: E42-E47 + E53 informes PDF firmables iText 7
 ```
 
 Commits de Fase 2 en develop:
@@ -234,7 +233,7 @@ Commits de Fase 2 en develop:
 | `ae5fa86` | Bloque 5 — FichajeService/Controller E22-E26 + PausaService/Controller E27-E29 |
 | `0e2136c` | Bloque 5 — TerminalService/Controller E48-E51 + data.sql + application-dev.yml |
 | `e4e188e` | Bloque 5 verificación — corrección D-022 TerminalService |
-| *(pendiente)* | Bloque 6+7 — AusenciaController E30-E34 + PresenciaController E35-E37 + SaldoController E38-E41 + ProcesoCierreDiario @Scheduled + restricción fecha ENCARGADO (D-026) + Informes E42-E47 |
+| `cd196e8` | Bloque 7 completo — E42-E47 + E53 + PdfController + ProcesoCierreDiario + D-031/032/033 |
 
 ---
 
@@ -244,8 +243,8 @@ Commits de Fase 2 en develop:
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (52 endpoints, JWT, iText 7) | 🔄 En curso — Bloques 1–6 cerrados (41/52 endpoints operativos). Bloque 7 en curso (E42–E47 pendientes) |
-| Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | ⏳ Pendiente |
+| Fase 2 | Desarrollo del backend (53 endpoints, JWT, iText 7) | ✅ Completada — 53/53 endpoints operativos · commit cd196e8 |
+| Fase 3 | Desarrollo de la app Android (Kotlin, Navigation Component, MVVM) | 🔄 En curso |
 | Fase 4 | Testing | ⏳ Pendiente |
 | Fase 5 | Documentación final | ⏳ Pendiente |
 
