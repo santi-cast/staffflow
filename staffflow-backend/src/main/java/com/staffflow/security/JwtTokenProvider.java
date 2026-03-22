@@ -21,7 +21,7 @@ import java.util.Date;
  *
  * <p>Estructura del token generado:
  * <ul>
- *   <li>Header: algoritmo HS256 (HMAC-SHA256).</li>
+ *   <li>Header: algoritmo HS384 (HMAC-SHA384).</li>
  *   <li>Claims estandar: {@code sub} (username), {@code iat} (emision), {@code exp} (expiracion).</li>
  *   <li>Claims personalizados: {@code rol} (ADMIN|ENCARGADO|EMPLEADO),
  *       {@code empleadoId} (null para ADMIN, Long para ENCARGADO/EMPLEADO).</li>
@@ -29,8 +29,10 @@ import java.util.Date;
  *
  * <p>Decisiones de diseno:
  * <ul>
- *   <li>Decision 18: sin refresh token en v1.0. Validez de 8h cubre una jornada completa.</li>
- *   <li>Algoritmo HS256: firma simetrica con clave secreta. Suficiente para una API monolitica
+ *   <li>Decision 18 (actualizada D-024): sin refresh token en v1.0. Validez de 12h cubre
+ *       jornadas ordinarias y extraordinarias incluyendo pausas largas. Refresh token
+ *       queda como mejora para v2.0.</li>
+ *   <li>Algoritmo HS384: firma simetrica con clave secreta. Suficiente para una API monolitica
  *       donde el mismo servidor genera y valida los tokens. Alternativa descartada: RS256
  *       (asimetrico) — solo necesario si otros servicios externos validan el token.</li>
  * </ul>
@@ -43,7 +45,7 @@ public class JwtTokenProvider {
 
     /**
      * Clave secreta leida de application.yml (propiedad {@code staffflow.jwt.secret}).
-     * Debe tener al menos 32 caracteres para HS256 (256 bits).
+     * Debe tener al menos 48 caracteres para HS384 (384 bits).
      * En produccion se inyecta como variable de entorno, nunca en texto plano en el repo.
      */
     @Value("${staffflow.jwt.secret}")
@@ -51,9 +53,11 @@ public class JwtTokenProvider {
 
     /**
      * Validez del token en milisegundos, leida de application.yml.
-     * Valor por defecto: 28800000 ms = 8 horas (decision de diseno 18).
+     * Valor por defecto: 43200000 ms = 12 horas (decision de diseno 18, actualizada D-024).
+     * 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
+     * Refresh token queda como mejora para v2.0.
      */
-    @Value("${staffflow.jwt.expiration-ms:28800000}")
+    @Value("${staffflow.jwt.expiration-ms:43200000}")
     private long jwtExpirationMs;
 
     // Clave criptografica derivada de jwtSecret, inicializada en @PostConstruct
@@ -66,7 +70,7 @@ public class JwtTokenProvider {
      * {@code @Value} se inyectan despues de la construccion del bean. Si se intentara
      * inicializar secretKey en el constructor, jwtSecret todavia seria null.
      *
-     * <p>{@link Keys#hmacShaKeyFor} deriva una {@link SecretKey} valida para HS256
+     * <p>{@link Keys#hmacShaKeyFor} deriva una {@link SecretKey} valida para HS384
      * a partir de los bytes de la cadena configurada.
      */
     @PostConstruct
@@ -105,9 +109,9 @@ public class JwtTokenProvider {
                 .claim("empleadoId", empleadoId)
                 // iat: fecha de emision del token
                 .issuedAt(ahora)
-                // exp: fecha de expiracion (8h por defecto, decision de diseno 18)
+                // exp: fecha de expiracion (12h por defecto, decision de diseno 18 -- D-024)
                 .expiration(expiracion)
-                // Firmar con HS256 y la clave simetrica inicializada en @PostConstruct
+                // Firmar con HS384 y la clave simetrica inicializada en @PostConstruct
                 .signWith(secretKey)
                 // Serializar a formato compacto: header.payload.signature en Base64url
                 .compact();

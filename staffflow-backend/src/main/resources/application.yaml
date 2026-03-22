@@ -16,6 +16,7 @@ staffflow:
     # DEBE tener minimo 32 caracteres (256 bits para HS256).
     # En produccion se inyecta como variable de entorno JWT_SECRET, nunca en texto plano.
     secret: staffflow-secret-key-desarrollo-2026-minimo32chars
-    # Validez del token en milisegundos. 28800000 = 8 horas (decision de diseno 18).
-    expiration-ms: 28800000
-
+    # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
+    # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
+    # Refresh token queda como mejora para v2.0.
+    expiration-ms: 43200000

@@ -3,6 +3,7 @@ package com.staffflow.service;
 import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.Fichaje;
 import com.staffflow.domain.entity.Usuario;
+import com.staffflow.domain.enums.Rol;
 import com.staffflow.domain.enums.TipoFichaje;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
@@ -37,6 +38,9 @@ import java.util.stream.Collectors;
  *   - UNIQUE(empleado_id, fecha): un solo fichaje por empleado por día.
  *   - jornadaEfectivaMinutos se calcula con Math.ceil sobre minutos brutos
  *     menos totalPausasMinutos (ya almacenado en el fichaje).
+ *   - D-026: ENCARGADO solo puede gestionar registros del dia actual.
+ *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
+ *     crear() (E22) y actualizar() (E23).
  *
  * Patrón de autenticación:
  *   El controller pasa authentication.getName() (username) a los métodos
@@ -64,7 +68,8 @@ public class FichajeService {
 
     /**
      * Repositorio de usuarios. Necesario para resolver username → usuarioId en E22
-     * (auditoría) y username → empleadoId en E26 (/me).
+     * (auditoría) y username → empleadoId en E26 (/me). En E22 y E23 tambien se usa
+     * para resolver el rol del usuario autenticado y aplicar la restriccion D-026.
      * Mismo patrón que EmpleadoService (D-017, Opción B).
      */
     private final UsuarioRepository usuarioRepository;
@@ -79,10 +84,12 @@ public class FichajeService {
      * Flujo:
      *   1. Valida que las observaciones no están vacías (RNF-L02).
      *   2. Verifica que el empleado existe (404 si no).
-     *   3. Verifica unicidad empleado+fecha antes de persistir (409 si existe).
-     *   4. Resuelve el usuarioId del autenticado para auditoría.
-     *   5. Calcula jornadaEfectivaMinutos si hay horaEntrada y horaSalida.
-     *   6. Persiste el fichaje y devuelve FichajeResponse.
+     *   3. Resuelve el usuario autenticado desde username.
+     *   4. Valida restriccion de fecha si el usuario es ENCARGADO (D-026):
+     *      solo puede gestionar el dia actual. ADMIN sin restriccion.
+     *   5. Verifica unicidad empleado+fecha antes de persistir (409 si existe).
+     *   6. Calcula jornadaEfectivaMinutos si hay horaEntrada y horaSalida.
+     *   7. Persiste el fichaje y devuelve FichajeResponse.
      *
      * Observaciones obligatorias (RNF-L02): todo fichaje manual debe dejar
      * constancia del motivo. Si llegan null o vacías → IllegalArgumentException → 400.
@@ -110,6 +117,20 @@ public class FichajeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Empleado no encontrado con id: " + request.getEmpleadoId()));
 
+        // Resolver usuario autenticado desde username.
+        // Necesario tanto para la restriccion D-026 (rol) como para auditoria.
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        // Restriccion D-026: ENCARGADO solo puede gestionar el dia actual.
+        // ADMIN puede crear fichajes para cualquier fecha sin restriccion.
+        if (usuario.getRol() == Rol.ENCARGADO
+                && !request.getFecha().isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "El ENCARGADO solo puede gestionar registros del dia actual");
+        }
+
         // Verificar unicidad empleado+fecha antes de persistir
         // 409 Conflict si ya existe fichaje ese día para ese empleado.
         // Usamos findByEmpleadoIdAndFecha().isPresent() porque ese método
@@ -120,13 +141,6 @@ public class FichajeService {
                     "Ya existe un fichaje para el empleado " + request.getEmpleadoId()
                     + " en la fecha " + request.getFecha());
         }
-
-        // Resolver usuarioId a partir del username para campo de auditoría
-        // El campo usuario_id en fichajes registra quién creó el registro manualmente
-        // Mismo patrón que EmpleadoService (D-017, Opción B): username → usuario → id
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Usuario autenticado no encontrado: " + username));
 
         // Construir entidad Fichaje con los datos del request
         Fichaje fichaje = new Fichaje();
@@ -170,18 +184,23 @@ public class FichajeService {
      *
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
-     * Recálculo de jornadaEfectivaMinutos:
-     *   Si el fichaje resultante tiene horaEntrada y horaSalida, se recalcula
-     *   usando el totalPausasMinutos ya almacenado en BD.
-     *   E23 no toca pausas — decisión confirmada en sesión 10.
-     *   Fórmula: Math.ceil(minutos brutos - totalPausasMinutos)
+     * Restriccion D-026: ENCARGADO solo puede modificar fichajes del dia
+     * actual. La fecha a validar es la del fichaje existente en BD, no
+     * un campo del request. Si es ENCARGADO y el fichaje es de otro dia
+     * → HTTP 400. ADMIN puede modificar fichajes de cualquier fecha.
      *
-     * @param id      ID del fichaje a modificar
-     * @param request campos a modificar (observaciones obligatorio, resto opcional)
-     * @return FichajeResponse con el fichaje actualizado y jornada recalculada
+     * Recálculo de jornadaEfectivaMinutos:
+     *   Si tras el PATCH el fichaje tiene horaEntrada y horaSalida,
+     *   se recalcula usando totalPausasMinutos ya almacenado en BD.
+     *   E23 no toca las pausas — solo recalcula jornada con lo que hay.
+     *
+     * @param id       ID del fichaje a modificar
+     * @param request  campos a modificar (observaciones obligatorio)
+     * @param username username del usuario autenticado (de authentication.getName())
+     * @return FichajeResponse con el fichaje actualizado
      */
     @Transactional
-    public FichajeResponse actualizar(Long id, FichajePatchRequest request) {
+    public FichajeResponse actualizar(Long id, FichajePatchRequest request, String username) {
 
         // Validación de observaciones obligatorias (RNF-L02)
         if (request.getObservaciones() == null || request.getObservaciones().isBlank()) {
@@ -189,10 +208,24 @@ public class FichajeService {
                     "Las observaciones son obligatorias al modificar un fichaje (RNF-L02)");
         }
 
-        // Buscar fichaje — 404 si no existe
+        // Cargar fichaje — 404 si no existe
         Fichaje fichaje = fichajeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Fichaje no encontrado con id: " + id));
+
+        // Resolver usuario autenticado para aplicar restriccion D-026
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        // Restriccion D-026: ENCARGADO solo puede modificar el dia actual.
+        // La fecha a validar es la del fichaje cargado de BD, no del request.
+        // ADMIN puede modificar fichajes de cualquier fecha sin restriccion.
+        if (usuario.getRol() == Rol.ENCARGADO
+                && !fichaje.getFecha().isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "El ENCARGADO solo puede gestionar registros del dia actual");
+        }
 
         // Aplicar solo los campos que llegan con valor (patrón PATCH)
         // Si el campo es null en el request, el valor actual en BD se mantiene

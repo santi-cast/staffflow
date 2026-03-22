@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * Campos modificables de una ausencia planificada mediante actualización parcial.
- * Usado en E34 (PATCH /api/v1/ausencias/{id}), accesible por ADMIN y ENCARGADO.
+ * Usado en E31 (PATCH /api/v1/ausencias/{id}), accesible por ADMIN y ENCARGADO.
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH, decisión nº3).
  * Solo se permite modificar si procesado = false: una ausencia ya

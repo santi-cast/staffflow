@@ -25,6 +25,9 @@ import java.util.Optional;
  * <p>Métodos añadidos en Bloque 5 (sesión 10):
  *   - findByFiltros → E29 filtros combinables</p>
  *
+ * <p>Métodos añadidos en Bloque 7 (sesión 18):
+ *   - findByEmpleadoIdAndFechaBetween → InformeService E42/E43</p>
+ *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.Pausa
  */
@@ -110,4 +113,50 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
             @Param("desde") LocalDate desde,
             @Param("hasta") LocalDate hasta,
             @Param("tipoPausa") TipoPausa tipoPausa);
+
+    // ---------------------------------------------------------------
+    // Métodos añadidos en Bloque 6 Tarea 2 (PresenciaService E35-E37)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve todas las pausas activas de una fecha concreta con su empleado cargado.
+     *
+     * Una pausa activa es aquella con horaFin = null: el empleado está en pausa
+     * en este momento. Usado por PresenciaService para determinar qué empleados
+     * tienen estado EN_PAUSA al construir el parte diario (E35-E37).
+     *
+     * Carga todos los registros activos del día en una sola query para evitar N+1:
+     * el service construye un Set de empleadoIds en pausa y clasifica en memoria.
+     *
+     * JOIN FETCH p.empleado garantiza acceso a empleado.id sin lazy loading.
+     *
+     * @param fecha fecha a consultar (normalmente hoy)
+     * @return lista de pausas activas con empleado cargado para esa fecha
+     */
+    @Query("SELECT p FROM Pausa p JOIN FETCH p.empleado WHERE p.fecha = :fecha AND p.horaFin IS NULL")
+    List<Pausa> findPausasActivasByFecha(@Param("fecha") LocalDate fecha);
+
+    // ---------------------------------------------------------------
+    // Métodos añadidos en Bloque 7 (sesión 18 — InformeService E42/E43)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve todas las pausas de un empleado en un rango de fechas.
+     *
+     * <p>Usado por InformeService para cargar el detalle de pausas de
+     * cada día del período en E42 y E43. A diferencia de findByFiltros,
+     * no hace JOIN FETCH (el empleado no se necesita aquí porque ya está
+     * resuelto en el contexto del informe) y el empleadoId es siempre
+     * obligatorio. Más limpio y eficiente para este caso de uso.</p>
+     *
+     * <p>Spring Data JPA genera la implementación automáticamente a partir
+     * del nombre del método. No requiere @Query explícita.</p>
+     *
+     * @param empleadoId id del empleado (obligatorio)
+     * @param desde      fecha de inicio del rango (inclusive)
+     * @param hasta      fecha de fin del rango (inclusive)
+     * @return lista de pausas del empleado en el rango indicado, ordenadas
+     *         por fecha y hora de inicio de forma natural por BD
+     */
+    List<Pausa> findByEmpleadoIdAndFechaBetween(Long empleadoId, LocalDate desde, LocalDate hasta);
 }

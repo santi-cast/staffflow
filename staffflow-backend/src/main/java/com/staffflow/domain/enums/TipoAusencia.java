@@ -45,5 +45,13 @@ public enum TipoAusencia {
      * positivo como el día libre por haber trabajado un festivo.
      * Mismo valor que en TipoFichaje para coherencia semántica entre tablas.
      */
-    DIA_LIBRE_COMPENSATORIO
+    DIA_LIBRE_COMPENSATORIO,
+
+    /**
+     * Día libre semanal del empleado (descanso semanal obligatorio).
+     * Permite planificar explícitamente un día libre para un empleado,
+     * por ejemplo si la empresa abre un sábado y ese empleado no trabaja.
+     * Mismo valor que en TipoFichaje para coherencia semántica entre tablas.
+     */
+    DIA_LIBRE
 }

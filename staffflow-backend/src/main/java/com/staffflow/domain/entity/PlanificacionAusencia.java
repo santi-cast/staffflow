@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 /**
  * Planificación anticipada de una ausencia o festivo.
- * Un registro por día: el proceso nocturno (@Scheduled, 00:01h)
+ * Un registro por día: el proceso nocturno (@Scheduled, 23:55h)
  * consulta WHERE fecha = HOY AND procesado = FALSE y convierte
  * cada registro en un {@link Fichaje} del tipo correspondiente (RF-26).
  * Si empleado = NULL el registro es un festivo global que aplica

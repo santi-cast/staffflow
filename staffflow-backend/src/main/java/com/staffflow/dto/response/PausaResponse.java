@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 /**
  * Representación de una pausa dentro de la jornada laboral de un empleado.
- * Usado en E27 (POST), E28 (GET lista por empleado/fecha)
- * y E29 (PATCH /api/v1/pausas).
+ * Usado en E27 (POST crear manual), E28 (PATCH cerrar/modificar)
+ * y E29 (GET lista con filtros).
  * ADMIN y ENCARGADO acceden a todas las pausas.
  * EMPLEADO solo puede consultar las suyas (decisión nº10 y nº14).
  *

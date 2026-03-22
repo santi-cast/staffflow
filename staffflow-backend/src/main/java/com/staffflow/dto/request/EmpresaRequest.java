@@ -6,11 +6,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * Datos para crear o actualizar la configuración global de la empresa.
- * Usado en E06 (POST /api/v1/empresa) y E07 (PUT /api/v1/empresa).
- * Solo accesible por ADMIN (decisión nº14). La tabla es singleton
- * (id = 1 siempre): E06 solo se ejecuta una vez en el alta inicial
- * del sistema (RF-06).
+ * Datos para actualizar la configuración global de la empresa.
+ * Usado en E07 (PUT /api/v1/empresa), solo accesible por ADMIN (decisión nº14).
+ * La tabla es singleton (id = 1 siempre). E06 (GET) no usa ningún DTO
+ * de request al ser solo lectura.
  *
  * @author Santiago Castillo
  */

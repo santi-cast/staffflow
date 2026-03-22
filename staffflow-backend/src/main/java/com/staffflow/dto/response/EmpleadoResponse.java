@@ -9,11 +9,11 @@ import java.time.LocalDate;
 
 /**
  * Representación de la ficha laboral de un empleado.
- * Usado en E13 (POST), E14 (GET lista), E15 (GET por id),
- * E16 (GET perfil propio), E17-E20 (activar/desactivar/buscar)
- * y E21 (PATCH /api/v1/empleados).
- * Solo ADMIN accede a E13, E14, E21 (decisión nº14).
- * EMPLEADO solo puede consultar su propio perfil (E16, decisión nº10).
+ * Usado en E13 (POST crear), E14 (GET lista), E15 (GET por id),
+ * E16 (PATCH modificar), E17 (baja lógica), E18 (reactivar)
+ * y E21 (GET /me perfil propio).
+ * Solo ADMIN accede a E13, E14, E16 (decisión nº14).
+ * EMPLEADO solo puede consultar su propio perfil (E21, decisión nº10).
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).
@@ -40,7 +40,9 @@ public class EmpleadoResponse {
 
     private String dni;
 
-    private String nss;
+    // Identificador interno de empleado. Renombrado desde nss (v1.0).
+    // Se usa en cabeceras de PDFs firmables (RF-40).
+    private String numeroEmpleado;
 
     private LocalDate fechaAlta;
 

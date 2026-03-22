@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 /**
  * Representación de un fichaje diario de un empleado.
- * Usado en E22 (POST), E23 (GET lista), E24 (GET por empleado),
- * E25 (GET por id) y E26 (PATCH /api/v1/fichajes).
+ * Usado en E22 (POST crear manual), E23 (PATCH modificar),
+ * E24 (GET lista con filtros), E25 (GET incompletos) y E26 (GET /me historial propio).
  * ADMIN y ENCARGADO acceden a todos los fichajes.
  * EMPLEADO solo puede consultar los suyos (decisión nº10 y nº14).
  *

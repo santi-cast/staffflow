@@ -129,9 +129,12 @@ public class FichajeController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
     public ResponseEntity<FichajeResponse> actualizar(
             @PathVariable Long id,
-            @Valid @RequestBody FichajePatchRequest request) {
+            @Valid @RequestBody FichajePatchRequest request,
+            Authentication authentication) {
 
-        FichajeResponse response = fichajeService.actualizar(id, request);
+        // username necesario para aplicar restriccion D-026 en el service
+        String username = authentication.getName();
+        FichajeResponse response = fichajeService.actualizar(id, request, username);
         return ResponseEntity.ok(response);
     }
 

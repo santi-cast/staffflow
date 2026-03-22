@@ -46,6 +46,16 @@ public enum TipoFichaje {
      */
     DIA_LIBRE_COMPENSATORIO,
 
+    /**
+     * Día libre semanal del empleado (descanso semanal obligatorio).
+     * Generado automáticamente por ProcesoCierreDiario la noche anterior
+     * si el día siguiente es sábado o domingo y el empleado no tiene
+     * fichaje planificado para ese día.
+     * Si la empresa trabaja ese día, el ENCARGADO planifica el día como
+     * NORMAL antes del cierre y el proceso no lo sobreescribe.
+     */
+    DIA_LIBRE,
+
     /** Ausencia sin justificación registrada. Detectado por RF-31 (parte diario). */
     AUSENCIA_INJUSTIFICADA
 }

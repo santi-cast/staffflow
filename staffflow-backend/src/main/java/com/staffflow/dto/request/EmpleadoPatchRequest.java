@@ -9,7 +9,7 @@ import lombok.Data;
  * Usado en E21 (PATCH /api/v1/empleados/{id}), solo accesible por ADMIN (decisión nº14).
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH, decisión nº3).
- * usuarioId, dni, nss y fechaAlta no son modificables por este endpoint:
+ * usuarioId, dni, numeroEmpleado y fechaAlta no son modificables por este endpoint:
  * son datos de identidad y contractuales que no deben cambiar.
  *
  * @author Santiago Castillo

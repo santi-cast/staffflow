@@ -34,8 +34,8 @@ import java.util.Optional;
  *   - findByUsuarioId, findByActivo, findByPinTerminal
  *
  * Métodos custom añadidos — Bloque 4 (EmpleadoService):
- *   - existsByDni, existsByNss, existsByPinTerminal, existsByCodigoNfc
- *   - existsByDniAndIdNot, existsByNssAndIdNot,
+ *   - existsByDni, existsByNumeroEmpleado, existsByPinTerminal, existsByCodigoNfc
+ *   - existsByDniAndIdNot, existsByNumeroEmpleadoAndIdNot,
  *     existsByPinTerminalAndIdNot, existsByCodigoNfcAndIdNot
  *   - findByCategoria, findByCategoriaAndActivo
  *   - buscarPorTexto (@Query manual — búsqueda unificada RF-14)
@@ -53,13 +53,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Busca el perfil de empleado vinculado a un usuario.
      *
-     * Usado por EmpleadoService.obtenerMiPerfil() (E21 /me) para resolver
-     * el perfil del empleado autenticado a partir del username → id del usuario.
-     * Si el usuario es ADMIN devuelve Optional.empty() → HTTP 404 (comportamiento
-     * esperado: ADMIN no tiene perfil de empleado).
-     * También usado por AuthService en login() para incluir empleadoId en el JWT
-     * (pendiente Bloque 4, TODO documentado en prompt).
-     *
      * @param usuarioId ID del usuario cuyo perfil de empleado se busca
      * @return Optional con el empleado si existe
      */
@@ -68,11 +61,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Lista todos los empleados con el estado activo indicado.
      *
-     * Usado por PresenciaService (E35) para obtener todos los empleados
-     * activos al calcular el parte diario de presencia en tiempo real.
-     * También usado por EmpleadoService.listar() (E14) cuando se filtra
-     * solo por estado.
-     *
      * @param activo true = empleados activos, false = empleados inactivos
      * @return lista de empleados con ese estado (puede ser vacía)
      */
@@ -80,12 +68,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
     /**
      * Busca un empleado por su PIN de terminal.
-     *
-     * Usado por TerminalService (E48-E51) para identificar al empleado
-     * que introduce el PIN en el terminal físico. El índice UNIQUE en
-     * pin_terminal garantiza la búsqueda en menos de 100ms (RNF-R03).
-     * Si no existe → HTTP 404. El bloqueo por 5 intentos fallidos lo
-     * gestiona TerminalService, no este repositorio (decisión nº16).
      *
      * @param pinTerminal PIN de 4 dígitos introducido en el terminal
      * @return Optional con el empleado si el PIN existe
@@ -100,34 +82,25 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Comprueba si existe un empleado con el DNI indicado.
      *
-     * Usado en EmpleadoService.crear() (E13) para validación preventiva
-     * de unicidad antes de insertar. HTTP 409 con mensaje claro si devuelve true.
-     *
      * @param dni DNI a verificar
      * @return true si ya existe un empleado con ese DNI
      */
     boolean existsByDni(String dni);
 
     /**
-     * Comprueba si existe un empleado con el NSS indicado.
+     * Comprueba si existe un empleado con el número de empleado indicado.
      *
      * Usado en EmpleadoService.crear() (E13) para validación preventiva
-     * de unicidad. HTTP 409 con mensaje claro si devuelve true.
+     * de unicidad antes de insertar. HTTP 409 con mensaje claro si devuelve true.
+     * Renombrado desde existsByNss (D-030, v1.0 → campo numero_empleado).
      *
-     * @param nss número de seguridad social a verificar
-     * @return true si ya existe un empleado con ese NSS
+     * @param numeroEmpleado número de empleado a verificar
+     * @return true si ya existe un empleado con ese número
      */
-    boolean existsByNss(String nss);
+    boolean existsByNumeroEmpleado(String numeroEmpleado);
 
     /**
      * Comprueba si existe un empleado con el PIN de terminal indicado.
-     *
-     * Usado en EmpleadoService.crear() (E13) para validación preventiva
-     * de unicidad del PIN antes de insertar. HTTP 409 con mensaje claro
-     * si devuelve true. El PIN debe ser único en todo el sistema (RNF-R03).
-     *
-     * Nota: difiere de findByPinTerminal (Bloque 1) en que devuelve boolean
-     * en lugar de Optional, optimizando la consulta de existencia.
      *
      * @param pinTerminal PIN de 4 dígitos a verificar
      * @return true si ya existe un empleado con ese PIN
@@ -136,10 +109,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
     /**
      * Comprueba si existe un empleado con el código NFC indicado.
-     *
-     * Usado en EmpleadoService.crear() (E13) para validación preventiva
-     * de unicidad del NFC. Solo se verifica si el campo no es null en el
-     * request (NFC es opcional). HTTP 409 con mensaje claro si devuelve true.
      *
      * @param codigoNfc código NFC a verificar
      * @return true si ya existe un empleado con ese código NFC
@@ -150,10 +119,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el DNI indicado, excluyendo
      * al empleado con el id especificado.
      *
-     * Usado en EmpleadoService.actualizar() (E16) para validar unicidad
-     * de DNI en edición sin producir falso positivo cuando el empleado
-     * mantiene su propio DNI sin cambiarlo.
-     *
      * @param dni DNI a verificar
      * @param id  ID del empleado que se está editando (se excluye)
      * @return true si otro empleado distinto ya tiene ese DNI
@@ -161,25 +126,20 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     boolean existsByDniAndIdNot(String dni, Long id);
 
     /**
-     * Comprueba si existe otro empleado con el NSS indicado, excluyendo
-     * al empleado con el id especificado.
+     * Comprueba si existe otro empleado con el número de empleado indicado,
+     * excluyendo al empleado con el id especificado.
      *
-     * Usado en EmpleadoService.actualizar() (E16) para validar unicidad
-     * de NSS en edición.
+     * Renombrado desde existsByNssAndIdNot (D-030, v1.0 → campo numero_empleado).
      *
-     * @param nss NSS a verificar
-     * @param id  ID del empleado que se está editando (se excluye)
-     * @return true si otro empleado distinto ya tiene ese NSS
+     * @param numeroEmpleado número de empleado a verificar
+     * @param id             ID del empleado que se está editando (se excluye)
+     * @return true si otro empleado distinto ya tiene ese número
      */
-    boolean existsByNssAndIdNot(String nss, Long id);
+    boolean existsByNumeroEmpleadoAndIdNot(String numeroEmpleado, Long id);
 
     /**
      * Comprueba si existe otro empleado con el PIN indicado, excluyendo
      * al empleado con el id especificado.
-     *
-     * Usado en EmpleadoService.actualizar() (E16) para validar unicidad
-     * de PIN en edición. El PIN debe seguir siendo único en el sistema
-     * tras la edición (RNF-R03).
      *
      * @param pinTerminal PIN a verificar
      * @param id          ID del empleado que se está editando (se excluye)
@@ -191,9 +151,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el código NFC indicado, excluyendo
      * al empleado con el id especificado.
      *
-     * Usado en EmpleadoService.actualizar() (E16) para validar unicidad
-     * de NFC en edición.
-     *
      * @param codigoNfc código NFC a verificar
      * @param id        ID del empleado que se está editando (se excluye)
      * @return true si otro empleado distinto ya tiene ese código NFC
@@ -203,9 +160,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Lista todos los empleados con la categoría laboral indicada.
      *
-     * Usado en EmpleadoService.listar() (E14) cuando se filtra por
-     * categoría sin filtro de estado activo.
-     *
      * @param categoria categoría laboral a filtrar
      * @return lista de empleados con esa categoría (puede ser vacía)
      */
@@ -213,9 +167,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
     /**
      * Lista todos los empleados con la categoría y estado activo indicados.
-     *
-     * Usado en EmpleadoService.listar() (E14) cuando se aplican ambos
-     * filtros simultáneamente (?categoria=X&activo=true|false).
      *
      * @param categoria categoría laboral a filtrar
      * @param activo    estado a filtrar
@@ -226,21 +177,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Búsqueda unificada de empleados por texto libre (RF-14).
      *
-     * Busca simultáneamente en nombre, apellido1, apellido2 y dni.
-     * Integra RF-12 (listar empleados) y RF-14 (buscar por nombre/DNI)
-     * en un solo endpoint (E14, parámetro ?q=texto).
-     *
-     * La búsqueda es case-insensitive mediante LOWER() en JPQL.
-     * El parámetro termino debe llegar en minúsculas desde el service
-     * (EmpleadoService.listar() aplica q.trim().toLowerCase()).
-     *
-     * Se usa @Query explícita porque Spring Data no puede inferir
-     * automáticamente una condición OR entre cuatro campos distintos
-     * a partir del nombre del método.
-     *
-     * Alternativa descartada: Specification<Empleado> con JpaSpecificationExecutor.
-     * Añadiría complejidad innecesaria para una sola consulta fija.
-     *
      * @param termino texto de búsqueda en minúsculas (sin wildcards — los añade la query)
      * @return lista de empleados que coinciden en alguno de los cuatro campos
      */
@@ -250,4 +186,12 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
            "LOWER(e.apellido2) LIKE LOWER(CONCAT('%', :termino, '%')) OR " +
            "LOWER(e.dni) LIKE LOWER(CONCAT('%', :termino, '%'))")
     List<Empleado> buscarPorTexto(@Param("termino") String termino);
+
+    /**
+     * Busca el perfil de empleado a partir del username de su usuario vinculado.
+     *
+     * @param username username del usuario vinculado al empleado
+     * @return Optional con el empleado si existe
+     */
+    Optional<Empleado> findByUsuarioUsername(String username);
 }

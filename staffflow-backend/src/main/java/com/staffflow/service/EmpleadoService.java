@@ -32,29 +32,31 @@ import java.util.stream.Collectors;
  *   - ADMIN excluido de perfiles de empleado: si un usuario ADMIN llama
  *     a /me devuelve HTTP 404 porque ADMIN no tiene perfil de empleado.
  *     Esto es comportamiento esperado, no un error del sistema.
- *   - pinTerminal filtrado por rol (Opción A acordada en sesión 7):
- *     ADMIN recibe pinTerminal en la respuesta de detalle (E15).
- *     ENCARGADO recibe pinTerminal=null. EMPLEADO nunca recibe pin
- *     (accede por /me que no incluye pin en ningún caso).
- *     El filtrado se realiza en este servicio recibiendo el rol como
- *     parámetro del controller, que lo extrae del JWT.
+ *   - pinTerminal nunca expuesto por API (D-018): EmpleadoResponse no
+ *     tiene el campo pinTerminal. La Opción A original (filtrar por rol
+ *     recibido como parámetro) fue descartada en sesión 10 porque el PIN
+ *     no tiene uso legitimo fuera del terminal físico (decisión nº21).
+ *     D-017 y D-018 documentan el cambio de diseño.
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
- *   - HTTP 409 preventivo para DNI, NSS, PIN o NFC duplicados antes
- *     de que explote la BD con DataIntegrityViolationException.
+ *   - HTTP 409 preventivo para DNI, numero_empleado, PIN o NFC duplicados
+ *     antes de que explote la BD con DataIntegrityViolationException.
  *   - Baja lógica (decisión nº4): activo=false, nunca SQL DELETE.
  *     El historial de fichajes, pausas y saldos queda intacto.
- *   - E19 (estado tiempo real) y E20 (export CSV/PDF) se implementan
- *     en Bloque 6 y Bloque 7 respectivamente. Sus métodos en este
- *     servicio lanzan UnsupportedOperationException hasta entonces.
+ *   - E19 (estado tiempo real) y E20 (export CSV/PDF) están fuera del
+ *     alcance de v1.0. Sus métodos lanzan UnsupportedOperationException
+ *     de forma deliberada y quedan documentados como mejoras en v2.0.
  *
  * RF cubiertos: RF-08 a RF-16, RF-50.
  * RNF aplicados: RNF-M01 (sin lógica en controller), RNF-R03 (PIN único).
  *
- * Desviación D-017: firma de obtenerPorId ajustada respecto al esqueleto
- * del Bloque 1 para incluir el parámetro rol necesario para filtrar
- * pinTerminal según la Opción A acordada. El esqueleto original era
- * obtenerPorId(Long id). La firma definitiva es obtenerPorId(Long id, String rol).
+ * D-017: firma de obtenerPorId ajustada respecto al esqueleto del Bloque 1.
+ * D-018: decision de no exponer pinTerminal por API. EmpleadoResponse no
+ * tiene el campo pinTerminal. El PIN se gestiona exclusivamente en el
+ * terminal físico (decisión nº21). Ambas desviaciones documentadas en
+ * StaffFlow_Desviaciones.
+ *
+ * D-030: campo nss renombrado a numero_empleado en entidad, DTOs y repositorio.
  */
 @Service
 @RequiredArgsConstructor
@@ -88,7 +90,7 @@ public class EmpleadoService {
      *   201 Created      → perfil creado correctamente
      *   400 Bad Request  → datos de entrada inválidos (@Valid en controller)
      *   404 Not Found    → usuarioId no existe en la tabla usuarios
-     *   409 Conflict     → DNI, NSS, PIN o NFC ya registrados en otro empleado
+     *   409 Conflict     → DNI, numero_empleado, PIN o NFC ya registrados
      *
      * @param request datos del perfil laboral del empleado
      * @return EmpleadoResponse con los datos del perfil creado
@@ -105,9 +107,9 @@ public class EmpleadoService {
             throw new ConflictException(
                     "El DNI '" + request.getDni() + "' ya está registrado");
         }
-        if (empleadoRepository.existsByNss(request.getNss())) {
+        if (empleadoRepository.existsByNumeroEmpleado(request.getNumeroEmpleado())) {
             throw new ConflictException(
-                    "El NSS '" + request.getNss() + "' ya está registrado");
+                    "El número de empleado '" + request.getNumeroEmpleado() + "' ya está registrado");
         }
         if (empleadoRepository.existsByPinTerminal(request.getPinTerminal())) {
             throw new ConflictException(
@@ -125,7 +127,7 @@ public class EmpleadoService {
         empleado.setApellido1(request.getApellido1());
         empleado.setApellido2(request.getApellido2());
         empleado.setDni(request.getDni());
-        empleado.setNss(request.getNss());
+        empleado.setNumeroEmpleado(request.getNumeroEmpleado());
         empleado.setFechaAlta(request.getFechaAlta());
         // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()
         empleado.setCategoria(request.getCategoria());
@@ -202,21 +204,13 @@ public class EmpleadoService {
     /**
      * Devuelve el perfil completo de un empleado.
      *
-     * El campo pinTerminal se incluye o excluye según el rol del usuario
-     * autenticado (Opción A — decisión de sesión 7, desviación D-017):
-     *   - ADMIN:     pinTerminal con valor real
-     *   - ENCARGADO: pinTerminal = null
-     *
-     * El controller extrae el rol del JWT y lo pasa como parámetro.
-     *
      * Códigos HTTP producidos:
      *   200 OK          → empleado encontrado y devuelto
      *   403 Forbidden   → rol insuficiente (EMPLEADO bloqueado por Spring Security)
      *   404 Not Found   → empleado con el id indicado no existe
      *
      * @param id  ID del empleado a consultar
-     * @param rol rol del usuario autenticado extraído del JWT por el controller
-     * @return EmpleadoResponse con pinTerminal según rol
+     * @return EmpleadoResponse con los datos del empleado
      */
     @Transactional(readOnly = true)
     public EmpleadoResponse obtenerPorId(Long id) {
@@ -239,15 +233,17 @@ public class EmpleadoService {
      * El campo usuarioId nunca se modifica: la vinculación usuario-empleado
      * es permanente (decisión nº22).
      *
-     * Valida unicidad de PIN, DNI y NSS excluyendo al propio empleado que
+     * Valida unicidad de PIN y DNI excluyendo al propio empleado que
      * se está editando (puede conservar sus propios valores sin conflicto).
+     * dni, numeroEmpleado y fechaAlta son inmutables (decisión nº22) —
+     * no existen en EmpleadoPatchRequest.
      *
      * Códigos HTTP producidos:
      *   200 OK          → perfil actualizado correctamente
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → PIN, DNI o NSS duplicados en otro empleado
+     *   409 Conflict    → PIN o NFC duplicados en otro empleado
      *
      * @param id      ID del empleado a actualizar
      * @param request campos a actualizar (todos opcionales)
@@ -268,7 +264,8 @@ public class EmpleadoService {
         if (request.getApellido2() != null) {
             empleado.setApellido2(request.getApellido2());
         }
-        // dni, nss y fechaAlta son inmutables (decisión nº22) — no existen en EmpleadoPatchRequest
+        // dni, numeroEmpleado y fechaAlta son inmutables (decisión nº22)
+        // no existen en EmpleadoPatchRequest
         if (request.getCategoria() != null) {
             // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()
             empleado.setCategoria(request.getCategoria());
@@ -301,8 +298,7 @@ public class EmpleadoService {
             empleado.setCodigoNfc(request.getCodigoNfc());
         }
 
-        // PIN no se devuelve en edición (el controller no pasa rol aquí,
-        // el PATCH nunca incluye el PIN en la respuesta por seguridad)
+        // PIN no se devuelve en edición
         return toEmpleadoResponse(empleadoRepository.save(empleado));
     }
 
@@ -313,17 +309,6 @@ public class EmpleadoService {
 
     /**
      * Desactiva un empleado aplicando baja lógica (activo = false).
-     *
-     * El empleado desactivado no puede fichar desde el terminal ni
-     * aparece en listados por defecto. Su historial de fichajes, pausas
-     * y saldos queda intacto para consultas e informes históricos.
-     *
-     * Decisión nº4: baja lógica en lugar de DELETE físico.
-     *
-     * Códigos HTTP producidos:
-     *   200 OK          → empleado desactivado correctamente
-     *   403 Forbidden   → rol insuficiente
-     *   404 Not Found   → empleado no encontrado
      *
      * @param id ID del empleado a desactivar
      * @return MensajeResponse confirmando la operación
@@ -348,16 +333,6 @@ public class EmpleadoService {
     /**
      * Reactiva un empleado previamente desactivado (activo = true).
      *
-     * El empleado recupera inmediatamente la capacidad de fichar desde
-     * el terminal con su PIN. HTTP 409 si el empleado ya estaba activo
-     * (reactivar un empleado activo es un error de lógica de negocio).
-     *
-     * Códigos HTTP producidos:
-     *   200 OK          → empleado reactivado correctamente
-     *   403 Forbidden   → rol insuficiente
-     *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → el empleado ya estaba activo
-     *
      * @param id ID del empleado a reactivar
      * @return MensajeResponse confirmando la operación
      */
@@ -381,48 +356,21 @@ public class EmpleadoService {
     // ----------------------------------------------------------------
     // E19 — GET /api/v1/empleados/estado
     // RF-15: Estado en tiempo real de los empleados
-    // Pendiente de implementación en Bloque 6 (depende de FichajeRepository,
-    // PausaRepository y PlanificacionAusenciaRepository)
     // ----------------------------------------------------------------
 
-    /**
-     * Devuelve el estado en tiempo real de todos los empleados activos
-     * para una fecha dada.
-     *
-     * Pendiente de implementación en Bloque 6. Depende de la agregación
-     * de datos de fichajes, pausas y ausencias que se implementa en
-     * PresenciaService. Se implementará en este servicio coordinando
-     * con PresenciaService o consultando directamente los repositorios
-     * necesarios.
-     *
-     * @param fecha fecha para la consulta (defecto: hoy)
-     * @return lista de estados por empleado
-     */
     public Object obtenerEstado(java.time.LocalDate fecha) {
         throw new UnsupportedOperationException(
-                "Pendiente de implementar en Bloque 6");
+                "E19 fuera del alcance de v1.0. Previsto para v2.0.");
     }
 
     // ----------------------------------------------------------------
     // E20 — GET /api/v1/empleados/export
     // RF-16: Exportar listado de empleados
-    // Pendiente de implementación en Bloque 7 (CSV/PDF con iText 7)
     // ----------------------------------------------------------------
 
-    /**
-     * Exporta el listado de empleados en formato CSV o PDF.
-     *
-     * Pendiente de implementación en Bloque 7. El formato CSV es texto
-     * plano; el PDF usa iText 7 con el logotipo de la empresa si está
-     * configurado. Requiere ConfiguracionEmpresaRepository para el logo.
-     *
-     * @param formato "csv" o "pdf"
-     * @param activo  filtro por estado — null = todos
-     * @return byte[] con el contenido del fichero generado
-     */
     public byte[] exportar(String formato, Boolean activo) {
         throw new UnsupportedOperationException(
-                "Pendiente de implementar en Bloque 7");
+                "E20 fuera del alcance de v1.0. Previsto para v2.0.");
     }
 
     // ----------------------------------------------------------------
@@ -433,46 +381,20 @@ public class EmpleadoService {
     /**
      * Devuelve el perfil del empleado autenticado.
      *
-     * El controller extrae el username del objeto Authentication de Spring
-     * Security (authentication.getName()) y lo pasa a este método. El service
-     * resuelve el id del usuario a partir del username consultando
-     * UsuarioRepository, y luego localiza el perfil de empleado vinculado.
-     *
-     * Esta estrategia evita inyectar repositorios en el controller (RNF-M01)
-     * y es compatible con UserDetailsServiceImpl que devuelve el User estándar
-     * de Spring Security sin getId() (decisión de sesión 7, Opción B, D-017).
-     *
-     * Spring Security garantiza que solo usuarios con rol EMPLEADO llegan
-     * aquí (@PreAuthorize en el controller). ADMIN y ENCARGADO reciben HTTP 403.
-     *
-     * El ADMIN no tiene perfil de empleado: si por cualquier motivo llegara
-     * aquí, findByUsuarioId devuelve vacío y se lanza IllegalStateException
-     * que GlobalExceptionHandler convierte en HTTP 404. Es comportamiento
-     * esperado, no un error del sistema.
-     *
-     * El PIN nunca se devuelve en /me independientemente del rol.
-     *
-     * Códigos HTTP producidos:
-     *   200 OK          → perfil devuelto correctamente
-     *   403 Forbidden   → rol insuficiente (ADMIN/ENCARGADO bloqueados por Spring Security)
-     *   404 Not Found   → usuario autenticado sin perfil de empleado
-     *
      * @param username username del usuario autenticado extraído de Authentication
      * @return EmpleadoResponse con el perfil propio (sin pinTerminal)
      */
     @Transactional(readOnly = true)
     public EmpleadoResponse obtenerMiPerfil(String username) {
-        // Resolver el id del usuario a partir del username (disponible en Authentication)
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException(
                         "Usuario no encontrado: " + username));
 
-        // Localizar el perfil de empleado vinculado al usuario autenticado
         Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
                 .orElseThrow(() -> new IllegalStateException(
                         "No existe perfil de empleado para el usuario '" + username + "'"));
 
-        // PIN nunca se devuelve en /me (incluirPin = false)
+        // PIN nunca se devuelve en /me
         return toEmpleadoResponse(empleado);
     }
 
@@ -480,19 +402,6 @@ public class EmpleadoService {
     // Conversión entidad → DTO (uso interno)
     // ----------------------------------------------------------------
 
-    /**
-     * Convierte una entidad Empleado en su DTO de respuesta.
-     *
-     * Punto único de conversión entidad → DTO para este servicio.
-     * El parámetro incluirPin controla si el campo pinTerminal se
-     * incluye en la respuesta o se devuelve como null (Opción A):
-     *   - true:  pinTerminal con valor real (solo ADMIN en E15)
-     *   - false: pinTerminal = null (ENCARGADO, listados, /me)
-     *
-     * @param empleado   entidad JPA a convertir
-     * @param incluirPin true si el rol es ADMIN y se debe incluir el PIN
-     * @return EmpleadoResponse listo para devolver al controller
-     */
     private EmpleadoResponse toEmpleadoResponse(Empleado empleado) {
         EmpleadoResponse response = new EmpleadoResponse();
         response.setId(empleado.getId());
@@ -501,7 +410,7 @@ public class EmpleadoService {
         response.setApellido1(empleado.getApellido1());
         response.setApellido2(empleado.getApellido2());
         response.setDni(empleado.getDni());
-        response.setNss(empleado.getNss());
+        response.setNumeroEmpleado(empleado.getNumeroEmpleado());
         response.setFechaAlta(empleado.getFechaAlta());
         response.setCategoria(empleado.getCategoria());
         response.setJornadaSemanalHoras(empleado.getJornadaSemanalHoras());

@@ -1,22 +1,24 @@
 package com.staffflow.dto.response;
 
-import com.staffflow.domain.enums.EstadoPresencia;
-import com.staffflow.domain.enums.TipoFichaje;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.List;
 
 /**
- * Representación del estado de presencia de un empleado en un momento dado.
- * Usado en E35 (GET /api/v1/presencia/hoy), E36 (GET por empleado)
- * y E37 (GET /api/v1/presencia/resumen).
- * Accesible por ADMIN y ENCARGADO (decisión nº14).
+ * Respuesta del parte diario completo de presencia (E35).
+ * Devuelve los contadores globales del día más el detalle
+ * individual de cada empleado activo.
  *
- * El estado se calcula en tiempo real en PresenciaService consultando
- * fichajes, pausas y planificacion_ausencias para la fecha actual.
- * No se persiste en ninguna tabla (RF-30, RF-31).
+ * Usado en E35 (GET /api/v1/presencia/parte-diario).
+ * Accesible por ADMIN y ENCARGADO (RF-30, decisión nº14).
+ *
+ * Los contadores globales (fichados, enPausa, ausencias, sinJustificar)
+ * permiten al encargado ver el resumen del día de un vistazo.
+ * El array detalle[] contiene la fila individual de cada empleado
+ * activo, calculada en tiempo real sin persistir en BD.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).
@@ -28,34 +30,32 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ParteDiarioResponse {
 
-    private Long empleadoId;
+    // Fecha del parte. Por defecto hoy (?fecha no informado).
+    // Permite consultar partes históricos pasando ?fecha=YYYY-MM-DD.
+    private LocalDate fecha;
 
-    // Datos identificativos del empleado para mostrar en el parte
-    // sin necesidad de una segunda petición al servidor.
-    private String nombre;
+    // Número total de empleados activos en el sistema.
+    // Base de referencia para los contadores siguientes.
+    private Integer totalEmpleados;
 
-    private String apellido1;
+    // Empleados con estado JORNADA_INICIADA o JORNADA_COMPLETADA.
+    // Incluye EN_PAUSA porque siguen contando como fichados.
+    private Integer fichados;
 
-    // NULL si el empleado no tiene segundo apellido.
-    private String apellido2;
+    // Empleados con estado EN_PAUSA en este momento.
+    // Subconjunto de fichados: un empleado en pausa también está fichado.
+    private Integer enPausa;
 
-    // Estado calculado en tiempo real. Determina el icono y color
-    // que muestra Android en el panel de presencia (P32).
-    private EstadoPresencia estado;
+    // Empleados con estado AUSENCIA_REGISTRADA o AUSENCIA_PLANIFICADA.
+    // Son ausencias conocidas: no requieren atención inmediata del encargado.
+    private Integer ausencias;
 
-    // NULL si el empleado no ha iniciado jornada (AUSENCIA_PLANIFICADA,
-    // AUSENCIA_REGISTRADA o SIN_JUSTIFICAR).
-    private LocalDateTime horaEntrada;
+    // Empleados con estado SIN_JUSTIFICAR.
+    // Requieren atención inmediata: no tienen fichaje ni ausencia registrada.
+    // Es el contador más relevante para el encargado (RF-31).
+    private Integer sinJustificar;
 
-    // NULL si la jornada sigue en curso o no ha comenzado.
-    private LocalDateTime horaSalida;
-
-    // true si el empleado tiene una pausa activa en este momento.
-    // Complementa el estado EN_PAUSA para facilitar la lógica en Android.
-    private Boolean pausaActiva;
-
-    // NULL si no hay fichaje para hoy (AUSENCIA_PLANIFICADA, SIN_JUSTIFICAR).
-    // Con valor: permite al ENCARGADO identificar el tipo de jornada
-    // sin necesidad de consultar el fichaje completo.
-    private TipoFichaje fichajeTipo;
+    // Detalle individual de cada empleado activo.
+    // Ordenado por apellido1, apellido2, nombre para facilitar la lectura.
+    private List<DetallePresenciaResponse> detalle;
 }

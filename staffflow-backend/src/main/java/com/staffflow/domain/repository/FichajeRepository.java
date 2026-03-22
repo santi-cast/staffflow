@@ -132,4 +132,28 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
             @Param("desde") LocalDate desde,
             @Param("hasta") LocalDate hasta,
             @Param("tipo") TipoFichaje tipo);
+
+    // ---------------------------------------------------------------
+    // Métodos añadidos en Bloque 6 Tarea 2 (PresenciaService E35-E37)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve todos los fichajes de una fecha concreta con su empleado cargado.
+     *
+     * Usado por PresenciaService para construir el parte diario (E35) y la
+     * lista de empleados sin justificar (E36). Carga todos los fichajes del
+     * día en una sola query para evitar el problema N+1: el service clasifica
+     * a cada empleado en memoria sin lanzar queries adicionales por cada uno.
+     *
+     * JOIN FETCH f.empleado garantiza que empleado.id, empleado.nombre y
+     * empleado.apellido1 están disponibles en el DTO sin lazy loading.
+     *
+     * Se usa @Query explícita porque el método convencional findByFecha()
+     * no haría el JOIN FETCH y provocaría N+1 al acceder a empleado.
+     *
+     * @param fecha fecha a consultar (normalmente hoy)
+     * @return lista de fichajes con empleado cargado para esa fecha
+     */
+    @Query("SELECT f FROM Fichaje f JOIN FETCH f.empleado WHERE f.fecha = :fecha")
+    List<Fichaje> findByFechaWithEmpleado(@Param("fecha") LocalDate fecha);
 }

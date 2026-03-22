@@ -41,8 +41,11 @@ public class Empleado {
     @Column(name = "dni", nullable = false, unique = true, length = 20)
     private String dni;
 
-    @Column(name = "nss", nullable = false, unique = true, length = 20)
-    private String nss;
+    // Renombrado desde nss (v1.0). Identificador interno de empleado.
+    // Se usa en cabeceras de PDFs firmables (RF-40). Nunca expone datos
+    // de seguridad social. Pendiente de gestión desde UI en v2.0.
+    @Column(name = "numero_empleado", nullable = false, unique = true, length = 20)
+    private String numeroEmpleado;
 
     @Column(name = "fecha_alta", nullable = false)
     private LocalDate fechaAlta;

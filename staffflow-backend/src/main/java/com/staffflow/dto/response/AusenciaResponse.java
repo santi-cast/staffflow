@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 /**
  * Representación de una ausencia planificada.
- * Usado en E30 (POST), E31 (GET lista), E32 (GET por empleado),
- * E33 (GET por id) y E34 (PATCH /api/v1/ausencias).
+ * Usado en E30 (POST crear), E31 (PATCH modificar), E32 (DELETE eliminar),
+ * E33 (GET lista con filtros) y E34 (GET /me ausencias propias).
  * ADMIN y ENCARGADO acceden a todas las ausencias.
  * EMPLEADO solo puede consultar las suyas (decisión nº10 y nº14).
  *
@@ -40,7 +40,7 @@ public class AusenciaResponse {
     // Determina el tipo de fichaje que generará el proceso nocturno (RF-26).
     private TipoAusencia tipoAusencia;
 
-    // false = pendiente de procesar por ProcesoDiario @Scheduled 00:01.
+    // false = pendiente de procesar por ProcesoCierreDiario @Scheduled 23:55.
     // true = fichaje ya generado. Una vez procesado no se puede eliminar
     // ni modificar el tipo (decisión nº2, RNF-L01).
     private Boolean procesado;

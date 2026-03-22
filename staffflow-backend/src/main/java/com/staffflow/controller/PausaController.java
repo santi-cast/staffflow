@@ -121,9 +121,12 @@ public class PausaController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
     public ResponseEntity<PausaResponse> cerrar(
             @PathVariable Long id,
-            @Valid @RequestBody PausaPatchRequest request) {
+            @Valid @RequestBody PausaPatchRequest request,
+            Authentication authentication) {
 
-        PausaResponse response = pausaService.cerrar(id, request);
+        // username necesario para aplicar restriccion D-026 en el service
+        String username = authentication.getName();
+        PausaResponse response = pausaService.cerrar(id, request, username);
         return ResponseEntity.ok(response);
     }
 

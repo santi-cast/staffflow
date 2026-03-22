@@ -24,9 +24,9 @@ package com.staffflow.domain.enums;
  * Alternativa descartada: String en el DTO — pierde tipado y
  * aumenta el riesgo de valores inconsistentes entre servicio y cliente.
  *
- * Referencia: E35 (GET /api/v1/presencia/hoy),
- *             E36 (GET /api/v1/presencia/empleado/{id}),
- *             E37 (GET /api/v1/presencia/resumen).
+ * Referencia: E35 (GET /api/v1/presencia/parte-diario),
+ *             E36 (GET /api/v1/presencia/sin-justificar),
+ *             E37 (GET /api/v1/presencia/parte-diario/me).
  *
  * @author Santiago Castillo
  */

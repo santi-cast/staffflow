@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 
 /**
  * Representación de un usuario del sistema.
- * Usado en E08 (POST), E09 (GET lista), E10 (GET por id),
- * E11 (GET perfil propio) y E12 (PATCH /api/v1/usuarios).
- * Solo ADMIN accede a E08-E10 y E12 (decisión nº14).
- * E11 es accesible por cualquier rol autenticado (perfil propio).
+ * Usado en E08 (POST crear), E09 (GET lista), E10 (GET por id),
+ * E11 (PATCH modificar) y E12 (DELETE lógico desactivar).
+ * Solo ADMIN accede a E08-E12 (decisión nº14).
+ * E02 (GET /auth/me) devuelve también UsuarioResponse para cualquier rol autenticado.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).

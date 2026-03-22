@@ -39,9 +39,11 @@ public class EmpleadoRequest {
     @Size(max = 9)
     private String dni;
 
+    // Identificador interno de empleado. Renombrado desde nss (v1.0).
+    // Se usa en cabeceras de PDFs firmables (RF-40).
     @NotBlank
-    @Size(max = 12)
-    private String nss;
+    @Size(max = 20)
+    private String numeroEmpleado;
 
     @NotNull
     private LocalDate fechaAlta;

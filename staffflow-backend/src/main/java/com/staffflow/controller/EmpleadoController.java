@@ -66,7 +66,7 @@ public class EmpleadoController {
      *   400 Bad Request  → datos de entrada inválidos (Bean Validation)
      *   403 Forbidden    → rol insuficiente
      *   404 Not Found    → usuarioId no existe
-     *   409 Conflict     → DNI, NSS, PIN o NFC duplicados
+     *   409 Conflict     → DNI, número de empleado, PIN o NFC duplicados
      *
      * @param request body JSON con los datos del perfil laboral
      * @return 201 Created con EmpleadoResponse
@@ -157,7 +157,7 @@ public class EmpleadoController {
      *   400 Bad Request → datos inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → PIN, DNI o NSS duplicados
+     *   409 Conflict    → PIN, DNI o número de empleado duplicados
      *
      * @param id      ID del empleado (path variable)
      * @param request body JSON con los campos a actualizar (todos opcionales)

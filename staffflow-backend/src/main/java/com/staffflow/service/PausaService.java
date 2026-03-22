@@ -4,6 +4,7 @@ import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.Fichaje;
 import com.staffflow.domain.entity.Pausa;
 import com.staffflow.domain.entity.Usuario;
+import com.staffflow.domain.enums.Rol;
 import com.staffflow.domain.enums.TipoPausa;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
@@ -38,6 +39,9 @@ import java.util.stream.Collectors;
  *   - Al cerrar una pausa no retribuida se actualiza totalPausasMinutos
  *     en el fichaje del día y se recalcula jornadaEfectivaMinutos.
  *   - Pausas AUSENCIA_RETRIBUIDA NO descuentan de la jornada efectiva.
+ *   - D-026: ENCARGADO solo puede gestionar pausas del dia actual.
+ *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
+ *     crear() (E27) y cerrar() (E28).
  *
  * Patrón de autenticación:
  *   El controller pasa authentication.getName() (username). El service
@@ -68,8 +72,9 @@ public class PausaService {
     private final FichajeRepository fichajeRepository;
 
     /**
-     * Repositorio de usuarios. Para resolver username → usuarioId (auditoría).
-     * Mismo patrón que FichajeService y EmpleadoService (D-017, Opción B).
+     * Repositorio de usuarios. Para resolver username → usuario (auditoría
+     * y restriccion D-026). Mismo patrón que FichajeService y EmpleadoService
+     * (D-017, Opción B).
      */
     private final UsuarioRepository usuarioRepository;
 
@@ -82,11 +87,13 @@ public class PausaService {
      *
      * Flujo:
      *   1. Verifica que el empleado existe (404 si no).
-     *   2. Verifica que no hay ya una pausa activa ese día (409 si hay).
+     *   2. Resuelve el usuario autenticado desde username.
+     *   3. Valida restriccion de fecha si el usuario es ENCARGADO (D-026):
+     *      solo puede gestionar pausas del dia actual. ADMIN sin restriccion.
+     *   4. Verifica que no hay ya una pausa activa ese día (409 si hay).
      *      Solo puede haber una pausa con horaFin=null por empleado/día.
-     *   3. Resuelve usuarioId del autenticado para auditoría.
-     *   4. Si llega horaFin, calcula duracionMinutos con Math.floor.
-     *   5. Persiste la pausa y devuelve PausaResponse.
+     *   5. Si llega horaFin, calcula duracionMinutos con Math.floor.
+     *   6. Persiste la pausa y devuelve PausaResponse.
      *
      * horaFin es nullable: si no se proporciona, la pausa queda activa.
      * Las observaciones son opcionales en pausas (a diferencia de fichajes).
@@ -103,6 +110,19 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Empleado no encontrado con id: " + request.getEmpleadoId()));
 
+        // Resolver usuario autenticado para restriccion D-026 y auditoria
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        // Restriccion D-026: ENCARGADO solo puede gestionar el dia actual.
+        // ADMIN puede crear pausas para cualquier fecha sin restriccion.
+        if (usuario.getRol() == Rol.ENCARGADO
+                && !request.getFecha().isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "El ENCARGADO solo puede gestionar registros del dia actual");
+        }
+
         // Verificar que no hay pausa activa ese día para ese empleado
         // 409 Conflict si hay pausa con horaFin=null — no se pueden solapar pausas
         pausaRepository.findByEmpleadoIdAndFechaAndHoraFinIsNull(
@@ -112,11 +132,6 @@ public class PausaService {
                             "El empleado " + request.getEmpleadoId()
                             + " ya tiene una pausa activa el " + request.getFecha());
                 });
-
-        // Resolver usuarioId para auditoría (D-017, Opción B)
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Usuario autenticado no encontrado: " + username));
 
         // Construir entidad Pausa
         Pausa pausa = new Pausa();
@@ -156,6 +171,10 @@ public class PausaService {
      *
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
+     * Restriccion D-026: ENCARGADO solo puede modificar pausas del dia actual.
+     * La fecha a validar es la de la pausa cargada de BD, no del request.
+     * ADMIN puede modificar pausas de cualquier fecha sin restriccion.
+     *
      * Efecto en el fichaje del día (solo si la pausa NO es AUSENCIA_RETRIBUIDA):
      *   Al cerrar una pausa (horaFin llega en el request) se actualiza
      *   totalPausasMinutos del fichaje del día sumando la nueva duración,
@@ -163,12 +182,13 @@ public class PausaService {
      *   Las pausas AUSENCIA_RETRIBUIDA no descuentan de la jornada efectiva:
      *   no se suman a totalPausasMinutos del fichaje.
      *
-     * @param id      ID de la pausa a modificar
-     * @param request campos a modificar (observaciones obligatorio, horaFin opcional)
+     * @param id       ID de la pausa a modificar
+     * @param request  campos a modificar (observaciones obligatorio, horaFin opcional)
+     * @param username username del usuario autenticado (de authentication.getName())
      * @return PausaResponse con la pausa actualizada
      */
     @Transactional
-    public PausaResponse cerrar(Long id, PausaPatchRequest request) {
+    public PausaResponse cerrar(Long id, PausaPatchRequest request, String username) {
 
         // Validación de observaciones obligatorias (RNF-L02)
         if (request.getObservaciones() == null || request.getObservaciones().isBlank()) {
@@ -180,6 +200,20 @@ public class PausaService {
         Pausa pausa = pausaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Pausa no encontrada con id: " + id));
+
+        // Resolver usuario autenticado para restriccion D-026
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        // Restriccion D-026: ENCARGADO solo puede modificar el dia actual.
+        // La fecha a validar es la de la pausa cargada de BD.
+        // ADMIN puede modificar pausas de cualquier fecha sin restriccion.
+        if (usuario.getRol() == Rol.ENCARGADO
+                && !pausa.getFecha().isEqual(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "El ENCARGADO solo puede gestionar registros del dia actual");
+        }
 
         // Actualizar observaciones (ya validadas)
         pausa.setObservaciones(request.getObservaciones());
