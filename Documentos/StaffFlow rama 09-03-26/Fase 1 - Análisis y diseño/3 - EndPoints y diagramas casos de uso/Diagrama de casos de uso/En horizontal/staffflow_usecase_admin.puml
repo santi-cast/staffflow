@@ -1,0 +1,100 @@
+@startuml staffflow_usecase_admin
+' StaffFlow — Diagrama de Casos de Uso — Actor ADMIN
+' Figura 6.1 · @author Santiago Castillo · iLERNA TFG DAM 2025/2026
+
+top to bottom direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor     #1A237E
+  FontSize        10
+}
+skinparam actor {
+  BorderColor #333333
+  FontSize    12
+  FontStyle   bold
+}
+skinparam package {
+  FontSize    11
+  FontStyle   bold
+  BorderColor #888888
+}
+skinparam ArrowColor     #555555
+skinparam ArrowThickness 1
+
+' ── ACTOR ────────────────────────────────────────────
+actor "ADMIN\n─────\nAcceso total\nsin perfil\nde empleado" as A #B71C1C
+
+rectangle "StaffFlow — Sistema" {
+
+  package "Empresa\n/api/v1/empresa" #FBE9E7 {
+    usecase "E06 Crear/actualizar empresa\nE07 Consultar configuracion" as MOD_EMP
+  }
+
+  package "Usuarios\n/api/v1/usuarios" #FFEBEE {
+    usecase "E08 Crear · E09 Listar\nE10 Consultar · E11 Activar/desactivar\nE12 Actualizar (PATCH)" as MOD_USR
+  }
+
+  package "Empleados\n/api/v1/empleados" #E8EAF6 {
+    usecase "E13 Crear · E14 Listar\nE15 Consultar · E16 Buscar\nE17 Actualizar · E18 Parche\nE19 Baja · E20 PIN · E21 NFC" as MOD_EMPL
+  }
+
+  package "Fichajes\n/api/v1/fichajes" #E8F5E9 {
+    usecase "E22 Registrar manual · E23 Listar\nE24 Consultar · E25 Actualizar\nE26 Por fecha" as MOD_FICH
+  }
+
+  package "Pausas\n/api/v1/pausas" #E0F2F1 {
+    usecase "E27 Registrar manual\nE28 Listar · E29 Consultar" as MOD_PAUS
+  }
+
+  package "Ausencias\n/api/v1/ausencias" #E3F2FD {
+    usecase "E30 Planificar · E31 Listar\nE32 Consultar · E33 Actualizar\nE34 Eliminar (no procesada)*" as MOD_AUS
+  }
+
+  package "Presencia\n/api/v1/presencia" #ECEFF1 {
+    usecase "E35 Tiempo real\nE36 Por empleado · E37 Diario" as MOD_PRES
+  }
+
+  package "Saldos\n/api/v1/saldos" #FFFDE7 {
+    usecase "E38 Listar · E39 Consultar+anio\nE40 Recalcular** · E41 Cierre**" as MOD_SALD
+  }
+
+  package "Informes\n/api/v1/informes[/pdf]" #FCE4EC {
+    usecase "E42 Mensual · E43 Rango\nE44 Presencia diaria\nE45-E47 PDF firmables" as MOD_INF
+  }
+
+  package "Auth\n/api/v1/auth" #F3E5F5 {
+    usecase "E01 Login · E02 Logout\nE03 Cambiar contrasena\nE04 Solicitar reset [publico]\nE05 Resetear con token [publico]" as MOD_AUTH
+  }
+}
+
+' ── RELACIONES ADMIN ─────────────────────────────────
+A --> MOD_EMP
+A --> MOD_USR
+A --> MOD_EMPL
+A --> MOD_FICH
+A --> MOD_PAUS
+A --> MOD_AUS
+A --> MOD_PRES
+A --> MOD_SALD
+A --> MOD_INF
+A --> MOD_AUTH
+
+note right of MOD_AUS
+  *E34 DELETE solo si procesado=false
+  RNF-L01 -- Decision n2
+end note
+
+note right of MOD_SALD
+  **E40 y E41 exclusivos ADMIN
+end note
+
+legend bottom
+  | <back:#B71C1C><color:white> ADMIN </color></back> | Acceso total a todos los modulos. Sin perfil de empleado, nunca ficha con PIN. |
+  | [publico]                                          | Sin autenticacion -- accesible sin JWT ni PIN                                   |
+  | * / **                                             | Endpoints con restricciones adicionales -- ver notas del diagrama               |
+endlegend
+
+@enduml

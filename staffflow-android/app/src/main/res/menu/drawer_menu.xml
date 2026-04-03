@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menu del Navigation Drawer de StaffFlow.
+
+    Los grupos se muestran u ocultan en MainActivity segun el rol
+    leido del DataStore tras el login:
+
+      group_empleado  -> visible para EMPLEADO, ENCARGADO y ADMIN
+      group_encargado -> visible para ENCARGADO y ADMIN
+      group_admin     -> visible solo para ADMIN
+      group_ajustes   -> visible para todos los roles autenticados
+
+    Los IDs de los items coinciden con los IDs de destino en
+    nav_graph.xml para que NavigationUI.setupWithNavController()
+    realice la navegacion automaticamente al pulsar cada item.
+
+    El item nav_cerrar_sesion no tiene destino en el nav_graph:
+    se gestiona manualmente en MainActivity con un AlertDialog
+    de confirmacion (Decision 26).
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Visible para todos los roles autenticados (EMPLEADO, ENCARGADO, ADMIN) -->
+    <group
+        android:id="@+id/group_empleado"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/miHoyFragment"
+            android:title="@string/nav_mi_hoy" />
+        <item
+            android:id="@+id/misFichajesFragment"
+            android:title="@string/nav_mis_fichajes" />
+        <item
+            android:id="@+id/misAusenciasFragment"
+            android:title="@string/nav_mis_ausencias" />
+        <item
+            android:id="@+id/miSaldoFragment"
+            android:title="@string/nav_mi_saldo" />
+        <item
+            android:id="@+id/miPerfilFragment"
+            android:title="@string/nav_mi_perfil" />
+    </group>
+
+    <!-- Visible para ENCARGADO y ADMIN -->
+    <group
+        android:id="@+id/group_encargado"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/parteDiarioFragment"
+            android:title="@string/nav_parte_diario" />
+        <item
+            android:id="@+id/empleadosFragment"
+            android:title="@string/nav_empleados" />
+        <item
+            android:id="@+id/fichajesFragment"
+            android:title="@string/nav_fichajes" />
+        <item
+            android:id="@+id/ausenciasFragment"
+            android:title="@string/nav_ausencias" />
+        <item
+            android:id="@+id/saldosGlobalesFragment"
+            android:title="@string/nav_saldos" />
+        <item
+            android:id="@+id/informesFragment"
+            android:title="@string/nav_informes" />
+    </group>
+
+    <!-- Visible solo para ADMIN -->
+    <group
+        android:id="@+id/group_admin"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/usuariosFragment"
+            android:title="@string/nav_usuarios" />
+        <item
+            android:id="@+id/empresaFragment"
+            android:title="@string/nav_empresa" />
+    </group>
+
+    <!-- Visible para todos los roles autenticados -->
+    <group android:id="@+id/group_ajustes">
+        <item
+            android:id="@+id/cambiarPasswordFragment"
+            android:title="@string/nav_cambiar_password" />
+        <item
+            android:id="@+id/nav_cerrar_sesion"
+            android:title="@string/nav_cerrar_sesion" />
+    </group>
+
+</menu>

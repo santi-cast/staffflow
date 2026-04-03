@@ -1,0 +1,145 @@
+====================================================
+WIREFRAMES VS ACTIVITIES EN ANDROID
+====================================================
+
+Pregunta:
+¿Los wireframes son las Activities en Android Studio?
+
+Respuesta corta:
+No. Los wireframes NO son Activities.
+
+Un wireframe representa una pantalla conceptual del diseño.
+En Android moderno normalmente se implementa como un Fragment,
+no como una Activity.
+
+En este proyecto se utiliza la arquitectura:
+
+Single Activity + Navigation Component + Fragments
+
+
+====================================================
+RELACIÓN ENTRE WIREFRAMES Y ANDROID
+====================================================
+
+Wireframe (documento de diseño)
+--------------------------------
+Es una representación conceptual de una pantalla.
+
+Describe:
+- qué ve el usuario
+- qué acciones puede realizar
+- qué endpoint consume
+- cómo navega a otras pantallas
+- estados de carga, error y vacío
+
+Ejemplo en el documento de StaffFlow:
+
+P09 — Mi saldo anual
+
+Endpoint:
+GET /api/v1/saldos/me
+
+
+Implementación en Android
+-------------------------
+
+Ese wireframe se convierte en:
+
+Fragment
+ViewModel
+Layout XML
+
+Ejemplo:
+
+MiSaldoFragment.kt
+MiSaldoViewModel.kt
+fragment_mi_saldo.xml
+
+
+====================================================
+ESTRUCTURA REAL DE LA APP EN ANDROID STUDIO
+====================================================
+
+MainActivity
+    │
+    └── NavHostFragment
+          │
+          ├── TerminalFragment        (P01)
+          ├── LoginFragment           (P02)
+          ├── RecoveryFragment        (P03)
+          ├── ResetPasswordFragment   (P05)
+          ├── MiSaldoFragment         (P09)
+          ├── MisFichajesFragment     (P10)
+          ├── EmpleadosFragment       (P13)
+          └── resto de pantallas
+
+
+Cada wireframe normalmente se implementa como un Fragment.
+
+
+====================================================
+PAPEL DE LA ACTIVITY
+====================================================
+
+En esta arquitectura solo existe una Activity principal:
+
+MainActivity
+
+Su función es:
+
+- contener el NavHostFragment
+- gestionar la navegación global
+- mostrar u ocultar el Navigation Drawer
+- comprobar si existe JWT en DataStore
+- redirigir al destino inicial según rol
+
+
+Las pantallas funcionales no son Activities.
+
+
+====================================================
+REGLA PRÁCTICA PARA ESTE PROYECTO
+====================================================
+
+Wireframe
+→ Fragment
+
+Lógica de la pantalla
+→ ViewModel
+
+Diseño visual
+→ XML Layout
+
+Cambio entre pantallas
+→ Navigation Component (nav_graph.xml)
+
+
+====================================================
+CUÁNTOS COMPONENTES HABRÁ
+====================================================
+
+Si el diseño tiene:
+
+24 pantallas (wireframes)
+
+aproximadamente tendrás:
+
+~24 Fragments
+~24 layouts XML
+~24 ViewModels
+
+
+====================================================
+RESUMEN
+====================================================
+
+Wireframe ≠ Activity
+
+Wireframe ≈ Fragment
+
+Arquitectura final:
+
+1 Activity
++ Navigation Component
++ ~24 Fragments
++ nav_graph.xml

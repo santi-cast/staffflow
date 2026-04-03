@@ -1,0 +1,109 @@
+====================================================
+STAFFFLOW — ENTREGA Y EJECUCIÓN DEL PROYECTO
+StaffFlow_Entrega_v2.txt
+Actualizado: 16/03/2026
+====================================================
+
+El proyecto se entregará dividido en dos bloques principales:
+
+  Bloque 1: Backend (API REST con base de datos H2 embebida)
+  Bloque 2: Aplicación Android (terminal de fichaje y consulta)
+
+El proyecto se ha preparado para que pueda ejecutarse directamente sin
+necesidad de configuraciones complejas, facilitando así su evaluación.
+
+La aplicación backend utiliza H2 Database embebida, por lo que no es
+necesario instalar ni configurar un servidor de base de datos externo
+en ninguna de las tres opciones de ejecución disponibles.
+
+====================================================
+BLOQUE 1 — BACKEND (API REST con base de datos H2 embebida)
+====================================================
+
+El backend del sistema está desarrollado mediante Spring Boot y
+proporciona una API REST que gestiona la lógica de negocio del sistema.
+
+Se ofrecen tres formas de ejecutar el backend:
+
+OPCIÓN A — Ejecución desde entorno de desarrollo
+
+  El backend puede ejecutarse directamente desde el proyecto utilizando
+  un entorno de desarrollo como IntelliJ IDEA.
+
+  Requisitos mínimos:
+    Java    21
+    Maven   3.9
+
+OPCIÓN B — Ejecución mediante archivo ejecutable (.jar)
+
+  El backend también se entregará como un archivo ejecutable (.jar)
+  generado por Spring Boot.
+
+  Comando: java -jar staffflow.jar
+
+  Requisitos mínimos:
+    Java    21
+
+OPCIÓN C — Ejecución mediante Docker
+
+  El backend puede ejecutarse mediante un contenedor Docker utilizando
+  el archivo docker-compose.yml incluido en la entrega. Esta opcion
+  elimina cualquier dependencia de entorno en el ordenador del
+  evaluador: no requiere Java ni Maven instalados.
+
+  Comando: docker-compose up
+
+  Requisitos mínimos:
+    Docker Desktop instalado y en ejecución
+
+  El contenedor arranca el backend con el perfil dev (H2 embebida),
+  cargando automáticamente los datos de prueba del archivo data.sql.
+  Una vez en ejecución, la API está disponible en:
+    http://localhost:8080
+  Swagger UI disponible en:
+    http://localhost:8080/swagger-ui.html
+  H2 Console disponible en:
+    http://localhost:8080/h2-console
+
+====================================================
+BLOQUE 2 — APLICACIÓN ANDROID (terminal de fichaje y consulta)
+====================================================
+
+La aplicación Android está diseñada para ejecutarse en una tablet que
+actúa como terminal de fichaje dentro de la empresa.
+
+Desde este terminal los empleados pueden registrar su entrada y salida,
+gestionar pausas y consultar información relacionada con su jornada
+laboral.
+
+Dependiendo del rol del usuario autenticado, la aplicación permite
+acceder a diferentes funcionalidades. Los usuarios con rol encargado
+pueden utilizar la aplicación tanto para registrar su propia jornada
+como para acceder a funciones de supervisión y gestión.
+
+La aplicación se comunica con la API REST del sistema para realizar
+todas las operaciones.
+
+OPCIÓN A — Ejecución desde Android Studio
+
+  Requisitos mínimos:
+    Android Studio compatible con Kotlin y AGP 9.0.1
+
+OPCIÓN B — Instalación mediante archivo APK
+
+  Se incluirá el archivo APK compilado de la aplicación.
+
+====================================================
+NOTAS
+====================================================
+
+- El perfil activo para la entrega evaluable es el perfil dev (H2),
+  no el perfil mysql, en las tres opciones de ejecución del backend.
+- Docker utiliza la misma imagen que el JAR pero empaquetada en un
+  contenedor, sin necesidad de Java instalado en el host.
+- Los datos de prueba se cargan automáticamente en las tres opciones
+  mediante data.sql al arrancar el backend.
+
+====================================================
+FIN StaffFlow_Entrega_v2.txt
+====================================================

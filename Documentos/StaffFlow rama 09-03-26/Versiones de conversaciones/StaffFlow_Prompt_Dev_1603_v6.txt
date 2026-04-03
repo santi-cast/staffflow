@@ -1,0 +1,322 @@
+====================================================
+STAFFFLOW -- PROMPT DEV 1603_v6
+SNAPSHOT COMPLETO -- HISTORICO DESDE INICIO
+====================================================
+
+Rama: develop
+Fusionar a: StaffFlow_Prompt_Maestro_v7.txt cuando el alcance este cerrado
+Referencia permanente: StaffFlow_Prompt_Maestro_v6.txt
+
+Proyecto: StaffFlow
+Alumno: Santiago Castillo
+Centro: iLERNA -- TFG DAM 2025/2026
+Entrega: 22 abril 2026
+Repo: https://github.com/santi-cast/staffflow
+
+====================================================
+CONVENCION DE NOMBRES
+====================================================
+
+Prompts:      StaffFlow_Prompt_[TIPO]_[DDMM]_v[N].txt
+Desviaciones: StaffFlow_Desviaciones_[DDMM]_v[N].txt
+Mejoras v2.0: StaffFlow_Mejoras_para_Version2.0_[DDMM]_v[N].txt
+La version reinicia a v1 cada dia nuevo.
+
+Ficheros activos:
+  Prompt dev:    StaffFlow_Prompt_Dev_1603_v6.txt  <- este fichero
+  Desviaciones:  StaffFlow_Desviaciones_1603_v8.txt
+  Mejoras v2.0:  StaffFlow_Mejoras_para_Version2.0_1603_v2.txt
+
+====================================================
+CONTEXTO PERSONAL -- LEER SIEMPRE
+====================================================
+
+Santiago estudia DAM online en iLERNA. Evaluacion del TFG:
+  50% video / 30% memoria / 20% codigo
+
+Decision irrevocable (09/03/2026):
+  "Prefiero un 5 aprendiendo que un 10 sin enterarme de nada."
+
+Prioridad del asistente:
+  1. Que Santiago entienda lo que implementa
+  2. Que el resultado sea funcional y demostrable
+  3. Que la documentacion lo respalde academicamente
+
+====================================================
+FASE 0 y FASE 1 -- COMPLETADAS
+====================================================
+
+Stack: Java 21 / Spring Boot 3.5.x / Maven / H2 (dev) / MySQL (prod)
+Android: Kotlin / AGP 9.0.1 / SIN Hilt
+54 RF / 29 RNF / 52 endpoints en 13 controllers / 7 tablas DDL v5
+
+Enums definitivos:
+  Rol(3):          ADMIN | ENCARGADO | EMPLEADO
+  TipoFichaje(9):  NORMAL | FESTIVO_NACIONAL | FESTIVO_LOCAL
+                   VACACIONES | ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                   BAJA_MEDICA | DIA_LIBRE_COMPENSATORIO
+                   AUSENCIA_INJUSTIFICADA
+  TipoAusencia(6): FESTIVO_NACIONAL | FESTIVO_LOCAL | VACACIONES
+                   ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                   DIA_LIBRE_COMPENSATORIO
+  TipoPausa(4):    COMIDA | DESCANSO | AUSENCIA_RETRIBUIDA | OTROS
+  CategoriaEmpleado(5): OPERARIO | ADMINISTRATIVO | TECNICO
+                        ENCARGADO | OTRO
+
+====================================================
+FASE 2 -- EN CURSO
+====================================================
+
+BLOQUES 1-5 -- COMPLETADOS Y VERIFICADOS
+
+  Bloque 1: 7 entidades JPA / 17 DTOs request / 18 DTOs response /
+            7 JpaRepository. Desviaciones D-001 a D-007, D-013/14/15.
+  Bloque 2: JWT + Security completo. Desviaciones D-012, D-016.
+  Bloque 3: EmpresaController E06-E07. Commit 25d6824.
+  Bloque 4: UsuarioController E08-E12 + EmpleadoController E13-E21.
+            Desviaciones D-017, D-018, D-019.
+            Datos prueba MySQL: admin(1) / test01(2,inactivo) /
+            emp01(3) / terminal_service(4) /
+            Ana Maria Garcia (empleadoId=1, usuarioId=3).
+  Bloque 5: FichajeController E22-E26 + PausaController E27-E29 +
+            TerminalController E48-E51. Desviaciones D-020/21/22.
+            Commits: ae5fa86 + 0e2136c + e4e188e. 12/12 verificados.
+
+BLOQUE 6 -- EN CURSO (sesiones 13-16)
+
+  Tarea 1: AusenciaController E30-E34. COMPLETADA. 7/7 verificados.
+  Tarea 2: PresenciaController E35-E37. COMPLETADA. 3/3 verificados.
+  Tarea 3: SaldoController E38-E41. COMPLETADA. 4/4 verificados.
+
+  Tarea 4: ProcesoCierreDiario + restriccion fecha ENCARGADO
+  *** PENDIENTE -- SIGUIENTE PASO ***
+
+====================================================
+TAREA 4 -- DISENO DEFINITIVO COMPLETO
+====================================================
+
+PARTE 1 -- ProcesoCierreDiario
+
+  Fichero actual: ProcesoDiarioService.java (esqueleto con
+    @Scheduled(cron = "0 1 0 * * *") y UnsupportedOperationException)
+  Accion requerida: renombrar clase a ProcesoCierreDiario,
+    cambiar cron a "0 55 23 * * *", implementar tres tareas.
+
+  TAREA A -- Cierre ausencias injustificadas:
+    Obtener todos los empleados activos con
+      empleadoRepository.findAllByActivoTrue() (verificar nombre exacto).
+    Para cada empleado sin fichaje en LocalDate.now():
+      Verificar con fichajeRepository.findByEmpleadoIdAndFecha().
+      Si no existe: crear Fichaje con:
+        tipo = TipoFichaje.AUSENCIA_INJUSTIFICADA
+        fecha = LocalDate.now()
+        horaEntrada = null
+        horaSalida = null
+        jornadaEfectivaMinutos = 0
+        totalPausasMinutos = 0
+        observaciones = "Generado automaticamente por ProcesoCierreDiario"
+        usuario = terminal_service (usuarioId=4, cargar desde repo)
+      Guardar con fichajeRepository.save().
+
+  TAREA B -- Procesado planificaciones pendientes:
+    Buscar con ausenciaRepository.findPendientesByFechaLessThanEqual(
+      LocalDate.now().plusDays(1)).
+    Para cada PlanificacionAusencia:
+      Si empleadoId == null (festivo global RF-26):
+        Para cada empleado activo: crear fichaje si no existe ya.
+      Si empleadoId != null (ausencia individual):
+        Verificar que no existe ya fichaje para ese empleado/fecha.
+        Si no existe: crear fichaje con TipoFichaje correspondiente.
+    Mapeo TipoAusencia -> TipoFichaje (todos directos por nombre):
+      FESTIVO_NACIONAL     -> TipoFichaje.FESTIVO_NACIONAL
+      FESTIVO_LOCAL        -> TipoFichaje.FESTIVO_LOCAL
+      VACACIONES           -> TipoFichaje.VACACIONES
+      ASUNTO_PROPIO        -> TipoFichaje.ASUNTO_PROPIO
+      PERMISO_RETRIBUIDO   -> TipoFichaje.PERMISO_RETRIBUIDO
+      DIA_LIBRE_COMPENSATORIO -> TipoFichaje.DIA_LIBRE_COMPENSATORIO
+    Marcar planificacion.setProcesado(true) y guardar.
+
+  TAREA C -- Actualizacion saldos anuales:
+    Ejecutar SIEMPRE despues de Tarea A y Tarea B.
+    Para cada empleado activo: llamar a
+      saldoService.recalcularParaProceso(empleado.getId(), anioActual).
+    CRITICO: recalcular() en SaldoService es @Transactional y tiene
+      logica correcta pero es llamado desde E40 (ADMIN). Para usarlo
+      desde ProcesoCierreDiario hay dos opciones:
+        OPCION A (preferida): extraer la logica de recalculo a un
+          metodo package-private o public en SaldoService llamado
+          recalcularParaProceso(Long empleadoId, Integer anio) que
+          no devuelve SaldoResponse (no hace falta el DTO) y que
+          ProcesoCierreDiario puede llamar directamente.
+        OPCION B: hacer public el metodo recalcular() existente y
+          llamarlo desde ProcesoCierreDiario ignorando el SaldoResponse.
+      Decidir con Santiago cual de las dos opciones aplicar.
+    ProcesoCierreDiario inyecta SaldoService directamente
+      (proceso interno Spring, sin JWT ni rol).
+
+PARTE 2 -- Restriccion de fecha para ENCARGADO (D-026)
+
+  Services a modificar: FichajeService / PausaService / AusenciaService
+  Endpoints afectados: E22 / E23 / E27 / E28 / E30 / E31
+  E32 NO necesita restriccion (se protege solo con procesado=false).
+
+  PATRON IDENTICO en los seis metodos:
+    El controller extrae el rol del token JWT y lo pasa al service.
+    En el service, al inicio de cada metodo afectado:
+
+      if (esEncargado && !fecha.isEqual(LocalDate.now())) {
+          throw new IllegalArgumentException(
+              "El ENCARGADO solo puede gestionar registros del dia actual");
+      }
+      -> HTTP 400 via GlobalExceptionHandler
+
+    Si rol == ADMIN: sin restriccion, pasa directo.
+
+  COMO PASA EL ROL DEL CONTROLLER AL SERVICE:
+    El controller recibe Authentication de Spring Security.
+    Extrae el rol con:
+      boolean esEncargado = authentication.getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().equals("ROLE_ENCARGADO"));
+    Lo pasa como parametro boolean al service.
+    Alternativa: pasar el username y que el service resuelva el rol
+    desde UsuarioRepository (mismo patron D-017 Opcion B).
+    Decidir con Santiago cual de las dos opciones aplicar.
+
+  FICHERO: FichajeService.java
+    crear() -- E22: fecha viene de request.getFecha()
+    actualizar() -- E23: fecha del fichaje existente (cargar antes de validar)
+
+  FICHERO: PausaService.java
+    crear() -- E27: fecha viene de request.getFecha()
+    cerrar() -- E28: fecha de la pausa existente (cargar antes de validar)
+
+  FICHERO: AusenciaService.java
+    crear() -- E30: fecha viene de request.getFecha()
+    actualizar() -- E31: fecha de la ausencia existente (cargar antes de validar)
+
+====================================================
+ESTADO ACTUAL DEL CODIGO
+====================================================
+
+Compilacion: OK -- arranque limpio con perfil mysql
+Endpoints operativos: 41 de 52 (E01-E41 + E48-E51 + E52)
+Endpoints pendientes: E42-E47 (Bloque 7)
+Commit Bloque 6 pendiente al cerrar Tareas 4, 5 y 6.
+
+Paquetes (com.staffflow):
+  config:     SecurityConfig.java -- OpenApiConfig.java
+  controller: 9 controllers operativos + 4 pendientes (Bloque 7)
+  domain.entity: 7 entidades JPA
+  domain.enums: 6 enums (5 originales + EstadoPresencia)
+  domain.repository: 7 JpaRepository
+  dto.request: 17 DTOs
+  dto.response: 18 DTOs
+  exception: GlobalExceptionHandler -- PinBloqueadoException
+             ConflictException
+  security: JwtTokenProvider -- JwtAuthFilter -- UserDetailsServiceImpl
+  service: 9 services operativos + 4 esqueleto (Bloque 7)
+  service.scheduled: ProcesoDiarioService.java
+    (esqueleto -- renombrar a ProcesoCierreDiario e implementar)
+
+====================================================
+REFERENCIA H2 -- BLOQUE PERMANENTE
+====================================================
+
+Perfil dev (H2):
+  spring.jpa.defer-datasource-initialization=true
+  Orden INSERT data.sql: configuracion_empresa -> usuarios ->
+    empleados -> planificacion_ausencias -> fichajes -> pausas ->
+    saldos_anuales
+  H2 Console: http://localhost:8080/h2-console
+    JDBC URL: jdbc:h2:mem:staffflow / User: sa / Password: (vacio)
+  Credenciales dev JWT: admin/admin1234, emp01/admin1234
+  PINs terminal dev: Ana Maria Garcia=1234, Laura Fernandez=3333
+
+====================================================
+PROXIMA SESION -- IMPLEMENTACION TAREA 4
+====================================================
+
+Objetivo: implementar ProcesoCierreDiario + restriccion fecha ENCARGADO.
+
+Ficheros a adjuntar obligatoriamente:
+  StaffFlow_Prompt_Dev_1603_v6.txt   <- este fichero
+  StaffFlow_Desviaciones_1603_v8.txt
+  ProcesoDiarioService.java          <- esqueleto a renombrar e implementar
+  FichajeService.java                <- anadir restriccion fecha E22/E23
+  PausaService.java                  <- anadir restriccion fecha E27/E28
+  AusenciaService.java               <- anadir restriccion fecha E30/E31
+  SaldoService.java                  <- extraer metodo para Tarea C
+
+Decisiones pendientes a tomar con Santiago antes de codificar:
+  1. Opcion A o B para reutilizar logica de recalculo en Tarea C:
+       A: extraer recalcularParaProceso() en SaldoService (preferida)
+       B: hacer public recalcular() e ignorar SaldoResponse
+  2. Como pasa el rol del controller al service en la restriccion fecha:
+       A: boolean esEncargado como parametro (mas explicito)
+       B: pasar username y resolver rol desde UsuarioRepository
+
+Verificar antes de codificar:
+  Nombre exacto metodo empleados activos en EmpleadoRepository.
+  findPendientesByFechaLessThanEqual existe en PlanificacionAusenciaRepository.
+  Mapeo TipoAusencia -> TipoFichaje: todos directos por nombre.
+
+====================================================
+ARCHIVOS DE REFERENCIA
+====================================================
+
+TRANSVERSAL:
+  StaffFlow_Desviaciones_1603_v8.txt (D-001 a D-026 -- activo)
+  StaffFlow_Mejoras_para_Version2.0_1603_v2.txt (M-001 a M-005)
+  StaffFlow_Fase2.txt (diario vivo -- pendiente actualizar)
+  StaffFlow_H2_Configuracion.txt
+  StaffFlow_Entrega_v1.txt
+
+FASE 1 (snapshots, no modificar):
+  StaffFlow_Endpoints_v3.docx (referencia contratos API)
+  StaffFlow_BaseDatos_v4.docx
+  staffflow_v5_ddl_mysql.sql (activo)
+
+FASE 2:
+  StaffFlow_Bloque6_Tarea1_Ausencias.txt (E30-E34, 7/7 OK)
+  StaffFlow_Bloque6_Tarea2_Presencia.txt (E35-E37, 3/3 OK)
+  StaffFlow_Bloque6_Tarea3_Saldos.txt (E38-E41, 4/4 OK)
+
+====================================================
+REGLAS DE TRABAJO
+====================================================
+
+1. No inventar funcionalidades, endpoints ni campos fuera de referencia.
+2. Pedir archivo de referencia si hay duda antes de responder.
+3. Preguntar siempre antes de generar codigo o ficheros nuevos.
+4. Detectar incoherencias antes de proponer correcciones.
+5. Al cerrar sesion: generar Dev nuevo. Nunca sobreescribir.
+6. Avisar si el contexto esta proximo a agotarse.
+
+====================================================
+CIERRE DE SESION -- RECORDATORIO
+====================================================
+
+Al cerrar siempre:
+  1. Generar StaffFlow_Prompt_Dev_[DDMM]_v[N+1].txt
+  2. Actualizar StaffFlow_Desviaciones_[DDMM]_v[N+1].txt si hubo cambios
+  3. Actualizar StaffFlow_Mejoras_para_Version2.0_[DDMM]_v[N+1].txt si hubo cambios
+  4. Actualizar ficheros de bloque si hubo cambios
+  5. Presentar para descarga todos los ficheros modificados
+  6. Confirmar que adjuntar en la proxima sesion
+
+====================================================
+FIN PROMPT DEV 1603_v6
+Creado: 16/03/2026
+Motivo: Cierre de sesion 16 -- diseno completo Tarea 4 documentado
+v6: D-026 anadida (restriccion fecha ENCARGADO E22/E23/E27/E28/E30/E31),
+    dos decisiones de implementacion pendientes documentadas,
+    ficheros necesarios para proxima sesion listados explicitamente,
+    seccion Tarea 4 ampliada con pseudocodigo detallado.
+Cambios respecto a Dev 1603_v5:
+  - D-026 documentada y referenciada
+  - Tarea 4 expandida con pseudocodigo de implementacion
+  - Dos opciones de diseno documentadas para decidir con Santiago
+  - Lista de ficheros a adjuntar obligatoriamente en proxima sesion
+  - Desviaciones activo: v8
+Prompt siguiente sesion: Dev 1603_v7 (misma sesion) o Dev [DDMM]_v1 (dia nuevo)
+====================================================

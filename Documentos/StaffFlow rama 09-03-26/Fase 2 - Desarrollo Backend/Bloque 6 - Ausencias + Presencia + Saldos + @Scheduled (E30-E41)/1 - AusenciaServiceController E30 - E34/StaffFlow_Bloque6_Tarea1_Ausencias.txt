@@ -1,0 +1,485 @@
+====================================================
+STAFFFLOW — BLOQUE 6 TAREA 1 — AUSENCIAS
+====================================================
+
+Fecha: 13/03/2026
+Sesión: 13 (continuación Bloque 6)
+Endpoints implementados: E30, E31, E32, E33, E34
+Commit pendiente: al cerrar el Bloque 6 completo
+
+====================================================
+1. CONTEXTO
+====================================================
+
+La Tarea 1 del Bloque 6 implementa el Grupo 7 de la API REST:
+planificación de ausencias. Es el único grupo del sistema que
+incluye un DELETE real (E32), el resto son bajas lógicas (activo=false).
+
+Antes de escribir código se revisaron los contratos de E30-E34
+en StaffFlow_Endpoints_v3.docx para no inventar nada.
+
+====================================================
+2. FICHEROS CREADOS Y MODIFICADOS
+====================================================
+
+NUEVO — AusenciaController.java
+  Paquete: com.staffflow.controller
+  Creado desde cero (D-016: los controllers no tienen fase de esqueleto).
+
+MODIFICADO — AusenciaService.java
+  Paquete: com.staffflow.service
+  Sustituye el esqueleto del Bloque 1 (5 métodos con UnsupportedOperationException).
+  Todos los métodos implementados con lógica real.
+
+MODIFICADO — PlanificacionAusenciaRepository.java
+  Paquete: com.staffflow.domain.repository
+  Sustituye el esqueleto del Bloque 1 (sin métodos custom).
+  4 métodos custom añadidos.
+
+MODIFICADO — EmpleadoRepository.java
+  Paquete: com.staffflow.domain.repository
+  1 método nuevo añadido al final: findByUsuarioUsername.
+  El resto del fichero no se tocó.
+
+====================================================
+3. ENDPOINTS IMPLEMENTADOS
+====================================================
+
+----------------------------------------------------
+E30 — POST /api/v1/ausencias
+RF-25 (ausencia individual) | RF-26 (festivo global)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticación: JWT requerido
+
+Request body:
+  empleadoId   Long      nullable — null = festivo global (RF-26)
+  fecha        LocalDate obligatorio
+  tipoAusencia TipoAusencia obligatorio
+  observaciones String   opcional
+
+Lógica del service:
+  1. Valida UNIQUE(empleado_id, fecha) con existsByEmpleadoIdAndFecha
+     antes de insertar. Si ya existe: ConflictException → HTTP 409.
+  2. Si empleadoId != null: resuelve la entidad Empleado con findById.
+     Si no existe: IllegalStateException → HTTP 404.
+  3. Resuelve el Usuario auditor con findByUsername(username del JWT).
+  4. Construye PlanificacionAusencia con procesado=false siempre.
+  5. Persiste y devuelve AusenciaResponse.
+
+Códigos HTTP:
+  201 Created  ausencia creada con procesado=false
+  400          datos inválidos (@Valid)
+  403          rol insuficiente
+  404          empleadoId no existe
+  409          ya existe ausencia ese día para ese empleado
+
+----------------------------------------------------
+E31 — PATCH /api/v1/ausencias/{id}
+RF-27 (modificar ausencia planificada)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticación: JWT requerido
+
+Request body (PATCH selectivo — solo campos no nulos):
+  tipoAusencia  TipoAusencia  opcional
+  observaciones String        opcional
+
+Campos no modificables (no están en AusenciaPatchRequest):
+  empleadoId, fecha (inmutables por diseño)
+
+Lógica del service:
+  1. findById(id) — si no existe: IllegalStateException → HTTP 404.
+  2. Si procesado=true: ConflictException → HTTP 409.
+     Mensaje: "La ausencia ya fue procesada. Modifica el fichaje
+     generado mediante E23."
+  3. Actualiza solo los campos no nulos del request (patrón PATCH).
+  4. Persiste y devuelve AusenciaResponse actualizado.
+
+Códigos HTTP:
+  200 OK   ausencia actualizada
+  400      datos inválidos
+  403      rol insuficiente
+  404      ausencia no encontrada
+  409      procesado=true — modifica el fichaje directamente (E23)
+
+----------------------------------------------------
+E32 — DELETE /api/v1/ausencias/{id}
+RF-28 (único DELETE real del sistema)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticación: JWT requerido
+
+Lógica del service:
+  1. findById(id) — si no existe: IllegalStateException → HTTP 404.
+  2. Si procesado=true: ConflictException → HTTP 409.
+     Mensaje: "La ausencia ya fue procesada y tiene un fichaje
+     asociado. No se puede eliminar (RNF-L01)."
+  3. ausenciaRepository.delete(ausencia) — SQL DELETE real.
+
+Códigos HTTP:
+  204 No Content  ausencia eliminada
+  403             rol insuficiente
+  404             ausencia no encontrada
+  409             procesado=true, no se puede eliminar
+
+Nota de diseño: es el único endpoint de todo StaffFlow que
+ejecuta un SQL DELETE real. Todos los demás son bajas lógicas
+(activo=false). Decisión nº2 del proyecto.
+
+----------------------------------------------------
+E33 — GET /api/v1/ausencias
+RF-29 (listar con filtros opcionales)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticación: JWT requerido
+
+Query params (todos opcionales y combinables):
+  ?empleadoId=number
+  ?desde=YYYY-MM-DD
+  ?hasta=YYYY-MM-DD
+  ?procesado=true|false
+
+Sin filtros devuelve todas las ausencias de todos los empleados,
+incluyendo festivos globales (empleado_id = null en BD).
+
+Lógica del service:
+  Delega en findByFiltros() con los 4 parámetros.
+  Si empleadoId se pasa, la query JPQL excluye festivos globales.
+  Si empleadoId es null, incluye todo (festivos globales + individuales).
+
+Códigos HTTP:
+  200 OK   lista de ausencias (puede ser vacía)
+  403      rol insuficiente
+
+----------------------------------------------------
+E34 — GET /api/v1/ausencias/me
+RF-52 (ausencias propias del empleado autenticado)
+----------------------------------------------------
+
+Roles: EMPLEADO
+Autenticación: JWT requerido
+
+Query params (opcionales):
+  ?desde=YYYY-MM-DD
+  ?hasta=YYYY-MM-DD
+
+Lógica del service:
+  1. authentication.getName() extrae el username del JWT.
+  2. findByUsuarioUsername(username) resuelve el empleado.
+     Si no tiene perfil de empleado (ADMIN): IllegalStateException → 404.
+  3. findByEmpleadoIdAndRango(empleadoId, desde, hasta) devuelve
+     las ausencias propias en el rango indicado.
+
+Códigos HTTP:
+  200 OK   lista de ausencias propias (puede ser vacía)
+  403      acceso denegado (rol incorrecto)
+
+====================================================
+4. REPOSITORY — MÉTODOS CUSTOM AÑADIDOS
+====================================================
+
+PlanificacionAusenciaRepository — 4 métodos nuevos:
+
+  existsByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha)
+    Spring Data lo genera automáticamente.
+    Usado en E30 para validación preventiva UNIQUE(empleado_id, fecha).
+
+  findByFiltros(Long empleadoId, LocalDate desde, LocalDate hasta, Boolean procesado)
+    @Query JPQL con LEFT JOIN FETCH empleado.
+    Patrón :param IS NULL OR campo = :param para filtros opcionales.
+    Empleado_id null en BD (festivos globales) solo aparece cuando
+    empleadoId no se pasa como filtro.
+
+  findByEmpleadoIdAndRango(Long empleadoId, LocalDate desde, LocalDate hasta)
+    @Query JPQL. empleadoId obligatorio (viene del JWT).
+    Usado exclusivamente por E34 /me.
+
+  findPendientesByFechaLessThanEqual(LocalDate fecha)
+    @Query JPQL con LEFT JOIN FETCH empleado.
+    Busca ausencias con procesado=false y fecha <= fecha indicada.
+    Preparado para ProcesoDiario @Scheduled (Tarea 4 del Bloque 6).
+    No se usa en esta tarea, pero se añade aquí para no tener que
+    modificar el repository en la Tarea 4.
+
+EmpleadoRepository — 1 método nuevo:
+
+  findByUsuarioUsername(String username)
+    Spring Data lo genera automáticamente navegando la relación
+    empleado → usuario → username.
+    Usado en AusenciaService.listarMias() (E34) para resolver el
+    empleadoId del empleado autenticado en un solo paso.
+    Más limpio que el doble lookup findByUsername + findByUsuarioId
+    que ya existía en el proyecto.
+
+====================================================
+5. DECISIONES TÉCNICAS DE ESTA TAREA
+====================================================
+
+Decisión T1-A — Firma de listarMias() recibe username, no empleadoId
+  El controller extrae authentication.getName() (username) y lo pasa
+  directamente al service. El service resuelve internamente el empleadoId.
+  Consistente con el patrón establecido en FichajeService.listarPropios()
+  y EmpleadoService.obtenerMiPerfil().
+
+Decisión T1-B — findByUsuarioUsername en lugar de doble lookup
+  Se añadió findByUsuarioUsername(String username) a EmpleadoRepository
+  en lugar de reutilizar findByUsername + findByUsuarioId (Opción B).
+  Razón: una sola query es más eficiente y el método es reutilizable
+  en cualquier service futuro que necesite resolver empleado por username.
+
+Decisión T1-C — E34 declarado antes de /{id} en el controller
+  GetMapping("/me") declarado antes de GetMapping("/{id}") para que
+  Spring MVC no interprete "me" como valor del path variable {id}.
+  Mismo patrón que FichajeController (E25 incompletos, E26 /me) y
+  EmpleadoController (E21 /me).
+
+Decisión T1-D — findPendientesByFechaLessThanEqual añadido ahora
+  Aunque este método no se usa en la Tarea 1, se añade al repository
+  en este momento para evitar una segunda modificación del fichero
+  en la Tarea 4 (ProcesoDiario). No tiene coste y simplifica la Tarea 4.
+
+Decisión T1-E — 409 para procesado=true en E31 y E32
+  Cuando una ausencia tiene procesado=true se lanza ConflictException
+  (HTTP 409) en lugar de IllegalArgumentException (HTTP 400).
+  Razón: el problema no es que el dato de entrada sea inválido, sino
+  que el estado actual del recurso impide la operación. Es semántica
+  de conflicto, no de validación. Consistente con la separación de
+  excepciones establecida en D-019.
+
+====================================================
+6. VERIFICACIÓN FUNCIONAL
+====================================================
+
+----------------------------------------------------
+6.1 METODOLOGÍA: POR QUÉ SE VERIFICA POR CONSOLA
+----------------------------------------------------
+
+La verificación funcional de los endpoints se realiza mediante
+PowerShell (Invoke-WebRequest) en lugar de Swagger UI por las
+siguientes razones:
+
+  Velocidad: en Swagger UI cada endpoint requiere abrir el
+  formulario, rellenar los campos manualmente, autorizar el token
+  y hacer clic en Execute. Por consola, el mismo test se ejecuta
+  en una sola línea en menos de 2 segundos.
+
+  Reproducibilidad: los comandos de PowerShell quedan documentados
+  exactamente tal como se ejecutaron. Cualquier persona puede
+  reproducir la verificación completa copiando y pegando los
+  comandos en orden.
+
+  Automatización parcial: al tener el token en una variable ($token)
+  se pueden encadenar múltiples tests sin volver a autenticar.
+
+  Trazabilidad: la respuesta completa (StatusCode, Content, headers)
+  queda visible en la consola y se puede copiar íntegramente a la
+  documentación, como se hace en este fichero.
+
+  Swagger sigue siendo útil para exploración interactiva y para
+  verificar que los endpoints están correctamente documentados
+  con sus anotaciones @Operation. Para verificación funcional
+  sistemática, PowerShell es más eficiente.
+
+----------------------------------------------------
+6.2 CONFIGURACIÓN INICIAL: OBTENER TOKEN JWT
+----------------------------------------------------
+
+Antes de ejecutar cualquier test autenticado hay que obtener el
+token JWT del usuario admin. El token se almacena en la variable
+$token para reutilizarlo en todos los comandos siguientes.
+
+Comando:
+  $r = Invoke-WebRequest
+    -Uri "http://localhost:8080/api/v1/auth/login"
+    -Method POST
+    -ContentType "application/json"
+    -Body '{"username":"admin","password":"admin1234"}'
+    -UseBasicParsing
+  $token = ($r.Content | ConvertFrom-Json).token
+
+Nota: -UseBasicParsing es obligatorio en PowerShell en Windows
+para evitar el aviso de seguridad sobre ejecución de scripts
+al parsear HTML. Sin este flag, PowerShell muestra un diálogo
+interactivo que interrumpe la ejecución automatizada.
+
+Credenciales disponibles en perfil mysql:
+  admin/admin1234        → rol ADMIN  (token en $token)
+  encargado01/admin1234  → rol ENCARGADO
+  emp01/admin1234        → rol EMPLEADO (token en $tokenEmp)
+
+----------------------------------------------------
+6.3 RESULTADOS DE VERIFICACIÓN
+----------------------------------------------------
+
+CASO 1 — E30 POST ausencia individual (RF-25)
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias"
+      -Method POST
+      -ContentType "application/json"
+      -Headers @{Authorization="Bearer $token"}
+      -Body '{"empleadoId":1,"fecha":"2026-03-20","tipoAusencia":"VACACIONES","observaciones":"Vacaciones planificadas"}'
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 201
+    Content: {"id":1,"empleadoId":1,"fecha":"2026-03-20",
+              "tipoAusencia":"VACACIONES","procesado":false,
+              "usuarioId":1,"observaciones":"Vacaciones planificadas",
+              "fechaCreacion":"2026-03-13T20:18:31.5959026"}
+  Verificado: procesado=false, usuarioId=1 (admin). CORRECTO ✅
+
+CASO 2 — E30 POST festivo global (RF-26, empleadoId=null)
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias"
+      -Method POST
+      -ContentType "application/json"
+      -Headers @{Authorization="Bearer $token"}
+      -Body '{"empleadoId":null,"fecha":"2026-03-25","tipoAusencia":"FESTIVO_NACIONAL","observaciones":"Festivo nacional"}'
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 201
+    Content: {"id":2,"empleadoId":null,"fecha":"2026-03-25",
+              "tipoAusencia":"FESTIVO_NACIONAL","procesado":false,
+              "usuarioId":1,"observaciones":"Festivo nacional",
+              "fechaCreacion":"2026-03-13T20:18:48.5596132"}
+  Verificado: empleadoId=null (festivo global). CORRECTO ✅
+
+CASO 3 — E30 POST duplicado → 409 Conflict
+  Comando: misma llamada que el Caso 1 (empleadoId=1, fecha=2026-03-20).
+
+  Resultado:
+    Error en el servidor remoto: (409) Conflicto.
+  Verificado: ConflictException lanzada correctamente. CORRECTO ✅
+
+CASO 4 — E33 GET sin filtros (RF-29)
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias"
+      -Method GET
+      -Headers @{Authorization="Bearer $token"}
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 200
+    Content: lista con 2 ausencias (id=1 individual, id=2 festivo global)
+    RawContentLength: 373
+  Verificado: devuelve ambas ausencias incluyendo festivo global. CORRECTO ✅
+
+CASO 5 — E31 PATCH modificar tipo ausencia (RF-27)
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias/1"
+      -Method PATCH
+      -ContentType "application/json"
+      -Headers @{Authorization="Bearer $token"}
+      -Body '{"tipoAusencia":"ASUNTO_PROPIO"}'
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 200
+    Content: {"id":1,"empleadoId":1,"fecha":"2026-03-20",
+              "tipoAusencia":"ASUNTO_PROPIO","procesado":false,
+              "usuarioId":1,"observaciones":"Vacaciones planificadas",
+              "fechaCreacion":"2026-03-13T20:18:31"}
+  Verificado: tipoAusencia actualizado a ASUNTO_PROPIO.
+  Observaciones intactas (PATCH selectivo correcto). CORRECTO ✅
+
+CASO 6 — E32 DELETE ausencia con procesado=false (RF-28)
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias/2"
+      -Method DELETE
+      -Headers @{Authorization="Bearer $token"}
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 204
+    RawContentLength: 0 (sin body, correcto para 204 No Content)
+  Verificado: DELETE real ejecutado, sin body en respuesta. CORRECTO ✅
+
+CASO 7 — E34 GET /me con rol EMPLEADO (RF-52)
+  Preparación: login con emp01 para obtener token de empleado.
+    $r2 = Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/auth/login"
+      -Method POST
+      -ContentType "application/json"
+      -Body '{"username":"emp01","password":"admin1234"}'
+      -UseBasicParsing
+    $tokenEmp = ($r2.Content | ConvertFrom-Json).token
+
+  Incidencia previa: emp01 tenía activo=0 en MySQL → 401 en el login.
+  Corrección aplicada antes de ejecutar el test (ver D-023):
+    UPDATE usuarios
+    SET password_hash = '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
+        activo = 1
+    WHERE id = 3;
+
+  Comando:
+    Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/ausencias/me"
+      -Method GET
+      -Headers @{Authorization="Bearer $tokenEmp"}
+      -UseBasicParsing
+
+  Resultado:
+    StatusCode: 200
+    Content: [{"id":1,"empleadoId":1,"fecha":"2026-03-20",
+               "tipoAusencia":"ASUNTO_PROPIO","procesado":false,
+               "usuarioId":1,"observaciones":"Vacaciones planificadas",
+               "fechaCreacion":"2026-03-13T20:18:31"}]
+  Verificado: empleado ve solo su propia ausencia (id=1).
+  La ausencia id=2 (festivo global, ya eliminada) no aparece. CORRECTO ✅
+
+----------------------------------------------------
+6.4 RESUMEN DE VERIFICACIÓN
+----------------------------------------------------
+
+  E30 POST ausencia individual      201  ✅
+  E30 POST festivo global           201  ✅
+  E30 POST duplicado                409  ✅
+  E33 GET sin filtros               200  ✅
+  E31 PATCH modificar tipo          200  ✅
+  E32 DELETE procesado=false        204  ✅
+  E34 GET /me (rol EMPLEADO)        200  ✅
+
+  Total: 7/7 casos verificados. Tarea 1 CERRADA.
+
+====================================================
+7. INCIDENCIAS DURANTE LA VERIFICACIÓN
+====================================================
+
+D-023 — emp01 con activo=0 en MySQL
+  Al intentar login con emp01 para verificar E34 se obtuvo 401.
+  Causa: el usuario había sido desactivado durante pruebas del Bloque 4
+  (E12 baja lógica) y no se reactivó. El hash de contraseña también
+  estaba inconsistente.
+  Corrección: UPDATE con activo=1 y hash conocido de admin1234.
+  Documentado en StaffFlow_Desviaciones.txt como D-023.
+  Sin impacto en código ni diseño.
+
+====================================================
+8. ESTADO AL CERRAR LA TAREA 1
+====================================================
+
+Compilación: OK — arranque limpio en 4.896s con perfil mysql
+Swagger: 5 endpoints visibles en grupo Ausencias
+Verificación funcional: COMPLETADA — 7/7 casos correctos
+Commit: pendiente — se hará al cerrar el Bloque 6 completo
+
+Ficheros modificados en esta tarea:
+  PlanificacionAusenciaRepository.java  (4 métodos custom nuevos)
+  AusenciaService.java                  (implementación completa)
+  AusenciaController.java               (fichero nuevo)
+  EmpleadoRepository.java               (findByUsuarioUsername añadido)
+
+====================================================
+FIN TAREA 1 — AUSENCIAS
+====================================================

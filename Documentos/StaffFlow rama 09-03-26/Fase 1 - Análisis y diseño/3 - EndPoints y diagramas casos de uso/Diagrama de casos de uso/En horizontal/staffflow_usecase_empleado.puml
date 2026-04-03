@@ -1,0 +1,94 @@
+@startuml staffflow_usecase_empleado
+' StaffFlow — Diagrama de Casos de Uso — Actor EMPLEADO
+' Figura 6.3 · @author Santiago Castillo · iLERNA TFG DAM 2025/2026
+
+top to bottom direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #FAFAFA
+  BorderColor     #1A237E
+  FontSize        10
+}
+skinparam actor {
+  BorderColor #333333
+  FontSize    12
+  FontStyle   bold
+}
+skinparam package {
+  FontSize    11
+  FontStyle   bold
+  BorderColor #888888
+}
+skinparam ArrowColor     #555555
+skinparam ArrowThickness 1
+
+' ── ACTOR ────────────────────────────────────────────
+actor "EMPLEADO\n─────\nSolo sus\npropios datos" as EM #2E7D32
+
+rectangle "StaffFlow — Sistema" {
+
+  package "Auth\n/api/v1/auth" #F3E5F5 {
+    usecase "E01 Login · E02 Logout\nE03 Cambiar contrasena\nE04 Solicitar reset [publico]\nE05 Resetear con token [publico]" as MOD_AUTH
+  }
+
+  package "Empleados\n/api/v1/empleados" #E8EAF6 {
+    usecase "E21 Consultar propio perfil (/me)" as MOD_EMPL
+  }
+
+  package "Fichajes\n/api/v1/fichajes" #E8F5E9 {
+    usecase "E26 Historial propio\ncon filtros por periodo*" as MOD_FICH
+  }
+
+  package "Ausencias\n/api/v1/ausencias" #E3F2FD {
+    usecase "E34 Propias ausencias\nplanificadas por periodo" as MOD_AUS
+  }
+
+  package "Presencia\n/api/v1/presencia" #ECEFF1 {
+    usecase "E37 Propio parte diario\n(estado del dia en curso)" as MOD_PRES
+  }
+
+  package "Saldos\n/api/v1/saldos" #FFFDE7 {
+    usecase "E41 Propio saldo anual\n(vacaciones + horas)" as MOD_SALD
+  }
+
+  package "Informes\n/api/v1/informes[/pdf]" #FCE4EC {
+    usecase "E42 Mensual propio\nE43 Rango propio\nE45-E46 PDF propios firmables" as MOD_INF
+  }
+
+  package "Terminal\n/api/v1/terminal  [SIN JWT]" #FFF3E0 {
+    usecase "E48 Entrada PIN/NFC\nE49 Salida PIN/NFC\nE50 Iniciar pausa · E51 Finalizar pausa" as MOD_TERM
+  }
+}
+
+' ── RELACIONES EMPLEADO ──────────────────────────────
+EM --> MOD_AUTH
+EM --> MOD_EMPL
+EM --> MOD_FICH
+EM --> MOD_AUS
+EM --> MOD_PRES
+EM --> MOD_SALD
+EM --> MOD_INF
+EM --> MOD_TERM
+
+note right of MOD_FICH
+  *Spring Security HTTP 403
+  si intenta acceder a datos
+  de otro empleado (Decision n10)
+end note
+
+note right of MOD_TERM
+  Autenticacion por PIN/NFC.
+  Sin JWT. Bloqueo tras 5
+  intentos fallidos (RNF-S05).
+end note
+
+legend bottom
+  | <back:#2E7D32><color:white> EMPLEADO </color></back> | Solo sus propios datos. Spring Security bloquea acceso ajeno con HTTP 403. |
+  | [publico]                                             | Sin autenticacion -- accesible sin JWT ni PIN                               |
+  | [SIN JWT]                                             | Autenticacion por PIN/NFC -- cadena de seguridad propia (RNF-S05)          |
+  | *                                                     | Endpoints con restricciones adicionales -- ver notas del diagrama           |
+endlegend
+
+@enduml

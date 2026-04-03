@@ -1,0 +1,615 @@
+====================================================
+STAFFFLOW -- BLOQUE 6 TAREA 2 -- PRESENCIA
+====================================================
+
+Fecha: 13/03/2026
+Sesion: 13 (continuacion Bloque 6)
+Endpoints implementados: E35, E36, E37
+Commit pendiente: al cerrar el Bloque 6 completo
+
+====================================================
+1. CONTEXTO
+====================================================
+
+La Tarea 2 del Bloque 6 implementa el Grupo 8 de la API REST:
+control de presencia en tiempo real. Es el unico grupo del sistema
+que no crea ni modifica ningun dato: todos sus endpoints son GET
+de solo lectura que calculan el estado de cada empleado aggregando
+informacion de tres tablas (fichajes, pausas, planificacion_ausencias).
+
+Antes de escribir codigo se revisaron los contratos de E35-E37
+en StaffFlow_Endpoints_v3.docx y se leyeron las entidades Fichaje,
+Pausa, Empleado y los repositorios FichajeRepository, PausaRepository,
+EmpleadoRepository para conocer los nombres exactos de campos y
+metodos existentes antes de anadir nada nuevo.
+
+Decision de diseno previa verificada en el docx:
+  PresenciaController esta separado de FichajeController por
+  responsabilidad unica. Los fichajes son el registro historico
+  inmutable (RD-ley 8/2019). La presencia es una vista calculada
+  en tiempo real. Mezclarlos confundiria las responsabilidades.
+  El docx lo llama "patron Query Object" (vista calculada,
+  sin escritura, sin estado propio).
+
+Refactoring de DTOs realizado en esta tarea:
+  El ParteDiarioResponse.java existente (esqueleto del Bloque 1)
+  representaba un empleado individual. El contrato de E35 exige
+  un objeto raiz con contadores globales mas un array detalle[].
+  Se tomo la decision de renombrar el DTO existente a
+  DetallePresenciaResponse y crear un ParteDiarioResponse nuevo
+  con la estructura correcta. Decision de nomenclatura profesional:
+  los nombres deben ser autodescriptivos sin necesidad de contexto.
+
+====================================================
+2. FICHEROS CREADOS Y MODIFICADOS
+====================================================
+
+MODIFICADO -- FichajeRepository.java
+  Paquete: com.staffflow.domain.repository
+  1 metodo nuevo anadido al final: findByFechaWithEmpleado.
+  El resto del fichero no se toco.
+
+MODIFICADO -- PausaRepository.java
+  Paquete: com.staffflow.domain.repository
+  1 metodo nuevo anadido al final: findPausasActivasByFecha.
+  El resto del fichero no se toco.
+
+MODIFICADO -- PlanificacionAusenciaRepository.java
+  Paquete: com.staffflow.domain.repository
+  1 metodo nuevo anadido al final: findByFechaAndProcesadoFalse.
+  El resto del fichero no se toco.
+
+NUEVO -- DetallePresenciaResponse.java
+  Paquete: com.staffflow.dto.response
+  Renombrado desde el ParteDiarioResponse existente (Bloque 1).
+  Representa una fila individual del array detalle[] en E35
+  y la respuesta directa de E37 /me.
+
+NUEVO -- ParteDiarioResponse.java (reemplaza el anterior)
+  Paquete: com.staffflow.dto.response
+  El fichero anterior se descarta. Este nuevo representa el
+  objeto raiz de E35: contadores globales + List<DetallePresenciaResponse>.
+
+NUEVO -- SinJustificarResponse.java
+  Paquete: com.staffflow.dto.response
+  Representa una fila de E36: datos minimos de un empleado
+  sin justificacion (empleadoId, nombre, apellido1, apellido2).
+
+NUEVO -- PresenciaService.java
+  Paquete: com.staffflow.service
+  Sustituye el esqueleto del Bloque 1 (3 metodos con
+  UnsupportedOperationException). Implementacion completa
+  con logica de clasificacion de estado en tiempo real.
+
+NUEVO -- PresenciaController.java
+  Paquete: com.staffflow.controller
+  Creado desde cero (D-016: los controllers no tienen esqueleto).
+
+====================================================
+3. ENDPOINTS IMPLEMENTADOS
+====================================================
+
+----------------------------------------------------
+E35 -- GET /api/v1/presencia/parte-diario
+RF-30 (parte diario completo)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticacion: JWT requerido
+
+Query params:
+  ?fecha=YYYY-MM-DD   opcional -- por defecto hoy (LocalDate.now())
+
+Respuesta 200:
+  {
+    "fecha": "2026-03-13",
+    "totalEmpleados": n,
+    "fichados": n,
+    "enPausa": n,
+    "ausencias": n,
+    "sinJustificar": n,
+    "detalle": [
+      { empleadoId, nombre, apellido1, apellido2, estado,
+        horaEntrada, horaSalida, pausaActiva, fichajeTipo }
+    ]
+  }
+
+Logica del service:
+  1. 4 queries planas en paralelo conceptual (sin N+1):
+       findByActivo(true)                  --> todos los empleados activos
+       findByFechaWithEmpleado(fecha)      --> fichajes del dia con empleado
+       findPausasActivasByFecha(fecha)     --> pausas activas del dia
+       findByFechaAndProcesadoFalse(fecha) --> ausencias planificadas del dia
+  2. Construye Maps y Sets en memoria para clasificacion O(n).
+  3. Detecta si hay festivo global (ausencia con empleado=null).
+  4. Clasifica cada empleado con clasificarEmpleado() (metodo privado).
+  5. Acumula contadores globales en el switch por estado.
+  6. Ordena detalle[] por apellido1, apellido2, nombre.
+  7. Devuelve ParteDiarioResponse con contadores + detalle.
+
+Nota sobre el contador fichados:
+  Incluye EN_PAUSA porque un empleado en pausa tambien cuenta
+  como fichado. El contador enPausa es subconjunto de fichados.
+
+Codigos HTTP:
+  200 OK   parte diario con contadores y detalle
+  403      rol insuficiente
+
+----------------------------------------------------
+E36 -- GET /api/v1/presencia/sin-justificar
+RF-31 (empleados sin justificacion)
+----------------------------------------------------
+
+Roles: ADMIN, ENCARGADO
+Autenticacion: JWT requerido
+
+Query params:
+  ?fecha=YYYY-MM-DD   opcional -- por defecto hoy
+
+Respuesta 200:
+  [ { empleadoId, nombre, apellido1, apellido2 }, ... ]
+  Lista vacia si todos tienen registro o si hay festivo global.
+
+Logica del service:
+  1. Mismas 4 queries que E35 (mismos datos, misma carga).
+  2. Si hay festivo global --> devuelve List.of() inmediatamente.
+     Razon: todos los empleados tienen AUSENCIA_PLANIFICADA ese dia,
+     nadie esta sin justificar aunque el proceso nocturno aun no
+     haya generado los fichajes.
+  3. Filtra empleados que no tienen fichaje, no estan en pausa
+     y no tienen ausencia planificada individual.
+  4. Devuelve List<SinJustificarResponse> ordenada por apellido1.
+
+Codigos HTTP:
+  200 OK   lista de empleados sin justificar (puede ser vacia)
+  403      rol insuficiente
+
+----------------------------------------------------
+E37 -- GET /api/v1/presencia/parte-diario/me
+RF-54 (estado propio del empleado autenticado)
+----------------------------------------------------
+
+Roles: EMPLEADO
+Autenticacion: JWT requerido
+
+Query params:
+  ?fecha=YYYY-MM-DD   opcional -- por defecto hoy
+
+Respuesta 200:
+  { empleadoId, nombre, apellido1, apellido2, estado,
+    horaEntrada, horaSalida, pausaActiva, fichajeTipo }
+
+Logica del service:
+  1. authentication.getName() --> username --> findByUsuarioUsername()
+     --> empleado. Si no tiene perfil de empleado: 404.
+  2. Carga solo los datos del empleado concreto (no carga todos):
+       findByEmpleadoIdAndFecha(id, fecha)              --> su fichaje
+       findByEmpleadoIdAndFechaAndHoraFinIsNull(id, f)  --> pausa activa
+       findByFechaAndProcesadoFalse(fecha)              --> ausencias del dia
+  3. Reutiliza clasificarEmpleado() para garantizar que el estado
+     calculado es identico al que ve el encargado en E35.
+  4. Devuelve DetallePresenciaResponse con su estado.
+
+Codigos HTTP:
+  200 OK   estado propio del dia
+  403      acceso denegado (rol incorrecto)
+  404      usuario sin perfil de empleado
+
+====================================================
+4. REPOSITORY -- METODOS CUSTOM ANADIDOS
+====================================================
+
+FichajeRepository -- 1 metodo nuevo:
+
+  findByFechaWithEmpleado(LocalDate fecha)
+    @Query JPQL con JOIN FETCH f.empleado.
+    Devuelve todos los fichajes de una fecha con el empleado cargado.
+    Se usa @Query explicita porque el metodo convencional findByFecha()
+    no haria el JOIN FETCH y provocaria N+1 al acceder a empleado.id
+    en el service. Con JOIN FETCH el empleado llega cargado en la
+    misma query, sin lazy loading adicional.
+
+PausaRepository -- 1 metodo nuevo:
+
+  findPausasActivasByFecha(LocalDate fecha)
+    @Query JPQL con JOIN FETCH p.empleado y filtro horaFin IS NULL.
+    Devuelve solo las pausas activas (en curso) de una fecha.
+    Una pausa activa es aquella con horaFin = null: el empleado
+    esta en pausa en este momento. El service construye un Set de
+    empleadoIds con pausa activa para clasificacion en memoria.
+
+PlanificacionAusenciaRepository -- 1 metodo nuevo:
+
+  findByFechaAndProcesadoFalse(LocalDate fecha)
+    @Query JPQL con LEFT JOIN FETCH a.empleado.
+    LEFT JOIN porque empleado puede ser null (festivos globales, RF-26).
+    Devuelve ausencias planificadas pendientes de proceso para una fecha.
+    Se usa para dos cosas: detectar festivos globales (empleado=null)
+    y detectar ausencias individuales (empleado!=null) de cada empleado.
+
+====================================================
+5. LOGICA DE CLASIFICACION -- EstadoPresencia
+====================================================
+
+El metodo privado clasificarEmpleado() aplica la logica de prioridad
+definida en el Javadoc de EstadoPresencia.java (D-012).
+Se implementa como metodo privado compartido entre obtenerParteDiario()
+y obtenerMiPresencia() para garantizar que la clasificacion es identica
+en E35 y E37. Alternativa descartada: duplicar la logica en cada metodo,
+con mayor riesgo de inconsistencia futura.
+
+Orden de prioridad:
+
+  1. EN_PAUSA
+     Condicion: empleado tiene pausa con horaFin = null hoy.
+     Tiene prioridad sobre el estado del fichaje porque aunque el
+     empleado tenga fichaje abierto, en este momento esta en pausa.
+
+  2. JORNADA_COMPLETADA
+     Condicion: fichaje con horaEntrada != null Y horaSalida != null.
+     Jornada cerrada: el empleado ha terminado su dia.
+
+  3. JORNADA_INICIADA
+     Condicion: fichaje con horaEntrada != null Y horaSalida = null
+     (y sin pausa activa, ya cubierta por prioridad 1).
+     Jornada en curso: el empleado esta trabajando ahora mismo.
+
+  4. AUSENCIA_REGISTRADA
+     Condicion: fichaje con horaEntrada = null (tipo != NORMAL).
+     El proceso diario genero un fichaje de ausencia (VACACIONES,
+     BAJA_MEDICA, etc.) sin hora de entrada porque no es jornada
+     presencial. Es una ausencia ya materializada en fichajes.
+
+  5. AUSENCIA_PLANIFICADA
+     Condicion: no tiene fichaje, pero tiene ausencia en
+     planificacion_ausencias con procesado=false, O existe un
+     festivo global para ese dia.
+     El proceso nocturno aun no ha convertido la ausencia en fichaje.
+
+  6. SIN_JUSTIFICAR
+     Condicion: ninguno de los anteriores.
+     El empleado no tiene ningun registro para ese dia.
+     Requiere atencion del encargado (RF-31).
+
+Caso especial -- festivo global:
+  Si existe un registro en planificacion_ausencias con empleado=null
+  para la fecha, todos los empleados sin fichaje tienen estado
+  AUSENCIA_PLANIFICADA en lugar de SIN_JUSTIFICAR. Esto evita que
+  un festivo nacional marque a todos como sin justificar cuando el
+  proceso nocturno aun no ha actuado (normalmente hasta las 00:01).
+
+====================================================
+6. DECISIONES TECNICAS DE ESTA TAREA
+====================================================
+
+Decision T2-A -- Patron antiN+1: 4 queries planas + clasificacion en memoria
+  En lugar de cargar cada empleado y lanzar queries individuales para
+  su fichaje, pausa y ausencia (N*3 queries), el service carga las 4
+  colecciones completas del dia en 4 queries fijas y clasifica en memoria
+  con Maps y Sets. Para 50 empleados: 4 queries vs 150 queries.
+  Alternativa descartada: cargar datos por empleado en bucle -- correcto
+  funcionalmente pero ineficiente y no escalable.
+
+Decision T2-B -- DetallePresenciaResponse compartido entre E35 y E37
+  E37 /me devuelve exactamente la misma estructura que cada fila del
+  array detalle[] de E35. Se usa el mismo DTO para ambos endpoints.
+  Alternativa descartada: crear un MiPresenciaResponse especifico para
+  E37 con un subconjunto de campos -- anade complejidad sin beneficio
+  real porque el empleado ve exactamente lo mismo que el encargado
+  ve sobre el.
+
+Decision T2-C -- clasificarEmpleado() como metodo privado compartido
+  La logica de clasificacion se extrae a un metodo privado reutilizado
+  por obtenerParteDiario() y obtenerMiPresencia(). Garantiza que el
+  estado que ve el empleado en E37 es identico al que ve el encargado
+  en E35 para ese mismo empleado. Coherencia garantizada por diseno.
+
+Decision T2-D -- Renombrado ParteDiarioResponse --> DetallePresenciaResponse
+  El DTO existente en el Bloque 1 se llamaba ParteDiarioResponse pero
+  representaba un empleado individual, no el parte completo. Se renombra
+  a DetallePresenciaResponse (mas preciso) y se crea un nuevo
+  ParteDiarioResponse que representa el objeto raiz con contadores.
+  Criterio: los nombres deben ser autodescriptivos sin necesidad de
+  leer el codigo para entender que representan.
+
+Decision T2-E -- @RequiredArgsConstructor en lugar de constructor manual
+  El service usa @RequiredArgsConstructor de Lombok para mantener el
+  estilo del proyecto (todos los services y controllers del proyecto
+  usan esta anotacion). Lombok genera el constructor con los 4 campos
+  final automaticamente. Funcionalmente equivalente al constructor manual.
+
+Decision T2-F -- festivo global devuelve List.of() en E36
+  Si existe un festivo global para la fecha, obtenerSinJustificar()
+  devuelve una lista vacia inmediatamente sin iterar los empleados.
+  Razon: con festivo global todos tienen AUSENCIA_PLANIFICADA ese dia,
+  la lista de sin justificar es necesariamente vacia. Cortocircuito
+  que evita procesamiento innecesario.
+
+====================================================
+7. VERIFICACION FUNCIONAL
+====================================================
+
+----------------------------------------------------
+7.1 METODOLOGIA
+----------------------------------------------------
+
+Herramienta utilizada: PowerShell con Invoke-WebRequest -UseBasicParsing.
+
+Invoke-WebRequest es el cmdlet de PowerShell equivalente a curl en Linux.
+Permite lanzar peticiones HTTP directamente desde la consola de Windows
+sin instalar herramientas externas. El parametro -UseBasicParsing evita
+que PowerShell intente parsear la respuesta como HTML, lo que en algunas
+versiones de Windows causa errores si no hay Internet Explorer instalado.
+Con -UseBasicParsing la respuesta se trata como texto plano, que es lo
+que necesitamos para leer el JSON del backend.
+
+El resultado de Invoke-WebRequest se guarda en una variable (por ejemplo
+$e35, $e36, $e37). Esta variable es un objeto que tiene dos propiedades
+relevantes:
+  .StatusCode  -- el codigo HTTP de la respuesta (200, 403, 404, etc.)
+  .Content     -- el cuerpo de la respuesta como texto, en este caso JSON.
+
+Guardar la respuesta en una variable en lugar de imprimirla directamente
+permite inspeccionarla por partes: primero el status, luego el contenido,
+sin repetir la peticion. Es el mismo principio que guardar la respuesta
+de fetch() en una variable en JavaScript antes de llamar a .json().
+
+El token JWT se obtiene de la misma forma: se lanza el login, se guarda
+el objeto de respuesta en $r (para admin) o $r2 (para empleado), se
+parsea el JSON con ConvertFrom-Json y se extrae el campo .token. A partir
+de ahi $token y $tokenEmp se reutilizan en todas las peticiones
+autenticadas del dia sin necesidad de volver a hacer login.
+
+Razon de usar PowerShell en lugar de Swagger UI:
+  Swagger UI requiere copiar y pegar el token manualmente en cada
+  peticion. PowerShell permite encadenar peticiones reutilizando
+  la variable $token automaticamente. Para verificaciones con varios
+  endpoints seguidos es mas rapido y menos propenso a errores de
+  copia de token.
+
+Estado de la BD al iniciar la verificacion:
+  planificacion_ausencias id=1: empleadoId=1, fecha=2026-03-20,
+    tipoAusencia=ASUNTO_PROPIO, procesado=false
+  usuarios id=3 (emp01): activo=1, password_hash actualizado (D-023)
+  fichajes del dia 2026-03-13: 3 registros existentes (empleados 1, 2 y 3)
+    -- esto hace que los resultados difieran del escenario teorico del .txt,
+    donde se anticipaba totalEmpleados en SIN_JUSTIFICAR. El comportamiento
+    del codigo es correcto dado el estado real de la BD.
+
+----------------------------------------------------
+7.2 CONFIGURACION INICIAL: TOKEN JWT
+----------------------------------------------------
+
+Token admin:
+  $r = Invoke-WebRequest
+    -Uri "http://localhost:8080/api/v1/auth/login"
+    -Method POST
+    -ContentType "application/json"
+    -Body '{"username":"admin","password":"admin1234"}'
+    -UseBasicParsing
+  $token = ($r.Content | ConvertFrom-Json).token
+
+  Que hace cada linea:
+    Invoke-WebRequest lanza un POST al endpoint de login con el body
+    JSON de credenciales. La respuesta completa (cabeceras + body)
+    queda en $r. La segunda linea extrae el campo "token" del JSON:
+    $r.Content es el body como string, ConvertFrom-Json lo convierte
+    en objeto PowerShell, y .token accede al campo. El resultado es
+    la cadena JWT que se usara en el header Authorization de las
+    siguientes peticiones.
+
+Token empleado (emp01):
+  $r2 = Invoke-WebRequest
+    -Uri "http://localhost:8080/api/v1/auth/login"
+    -Method POST
+    -ContentType "application/json"
+    -Body '{"username":"emp01","password":"admin1234"}'
+    -UseBasicParsing
+  $tokenEmp = ($r2.Content | ConvertFrom-Json).token
+
+  Se usa $r2 y $tokenEmp para no sobreescribir las variables del admin.
+  A partir de aqui $token es el JWT de admin y $tokenEmp el de empleado.
+
+Verificacion de tokens:
+  Write-Host "Admin token OK:" ($token.Length -gt 0)   --> True
+  Write-Host "Emp token OK:" ($tokenEmp.Length -gt 0)  --> True
+
+  Length -gt 0 comprueba que la variable no esta vacia, es decir,
+  que el login fue exitoso y se recibio un token. True en ambos casos.
+
+----------------------------------------------------
+7.3 RESULTADOS DE VERIFICACION
+----------------------------------------------------
+
+CASO 1 -- E35 GET parte diario de hoy (sin ?fecha)
+
+  Comando ejecutado:
+    $e35 = Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/presencia/parte-diario"
+      -Method GET
+      -Headers @{Authorization="Bearer $token"}
+      -UseBasicParsing
+
+  El header Authorization se construye con la sintaxis de hashtable
+  de PowerShell: @{clave="valor"}. El valor es la cadena "Bearer "
+  seguida del JWT almacenado en $token. Spring Security lee este
+  header en JwtAuthFilter, valida el token y permite el acceso.
+
+  Respuesta obtenida:
+    StatusCode: 200
+    Content:
+      {
+        "fecha": "2026-03-13",
+        "totalEmpleados": 3,
+        "fichados": 3,
+        "enPausa": 0,
+        "ausencias": 0,
+        "sinJustificar": 0,
+        "detalle": [
+          {
+            "empleadoId": 3,
+            "nombre": "Laura",
+            "apellido1": "Fernandez",
+            "apellido2": null,
+            "estado": "JORNADA_INICIADA",
+            "horaEntrada": "2026-03-13T15:24:05",
+            "horaSalida": null,
+            "pausaActiva": false,
+            "fichajeTipo": "NORMAL"
+          },
+          {
+            "empleadoId": 1,
+            "nombre": "Ana Maria",
+            "apellido1": "Garcia",
+            "apellido2": null,
+            "estado": "JORNADA_COMPLETADA",
+            "horaEntrada": "2026-03-13T09:00:00",
+            "horaSalida": "2026-03-13T17:30:00",
+            "pausaActiva": false,
+            "fichajeTipo": "NORMAL"
+          },
+          {
+            "empleadoId": 2,
+            "nombre": "Carlos",
+            "apellido1": "Lopez",
+            "apellido2": "Martinez",
+            "estado": "JORNADA_COMPLETADA",
+            "horaEntrada": "2026-03-13T09:00:00",
+            "horaSalida": "2026-03-13T15:18:18",
+            "pausaActiva": false,
+            "fichajeTipo": "NORMAL"
+          }
+        ]
+      }
+
+  Analisis:
+    Status 200: correcto.
+    totalEmpleados=3: la BD tiene 3 empleados activos, coincide.
+    fichados=3: los 3 tienen fichaje hoy, correcto.
+    enPausa=0, ausencias=0, sinJustificar=0: coherente con los datos.
+    Laura tiene JORNADA_INICIADA porque tiene horaEntrada pero no
+    horaSalida -- su jornada sigue abierta. Ana Maria y Carlos tienen
+    JORNADA_COMPLETADA porque tienen ambas horas registradas.
+    Ordenacion por apellido1: Fernandez --> Garcia --> Lopez. Correcto.
+    fichados=3 incluye a Laura aunque tenga jornada abierta, porque
+    "fichado" significa que tiene registro del dia, no que haya salido.
+    enPausa es subconjunto de fichados (ninguno en pausa ahora mismo).
+
+  Incidencia -- encoding UTF-8 en consola PowerShell:
+    En la salida raw de la consola, "Lopez" y "Martinez" aparecian
+    como "LÃ³pez" y "MartÃ­nez". Esto es un problema de visualizacion
+    de la consola de Windows, no del backend. Spring devuelve UTF-8
+    correcto en el Content-Type. PowerShell en Windows interpreta la
+    salida con la codificacion de la consola (CP850 o similar) en lugar
+    de UTF-8, lo que corrompe los caracteres con tilde o enye al
+    imprimirlos con Write-Host. El JSON almacenado en $e35.Content
+    es correcto: es solo la visualizacion en pantalla la que falla.
+    No requiere correccion en el codigo.
+
+  Resultado: VERIFICADO OK
+
+----------------------------------------------------
+
+CASO 2 -- E36 GET empleados sin justificar de hoy
+
+  Comando ejecutado:
+    $e36 = Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/presencia/sin-justificar"
+      -Method GET
+      -Headers @{Authorization="Bearer $token"}
+      -UseBasicParsing
+
+  Respuesta obtenida:
+    StatusCode: 200
+    Content: []
+
+  Analisis:
+    Lista vacia: correcto. Los 3 empleados activos tienen fichaje
+    hoy (confirmado en E35), por lo que ninguno esta sin justificar.
+    El service filtro correctamente y devolvio la lista vacia.
+    Una lista vacia es una respuesta valida segun el contrato de E36:
+    significa que todos los empleados estan controlados ese dia.
+
+  Resultado: VERIFICADO OK
+
+----------------------------------------------------
+
+CASO 3 -- E37 GET estado propio del empleado autenticado
+
+  Comando ejecutado:
+    $e37 = Invoke-WebRequest
+      -Uri "http://localhost:8080/api/v1/presencia/parte-diario/me"
+      -Method GET
+      -Headers @{Authorization="Bearer $tokenEmp"}
+      -UseBasicParsing
+
+  Se usa $tokenEmp (token del empleado emp01) en lugar de $token
+  (admin). E37 solo es accesible con rol EMPLEADO. Si se llamara
+  con el token de admin, Spring devolveria 403 porque el SecurityConfig
+  restringe este endpoint al rol EMPLEADO exclusivamente.
+
+  Respuesta obtenida:
+    StatusCode: 200
+    Content:
+      {
+        "empleadoId": 1,
+        "nombre": "Ana Maria",
+        "apellido1": "Garcia",
+        "apellido2": null,
+        "estado": "JORNADA_COMPLETADA",
+        "horaEntrada": "2026-03-13T09:00:00",
+        "horaSalida": "2026-03-13T17:30:00",
+        "pausaActiva": false,
+        "fichajeTipo": "NORMAL"
+      }
+
+  Analisis:
+    Status 200: correcto.
+    empleadoId=1, nombre Ana Maria Garcia: el service extrajo
+    correctamente el username del token JWT (emp01), busco el
+    empleado asociado a ese usuario y devolvio sus datos.
+    estado=JORNADA_COMPLETADA: coherente con lo que mostro E35
+    para ese mismo empleado (empleadoId=1, mismos horaEntrada y
+    horaSalida). La Decision T2-C queda verificada: clasificarEmpleado()
+    devuelve el mismo resultado en E35 y en E37 para el mismo empleado.
+    pausaActiva=false y fichajeTipo=NORMAL: correctos.
+
+  Resultado: VERIFICADO OK
+
+----------------------------------------------------
+7.4 RESUMEN DE VERIFICACION
+----------------------------------------------------
+
+  E35 parte-diario    200   VERIFICADO OK
+  E36 sin-justificar  200   VERIFICADO OK
+  E37 /me             200   VERIFICADO OK
+
+  Total: 3/3 endpoints verificados.
+
+  Incidencia transversal anotada: encoding UTF-8 en consola PowerShell
+  al imprimir con Write-Host. No es un bug del backend. El JSON
+  transmitido por la red es UTF-8 correcto. Solo afecta a la
+  visualizacion en pantalla de la consola de Windows.
+
+====================================================
+8. ESTADO AL CERRAR LA TAREA 2
+====================================================
+
+Compilacion: OK -- arranque limpio en 4.708s con perfil mysql
+Swagger: 3 endpoints visibles en grupo Presencia
+Verificacion funcional: COMPLETADA -- 3/3 OK
+Commit: pendiente -- se hara al cerrar el Bloque 6 completo
+
+Ficheros modificados en esta tarea:
+  FichajeRepository.java               (findByFechaWithEmpleado anadido)
+  PausaRepository.java                 (findPausasActivasByFecha anadido)
+  PlanificacionAusenciaRepository.java (findByFechaAndProcesadoFalse anadido)
+  ParteDiarioResponse.java             (reescrito -- objeto raiz E35)
+  DetallePresenciaResponse.java        (nuevo -- fila detalle[] y respuesta E37)
+  SinJustificarResponse.java           (nuevo -- fila de E36)
+  PresenciaService.java                (implementacion completa)
+  PresenciaController.java             (fichero nuevo)
+
+====================================================
+FIN TAREA 2 -- PRESENCIA
+====================================================

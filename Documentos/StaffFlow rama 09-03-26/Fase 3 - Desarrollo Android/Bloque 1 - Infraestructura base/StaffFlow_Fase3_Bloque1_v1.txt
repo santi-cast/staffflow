@@ -1,0 +1,194 @@
+====================================================
+STAFFFLOW -- FASE 3 BLOQUE 1 -- INFRAESTRUCTURA BASE ANDROID
+StaffFlow_Fase3_Bloque1_v1.txt
+Creado: 22/03/2026 (sesion 25)
+====================================================
+
+Este fichero es el diario de trabajo del Bloque 1 de la Fase 3.
+Se actualiza al cerrar cada tarea. Es la fuente de verdad del
+estado del bloque. Al cerrar el bloque se genera el .docx
+correspondiente a partir de este contenido.
+
+====================================================
+ESTADO GENERAL DEL BLOQUE
+====================================================
+
+Bloque 1: Infraestructura base Android
+Sesion de inicio: 25 (22/03/2026)
+Estado: COMPLETADO
+
+Tareas:
+  Tarea 1 -- Correccion NetworkModule.kt        COMPLETADA
+  Tarea 2 -- Estructura de paquetes             COMPLETADA
+  Tarea 3 -- Enums y data classes Kotlin        COMPLETADA
+  Tarea 4 -- activity_main.xml                  COMPLETADA
+  Tarea 5 -- MainActivity.kt                    COMPLETADA
+  Tarea 6 -- nav_graph.xml                      COMPLETADA
+
+====================================================
+TAREA 1 -- CORRECCION NetworkModule.kt
+Sesion 25 -- 22/03/2026 -- COMPLETADA
+====================================================
+
+Fichero modificado:
+  app/src/main/java/com/staffflow/android/data/remote/api/NetworkModule.kt
+
+Cambio aplicado:
+  BASE_URL corregida de "http://10.0.2.2:8080/api/"
+                      a "http://10.0.2.2:8080/api/v1/"
+
+Motivo:
+  Todos los endpoints del backend estan bajo /api/v1/.
+  Sin la correccion todas las llamadas devolverian HTTP 404.
+
+Verificacion:
+  BUILD SUCCESSFUL in 18s. Sin errores.
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea1_Infraestructura_v1.txt
+
+====================================================
+TAREA 2 -- ESTRUCTURA DE PAQUETES
+Sesion 25 -- 22/03/2026 -- COMPLETADA
+====================================================
+
+Paquetes preexistentes conservados (Fase 0):
+  data/remote/api, data/remote/dto, data/remote/repository
+  domain/model, ui/fichaje, ui/login, util
+
+Paquetes nuevos creados:
+  data/local, ui/admin, ui/empleado, ui/encargado, ui/shared
+
+Estructura final (12 paquetes hoja):
+  data/local             <- DataStore sesion
+  data/remote/api        <- NetworkModule + interfaces Retrofit
+  data/remote/dto        <- data classes responses y requests
+  data/remote/repository <- repositorios con metodos suspendibles
+  domain/model           <- enums del dominio
+  ui/admin               <- P31, P32, P34
+  ui/empleado            <- P08, P09, P10, P11, P12
+  ui/encargado           <- P17, P18, P19, P20, P23, P24, P26, P27, P28
+  ui/fichaje             <- P01, P06, P07
+  ui/login               <- P02, P03, P04, P05
+  ui/shared              <- P13, P14, P15
+  util                   <- constantes, extensiones, helpers
+
+Decisiones:
+  domain/model en lugar de model: consistencia con estructura backend.
+  ui/fichaje y ui/login en lugar de ui/terminal y ui/auth:
+    nombres mas descriptivos del contenido real.
+
+Verificacion:
+  BUILD SUCCESSFUL in 802ms. 36 tareas UP-TO-DATE. Sin errores.
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea2_Paquetes_v1.txt
+
+====================================================
+TAREA 3 -- ENUMS Y DATA CLASSES KOTLIN
+Sesion 26 -- 03/04/2026 -- COMPLETADA
+====================================================
+
+Ficheros creados:
+
+  domain/model/ -- 6 enums:
+    Rol.kt, TipoFichaje.kt, TipoAusencia.kt,
+    TipoPausa.kt, CategoriaEmpleado.kt, EstadoPresencia.kt
+
+  data/remote/dto/ -- 2 ficheros:
+    Responses.kt -- 16 data classes (LoginResponse, EmpleadoResponse,
+      SaldoResponse con nested classes, TerminalResponses, etc.)
+    Requests.kt  -- 16 data classes (LoginRequest, EmpleadoRequest,
+      FichajePatchRequest con observaciones obligatoria RNF-L02, etc.)
+
+Decisiones:
+  - Un enum por fichero en domain/model.
+  - DTOs agrupados en Responses.kt y Requests.kt (no uno por clase).
+  - FichajePatchRequest.observaciones es String (no nullable) -- RNF-L02.
+  - SaldoResponse mantiene nested data classes igual que el backend.
+  - InformeHorasResponse no incluida: el backend devuelve Map<String, Any>
+    para E42-E44, se tratara al implementar P28.
+
+Verificacion:
+  Revision manual contra StaffFlow_Android_Contexto_v4.txt sec. 4 y 5.
+  Compilacion formal pendiente de Tarea 4.
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea3_EnumsDTO_v1.txt
+
+====================================================
+TAREA 4 -- activity_main.xml
+Sesion 26 -- 03/04/2026 -- COMPLETADA
+====================================================
+
+Ficheros creados o modificados:
+  res/layout/activity_main.xml   <- DrawerLayout + Toolbar + NavHostFragment
+  res/menu/drawer_menu.xml       <- 4 grupos visibles por rol
+  res/layout/nav_header_main.xml <- cabecera con username y rol
+  res/values/strings.xml         <- strings del Drawer anadidas
+
+Estructura:
+  DrawerLayout -> CoordinatorLayout -> AppBarLayout (MaterialToolbar)
+                                    -> FragmentContainerView (NavHostFragment)
+               -> NavigationView (drawer_menu + nav_header_main)
+
+Grupos del menu:
+  group_empleado  (EMPLEADO/ENCARGADO/ADMIN): P08, P09, P10, P11, P12
+  group_encargado (ENCARGADO/ADMIN):          P13, P17, P19, P23, P27, P28
+  group_admin     (ADMIN):                    P31, P34
+  group_ajustes   (todos):                    P04, cerrar sesion
+
+IDs de items = IDs de destino en nav_graph -> NavigationUI automatico.
+nav_cerrar_sesion gestionado manualmente con MaterialAlertDialogBuilder.
+
+Verificacion: pendiente hasta Tarea 6 (nav_graph.xml no existe aun).
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea4_ActivityMain_v1.txt
+
+====================================================
+TAREA 5 -- MainActivity.kt
+Sesion 26 -- 03/04/2026 -- COMPLETADA
+====================================================
+
+Ficheros creados o modificados:
+  data/local/SessionManager.kt     <- DataStore Singleton (token, rol,
+                                      username, empleadoId)
+  data/local/AuthEventBus.kt       <- SharedFlow para HTTP 401 global
+  MainActivity.kt                  <- implementacion completa
+  data/remote/api/NetworkModule.kt <- anadido AuthInterceptor
+  app/build.gradle.kts             <- viewBinding = true
+
+Funcionalidad implementada:
+  - Toolbar + NavController + AppBarConfiguration + NavigationUI
+  - refreshDrawerMenu(): grupos visibles por rol desde DataStore
+  - hideDrawerMenu(): ocultar todo en logout/401
+  - navigateToInitialDestination(rol): post-login con popUpTo
+  - setupDestinationListener(): bloqueo Drawer en zona publica
+  - checkExistingSession(): arranque con sesion valida (Decision 24-C)
+  - handleSessionExpired(): flujo 401 global
+  - showLogoutDialog(): MaterialAlertDialogBuilder (Decision 26)
+
+Verificacion: pendiente hasta Tarea 6 (nav_graph.xml no existe aun).
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea5_MainActivity_v1.txt
+
+====================================================
+TAREA 6 -- nav_graph.xml
+Sesion 26 -- 03/04/2026 -- COMPLETADA
+====================================================
+
+Ficheros creados:
+  res/navigation/nav_graph.xml     <- 27 destinos, startDestination=P01
+  res/layout/fragment_terminal.xml <- FrameLayout vacio (stub P01)
+  ui/fichaje/TerminalFragment.kt   <- stub con KDoc completo
+
+27 destinos registrados (P01-P34 segun numeracion del proyecto).
+Acciones esenciales definidas; resto se anadiran por bloque.
+Deep link: staffflow://reset-password?token={token} en P05.
+Intent-filter en AndroidManifest: pendiente Bloque 2.
+
+Verificacion: BUILD SUCCESSFUL esperado. App arranca mostrando P01
+(FrameLayout vacio, Drawer bloqueado).
+
+Referencia: StaffFlow_Fase3_Bloque1_Tarea6_NavGraph_v1.txt
+
+====================================================
+FIN StaffFlow_Fase3_Bloque1_v1.txt
+====================================================

@@ -1,0 +1,622 @@
+====================================================
+STAFFFLOW -- BLOQUE 7 TAREA 1 -- INFORMES HTML
+====================================================
+
+Fecha: 21/03/2026
+Sesion: 18 (implementacion) + 19 (verificacion y D-028)
+Endpoints implementados: E42, E43 (E44 esqueleto pendiente)
+Ficheros creados: InformeService.java, InformeController.java
+Ficheros modificados: PausaRepository.java, data.sql
+  Sesion 19: InformeService.java (D-028), data.sql (correcciones + planificacion_ausencias)
+Commit pendiente: al cerrar el Bloque 7 completo
+
+====================================================
+1. CONTEXTO
+====================================================
+
+La Tarea 1 del Bloque 7 implementa los informes de horas en
+formato JSON y HTML para los endpoints E42 y E43. Esta tarea
+fue precedida por una sesion extensa de diseno del informe
+antes de escribir ninguna linea de codigo. El objetivo era
+tener el formato del informe completamente cerrado antes de
+implementarlo para no tener que rehacer codigo por decisiones
+de diseno pendientes.
+
+El informe HTML esta disenado para dos usos:
+1. Visualizacion en pantalla desde la aplicacion Android
+   mediante WebView.
+2. Impresion desde Android usando PrintManager + WebView.
+   El formato de impresion queda pendiente para una iteracion
+   posterior (fuera del alcance de la sesion 18).
+
+La tarea incorporo una desviacion respecto al diseno original
+de E42 y E43 (D-027): el parametro opcional ?tipo= permite
+filtrar el detalle del informe por uno o varios tipos de
+jornada. Este parametro no estaba en StaffFlow_Endpoints_v3.docx
+pero fue identificado como necesario durante el diseno detallado
+del informe (ver seccion 5 para el razonamiento completo).
+
+====================================================
+2. FICHEROS CREADOS Y MODIFICADOS
+====================================================
+
+NUEVO -- InformeService.java
+  Paquete: com.staffflow.service
+  Implementa E42 y E43. E44 queda como UnsupportedOperationException
+  pendiente de la Tarea 2 del Bloque 7.
+  Dependencias inyectadas: FichajeRepository, PausaRepository,
+    EmpleadoRepository, SaldoAnualRepository, EmpresaService.
+  Clases internas privadas: DiaInforme, PausaInforme, ResumenInforme.
+  Metodos publicos: informeHorasEmpleado(), informeHorasGlobal(),
+    informeVacaciones() (stub).
+
+NUEVO -- InformeController.java
+  Paquete: com.staffflow.controller
+  Cubre E42, E43 y E44 (E44 pendiente).
+  Roles: @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')") en los tres.
+  Devuelve ResponseEntity<Object> con Content-Type dinamico:
+    text/html;charset=UTF-8 cuando ?formato=html
+    application/json cuando ?formato=json (defecto)
+
+MODIFICADO -- PausaRepository.java
+  Anadido findByEmpleadoIdAndFechaBetween() al final del fichero.
+  El resto del fichero sin cambios.
+  Razon del metodo nuevo: findByFiltros() existente hace JOIN FETCH
+    pensado para listados grandes. Para el informe el empleado ya
+    esta resuelto y el JOIN FETCH es innecesario. Un metodo Spring
+    Data convencional es mas limpio y eficiente para este caso de uso.
+
+MODIFICADO -- data.sql
+  Anadidos fichajes de prueba para Ana Garcia (empleado_id=1) y
+  Carlos Lopez (empleado_id=2) durante todo marzo 2026.
+  Anadidas pausas de prueba para los mismos empleados.
+  Laura Fernandez (empleado_id=3) sin fichajes: su informe muestra
+  todo SIN_REGISTRO y DIA_LIBRE para verificar ese caso.
+  Ver seccion 4 para el detalle de los datos de prueba.
+
+====================================================
+3. DISENO DEL INFORME -- DECISIONES TOMADAS
+====================================================
+
+El diseno del informe se cerro completamente antes de codificar
+mediante ejemplos progresivos (una semana, un mes) que permitieron
+identificar todos los casos de borde. A continuacion se documenta
+cada decision y su razonamiento.
+
+----------------------------------------------------
+3.1 Estructura del informe HTML
+----------------------------------------------------
+
+El informe tiene cuatro secciones:
+
+CABECERA:
+  Nombre de empresa (sacado de ConfiguracionEmpresa via EmpresaService).
+  Titulo "Informe de Horas" (E42) o "Informe Global de Horas" (E43).
+  Nombre completo del empleado (nombre + apellido1 + apellido2).
+  Periodo consultado (desde - hasta).
+
+RESUMEN:
+  Dias trabajados: dias con jornadaEfectivaMinutos > 0.
+  Horas efectivas: suma de jornadaEfectivaMinutos de dias trabajados.
+  Dias libres: dias con tipo DIA_LIBRE (sabados y domingos sin fichaje).
+  Seguido del desglose de ausencias por tipo (ver 3.3).
+
+DETALLE DE JORNADA:
+  Una tabla con columnas: Fecha, Tipo, Entrada, Salida,
+  Horas efectivas, Duracion total pausas, Inicio pausa,
+  Fin pausa, Duracion pausa, Motivo.
+  Si un dia tiene varias pausas: primera pausa en la misma fila
+  que el fichaje, pausas adicionales en filas propias con las
+  columnas de fichaje vacias.
+
+PIE:
+  "Generado el DD/MM/YYYY a las HH:mm"
+  Sin nombre del generador (ver decision en 3.8).
+
+INTERVENCIONES MANUALES (solo si existe alguna):
+  Subseccion Fichajes: lista de fechas con observaciones del fichaje.
+  Subseccion Pausas: lista de fechas con observaciones de la pausa.
+  Si no hay ninguna intervencion manual la seccion no aparece.
+
+----------------------------------------------------
+3.2 Logica de construccion del detalle dia a dia
+----------------------------------------------------
+
+Para cada dia del periodo (iterando LocalDate desde hasta hasta):
+
+  SI existe fichaje en BD para ese empleado y fecha:
+    Mostrar datos del fichaje y sus pausas.
+
+  SI no existe fichaje y es sabado o domingo:
+    Tipo = DIA_LIBRE. Todas las columnas con guion.
+
+  SI no existe fichaje y es dia entre semana:
+    Tipo = SIN_REGISTRO. Todas las columnas con guion.
+    Caso de uso: informe de periodos futuros donde aun no
+    hay fichajes registrados.
+
+Los fichajes del periodo se cargan en una sola query con
+findByEmpleadoIdAndFechaBetween() y se indexan en un Map
+por fecha para evitar N+1 al iterar dia a dia.
+
+Las pausas del periodo se cargan en una sola query con
+findByEmpleadoIdAndFechaBetween() (nuevo metodo de repositorio)
+y se agrupan en un Map<LocalDate, List<Pausa>> para el mismo fin.
+
+----------------------------------------------------
+3.3 Resumen de ausencias
+----------------------------------------------------
+
+El resumen muestra todos los tipos de ausencia siempre,
+aunque el contador sea 0. Orden fijo:
+
+  Dias libres (DIA_LIBRE: sabados y domingos sin fichaje)
+  Dia libre compensatorio
+  Festivo nacional
+  Festivo local
+  Vacaciones
+  Asunto propio
+  Permiso retribuido
+  Baja medica
+  Ausencia injustificada
+
+PERMISO_RETRIBUIDO tiene tratamiento especial: ademas del
+numero de dias muestra las horas acumuladas. Razon: un permiso
+retribuido puede ser parcial (el empleado va a votar por la
+manana y trabaja el resto del dia). En ese caso tiene
+jornadaEfectivaMinutos > 0 y el dia cuenta como trabajado,
+pero tambien como permiso retribuido. Las horas de permiso
+retribuido se calculan sumando jornadaEfectivaMinutos de los
+dias con tipo PERMISO_RETRIBUIDO que tengan datos.
+
+SIN_REGISTRO no aparece en el resumen de ausencias: es un
+estado informativo del informe, no una ausencia registrada en BD.
+
+----------------------------------------------------
+3.4 Guion para celdas sin datos
+----------------------------------------------------
+
+Las celdas de entrada, salida, horas efectivas, duracion de
+pausas y columnas de pausa muestran guion (—) cuando:
+  - El dia es DIA_LIBRE o SIN_REGISTRO.
+  - El dia tiene fichaje pero jornadaEfectivaMinutos == 0
+    (ausencia, festivo, baja medica, etc.).
+
+Para dias trabajados con jornadaEfectivaMinutos > 0:
+  Si totalPausasMinutos == 0 se muestra "0h 00min" (no guion)
+  porque el dia si fue trabajado aunque no hubo pausas.
+
+----------------------------------------------------
+3.5 Indicador de intervencion manual (asterisco)
+----------------------------------------------------
+
+Un fichaje se considera manual si:
+  usuario.rol != EMPLEADO
+  Y usuario.username != "terminal_service"
+
+Es decir: creado o modificado por ADMIN o ENCARGADO, no por
+el propio empleado desde el terminal PIN ni por el proceso
+automatico nocturno.
+
+Si el fichaje es manual se aniade * a la hora de entrada y
+a la hora de salida (cuando existen).
+
+Limitacion conocida (L-005, M-007): en v1.0 el campo usuario
+en Fichaje es unico para todo el registro. Si el ADMIN solo
+corrigio la salida, el asterisco aparece en las dos columnas
+igualmente porque no hay forma de distinguir que hora fue
+tocada.
+
+El mismo criterio aplica a las pausas (L-006, M-008): si la
+pausa es manual, el asterisco aparece en Inicio pausa y en
+Fin pausa.
+
+----------------------------------------------------
+3.6 Seccion de intervenciones manuales
+----------------------------------------------------
+
+Al final del informe, si existe algun fichaje o pausa manual,
+se muestra la seccion "Intervenciones manuales" con dos
+subsecciones: Fichajes y Pausas.
+
+Cada entrada muestra la fecha y el contenido del campo
+observaciones del fichaje o pausa. Si observaciones es null
+o vacio, se muestra solo la fecha.
+
+La seccion no aparece si no hay ninguna intervencion manual
+en el periodo consultado.
+
+----------------------------------------------------
+3.7 Dia de la semana en la columna Fecha
+----------------------------------------------------
+
+La fecha se muestra con el dia de la semana abreviado en
+espanol entre parentesis: "02/03/2026 (lun)".
+
+Las abreviaturas son: lun, mar, mie, jue, vie, sab, dom.
+Se generan desde DayOfWeek con un Map<DayOfWeek, String>
+estatico en el service.
+
+----------------------------------------------------
+3.8 Pie del informe
+----------------------------------------------------
+
+El pie muestra: "Generado el DD/MM/YYYY a las HH:mm"
+
+No se incluye quien lo genero. Razon: el usuario autenticado
+que llama a E42 o E43 puede ser ADMIN o ENCARGADO. Si el ADMIN
+no tiene perfil de empleado (terminal_service, por ejemplo),
+no hay nombre que mostrar. Se descarto mostrar el username por
+ser un dato tecnico que no aporta valor en el informe impreso.
+
+----------------------------------------------------
+3.9 Nombre de empresa
+----------------------------------------------------
+
+Se obtiene via EmpresaService.obtenerEmpresa().getNombreEmpresa().
+Si la configuracion de empresa no existe en BD (sistema recien
+instalado), se usa "StaffFlow" como fallback. El bloque try-catch
+en obtenerNombreEmpresa() evita que un sistema sin empresa
+configurada rompa la generacion del informe.
+
+----------------------------------------------------
+3.10 Formato de horas
+----------------------------------------------------
+
+Los minutos se convierten a "Xh YYmin" (por ejemplo: "7h 45min",
+"0h 30min"). El metodo formatearMinutos() opera con division
+entera sin BigDecimal: la precision de minuto entero es
+suficiente para un informe de jornada laboral.
+
+====================================================
+4. DATOS DE PRUEBA EN DATA.SQL
+====================================================
+
+Fichajes y pausas de prueba para todo marzo 2026:
+
+ANA GARCIA (empleado_id=1):
+  02/03 al 04/03: NORMAL, fichados por ella (usuario_id=3)
+  05/03 jue: NORMAL, MANUAL (usuario_id=2, encargado)
+    Observaciones: "Empleada olvidó fichar entrada. Corregido por encargado."
+  06/03 vie: FESTIVO_LOCAL (usuario_id=2)
+  09/03 lun: NORMAL (usuario_id=3)
+  10/03 mar: NORMAL (usuario_id=3)
+  11/03 mie: BAJA_MEDICA (usuario_id=2)
+  12/03 jue: BAJA_MEDICA dia 2 (usuario_id=2)
+  13/03 vie: NORMAL, reincorporacion (usuario_id=3)
+  16/03 lun: NORMAL (usuario_id=3)
+  17/03 mar: NORMAL, MANUAL, entrada 11:00 por permiso retribuido (usuario_id=2)
+    Observaciones: "2h de permiso retribuido por ejercicio del voto."
+  18/03 mie: NORMAL (usuario_id=3)
+  19/03 jue: AUSENCIA_INJUSTIFICADA automatica (usuario_id=5, terminal_service)
+    Observaciones: "Generado automaticamente por ProcesoCierreDiario"
+  20/03 vie: NORMAL (usuario_id=3)
+  23/03 al 27/03: VACACIONES (5 dias, usuario_id=2)
+  30/03 lun: DIA_LIBRE_COMPENSATORIO (usuario_id=2)
+    Observaciones: "Compensacion por horas extra semana del 2 de marzo"
+  31/03 mar: NORMAL (usuario_id=3)
+
+  Pausas Ana:
+    02/03: comida 14:00-14:30 (normal)
+    03/03: descanso 10:15-10:30 + comida 14:00-14:30 (dos pausas mismo dia)
+    04/03: comida 14:00-14:30
+    05/03: comida 14:00-14:30 (fichaje manual, pausa normal)
+    09/03: descanso 10:00-10:15 + comida 14:00-14:30 (dos pausas)
+    10/03: comida 14:00-14:30
+    13/03: comida 14:00-14:30
+    16/03: comida 14:00-14:30
+    17/03: comida 14:00-14:30
+    18/03: comida 14:00-14:30, MANUAL (usuario_id=2)
+      Observaciones: "Fin de pausa cerrado manualmente. Empleada olvidó fichar vuelta."
+    20/03: comida 14:00-14:30
+    31/03: comida 14:00-14:30
+
+CARLOS LOPEZ (empleado_id=2):
+  02/03 y 03/03: NORMAL (usuario_id=4)
+  04/03 mie: ASUNTO_PROPIO (usuario_id=2)
+  05/03 jue: NORMAL (usuario_id=4)
+  06/03 vie: FESTIVO_LOCAL (usuario_id=2)
+  09/03 al 11/03: NORMAL (usuario_id=4)
+  12/03 jue: NORMAL, MANUAL (usuario_id=2, salida ajustada)
+    Observaciones: "Salida ajustada por encargado. Empleado olvidó fichar salida."
+  13/03 vie: NORMAL (usuario_id=4)
+  16/03 al 18/03: NORMAL (usuario_id=4)
+  19/03 jue: PERMISO_RETRIBUIDO (usuario_id=2, cita medica)
+    Observaciones: "Permiso retribuido por cita médica con especialista"
+  20/03 vie: NORMAL (usuario_id=4)
+  23/03 al 27/03: NORMAL (5 dias, usuario_id=4)
+  30/03 y 31/03: NORMAL (usuario_id=4)
+
+  Pausas Carlos: pausas de comida en todos los dias NORMAL.
+    11/03: descanso 10:00-10:15 + comida 14:00-14:30 (dos pausas)
+    Resto: pausa comida 14:00-14:30 unica por dia.
+
+LAURA FERNANDEZ (empleado_id=3):
+  Sin fichajes ni pausas. El informe muestra todo SIN_REGISTRO
+  (dias entre semana) y DIA_LIBRE (sabados y domingos).
+  Util para verificar que el informe funciona con un empleado
+  sin actividad en el periodo.
+
+====================================================
+5. DESVIACION D-027 -- PARAMETRO ?TIPO= EN E42 Y E43
+====================================================
+
+El diseno original de E42 y E43 en StaffFlow_Endpoints_v3.docx
+no incluia parametro de filtro por tipo de jornada. Durante el
+diseno detallado del informe se identifico la necesidad de poder
+consultar el informe filtrando por tipo. Casos de uso reales:
+
+  - Ver solo los dias de vacaciones de un empleado en el ano.
+  - Ver las bajas medicas del ultimo trimestre.
+  - Ver las vacaciones futuras planificadas.
+  - Ver las ausencias injustificadas del mes para el ENCARGADO.
+  - Ver los dias libres compensatorios pendientes.
+  - Ver solo los dias libres (DIA_LIBRE) o sin registro.
+
+Implementacion:
+  Parametro: ?tipo=VALOR1,VALOR2,...
+  Acepta uno o varios valores separados por coma.
+  Valores validos: cualquier valor del enum TipoFichaje mas
+    DIA_LIBRE (sabados/domingos sin fichaje) y
+    SIN_REGISTRO (dias entre semana sin fichaje).
+  Sin ?tipo=: devuelve todos los dias del periodo.
+  Con ?tipo=: filtra las filas del detalle por el conjunto de
+    tipos especificados. El resumen se adapta al filtro.
+
+El filtro se aplica en InformeService tras construir la lista
+completa de dias del periodo. No requiere cambios en repositorios.
+
+Por que no se modifica StaffFlow_Endpoints_v3.docx:
+  El documento de endpoints es un snapshot cerrado de Fase 1.
+  La politica del proyecto es no modificar snapshots cerrados
+  (mismo criterio que D-008 con el diagrama de casos de uso).
+  Esta desviacion D-027 es la fuente de verdad para el cambio.
+
+Sin parametro ?tipo= el comportamiento es identico al diseno
+original. No hay cambios de comportamiento para el caso nominal.
+
+====================================================
+6. MEJORAS IDENTIFICADAS EN ESTA TAREA
+====================================================
+
+M-006 -- Jornada mixta (NORMAL + PERMISO_RETRIBUIDO mismo dia)
+  En v1.0 un dia solo puede tener un tipo de fichaje. El permiso
+  retribuido parcial se gestiona con observaciones de texto libre.
+  En v2.0 modelar tramos de jornada con tipo propio.
+
+M-007 -- Trazabilidad de entrada y salida por separado en Fichaje
+  En v1.0 el campo usuario en Fichaje es unico. El asterisco
+  aparece en las dos columnas aunque solo se haya tocado una.
+  En v2.0 anadir usuarioEntrada y usuarioSalida.
+
+M-008 -- Trazabilidad de inicio y fin de pausa por separado
+  Mismo problema que M-007 pero en Pausa.
+  En v2.0 anadir usuarioInicio y usuarioFin.
+
+M-009 -- Notificaciones automaticas al ENCARGADO
+  En v1.0 el ENCARGADO consulta manualmente. En v2.0 notificacion
+  push/email cuando ProcesoCierreDiario genera AUSENCIA_INJUSTIFICADA.
+
+M-010 -- Exportacion PDF desde informe HTML
+  En v1.0 HTML y PDF son endpoints separados. En v2.0 boton
+  "Exportar a PDF" dentro del informe HTML.
+
+M-011 -- Informe de pausas independiente
+  En v1.0 las pausas aparecen dentro del informe de jornada.
+  En v2.0 nuevo endpoint GET /api/v1/informes/pausas/{empleadoId}
+  para consultar pausas de forma independiente.
+
+Limitaciones nuevas documentadas:
+  L-004: No hay detalle de horas de permiso retribuido dentro del dia.
+  L-005: El asterisco en Fichaje no distingue entrada de salida.
+  L-006: El asterisco en Pausa no distingue inicio de fin.
+
+====================================================
+7. DISENO TECNICO -- INFORME SERVICE
+====================================================
+
+----------------------------------------------------
+7.1 Clases internas privadas
+----------------------------------------------------
+
+DiaInforme:
+  Modelo interno del service para representar un dia del periodo.
+  Campos: fecha, tipo (String), tieneFichaje, tieneDatos,
+    esManual, horaEntrada, horaSalida, horasEfectivas,
+    totalPausasMinutos, observaciones, List<PausaInforme>.
+  No se expone fuera del service: es un modelo de trabajo interno.
+
+PausaInforme:
+  Modelo interno para representar una pausa dentro de un dia.
+  Campos: horaInicio, horaFin, duracionMinutos, motivo,
+    esManual, observaciones.
+
+ResumenInforme:
+  Acumula los totales del resumen durante la iteracion de dias.
+  Campos: diasTrabajados, horasEfectivasMinutos, diasLibres,
+    horasPermisoRetribuidoMinutos, Map<String, Integer> ausenciasPorTipo.
+
+----------------------------------------------------
+7.2 Flujo de informeHorasEmpleado() (E42)
+----------------------------------------------------
+
+  1. Resolver Empleado por empleadoId. HTTP 404 si no existe.
+  2. Obtener nombre de empresa via EmpresaService.obtenerEmpresa().
+  3. Normalizar filtro de tipos (null -> Set vacio -> sin filtro).
+  4. construirDias(): cargar fichajes y pausas en dos queries,
+     iterar fecha a fecha, construir DiaInforme por cada dia.
+  5. calcularResumen(): iterar dias y acumular contadores.
+  6. Si formato=html: generarHtmlEmpleado().
+     Si formato=json: construirJsonEmpleado().
+
+----------------------------------------------------
+7.3 Flujo de informeHorasGlobal() (E43)
+----------------------------------------------------
+
+  1. Obtener nombre de empresa.
+  2. Normalizar filtro de tipos.
+  3. empleadoRepository.findByActivo(true).
+  4. Para cada empleado: construirDias() + calcularResumen().
+  5. Construir fila del global con nombre y resumen.
+  6. Si formato=html: generarHtmlGlobal() con tabla de empleados.
+     Si formato=json: List<Map> con una fila por empleado.
+
+----------------------------------------------------
+7.4 Generacion del HTML
+----------------------------------------------------
+
+El HTML se genera como String con StringBuilder en el service.
+No se usa ninguna libreria de plantillas (Thymeleaf, Freemarker)
+para no anadir dependencias. El HTML es autocontenido: todo el
+CSS va en el bloque <style> de la cabecera, sin ficheros externos.
+
+CSS aplicado:
+  Fuente: Segoe UI (fallback a Tahoma, Verdana, sans-serif).
+  Paleta: azul corporativo #2c3e6b para cabeceras de tabla,
+    blanco para filas normales, fondo claro #f8f9fb para el body.
+  Tabla con scroll horizontal (overflow-x: auto) para pantallas
+    pequenas sin romper el layout.
+  Filas especiales: fila-libre (gris italica para DIA_LIBRE y
+    SIN_REGISTRO), fila-ausencia (fondo amarillo claro), fila-
+    pausa-extra (fondo muy claro para pausas adicionales).
+
+Escape HTML:
+  El metodo esc() escapa &, <, >, " en todos los campos de texto
+  libre (observaciones, nombre de empresa, nombre de empleado).
+  Evita XSS si alguna observacion contiene caracteres especiales.
+
+====================================================
+8. VERIFICACION -- RESULTADOS (sesion 19, 21/03/2026)
+====================================================
+
+Verificacion realizada con perfil dev (H2) desde PowerShell
+usando Invoke-RestMethod. Backend arrancado con:
+  ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+Obtencion del token JWT:
+  $login = Invoke-RestMethod -Uri "http://localhost:8080/api/v1/auth/login" `
+    -Method Post -ContentType "application/json" `
+    -Body '{"username":"admin","password":"admin1234"}'
+  $token = $login.token
+
+Nota: los caracteres especiales pueden aparecer mal codificados en
+la consola de PowerShell. Es un problema de encoding de Windows,
+no del API. El HTML en navegador muestra los caracteres correctamente.
+
+----------------------------------------------------
+Caso 1: E42 Ana marzo HTML -- OK
+----------------------------------------------------
+  $r1 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/1?desde=2026-03-01&hasta=2026-03-31&formato=html" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r1 | Out-File -FilePath "informe_ana.html" -Encoding utf8
+  Start-Process "informe_ana.html"
+Resultado: 31 filas correctas. Asteriscos en 05/03 y 17/03 (entrada/salida)
+  y en pausa 18/03 (inicio/fin). Intervenciones manuales: 05/03, 11/03,
+  12/03, 17/03 (fichajes) y 18/03 (pausa). Festivo 06/03, vacaciones
+  23-27/03 y DLC 30/03 NO aparecen (D-028 funcionando).
+
+----------------------------------------------------
+Caso 2: E42 Ana marzo JSON -- OK
+----------------------------------------------------
+  $r2 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/1?desde=2026-03-01&hasta=2026-03-31&formato=json" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r2 | ConvertTo-Json -Depth 5
+Resultado: estructura correcta. esManual correcto en todos los dias.
+  Resumen: 12 dias, 88h, 9 libres, 5 vacaciones, 2 bajas, 1 injustificada.
+
+----------------------------------------------------
+Caso 3: E42 tipo=VACACIONES -- OK
+----------------------------------------------------
+  $r3 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/1?desde=2026-03-01&hasta=2026-03-31&tipo=VACACIONES&formato=json" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r3.detalle | ConvertTo-Json -Depth 2
+Resultado: 5 filas, fechas 23-27/03, todas VACACIONES.
+
+----------------------------------------------------
+Caso 4: E42 tipo=BAJA_MEDICA -- OK
+----------------------------------------------------
+  $r4 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/1?desde=2026-03-01&hasta=2026-03-31&tipo=BAJA_MEDICA&formato=json" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r4.detalle | ConvertTo-Json -Depth 2
+Resultado: 2 filas, 11/03 y 12/03. esManual: true en ambas.
+
+----------------------------------------------------
+Caso 5: E42 Laura sin fichajes -- OK
+----------------------------------------------------
+  $r5 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/3?desde=2026-03-01&hasta=2026-03-31&formato=json" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r5.resumen | ConvertTo-Json -Depth 3
+  $r5.detalle.Count
+Resultado: 0 dias trabajados, 0h, 9 dias libres, 31 entradas. Sin errores.
+
+----------------------------------------------------
+Caso 6: E43 global HTML -- OK
+----------------------------------------------------
+  $r6 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas?desde=2026-03-01&hasta=2026-03-31&formato=html" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r6 | Out-File -FilePath "informe_global.html" -Encoding utf8
+  Start-Process "informe_global.html"
+Resultado: Ana 12d/88h, Carlos 19d/142h30min, Laura 0d/0h. Scroll horizontal OK.
+
+----------------------------------------------------
+Caso 7: E43 tipo=AUSENCIA_INJUSTIFICADA -- OK
+----------------------------------------------------
+  $r7 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas?desde=2026-03-01&hasta=2026-03-31&tipo=AUSENCIA_INJUSTIFICADA&formato=json" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r7 | ConvertTo-Json -Depth 4
+Resultado: Ana AUSENCIA_INJUSTIFICADA=1. Carlos y Laura: 0.
+
+----------------------------------------------------
+Caso 8: E42 Ana 18/03 HTML -- OK
+----------------------------------------------------
+  $r8 = Invoke-RestMethod -Uri `
+    "http://localhost:8080/api/v1/informes/horas/1?desde=2026-03-18&hasta=2026-03-18&formato=html" `
+    -Method Get -Headers @{Authorization="Bearer $token"}
+  $r8 | Out-File -FilePath "informe_ana_18mar.html" -Encoding utf8
+  Start-Process "informe_ana_18mar.html"
+Resultado: 1 dia, Normal, 09:00/17:30, 7h 30min. Inicio pausa 14:00*,
+  fin pausa 14:30*. Fichajes: (ninguna). Pausas: 18/03 con observacion.
+
+====================================================
+9. ESTADO AL CERRAR LA TAREA 1
+====================================================
+
+Compilacion: OK -- arranca limpio en perfil dev (sesion 19)
+Verificacion funcional: COMPLETADA -- 8/8 casos OK
+Commit: pendiente -- se hara al cerrar el Bloque 7 completo
+
+Ficheros creados en esta tarea (sesion 18):
+  InformeService.java     (nuevo -- E42 y E43 implementados)
+  InformeController.java  (nuevo -- E42, E43 y E44 esqueleto)
+
+Ficheros modificados en esta tarea (sesion 18):
+  PausaRepository.java    (findByEmpleadoIdAndFechaBetween anadido)
+  data.sql                (fichajes y pausas de prueba marzo 2026)
+
+Ficheros modificados en verificacion (sesion 19):
+  InformeService.java     (D-028: workaround intervencion manual)
+  data.sql                (correcciones 03/03 Ana y 11/03 Carlos,
+                           planificacion_ausencias anadida con 10 registros)
+
+Desviaciones registradas en esta tarea:
+  D-027: parametro ?tipo= en E42 y E43
+  D-028: workaround intervencion manual via planificacion_ausencias
+
+Mejoras registradas en esta tarea:
+  M-006 a M-012
+
+Limitaciones registradas en esta tarea:
+  L-004, L-005, L-006, L-007
+
+Proxima tarea: Bloque 7 Tarea 2 -- E44 informe vacaciones (JSON/HTML)
+
+====================================================
+FIN TAREA 1 -- INFORMES HTML
+====================================================

@@ -1,0 +1,210 @@
+====================================================
+STAFFFLOW -- SESION 2103_v2
+Fecha: 21/03/2026
+Conversacion: sesion 19
+====================================================
+
+Este fichero captura el razonamiento completo, decisiones y
+verificaciones de la sesion. Complementa al prompt activo y
+las desviaciones con el detalle que esos ficheros no recogen.
+
+Adjuntar en la proxima sesion junto con el prompt activo.
+
+====================================================
+1. PUNTO DE PARTIDA DE LA SESION
+====================================================
+
+Ficheros adjuntados al inicio:
+  StaffFlow_Prompt_Dev_2103_v1.txt
+  StaffFlow_Desviaciones_2103_v1.txt
+  StaffFlow_Sesion_2103_v1.txt
+  StaffFlow_Bloque7_Tarea1_InformesHTML_v2.txt
+  StaffFlow_Entrega_v2.txt
+  StaffFlow_Mejoras_para_Version2_0_2103_v2.txt
+  InformeService.java
+  InformeController.java
+  PausaRepository.java
+  data.sql
+  (mas tarde: todos los repositorios y services para D-028)
+
+Estado al iniciar: Bloque 7 Tarea 1 implementada, verificacion pendiente.
+Objetivo de sesion: verificar E42/E43 y avanzar hacia E44 e iText 7.
+
+====================================================
+2. CORRECCIONES PREVIAS A LA VERIFICACION
+====================================================
+
+----------------------------------------------------
+CORRECCION data.sql -- incoherencias total_pausas_minutos
+----------------------------------------------------
+
+Antes de verificar se detecto que dos fichajes tenian
+total_pausas_minutos inconsistente con las pausas insertadas:
+
+  Ana 03/03: fichaje decia total_pausas_minutos=30 pero las pausas
+    suman 45 (descanso 15min + comida 30min). El 09/03 con la misma
+    estructura si tenia 45. Error de copia al construir el data.sql.
+    Correccion: total_pausas_minutos=45, jornada_efectiva_minutos=435.
+
+  Carlos 11/03: misma incoherencia. total_pausas_minutos=30 pero
+    pausas suman 45 (descanso 15 + comida 30).
+    Correccion: total_pausas_minutos=45, jornada_efectiva_minutos=435.
+
+====================================================
+3. VERIFICACION E42/E43 -- PRIMERA PASADA
+====================================================
+
+El Caso 1 (E42 Ana marzo HTML) se verifico y el HTML se veia
+correctamente. Sin embargo se detecto un problema en la seccion
+"Intervenciones manuales": aparecian como intervenciones manuales
+festivos, bajas medicas, vacaciones y DLC ademas de las
+correcciones reales. Esto genero una discusion de diseno.
+
+====================================================
+4. ANALISIS DEL PROBLEMA DE INTERVENCIONES MANUALES
+====================================================
+
+Problema identificado: la logica original de esManual en
+InformeService marcaba como manual cualquier fichaje donde
+usuario.rol != EMPLEADO y username != terminal_service. Esto
+capturaba correctamente las correcciones reales pero tambien
+registros administrativos normales como festivos planificados
+y vacaciones creadas por el encargado.
+
+Iteraciones de diseno para resolver el problema:
+
+INTENTO 1: distinguir por tipo de fichaje (NORMAL=manual, resto no).
+  Descartado porque el encargado puede corregir cualquier tipo,
+  incluyendo una baja medica inesperada que si es manual.
+
+INTENTO 2: usar la fecha de creacion de PlanificacionAusencia.
+  Idea de Santiago. Correcto en concepto: si una ausencia paso por
+  planificacion_ausencias antes de llegar a fichajes, no es manual.
+  Problema: la fecha de creacion de planificacion_ausencias no esta
+  en la entidad Fichaje. Hay que consultar la tabla.
+
+SOLUCION ADOPTADA:
+  Version 1.0: Opcion B (workaround D-028) -- consultar
+    planificacion_ausencias por empleadoId y fecha. Si existe
+    planificacion, el fichaje no es manual aunque lo crease el
+    encargado. Si no existe, si es manual.
+  Version 2.0: Opcion A (M-012) -- anadir campo planificacion_id
+    (FK nullable) en fichajes. ProcesoCierreDiario lo rellena.
+    InformeService lo usa sin query adicional.
+
+====================================================
+5. IMPLEMENTACION D-028
+====================================================
+
+Ficheros modificados:
+
+  InformeService.java:
+    - Importado PlanificacionAusenciaRepository.
+    - Anadido planificacionRepository como dependencia inyectada.
+    - En construirDiaConFichaje(): logica esManual dividida en
+      candidatoManual (criterio original) + consulta a
+      planificacionRepository.existsByEmpleadoIdAndFecha()
+      usando fichaje.getEmpleado().getId().
+    - Primer intento uso variable empleadoId que no existia en ese
+      scope. Corregido a fichaje.getEmpleado().getId().
+
+  PlanificacionAusenciaRepository.java:
+    - Sin cambios. El metodo existsByEmpleadoIdAndFecha() ya existia
+      desde Bloque 6 (usado por AusenciaService en E30).
+
+----------------------------------------------------
+DECISION SOBRE DATA.SQL
+----------------------------------------------------
+
+Para que el workaround D-028 pudiera demostrarse en las pruebas
+fue necesario anadir registros en planificacion_ausencias. Sin
+datos en esa tabla todos los fichajes se marcarian como manuales
+y el workaround no tendria efecto, aunque el codigo es correcto.
+
+Se anadieron 10 registros con procesado=true:
+  Ana: FESTIVO_LOCAL 06/03, VACACIONES 23-27/03, DLC 30/03.
+  Carlos: ASUNTO_PROPIO 04/03, FESTIVO_LOCAL 06/03, PERMISO_RETRIBUIDO 19/03.
+
+Ausencias que NO tienen planificacion (correctamente manuales):
+  Bajas medicas Ana 11-12/03: BAJA_MEDICA no existe en TipoAusencia.
+    Una baja por gripe no se planifica con antelacion.
+  Correcciones NORMAL: 05/03 y 17/03 Ana, 12/03 Carlos.
+    El empleado debia fichar el mismo pero no lo hizo correctamente.
+
+====================================================
+6. VERIFICACION E42/E43 -- SEGUNDA PASADA (8/8 OK)
+====================================================
+
+Tras D-028 e insercion de planificacion_ausencias, todos los
+8 casos verificados correctamente. Ver detalle en
+StaffFlow_Bloque7_Tarea1_InformesHTML_v2.txt seccion 8.
+
+Resultado final de la seccion "Intervenciones manuales" en Caso 1:
+  Fichajes: 05/03 (entrada olvidada), 11/03 (baja gripe),
+    12/03 (baja gripe dia 2), 17/03 (permiso retribuido ajustado).
+  Pausas: 18/03 (fin de pausa cerrado manualmente).
+  Correctamente ausentes: 06/03, 23-27/03, 30/03.
+
+====================================================
+7. DECISION SOBRE FORMATO HTML vs JSON EN ANDROID
+====================================================
+
+Durante la sesion Santiago pregunto que formato es mejor para
+mostrar informes en la terminal Android y en futuras aplicaciones.
+
+Conclusion:
+  Terminal Android (fichaje tablet): usar ?formato=html y cargar
+    en WebView. Trivial de implementar, imprimible con PrintManager,
+    sin duplicar logica de presentacion en Kotlin.
+  Futura app de escritorio o web propia: usar ?formato=json.
+    Control total del diseno, integracion con estilos propios,
+    combinacion con otros endpoints.
+  La API ofrece ambos formatos en todos los endpoints: diseno correcto,
+    no hay que cambiar nada.
+
+====================================================
+8. DOCUMENTACION GENERADA EN ESTA SESION
+====================================================
+
+Ficheros de codigo:
+  InformeService.java          (modificado -- D-028)
+  data.sql                     (modificado -- correcciones + planificacion_ausencias)
+
+Ficheros de documentacion:
+  StaffFlow_Desviaciones_2103_v2.txt      (D-028 anadida)
+  StaffFlow_Mejoras_para_Version2_0_2103_v3.txt (M-012 y L-007 anadidas)
+  StaffFlow_Bloque7_Tarea1_InformesHTML_v2.txt (verificacion completada)
+  StaffFlow_Prompt_Dev_2103_v2.txt        <- ACTIVO
+  StaffFlow_Sesion_2103_v2.txt            <- ESTE FICHERO
+
+====================================================
+9. FICHEROS A ADJUNTAR EN LA PROXIMA SESION
+====================================================
+
+  StaffFlow_Prompt_Dev_2103_v2.txt       <- obligatorio
+  StaffFlow_Desviaciones_2103_v2.txt     <- obligatorio
+  StaffFlow_Sesion_2103_v2.txt           <- obligatorio
+  StaffFlow_Bloque7_Tarea1_InformesHTML_v2.txt <- recomendado
+
+====================================================
+10. PENDIENTE ANTES DE ENTREGA FINAL
+====================================================
+
+  1. E44 informe vacaciones (JSON/HTML).
+     GET /api/v1/informes/vacaciones?anio=&formato=
+     SaldoAnualRepository.findByAnio() ya existe.
+
+  2. Anadir iText 7 al pom.xml ANTES de implementar E45-E47.
+     Verificar version en Maven Central en la proxima sesion.
+
+  3. E45-E47 informes PDF con iText 7.
+
+  4. TestProcesoCierreDiarioController.java tiene @Profile({"dev","mysql"}).
+     Decidir antes de entrega: eliminar o volver a @Profile("dev").
+
+  5. ProcesoDiarioService.java debe eliminarse del proyecto.
+     Sustituido por ProcesoCierreDiario.java en sesion 17.
+
+====================================================
+FIN StaffFlow_Sesion_2103_v2.txt
+====================================================

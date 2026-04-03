@@ -1,0 +1,213 @@
+====================================================
+STAFFFLOW — BLOQUE 4: WIREFRAMES ANDROID
+====================================================
+
+Proyecto: StaffFlow v3.0
+TFG DAM — iLERNA
+Alumno: Santiago
+Fase: Fase 1 · Análisis y Diseño
+Bloque: Bloque 4 — Wireframes Android
+Estado: COMPLETADO (versión 3.0)
+
+Documento principal:
+StaffFlow_Wireframes_v3.docx
+
+Objetivo del bloque:
+Definir la estructura completa de la aplicación Android antes de
+comenzar el desarrollo. Cada pantalla documenta:
+
+• Wireframe conceptual
+• Endpoint principal consumido
+• Comportamiento
+• Estados de carga / error / vacío
+• Flujo de navegación
+• Decisiones de diseño relevantes
+
+Resultado del bloque:
+24 pantallas organizadas en 8 flujos que cubren los 52 endpoints
+definidos en Bloque 3.
+
+====================================================
+ARQUITECTURA ANDROID
+====================================================
+
+Arquitectura elegida:
+
+Single Activity + Navigation Component + Fragments
+
+Estructura:
+
+MainActivity
+  └ NavHostFragment
+       ├ TerminalFragment (P01)
+       ├ LoginFragment (P02)
+       ├ RecoveryFragment (P03)
+       ├ ResetPasswordFragment (P05)
+       ├ HomeEmpleadoFragment (P09)
+       ├ ParteDiarioFragment (P17)
+       ├ EmpleadosFragment (P13)
+       └ resto de fragments
+
+Decisiones clave:
+
+• El terminal (P01) es la pantalla raíz pública de la app.
+• El Navigation Drawer solo aparece en la zona autenticada.
+• El menú del Drawer se carga dinámicamente según rol.
+• El destino inicial tras login depende del rol:
+    ADMIN → P13 (Empleados)
+    ENCARGADO → P17 (Parte diario)
+    EMPLEADO → P09 (Mi saldo)
+
+Persistencia de sesión:
+
+JWT guardado en DataStore (no SharedPreferences).
+
+Si cualquier endpoint devuelve HTTP 401:
+
+DataStore.clear()
+→ ocultar Drawer
+→ navegar a P02 (Login)
+→ mostrar snackbar "La sesión ha caducado"
+
+Deep links:
+
+El enlace de recuperación de contraseña abre directamente
+ResetPasswordFragment mediante configuración en nav_graph.xml.
+
+====================================================
+FLUJOS DE LA APLICACIÓN
+====================================================
+
+Flujo 1 — Terminal y autenticación
+P01 Terminal PIN
+P02 Login
+P03 Recuperar contraseña
+P04 Cambiar contraseña
+P05 Restablecer contraseña
+
+Flujo 2 — Terminal feedback
+P06 Confirmación fichaje
+P07 Selección tipo pausa
+
+Flujo 3 — Zona empleado
+P08 Mi perfil
+P09 Mi saldo anual
+P10 Mis fichajes
+P11 Mis ausencias
+P12 Mi parte diario
+
+Flujo 4 — Gestión empleados
+P13 Listado empleados
+P14 Detalle empleado
+P15 Crear / editar empleado
+
+Flujo 5 — Presencia y fichajes
+P17 Parte diario
+P18 Empleados sin justificar
+P19 Historial fichajes
+P20 Registro manual (fichaje o pausa)
+
+Flujo 6 — Ausencias
+P23 Listado ausencias
+P24 Crear / editar ausencia
+
+Flujo 7 — Saldos e informes
+P26 Saldo anual individual
+P27 Saldo anual global
+P28 Informes (tabs: horas individual, horas global, vacaciones)
+
+Flujo 8 — Administración
+P31 Listado usuarios
+P32 Crear / editar usuario
+P34 Configuración empresa
+
+Total:
+24 pantallas
+8 flujos
+52 endpoints cubiertos
+
+====================================================
+DECISIONES DE DISEÑO CLAVE
+====================================================
+
+Terminal como raíz pública
+
+El dispositivo donde se ejecuta la app puede estar colocado
+como terminal físico de fichaje. Por ello la pantalla inicial
+es siempre el terminal PIN.
+
+Desde esa pantalla existen dos modos de uso:
+
+1. Fichaje rápido mediante PIN
+2. Acceso completo a la aplicación mediante login
+
+Esto evita exponer menús administrativos en dispositivos
+compartidos.
+
+Flujo de pausa simplificado
+
+Se eliminó el concepto de "modo pausa".
+P01 muestra tres acciones explícitas:
+
+• Fichar
+• Iniciar pausa
+• Finalizar pausa
+
+Registro manual unificado
+
+La pantalla P20 es reutilizable:
+
+FormFichajeFragment
+
+Dos variantes:
+• fichaje manual
+• pausa manual
+
+El argumento de navegación determina la variante.
+
+PUT vs PATCH
+
+PUT → edición completa desde formulario
+PATCH → cambios parciales de estado
+
+Ejemplo:
+PATCH /empleados/{id}/baja
+PATCH /empleados/{id}/reactivar
+
+====================================================
+ESTADOS UX DOCUMENTADOS
+====================================================
+
+Estados de carga
+
+CircularProgressIndicator en carga inicial.
+
+Listas usan skeleton loading.
+
+Estados de error
+
+Mensaje descriptivo + botón "Reintentar".
+
+Estados vacíos
+
+Icono + mensaje + acción "Limpiar filtros"
+si hay filtros activos.
+
+Feedback terminal
+
+Pantalla P06 muestra confirmación durante 3 segundos
+y vuelve automáticamente a standby.
+
+====================================================
+OBJETIVO DEL BLOQUE
+====================================================
+
+El objetivo de este bloque es que:
+
+• Todas las pantallas estén definidas antes de programar
+• Cada pantalla tenga endpoint asociado
+• La navegación esté completamente decidida
+• El desarrollo Android pueda comenzar sin rediseños
+
+Este documento actúa como contrato de diseño entre
+la API backend y la aplicación Android.

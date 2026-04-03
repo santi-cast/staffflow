@@ -1,0 +1,1 @@
+Para cambiar a H2 en IntelliJ: en la configuración de Run/Debug, en VM options o en Active profiles, cambia  dev por mysql. Si lo tienes en application.properties con spring.profiles.active=dev, cámbialo temporalmente a mysql y arranca de nuevo.

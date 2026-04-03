@@ -1,0 +1,484 @@
+====================================================
+STAFFFLOW — PROMPT DEV 1003_v1
+====================================================
+
+Rama: develop
+Fusionar a: StaffFlow_Prompt_Maestro_v7.txt cuando el alcance esté cerrado
+Referencia permanente: StaffFlow_Prompt_Maestro_v6.txt (diseño original completo)
+
+Proyecto: StaffFlow
+Alumno: Santiago Castillo
+Centro: iLERNA — TFG DAM 2025/2026
+Entrega: 22 abril 2026
+Repo: https://github.com/santi-cast/staffflow
+
+====================================================
+CONVENCIÓN DE NOMBRES DE PROMPTS
+====================================================
+
+Formato: StaffFlow_Prompt_[TIPO]_[DDMM]_v[N].txt
+
+Tipos:
+  Dev      → prompt activo de desarrollo (este fichero)
+  Maestro  → prompt principal cerrado (merge de Dev)
+  Feedback → prompt específico para entrega al tutor
+
+Regla: al cerrar cada sesión se genera un Dev nuevo con fecha y versión
+del día. Nunca sobreescribir versiones anteriores.
+
+====================================================
+CONTEXTO PERSONAL DEL PROYECTO — LEER SIEMPRE
+====================================================
+
+Santiago estudia DAM online en iLERNA. La evaluación del TFG es:
+  50% vídeo de presentación (máximo 25 minutos, no presencial)
+  30% memoria
+  20% código
+
+La defensa NO es presencial. El vídeo es la pieza más importante.
+Lo que no aparece en el vídeo funcionando no se evalúa directamente.
+Un sistema con menos funcionalidades pero demostrable y entendido
+vale más que uno completo pero opaco.
+
+Decisión de Santiago (09/03/2026, irrevocable):
+  "No me importa la nota. Quiero aprender y entender lo que construyo.
+   Prefiero un 5 aprendiendo que un 10 sin enterarme de nada."
+
+Prioridad del asistente:
+  PRIMERO: que Santiago entienda lo que implementa
+  SEGUNDO: que el resultado sea funcional y demostrable
+  TERCERO: que la documentación lo respalde académicamente
+
+====================================================
+POR QUÉ ESTAMOS REVISANDO EL ALCANCE
+====================================================
+
+El diseño original tiene 52 endpoints, 13 controllers, 24 pantallas,
+3 PDFs firmables, saldos anuales con prorrateo, procesos automáticos
+e informes HTML. Es un diseño profesional y bien argumentado.
+
+El problema no es el diseño. Es el tiempo y el objetivo.
+
+Con 225 horas totales y empezando la Fase 2 el 09/03 con solo
+entidades y enums en código, implementar TODO aprendiendo es inviable.
+
+Lo que NO cambia:
+  - Stack tecnológico (Spring Boot, Kotlin, misma BD)
+  - Arquitectura (misma estructura de capas, mismos patrones)
+  - Modelo de datos (las 7 tablas siguen siendo las mismas)
+  - Propósito del sistema (cumplir RDL 8/2019)
+  - Calidad del código que se implemente
+
+Lo que SÍ cambia:
+  - Cuántos endpoints se implementan realmente
+  - Cuántas pantallas Android se implementan realmente
+  - Qué queda documentado como "trabajo futuro" en la memoria
+
+====================================================
+ESTADO DEL CÓDIGO (develop → ad7be84)
+====================================================
+
+LO QUE EXISTE:
+  - Health check endpoint operativo (/api/health)
+  - 7 entidades JPA corregidas y compilando
+  - 5 enums definitivos commitados
+  - 32 DTOs de request generados (pendiente copiar a IntelliJ)
+  - Proyecto Android compilando en emulador sin crashes
+
+LO QUE NO EXISTE AÚN:
+  - Repositorios JPA
+  - Servicios de negocio
+  - Controllers (excepto HealthController)
+  - Configuración Spring Security + JWT
+  - Nada de Android más allá del proyecto base
+
+GIT:
+  master  → db03d55 feat: add health check endpoint (tag: v1.0-fase1)
+  develop → ad7be84 feat: actualizar enums definitivos - inicio fase 2
+
+PRÓXIMO PASO TÉCNICO (en pausa hasta cerrar alcance):
+  Definir núcleo funcional → retomar Fase 2
+
+====================================================
+ESTADO FASES
+====================================================
+
+Fase 0: COMPLETADA
+Fase 1: COMPLETADA — tag v1.0-fase1 en master
+Fase 2: EN CURSO — Backend (09 Mar – 29 Mar, 80h estimadas)
+  Bloque 1 (Preparación):          EN CURSO / EN PAUSA
+  Bloque 2 (Seguridad JWT):        PENDIENTE
+  Bloque 3 (Auth + Empresa):       PENDIENTE
+  Bloque 4 (Usuarios + Empleados): PENDIENTE
+  Bloque 5 (Fichajes + Pausas):    PENDIENTE
+  Bloque 6 (Ausencias + Saldos):   PENDIENTE
+  Bloque 7 (Informes + PDF):       PENDIENTE
+Fase 3: PENDIENTE — Android (30 Mar – 07 Abr, 35h)
+Fase 4: PENDIENTE — Testing (08 Abr – 14 Abr, 30h)
+Fase 5: PENDIENTE — Documentación y vídeo (15 Abr – 22 Abr, 50h)
+
+====================================================
+FEEDBACK AL TUTOR — ESTADO ACTUAL
+====================================================
+
+Entrega: 13-16 marzo 2026 (cierre 09:59 del 16/03)
+Versión activa: StaffFlow_memoria_feedback_v6.txt / .docx
+Prompt de feedback: StaffFlow_Prompt_Feedback_0309_v6.txt
+
+El tutor revisa especialmente:
+  - Diagrama ER
+  - Diagrama de clases
+  - Diagramas de casos de uso (x3)
+  - Estructura general del proyecto
+No entregar código. GitHub en portada como referencia informativa.
+
+Cambios aplicados en la memoria v6 respecto al diseño original:
+  1. Estado del Arte añadido (sección obligatoria, ausencia = suspenso)
+  2. JaCoCo sin porcentaje fijo — foco en servicios críticos
+  3. CierreDiario → acción manual ENCARGADO/ADMIN (Decisión 11)
+  4. CierreAnual → acción manual ADMIN (Decisión 12)
+  5. Solo ProcesoDiario permanece @Scheduled (00:01)
+  6. Enlace GitHub en portada
+  7. 54 RF (corregido desde 49)
+  8. Numeración no correlativa de pantallas explicada
+  9. 12 decisiones de diseño (10 originales + 11 y 12 nuevas)
+
+Estructura del documento v6 (11 secciones):
+  1. Introducción
+  2. Estado del Arte
+  3. Objetivos (RF-objetivo-1 a RF-objetivo-6)
+  4. Requisitos (RF-01 a RF-54, RNF-S/R/L/I/M)
+  5. Tecnologías (Backend, Android, Herramientas)
+  6. Planificación (5 fases, 225h, 02/03-22/04)
+  7. Análisis (Actores, Casos de uso + 3 diagramas)
+  8. Diseño (Arquitectura, Paquetes, BD+ER, API, Procesos, Android)
+  9. Decisiones de diseño (12 decisiones con alternativa descartada)
+  10. Estado actual
+  11. Próximos pasos
+
+Diagramas insertados en el docx:
+  Figura 1: staffflow_usecase_by_role.png     (sección 7.2)
+  Figura 2: staffflow_usecase_gestion.png     (sección 7.2)
+  Figura 3: staffflow_usecase_acceso.png      (sección 7.2)
+  Figura 4: er_diagram_v4_mysql.png           (sección 8.3)
+  Figura 5: staffflow_class_diagram.png       (sección 8.4)
+
+Tareas pendientes del feedback:
+  [⏳] Santiago revisa el docx v6
+  [⏳] Generar PDF desde el docx para la entrega
+  [⏳] Entregar antes del 16/03/2026 a las 09:59 AM
+
+====================================================
+DECISIONES DE DISEÑO VIGENTES (26 total)
+====================================================
+
+Las 24 del Maestro v6 siguen vigentes salvo las modificadas.
+Referencia completa: StaffFlow_Prompt_Maestro_v6.txt
+
+MODIFICADAS / NUEVAS EN SESIÓN 09/03/2026:
+  8.  @Scheduled solo para ProcesoDiario (antes: tres procesos)
+  11. NUEVA — Cierre diario: botón manual ENCARGADO/ADMIN
+  12. NUEVA — Cierre anual: botón manual exclusivo ADMIN
+
+AÑADIDAS EN WIREFRAMES v5:
+  25. Feedback visual inmediato en botones de acción de red
+      (deshabilitar al pulsar, rehabilitar al recibir respuesta)
+  26. AlertDialog de confirmación en acciones críticas
+      (Cerrar sesión y Eliminar ausencia)
+
+LAS DEMÁS (1-7, 9-10, 13-24) siguen vigentes sin cambios.
+
+====================================================
+STACK TECNOLÓGICO
+====================================================
+
+Backend:
+  Java 21 LTS (Temurin) | Spring Boot 3.5.x | Maven
+  JPA/Hibernate | H2 (dev) | MySQL 8.0 (prod)
+  jjwt 0.12.6 | SpringDoc OpenAPI (Swagger UI)
+  Lombok | spring-boot-starter-mail
+  iText 7 | JUnit + JaCoCo (sin umbral fijo)
+
+Android:
+  Kotlin | AGP 9.0.1 | Retrofit 2.9.0 | OkHttp 4.12.0
+  Navigation Component 2.8.0 | DataStore Preferences 1.1.1
+  Coroutines 1.8.1 | Lifecycle ViewModel 2.8.0
+  SIN Hilt (incompatible AGP 9.x — inyección manual)
+  PrintManager + WebView | Material Design 3
+
+IDEs: IntelliJ IDEA Community 2025.2.2 | Android Studio Panda 1
+OS: Windows
+
+====================================================
+BASE DE DATOS — 7 TABLAS (DDL v4 ejecutado en MySQL)
+====================================================
+
+configuracion_empresa (singleton, id=1)
+  id | nombre_empresa | cif(UNIQUE) | direccion | email | telefono | logo_path
+
+usuarios
+  id | username(UNIQUE) | password_hash | email(UNIQUE) | rol(ENUM)
+  activo | fecha_creacion | reset_token | reset_token_expiry
+
+empleados
+  id | usuario_id(FK,UNIQUE) | nombre | apellido1 | apellido2
+  dni(UNIQUE) | nss(UNIQUE) | fecha_alta | categoria(ENUM)
+  jornada_semanal_horas | jornada_diaria_minutos
+  dias_vacaciones_anuales | dias_asuntos_propios_anuales
+  pin_terminal(UNIQUE,4) | codigo_nfc(UNIQUE) | activo
+
+planificacion_ausencias
+  id | empleado_id(FK,nullable=festivo global) | fecha
+  tipo_ausencia(ENUM) | procesado(default=false) | usuario_id(FK)
+  observaciones | fecha_creacion
+  UNIQUE(empleado_id,fecha) | INDEX(fecha,procesado)
+
+fichajes (sin DELETE — RNF-L01)
+  id | empleado_id(FK) | fecha | tipo(ENUM) | hora_entrada(nullable)
+  hora_salida(nullable) | total_pausas_minutos | jornada_efectiva_minutos
+  usuario_id(FK) | observaciones | fecha_creacion
+  UNIQUE(empleado_id,fecha)
+
+pausas (sin DELETE — RNF-L01)
+  id | empleado_id(FK) | fecha | hora_inicio | hora_fin(nullable=pausa activa)
+  duracion_minutos(nullable) | tipo_pausa(ENUM) | usuario_id(FK)
+  observaciones | fecha_creacion
+  INDEX(empleado_id,fecha)
+
+saldos_anuales
+  id | empleado_id(FK) | anio
+  dias_trabajados | dias_baja_medica | dias_permiso_retribuido
+  dias_ausencia_injustificada
+  dias_vacaciones_derecho_anio | dias_vacaciones_pendientes_anio_anterior
+  dias_vacaciones_consumidos | dias_vacaciones_disponibles
+  dias_asuntos_propios_derecho_anio | dias_asuntos_propios_pendientes_anterior
+  dias_asuntos_propios_consumidos | dias_asuntos_propios_disponibles
+  horas_ausencia_retribuida(DECIMAL) | saldo_horas(DECIMAL)
+  calculado_hasta_fecha | fecha_ultima_modificacion(ON UPDATE)
+  UNIQUE(empleado_id,anio)
+
+Todas FK: ON UPDATE CASCADE ON DELETE RESTRICT
+Charset: utf8mb4_unicode_ci
+
+====================================================
+ENUMS DEFINITIVOS
+====================================================
+
+Rol (3):              ADMIN | ENCARGADO | EMPLEADO
+TipoFichaje (9):      NORMAL | FESTIVO_NACIONAL | FESTIVO_LOCAL
+                      VACACIONES | ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                      BAJA_MEDICA | DIA_LIBRE_COMPENSATORIO
+                      AUSENCIA_INJUSTIFICADA
+TipoAusencia (6):     FESTIVO_NACIONAL | FESTIVO_LOCAL | VACACIONES
+                      ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                      DIA_LIBRE_COMPENSATORIO
+TipoPausa (4):        COMIDA | DESCANSO | AUSENCIA_RETRIBUIDA | OTROS
+CategoriaEmpleado(5): OPERARIO | ADMINISTRATIVO | TECNICO
+                      ENCARGADO | OTRO
+
+====================================================
+ENDPOINTS — DISEÑO ORIGINAL (52 en 13 controllers)
+====================================================
+
+Prefijo /api/v1/ en todos excepto /api/health
+Sin JWT: /auth/login, /auth/password/recovery, /auth/password/reset,
+         /api/health, /terminal/entrada, /terminal/salida,
+         /terminal/pausa/iniciar, /terminal/pausa/finalizar
+
+AuthController      /api/v1/auth           E01-E05 (5)
+EmpresaController   /api/v1/empresa        E06-E07 (2)
+UsuarioController   /api/v1/usuarios       E08-E12 (5)
+EmpleadoController  /api/v1/empleados      E13-E21 (9)
+FichajeController   /api/v1/fichajes       E22-E26 (5)
+PausaController     /api/v1/pausas         E27-E29 (3)
+AusenciaController  /api/v1/ausencias      E30-E34 (5)
+PresenciaController /api/v1/presencia      E35-E37 (3)
+SaldoController     /api/v1/saldos         E38-E41 (4)
+InformeController   /api/v1/informes       E42-E44 (3)
+PdfController       /api/v1/informes/pdf   E45-E47 (3)
+TerminalController  /api/v1/terminal       E48-E51 (4)
+HealthController    /api/health            E52     (1)
+
+PUT=formulario completo | PATCH=cambio estado/campos
+HTTP 423 PIN bloqueado (RNF-S05)
+Formato error: {error, campo?, timestamp, path}
+E42-E44: JSON dinámico o HTML según ?formato=
+
+ESTADO: en revisión de alcance. El subconjunto real a implementar
+se definirá antes de continuar la Fase 2.
+Referencia completa: StaffFlow_Endpoints_v3.docx
+
+====================================================
+PANTALLAS ANDROID — DISEÑO ORIGINAL (24 en 8 flujos)
+====================================================
+
+Flujo 1 — Terminal y Autenticación (P01–P05)
+  P01 Terminal PIN / raíz pública (sin Drawer)
+  P02 Login con cuenta
+  P03 Recuperación de contraseña
+  P04 Formulario nueva contraseña
+  P05 Cambiar contraseña (autenticado)
+
+Flujo 2 — Dashboard por rol
+  P09 Dashboard EMPLEADO
+  P13 Dashboard ADMIN → redirige aquí tras login ADMIN
+  P17 Dashboard ENCARGADO → redirige aquí tras login ENCARGADO
+
+Flujo 3 — Gestión de usuarios y empleados
+  P14 Lista de usuarios (ADMIN)
+  P15 Formulario nuevo usuario + empleado (ADMIN)
+  P16 Detalle/edición usuario + empleado (ADMIN)
+
+Flujo 4 — Fichajes y pausas
+  P20 Registro manual fichaje / pausa (ADMIN/ENCARGADO)
+  P21 Lista fichajes con filtros (ADMIN/ENCARGADO)
+  P22 Detalle fichaje (ADMIN/ENCARGADO)
+
+Flujo 5 — Ausencias
+  P23 Lista ausencias con filtros (ADMIN/ENCARGADO)
+  P24 Formulario nueva ausencia (ADMIN/ENCARGADO)
+
+Flujo 6 — Presencia en tiempo real
+  P32 Panel presencia en tiempo real (ADMIN/ENCARGADO)
+
+Flujo 7 — Saldos e informes
+  P34 Saldos anuales empleado (todos los roles, datos propios EMPLEADO)
+  P35 Informe mensual (ADMIN/ENCARGADO)
+  P36 Informe anual (ADMIN/ENCARGADO)
+  P37 Informe vacaciones (ADMIN/ENCARGADO)
+
+Flujo 8 — Configuración empresa
+  P38 Configuración empresa (ADMIN)
+
+Nota: numeración no correlativa intencionada. Los huecos son pantallas
+descartadas durante el diseño. Se explica en la memoria.
+
+ESTADO: en revisión de alcance junto con los endpoints.
+Referencia completa: StaffFlow_Wireframes_v5.docx / .txt
+
+====================================================
+ARQUITECTURA BACKEND
+====================================================
+
+Patrón: Layered Architecture
+Flujo: Request → JwtAuthFilter → @RestController → @Service
+       → @Repository → Entity → Response
+
+Paquetes (com.staffflow):
+  config              SecurityConfig.java
+  controller          13 controllers (1 por recurso REST)
+  domain.entity       7 entidades JPA (compilando)
+  domain.enums        5 enums definitivos (commitados)
+  domain.repository   7 interfaces JpaRepository (pendiente)
+  dto.request         32 DTOs (generados, pendiente copiar)
+  dto.response        pendiente
+  exception           GlobalExceptionHandler (Bloque 2)
+  security            JwtTokenProvider, JwtAuthFilter,
+                      UserDetailsServiceImpl (Bloque 2)
+  service             13 services esqueleto (pendiente)
+  service.scheduled   ProcesoDiario (Bloque 6)
+
+====================================================
+RAZONAMIENTOS CLAVE CERRADOS
+====================================================
+
+SOBRE JACOCO:
+Sin umbral fijo. Foco en servicios de cálculo crítico
+(jornadas, vacaciones, saldos). Justificación: metodología
+ágil, priorización por criticidad. Si el tribunal pregunta,
+se responde con la cifra real.
+
+SOBRE PROCESOS AUTOMÁTICOS:
+  ProcesoDiario (00:01): permanece @Scheduled.
+    Si falla, el día entero está mal registrado.
+  CierreDiario: botón manual ENCARGADO/ADMIN.
+    Permite revisar incidencias antes de consolidar.
+  CierreAnual: botón manual exclusivo ADMIN.
+    Permite corregir fichajes de diciembre. Elimina
+    el @Scheduled más difícil de testear.
+
+SOBRE REDUCIR PANTALLAS (propuesta rechazada):
+  Fusionar vistas implica reescribir wireframes, casos de uso
+  y endpoints. Riesgo de incoherencias supera ahorro de tiempo.
+  La reducción se decide en revisión de alcance de forma coherente.
+
+SOBRE INFORMES PDF (propuesta rechazada):
+  Los 3 PDFs siguen la misma estructura iText 7.
+  Es iterar tres veces el mismo template, no trabajo nuevo.
+
+SOBRE TESTING BACKEND:
+  Swagger UI es suficiente para probar endpoints durante desarrollo.
+  Flujo: implementas → pruebas en Swagger → sigues.
+
+====================================================
+ARCHIVOS DE REFERENCIA
+====================================================
+
+PROMPT ACTIVO:
+  StaffFlow_Prompt_Dev_1003_v1.txt        <- este fichero
+
+COPIA DE SEGURIDAD (no modificar nunca):
+  StaffFlow_Prompt_Maestro_v6.txt
+
+FEEDBACK TUTOR:
+  StaffFlow_Prompt_Feedback_0309_v6.txt
+  StaffFlow_memoria_feedback_v6.txt
+  StaffFlow_memoria_feedback_v6.docx
+
+DOCUMENTACIÓN FASE 1 (snapshots, no modificar):
+  StaffFlow_Arquitectura_v5.docx
+  StaffFlow_Endpoints_v3.docx
+  StaffFlow_BaseDatos_v4.docx
+  StaffFlow_DiagramaClases.docx
+  StaffFlow_DiagramasCasosDeUso.docx
+  StaffFlow_Wireframes_v5.docx / .txt
+  StaffFlow_Fase0_v6.docx
+  StaffFlow_Fase1_v7.docx
+  StaffFlow_Fase2_v2.docx
+
+SCRIPTS Y DIAGRAMAS:
+  staffflow_v4_ddl_mysql.sql
+  er_diagram_v4_mysql.png
+  staffflow_class_diagram.png
+  staffflow_usecase_by_role.png
+  staffflow_usecase_gestion.png
+  staffflow_usecase_acceso.png
+  gantt_staffflow.jsx
+
+====================================================
+REGLAS DE TRABAJO
+====================================================
+
+1. No inventar funcionalidades, endpoints ni campos que no estén
+   en los archivos de referencia del proyecto.
+2. Si se necesita verificar un dato técnico, pedir el archivo
+   de referencia antes de responder.
+3. Preguntar siempre antes de generar código o ficheros nuevos.
+4. Detectar incoherencias antes de proponer correcciones.
+5. Al cerrar sesión: generar Dev nuevo con fecha y versión del día.
+   Nunca sobreescribir versiones anteriores.
+6. Si el contexto está próximo a agotarse: avisar, actualizar
+   ficheros y pedir nueva sesión con Dev activo adjunto.
+
+====================================================
+CIERRE DE SESIÓN — RECORDATORIO
+====================================================
+
+Al cerrar siempre:
+  1. Generar StaffFlow_Prompt_Dev_[DDMM]_v[N+1].txt
+  2. Actualizar ficheros de fase/bloque si hubo cambios
+  3. Presentar para descarga todos los ficheros modificados
+  4. Confirmar qué adjuntar en la próxima sesión
+
+====================================================
+FIN PROMPT DEV 1003_v1
+Creado: 10/03/2026
+Motivo: snapshot completo con toda la referencia técnica cargada
+Cambios respecto a Dev 0309_v2:
+  - Añadida sección ARQUITECTURA BACKEND completa
+  - Añadida sección ENDPOINTS con tabla de controllers
+  - Añadida sección PANTALLAS ANDROID con 8 flujos completos
+  - Añadidos razonamientos clave cerrados
+  - Decisiones 25 y 26 de Wireframes v5 añadidas
+  - BD ampliada con estructura completa de las 7 tablas
+====================================================

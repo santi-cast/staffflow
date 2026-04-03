@@ -1,0 +1,791 @@
+====================================================
+STAFFFLOW -- DESVIACIONES DETECTADAS
+====================================================
+
+Este fichero es transversal a todo el proyecto.
+Documenta TODA desviacion respecto al diseno original,
+independientemente de en que fase se detecte.
+
+Es la fuente de verdad para la seccion "Desviaciones" de
+cualquier .docx y para la memoria final del TFG.
+
+Ultima actualizacion: 21/03/2026 (sesion 21)
+
+Convenio de nombres aplicado a partir de 16/03/2026:
+  StaffFlow_Desviaciones_[DDMM]_v[N].txt
+  La version reinicia a v1 cada dia nuevo.
+  Versiones anteriores a este convenio:
+    StaffFlow_Desviaciones_v1.txt a v4.txt (sin fecha en nombre)
+
+====================================================
+FASE 2 -- BLOQUE 1 -- ENTIDADES JPA
+====================================================
+
+CAUSA RAIZ COMUN: las 7 entidades fueron creadas en Fase 0
+como placeholders antes de que el diagrama de clases UML y el
+modelo de datos estuvieran cerrados.
+
+ORDEN CORRECTO aplicado en este proyecto:
+  Diagrama de clases (Fase 1, Bloque 2)
+  -> DDL MySQL (Fase 1, Bloque 2)
+  -> Entidades JPA corregidas (Fase 2, Bloque 1)
+  -> DTOs -> Repositories -> Services
+
+----------------------------------------------------
+DESVIACION D-001
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: ConfiguracionEmpresa.java
+QUE ESTABA MAL:
+  5 campos incorrectos, 6 campos reales ausentes.
+CORRECCION:
+  Reescritura completa con los 6 campos del DDL v4.
+
+----------------------------------------------------
+DESVIACION D-002
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: Empleado.java
+QUE ESTABA MAL:
+  apellidos unico en lugar de apellido1+apellido2, 8 campos ausentes,
+  longitudes incorrectas, sin @Enumerated en categoria.
+CORRECCION:
+  Separados apellido1/apellido2. Campos anadidos. Longitudes corregidas.
+
+----------------------------------------------------
+DESVIACION D-003
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: Fichaje.java
+QUE ESTABA MAL:
+  @UniqueConstraint incorrecta (empleado_id, fecha, tipo) en lugar de
+  (empleado_id, fecha). Campo hora en lugar de horaEntrada+horaSalida.
+  Campos faltantes y tipo length insuficiente.
+CORRECCION:
+  UniqueConstraint corregida. horaEntrada/horaSalida nullable.
+  Campos anadidos. tipo length=30.
+QUE IMPLICA:
+  Sin esta correccion habria sido posible dos fichajes del mismo
+  empleado el mismo dia, violando RD-ley 8/2019 (RNF-I02).
+
+----------------------------------------------------
+DESVIACION D-004
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: Pausa.java
+QUE ESTABA MAL:
+  horaFin NOT NULL (debe ser nullable: NULL = pausa activa).
+  LocalTime en lugar de LocalDateTime. Campos incorrectos y faltantes.
+CORRECCION:
+  horaFin nullable. LocalDateTime. Campos corregidos.
+
+----------------------------------------------------
+DESVIACION D-005
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: PlanificacionAusencia.java
+QUE ESTABA MAL:
+  fechaInicio+fechaFin en lugar de fecha (un dia). Campo procesado
+  ausente. @UniqueConstraint, @Index y fechaCreacion faltantes.
+CORRECCION:
+  Modelo un-registro-por-dia. procesado anadido. Constraints anadidos.
+
+----------------------------------------------------
+DESVIACION D-006
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: SaldoAnual.java
+QUE ESTABA MAL:
+  5 campos incorrectos y 12 campos reales ausentes.
+CORRECCION:
+  Reescritura completa con los 17 campos del DDL v4.
+
+----------------------------------------------------
+DESVIACION D-007
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1
+FICHERO: Usuario.java
+QUE ESTABA MAL:
+  Faltaban fechaCreacion, resetToken, resetTokenExpiry.
+CORRECCION:
+  Anadidos con sus anotaciones correctas.
+
+----------------------------------------------------
+DESVIACION D-008
+----------------------------------------------------
+FASE/BLOQUE: Fase 1, Bloque 3
+FICHERO: StaffFlow_DiagramasCasosDeUso.docx
+QUE ESTABA MAL:
+  PIN descrito como 6 digitos. Correcto: 4 digitos.
+CORRECCION:
+  No se modifica el docx (snapshot cerrado). Codigo es correcto.
+
+----------------------------------------------------
+DESVIACION D-009
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, decision tomada 10/03/2026
+QUE ESTABA DOCUMENTADO:
+  JUnit + JaCoCo cobertura >= 70%.
+CAMBIO DECIDIDO:
+  Eliminado umbral fijo. Foco en servicios de calculo critico.
+
+----------------------------------------------------
+DESVIACION D-010
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, decision tomada 10/03/2026 -- revisada 16/03/2026
+QUE ESTABA DOCUMENTADO:
+  Tres procesos @Scheduled: ProcesoDiario, CierreDiario, CierreAnual.
+CAMBIO DECIDIDO (10/03/2026):
+  CierreDiario y CierreAnual eliminados como @Scheduled.
+  Pasan a gestion manual. ProcesoDiario permanece con alcance
+  revisado en D-025 (renombrado a ProcesoCierreDiario).
+ACLARACION (16/03/2026):
+  El CierreDiario eliminado cerraba fichajes sin criterio humano.
+  ProcesoCierreDiario (D-025) es distinto: actua como red de
+  seguridad a las 23:55. El ENCARGADO sigue siendo responsable
+  del cierre del dia usando E22/E23/E27/E28/E30/E31 con la
+  restriccion de fecha documentada en D-026.
+
+----------------------------------------------------
+DESVIACION D-011
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 3, detectada 12/03/2026
+FICHERO: GlobalExceptionHandler.java
+QUE ESTABA MAL:
+  No existia. Errores devolvian stacktrace completo.
+CORRECCION:
+  Creado con @RestControllerAdvice. Mapeo definitivo de excepciones.
+
+----------------------------------------------------
+DESVIACION D-012
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 3, detectada 12/03/2026
+FICHERO: JwtAuthFilter.java
+QUE ESTABA MAL:
+  Sin shouldNotFilter(). E01 devolvia 403 en lugar de 401.
+CORRECCION:
+  Anadido shouldNotFilter() con rutas publicas.
+
+----------------------------------------------------
+DESVIACION D-013
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1, detectada 10/03/2026
+FICHERO: staffflow_v4_ddl_mysql.sql -> staffflow_v5_ddl_mysql.sql
+QUE ESTABA MAL:
+  Columnas id y FK como INT en lugar de BIGINT. Hibernate fallaba.
+CORRECCION:
+  Todas las columnas afectadas a BIGINT. DDL -> v5.
+
+----------------------------------------------------
+DESVIACION D-014
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1, detectada 10/03/2026
+FICHERO: Empleado.java
+QUE ESTABA MAL:
+  pinTerminal sin columnDefinition. VARCHAR vs CHAR en validacion.
+CORRECCION:
+  Anadido columnDefinition = "CHAR(4)".
+
+----------------------------------------------------
+DESVIACION D-015
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 1, detectada 10/03/2026
+FICHERO: pom.xml
+QUE ESTABA MAL:
+  Faltaba mysql-connector-j. Arranque mysql fallaba.
+CORRECCION:
+  Anadida dependencia con scope runtime.
+
+----------------------------------------------------
+DESVIACION D-016
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 2, detectada 12/03/2026
+QUE ESTABA MAL:
+  Controllers esqueleto no creados en Bloque 1.
+  El plan previa 13 controllers esqueleto compilando al cierre
+  del Bloque 1. No se ejecutaron.
+CORRECCION:
+  Los controllers se crean directamente con implementacion real
+  en cada bloque. Sin impacto en codigo ni arquitectura.
+
+----------------------------------------------------
+DESVIACION D-017
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 4, detectada 13/03/2026
+FICHERO: EmpleadoService.java
+QUE ESTABA MAL:
+  Firma obtenerPorId(Long id, String rol) para filtrar PIN.
+  D-018 anulo esa decision.
+CORRECCION:
+  Firma definitiva vuelve a ser obtenerPorId(Long id).
+  PIN nunca visible en API por diseno (EmpleadoResponse no tiene
+  el campo pinTerminal).
+
+----------------------------------------------------
+DESVIACION D-018
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 4, detectada 13/03/2026
+FICHERO: EmpleadoController.java -- EmpleadoService.java
+QUE ESTABA MAL:
+  Logica incluirPin/boolean prevista para filtrar pinTerminal por rol.
+  EmpleadoResponse no tiene el campo pinTerminal por diseno explicito
+  (decision n21). Toda la logica era innecesaria.
+CORRECCION:
+  Logica incluirPin eliminada. EmpleadoController.obtenerPorId()
+  deja de inyectar Authentication. PIN nunca expuesto via REST API.
+
+----------------------------------------------------
+DESVIACION D-019
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 4, detectada 13/03/2026
+FICHERO: AuthService.java
+QUE ESTABA MAL:
+  login() no resolvia empleadoId real. Devolvia null en el JWT.
+CORRECCION:
+  empleadoId resuelto via findByUsuarioId() antes de generar token.
+
+----------------------------------------------------
+DESVIACION D-020
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 5, detectada 13/03/2026
+FICHERO: FichajePatchRequest.java
+QUE ESTABA MAL:
+  DTO sin campos horaEntrada, horaSalida, tipo. E23 no podia
+  modificar esos campos.
+CORRECCION:
+  Anadidos horaEntrada, horaSalida, tipo al DTO.
+
+----------------------------------------------------
+DESVIACION D-021
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 5, detectada 13/03/2026
+FICHERO: TerminalRequest.java -- TerminalService.java
+QUE ESTABA MAL:
+  Sin campo dispositivoId. Sin usuario sistema terminal_service
+  para auditoria de fichajes desde terminal PIN.
+CORRECCION:
+  dispositivoId anadido a TerminalRequest.
+  Usuario terminal_service creado (id=4 en MySQL, id=5 en H2).
+  TerminalService resuelve terminal_service por username.
+
+----------------------------------------------------
+DESVIACION D-022
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 5, detectada 13/03/2026
+FICHERO: TerminalService.java
+QUE ESTABA MAL:
+  registrarEntrada() sin campo tipo (NOT NULL). HTTP 400.
+CORRECCION:
+  fichaje.setTipo(TipoFichaje.NORMAL) anadido antes de save().
+
+----------------------------------------------------
+DESVIACION D-023
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 6, detectada 13/03/2026
+QUE ESTABA MAL:
+  emp01 con activo=0 tras pruebas del Bloque 4. HTTP 401 en login.
+CORRECCION:
+  UPDATE usuarios SET activo=1 WHERE id=3.
+
+----------------------------------------------------
+DESVIACION D-024
+----------------------------------------------------
+FASE/BLOQUE: Memoria B4, detectada 14/03/2026
+FICHEROS: JwtTokenProvider.java -- application-mysql.yml
+QUE ESTABA MAL:
+  JWT 8 horas. Sesion expiraba durante jornada del ENCARGADO.
+CORRECCION:
+  expiration-ms a 43200000 (12h). Decision n18: JWT 8h -> 12h.
+  Refresh token documentado como mejora M-001 para v2.0.
+
+====================================================
+FASE 2 -- BLOQUE 6 -- PROCESO CIERRE DIARIO
+====================================================
+
+----------------------------------------------------
+DESVIACION D-025
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 6, detectada 16/03/2026 (sesion 16)
+             Implementada y verificada 18/03/2026 (sesion 17)
+FICHERO: ProcesoCierreDiario.java
+  (renombrado desde ProcesoDiarioService.java)
+
+QUE ESTABA MAL:
+  1. D-010 no resolvio que pasaba con empleados sin fichaje al final
+     del dia si el ENCARGADO no actuaba.
+  2. Cron 00:01 implicaba dos @Scheduled con orden no garantizado.
+  3. Saldos anuales sin actualizacion automatica al cierre del dia.
+  4. Sin restriccion de fecha para ENCARGADO (ver D-026).
+
+CORRECCION APLICADA:
+  Clase renombrada a ProcesoCierreDiario (paquete service/scheduled).
+  Cron: "0 1 0 * * *" -> "0 55 23 * * *" (23:55).
+  Un unico @Scheduled con tres tareas en secuencia:
+
+  TAREA A -- Cierre ausencias injustificadas:
+    Para cada empleado activo sin fichaje en LocalDate.now():
+      Crear fichaje AUSENCIA_INJUSTIFICADA sin horaEntrada/horaSalida.
+      jornadaEfectivaMinutos=0, totalPausasMinutos=0.
+      Observaciones: "Generado automaticamente por ProcesoCierreDiario".
+      Usuario auditoria: terminal_service (buscado por username).
+
+  TAREA B -- Procesado planificaciones pendientes:
+    Buscar planificacion_ausencias con procesado=false
+    y fecha <= LocalDate.now().plusDays(1).
+    Para cada registro: crear fichaje con TipoFichaje correspondiente
+    (mapeo directo TipoAusencia.name() -> TipoFichaje.valueOf())
+    y marcar procesado=true.
+    Festivos globales (empleadoId=null): crear fichaje para todos
+    los empleados activos que no tengan ya fichaje ese dia.
+
+  TAREA C -- Actualizacion saldos anuales:
+    Ejecutar SIEMPRE despues de Tarea A y Tarea B.
+    Para cada empleado activo: llamar a
+    SaldoService.recalcularParaProceso(empleadoId, anio).
+    Metodo extraido de recalcular() (E40) segun Decision 1 Opcion A:
+    sin construir SaldoResponse (innecesario en proceso interno).
+
+  Toda la operacion es @Transactional e idempotente: si se ejecuta
+  dos veces el mismo dia no genera duplicados.
+
+NOTA SOBRE E40:
+  E40 (recalcular manual) queda como herramienta de correccion
+  exclusiva del ADMIN para inconsistencias puntuales.
+
+NOTA SOBRE E23:
+  E23 NO toca saldos_anuales en ningun caso.
+  Los saldos los actualiza unicamente Tarea C y E40 (ADMIN).
+
+DISTINCION CON D-010:
+  El CierreDiario eliminado cerraba fichajes sin criterio humano.
+  ProcesoCierreDiario actua solo como red de seguridad a las 23:55.
+  El ENCARGADO sigue siendo el responsable principal del dia.
+
+QUE IMPLICA:
+  Ningun empleado activo puede acabar el dia sin fichaje.
+  Saldos actualizados automaticamente cada noche.
+  52 endpoints sin cambios. No se anade ninguno nuevo.
+
+VERIFICACION (18/03/2026, sesion 17, perfil dev H2):
+  Tarea A: AUSENCIA_INJUSTIFICADA creada para empleado sin fichaje.
+    usuarioId=5 (terminal_service). jornadaEfectivaMinutos=0. OK.
+  Tarea B: 0 planificaciones pendientes en data.sql. Sin error. OK.
+  Tarea C: saldo creado para empleado 1. calculadoHastaFecha=hoy. OK.
+
+FICHEROS MODIFICADOS:
+  ProcesoCierreDiario.java (nuevo, sustituye ProcesoDiarioService.java)
+  SaldoService.java (recalcularParaProceso() extraido)
+
+----------------------------------------------------
+DESVIACION D-026
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 6, detectada 16/03/2026 (sesion 16)
+             Implementada y verificada 18/03/2026 (sesion 17)
+FICHEROS: FichajeService.java -- PausaService.java -- AusenciaService.java
+          FichajeController.java -- PausaController.java -- AusenciaController.java
+
+QUE ESTABA MAL:
+  El diseno original no restringia al ENCARGADO a modificar solo
+  registros del dia actual. Un ENCARGADO podia crear o modificar
+  fichajes, pausas y ausencias de cualquier fecha, incluyendo dias
+  pasados ya cerrados por ProcesoCierreDiario. Esto comprometia la
+  integridad de los saldos anuales ya calculados y el principio de
+  que solo el ADMIN puede actuar sobre dias pasados.
+
+CORRECCION APLICADA:
+  Restriccion de fecha anadida en los services de los endpoints:
+    E22 (crear fichaje)      -- FichajeService.crear()
+    E23 (modificar fichaje)  -- FichajeService.actualizar()
+    E27 (crear pausa)        -- PausaService.crear()
+    E28 (modificar pausa)    -- PausaService.cerrar()
+    E30 (crear ausencia)     -- AusenciaService.crear()
+    E31 (modificar ausencia) -- AusenciaService.actualizar()
+
+  Patron identico en los seis metodos (Decision 2, Opcion B):
+    El controller pasa username al service.
+    El service resuelve usuario con usuarioRepository.findByUsername().
+    Si usuario.getRol() == Rol.ENCARGADO y fecha != LocalDate.now():
+      throw new IllegalArgumentException(
+        "El ENCARGADO solo puede gestionar registros del dia actual")
+      -> HTTP 400
+    Si rol == ADMIN: sin restriccion de fecha en ningun endpoint.
+
+  Los controllers de E23, E28 y E31 actualizados para pasar
+  Authentication al service (anadido parametro username).
+
+POR QUE EN EL SERVICE Y NO EN EL CONTROLLER:
+  La logica de negocio vive en la capa service (regla de oro).
+  El controller solo recibe la peticion y pasa el username.
+
+POR QUE E32 NO NECESITA RESTRICCION:
+  E32 (eliminar ausencia) solo actua sobre procesado=false.
+  En condiciones normales una ausencia de fecha pasada ya tendra
+  procesado=true y E32 devuelve 409 automaticamente.
+
+QUE IMPLICA:
+  El ENCARGADO solo puede actuar sobre el dia actual.
+  Una vez que ProcesoCierreDiario corre a las 23:55, el ENCARGADO
+  no puede modificar nada de ese dia porque ya es ayer.
+  El ADMIN puede modificar cualquier dia sin restriccion.
+  Mejora para v2.0: M-002 (cierre manual anticipado por ENCARGADO).
+
+VERIFICACION (18/03/2026, sesion 17, perfil dev H2):
+  Prueba 1: ADMIN + fecha ayer  -> 201 OK
+  Prueba 2: ADMIN + fecha hoy   -> 201 OK
+  Prueba 3: ENCARGADO + fecha ayer -> 400 OK (restriccion activa)
+  Prueba 4: ENCARGADO + fecha hoy  -> 201 OK
+
+FICHEROS MODIFICADOS:
+  FichajeService.java (E22/E23)
+  PausaService.java (E27/E28)
+  AusenciaService.java (E30/E31)
+  FichajeController.java (E23: anadido Authentication)
+  PausaController.java (E28: anadido Authentication)
+  AusenciaController.java (E31: anadido Authentication)
+
+====================================================
+FASE 2 -- BLOQUE 7 -- INFORMES
+====================================================
+
+----------------------------------------------------
+DESVIACION D-027
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 7, detectada 21/03/2026 (sesion 18)
+FICHEROS: InformeController.java -- InformeService.java
+
+QUE ESTABA MAL:
+  El diseno original de E42 y E43 en StaffFlow_Endpoints_v3.docx
+  no incluia parametro de filtro por tipo de jornada. El informe
+  devolveria siempre todos los dias del periodo sin posibilidad
+  de acotar por tipo.
+
+MOTIVO DEL CAMBIO:
+  Durante el diseno detallado del informe HTML (sesion 18) se
+  identifico la necesidad de poder filtrar el informe por tipo
+  de fichaje o ausencia. Casos de uso reales:
+    - Ver solo los dias de vacaciones de un empleado en el ano.
+    - Ver las bajas medicas del ultimo trimestre.
+    - Ver las vacaciones futuras planificadas.
+    - Ver las ausencias injustificadas del mes.
+    - Ver solo los dias libres compensatorios pendientes.
+
+CORRECCION APLICADA:
+  Anadido parametro opcional ?tipo= a E42 y E43.
+  Acepta uno o varios valores separados por coma.
+  Valores validos: cualquier valor del enum TipoFichaje
+    (NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL, VACACIONES,
+    ASUNTO_PROPIO, PERMISO_RETRIBUIDO, BAJA_MEDICA,
+    DIA_LIBRE_COMPENSATORIO, AUSENCIA_INJUSTIFICADA)
+  Mas dos valores especiales no persistidos en BD:
+    DIA_LIBRE    -- sabados y domingos sin fichaje
+    SIN_REGISTRO -- dias entre semana sin ningun registro
+
+  Sin ?tipo=: devuelve todos los dias del periodo (comportamiento
+  original).
+  Con ?tipo=VACACIONES: devuelve solo filas de vacaciones.
+  Con ?tipo=VACACIONES,BAJA_MEDICA: devuelve filas de ambos tipos.
+
+  El resumen se adapta al filtro aplicado: solo muestra totales
+  de los tipos incluidos en el filtro.
+
+POR QUE NO SE MODIFICA StaffFlow_Endpoints_v3.docx:
+  El documento de endpoints es un snapshot cerrado de Fase 1.
+  La politica del proyecto es no modificar snapshots cerrados
+  (mismo criterio que D-008). Esta desviacion es la fuente
+  de verdad para el cambio.
+
+QUE IMPLICA:
+  InformeController.java: parametro List<String> tipo opcional.
+  InformeService.java: logica de filtrado tras construir el
+  listado de dias del periodo.
+  Sin cambios en otros endpoints ni en el modelo de datos.
+
+----------------------------------------------------
+DESVIACION D-028
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 7, detectada 21/03/2026 (sesion 19)
+FICHEROS: InformeService.java -- PlanificacionAusenciaRepository.java
+
+QUE ESTABA MAL:
+  La logica de deteccion de intervencion manual en InformeService
+  usaba unicamente el campo usuario del fichaje: si el usuario no
+  era EMPLEADO ni terminal_service, el fichaje se marcaba como
+  manual. Esto generaba falsos positivos: festivos, vacaciones y
+  otras ausencias creadas por el encargado de forma planificada
+  (a partir de PlanificacionAusencia) aparecian en la seccion
+  "Intervenciones manuales" del informe HTML junto con las
+  correcciones reales. Ver L-007.
+
+MOTIVO DEL CAMBIO:
+  En v1.0 la entidad Fichaje no tiene campo que indique si fue
+  generado desde una planificacion o creado directamente. La
+  solucion definitiva requiere DDL v6 (M-012). Para v1.0 se
+  aplica workaround: consultar planificacion_ausencias para
+  determinar si un fichaje tiene origen planificado.
+
+CORRECCION APLICADA:
+  En InformeService.construirDiaConFichaje(), cuando se detecta
+  que un fichaje podria ser manual (usuario != EMPLEADO y
+  username != terminal_service), se consulta
+  PlanificacionAusenciaRepository.existsByEmpleadoIdAndFecha()
+  para ese empleadoId y fecha. Si existe planificacion:
+  el fichaje NO se marca como manual (es registro planificado).
+  Si no existe planificacion: el fichaje SI se marca como manual
+  (es correccion o intervencion directa del encargado o admin).
+
+  Nuevo metodo anadido a PlanificacionAusenciaRepository:
+    boolean existsByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha)
+  Spring Data JPA genera la implementacion automaticamente.
+
+  La consulta adicional solo se ejecuta cuando el usuario del
+  fichaje no es EMPLEADO ni terminal_service, minimizando
+  el impacto en rendimiento. Para informes mensuales tipicos
+  el numero de fichajes no-EMPLEADO es reducido.
+
+POR QUE NO SE MODIFICA EL MODELO DE DATOS:
+  Anadir planificacion_id a Fichaje requiere DDL v6 y cambios
+  en ProcesoCierreDiario. Fuera del alcance de v1.0. La consulta
+  adicional es el compromiso correcto para este TFG.
+
+QUE IMPLICA:
+  InformeService.java: inyeccion de PlanificacionAusenciaRepository
+  y logica actualizada en construirDiaConFichaje().
+  PlanificacionAusenciaRepository.java: metodo nuevo al final.
+  Sin cambios en el modelo de datos ni en otros endpoints.
+  Mejora definitiva documentada en M-012.
+
+VERIFICACION: pendiente tras implementacion.
+
+FICHEROS A MODIFICAR:
+  InformeService.java
+  PlanificacionAusenciaRepository.java
+
+----------------------------------------------------
+DESVIACION D-029
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 7, detectada 21/03/2026 (sesion 20)
+FICHEROS: InformeController.java -- InformeService.java
+
+QUE ESTABA MAL:
+  El diseno original de E44 en StaffFlow_Endpoints_v3.docx definia
+  el endpoint como GET /api/v1/informes/vacaciones con parametros
+  ?anio= y ?formato= unicamente. Tres problemas detectados durante
+  el diseno detallado del informe:
+
+  1. El nombre /vacaciones no representa el contenido real del
+     informe. E44 devuelve el saldo anual completo de cada empleado:
+     dias vacaciones, dias asuntos propios, resto de dias (trabajados,
+     baja medica, permiso retribuido, ausencia injustificada), horas
+     de ausencia retribuida, saldo de horas, fecha calculado hasta y
+     fecha de ultima modificacion. Llamarlo /vacaciones es impreciso
+     y confuso para cualquier consumidor de la API.
+
+  2. El diseno original no incluia ninguna forma de filtrar por
+     empleado concreto. El informe siempre devolveria todos los
+     empleados activos con saldo en ese ano.
+
+  3. El diseno original no incluia ninguna forma de seleccionar
+     que bloques de columnas mostrar. El informe siempre devolveria
+     todos los campos de SaldoAnual.
+
+CORRECCION APLICADA:
+
+  1. URL renombrada de /informes/vacaciones a /informes/saldos.
+     Metodos renombrados en controller e InformeService:
+       informeVacaciones() -> informeSaldos()
+     El nombre /saldos refleja con exactitud el contenido del
+     informe y es coherente con el modulo SaldoController (/saldos).
+
+  2. Anadido parametro opcional ?empleadoId= que acepta uno o
+     varios ids separados por coma.
+     Sin ?empleadoId=: devuelve todos los empleados activos con
+       saldo en ese ano (comportamiento original).
+     Con ?empleadoId=1: devuelve solo ese empleado.
+     Con ?empleadoId=1,2: devuelve solo esos empleados.
+
+  3. Anadido parametro opcional ?campos= que acepta bloques
+     predefinidos y campos individuales separados por coma.
+     Bloques disponibles:
+       DIAS_VACACIONES   -- Pendientes ano anterior, Derecho anual,
+                           Consumidos ano en curso, Disponibles.
+       DIAS_ASUNTOS_PROPIOS -- idem para asuntos propios.
+       RESTO_DIAS        -- Dias trabajados, baja medica,
+                           permiso retribuido, ausencia injustificada.
+       HORAS             -- Horas ausencia retribuida, saldo horas.
+       CONTROL           -- Calculado hasta, ultima modificacion.
+     Campos individuales: VAC_PENDIENTE_ANT, VAC_DERECHO,
+       VAC_CONSUMIDOS, VAC_DISPONIBLES, AP_PENDIENTE_ANT,
+       AP_DERECHO, AP_CONSUMIDOS, AP_DISPONIBLES, DIAS_TRABAJADOS,
+       DIAS_BAJA_MEDICA, DIAS_PERMISO_RETRIBUIDO,
+       DIAS_AUSENCIA_INJUSTIFICADA, HORAS_AUSENCIA_RETRIBUIDA,
+       SALDO_HORAS, CALCULADO_HASTA, ULTIMA_MODIFICACION.
+     Sin ?campos=: se muestran todos los bloques completos.
+
+POR QUE NO SE MODIFICA StaffFlow_Endpoints_v3.docx:
+  El documento de endpoints es un snapshot cerrado de Fase 1.
+  La politica del proyecto es no modificar snapshots cerrados
+  (mismo criterio que D-008 y D-027). Esta desviacion es la
+  fuente de verdad para los cambios en E44.
+
+QUE IMPLICA:
+  InformeController.java: endpoint renombrado a /saldos,
+    metodo renombrado a informeSaldos(), parametros ?empleadoId=
+    y ?campos= anadidos.
+  InformeService.java: metodo renombrado a informeSaldos(),
+    logica de filtrado por empleado y seleccion de campos anadida.
+  Sin cambios en el modelo de datos ni en otros endpoints.
+  Sin cambios en SaldoAnualRepository: findByAnio() y
+    findByEmpleadoIdAndAnio() ya existen y cubren ambos casos.
+
+FICHEROS A MODIFICAR:
+  InformeController.java
+  InformeService.java
+
+----------------------------------------------------
+DESVIACION D-030
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 7, detectada 21/03/2026 (sesion 21)
+FICHEROS: Empleado.java -- EmpleadoRequest.java -- EmpleadoPatchRequest.java
+          EmpleadoResponse.java -- EmpleadoRepository.java
+          EmpleadoService.java -- staffflow_v5_ddl_mysql.sql -> v6
+          data.sql (v1 -> v2)
+
+QUE ESTABA MAL:
+  El campo nss (numero de seguridad social) de la entidad Empleado fue
+  incluido en Fase 1 pensando en un uso futuro. En v1.0 no se usa en
+  ningun endpoint ni en ninguna logica de negocio. Ademas, el campo nss
+  es un dato sensible (dato personal protegido por RGPD) que no aporta
+  valor como identificador interno visible en documentos como los PDFs
+  firmables. Para los informes PDF de E45-E47 se necesita un identificador
+  interno de empleado que no exponga datos personales sensibles.
+
+MOTIVO DEL CAMBIO:
+  Durante el diseno de los informes PDF (E45-E47, Bloque 7 sesion 21)
+  se decidio incluir el numero de empleado en la cabecera del PDF como
+  dato identificativo junto al nombre y la categoria. El campo nss no
+  es adecuado para este uso por ser un dato sensible de seguridad social.
+  Un numero de empleado interno (EMP-001, EMP-002...) es mas apropiado,
+  no expone datos personales y es la practica habitual en sistemas de
+  gestion de personal.
+
+CORRECCION APLICADA:
+  Campo nss renombrado a numero_empleado en todos los ficheros afectados.
+  Columna nss renombrada a numero_empleado en el DDL (v5 -> v6).
+  Constraint uq_empleados_nss renombrada a uq_empleados_numero_empleado.
+  Metodos existsByNss y existsByNssAndIdNot en EmpleadoRepository
+  renombrados a existsByNumeroEmpleado y existsByNumeroEmpleadoAndIdNot.
+  data.sql actualizado a v2: columna renombrada, valores de prueba
+  cambiados de formato NSS (280011111111) a formato interno (EMP-001).
+  logo_path en configuracion_empresa ahora apunta a la imagen de prueba
+  src/main/resources/static/logo_empresa.png.
+
+POR QUE NO SE MODIFICA StaffFlow_Endpoints_v3.docx:
+  El documento de endpoints es un snapshot cerrado de Fase 1.
+  La politica del proyecto es no modificar snapshots cerrados.
+  Esta desviacion es la fuente de verdad para el cambio.
+
+QUE IMPLICA:
+  El campo numeroEmpleado aparece en EmpleadoResponse y es visible
+  en los endpoints E13-E21. La gestion del valor (asignacion manual
+  por el ADMIN al crear el empleado) es responsabilidad del cliente
+  en v1.0. La generacion automatica de numeros correlativos se
+  documenta como mejora para v2.0 (M-014).
+  El logo en el PDF se carga desde la ruta indicada en logo_path.
+  Si la ruta no existe o es null, el PDF se genera sin logo
+  (fallback silencioso mediante try/catch en PdfService).
+
+FICHEROS MODIFICADOS:
+  Empleado.java              (campo nss -> numeroEmpleado)
+  EmpleadoRequest.java       (campo nss -> numeroEmpleado)
+  EmpleadoPatchRequest.java  (Javadoc actualizado)
+  EmpleadoResponse.java      (campo nss -> numeroEmpleado)
+  EmpleadoRepository.java    (metodos existsByNss* -> existsByNumeroEmpleado*)
+  EmpleadoService.java       (referencias nss -> numeroEmpleado)
+  staffflow_v6_ddl_mysql.sql (columna y constraint renombradas)
+  data.sql v2                (columna renombrada, valores actualizados,
+                              logo_path anadido en configuracion_empresa)
+
+
+----------------------------------------------------
+DESVIACION D-031
+----------------------------------------------------
+FASE/BLOQUE: Fase 2, Bloque 7, detectada 22/03/2026 (sesion 22)
+FICHEROS: InformeController.java (modificado)
+          PdfController.java (nuevo)
+
+QUE ESTABA MAL:
+  En sesion 21 los endpoints E45-E47 se implementaron dentro de
+  InformeController, anadiendo tres metodos @GetMapping con rutas:
+    GET /api/v1/informes/horas/{empleadoId}/pdf   (E45)
+    GET /api/v1/informes/horas/pdf                (E46)
+    GET /api/v1/informes/saldos/pdf               (E47)
+  En el mismo controller ya existian:
+    GET /api/v1/informes/horas/{empleadoId}       (E42)
+    GET /api/v1/informes/horas                    (E43)
+  Spring MVC no pudo resolver la ambiguedad entre el path variable
+  {empleadoId} (E42) y el literal "pdf" (E46) en la misma ruta base
+  /horas. El resultado fue HTTP 404 al llamar a E45, E46 y E47.
+
+CAUSA RAIZ:
+  Spring evalua /horas/pdf como posible coincidencia de
+  GET /horas/{empleadoId} con empleadoId="pdf" antes de considerar
+  GET /horas/pdf como path literal. La ambiguedad no genera error
+  en tiempo de arranque pero si en tiempo de resolucion de la
+  peticion HTTP.
+
+CORRECCION APLICADA:
+  Los tres endpoints PDF se extraen de InformeController y se
+  mueven a un nuevo controlador PdfController con ruta base:
+    @RequestMapping("/api/v1/informes/pdf")
+  Las rutas definitivas de E45-E47 quedan:
+    GET /api/v1/informes/pdf/horas/{empleadoId}   (E45)
+    GET /api/v1/informes/pdf/horas                (E46)
+    GET /api/v1/informes/pdf/saldos               (E47)
+  InformeController queda con E42-E44 unicamente y sin inyeccion
+  de PdfService.
+
+POR QUE ES LA SOLUCION CORRECTA:
+  Ademas de resolver la ambiguedad, esta separacion recupera la
+  arquitectura prevista en StaffFlow_Endpoints_v3.docx, que
+  definia PdfController como controller independiente bajo
+  /api/v1/informes/pdf. Aplica el Principio de Responsabilidad
+  Unica: InformeController genera vistas de datos (JSON/HTML);
+  PdfController genera documentos binarios firmables (byte[]).
+
+QUE IMPLICA:
+  El cliente Android debe actualizar las URLs de E45-E47 en
+  StaffFlow_Android_Contexto_v1.txt cuando se prepare la Fase 3.
+  Los 52 endpoints del proyecto siguen siendo 52 (sin cambio en
+  el total). El numero de controllers pasa de 11 a 12.
+
+FICHEROS MODIFICADOS:
+  InformeController.java  (E45-E47 eliminados, PdfService eliminado)
+  PdfController.java      (nuevo, E45-E47 bajo /api/v1/informes/pdf)
+
+====================================================
+REFERENCIAS CRUZADAS
+====================================================
+
+Prompt dev activo: StaffFlow_Prompt_Dev_2203_v1.txt
+Mejoras v2.0: StaffFlow_Mejoras_para_Version2_0_2103_v6.txt
+
+Convenio de nombres desviaciones (desde 16/03/2026):
+  StaffFlow_Desviaciones_[DDMM]_v[N].txt
+  v reinicia a v1 cada dia nuevo.
+
+Desviaciones incluidas en la memoria (seccion 5.4):
+  D-024 -- JWT 8h a 12h
+  D-010 -- Cierre diario/anual pasaron a manual
+  D-021 -- dispositivoId + terminal_service
+  D-003 -- UniqueConstraint fichajes
+  D-025 -- ProcesoCierreDiario: cron 23:55, tres tareas, saldos automaticos
+  D-026 -- Restriccion fecha ENCARGADO en E22/E23/E27/E28/E30/E31
+  D-027 -- Parametro ?tipo= en E42 y E43
+  D-028 -- Workaround intervencion manual via planificacion_ausencias
+  D-029 -- E44 renombrado a /saldos + parametros ?empleadoId= y ?campos=
+  D-030 -- Campo nss renombrado a numero_empleado
+  D-031 -- PdfController separado: rutas E45-E47 movidas a /informes/pdf
+
+====================================================
+FIN StaffFlow_Desviaciones_2203_v1.txt
+====================================================

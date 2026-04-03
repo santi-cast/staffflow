@@ -1,0 +1,142 @@
+====================================================
+STAFFFLOW -- FASE 3 BLOQUE 1 TAREA 6 -- nav_graph.xml
+StaffFlow_Fase3_Bloque1_Tarea6_NavGraph_v1.txt
+Creado: 03/04/2026 (sesion 26)
+====================================================
+
+Este fichero documenta la creacion del grafo de navegacion y del
+primer Fragment real (TerminalFragment) que permite arrancar la app.
+
+====================================================
+1. CONTEXTO
+====================================================
+
+La Tarea 6 es la ultima del Bloque 1 y tiene como objetivo dejar
+el proyecto en estado compilable y arrancable. Al finalizar:
+  - Build SUCCESSFUL sin errores.
+  - La app arranca en el emulador mostrando P01 (pantalla vacia).
+  - El Drawer esta bloqueado (zona publica).
+  - El back stack esta limpio.
+
+====================================================
+2. FICHEROS CREADOS
+====================================================
+
+  res/navigation/nav_graph.xml       <- grafo completo (27 destinos)
+  res/layout/fragment_terminal.xml   <- layout vacio de P01
+  ui/fichaje/TerminalFragment.kt     <- fragment raiz (stub)
+
+====================================================
+3. nav_graph.xml -- DESTINOS
+====================================================
+
+startDestination: terminalFragment (P01)
+
+Zona publica (sin Drawer):
+  terminalFragment       P01 <- START
+  confirmacionFragment   P06
+  tipoPausaFragment      P07
+  loginFragment          P02
+  recoveryFragment       P03
+  resetPasswordFragment  P05 <- deep link: staffflow://reset-password?token={token}
+
+Zona autenticada (con Drawer) -- todos los roles:
+  cambiarPasswordFragment  P04
+
+Zona autenticada -- EMPLEADO:
+  miPerfilFragment     P08
+  miSaldoFragment      P09
+  misFichajesFragment  P10
+  misAusenciasFragment P11
+  miHoyFragment        P12
+
+Zona autenticada -- ENCARGADO y ADMIN:
+  parteDiarioFragment    P17
+  sinJustificarFragment  P18
+  fichajesFragment       P19
+  formFichajeFragment    P20
+  ausenciasFragment      P23
+  formAusenciaFragment   P24
+  saldoIndividualFragment P26
+  saldosGlobalesFragment P27
+  informesFragment       P28
+
+Zona autenticada -- ADMIN y ENCARGADO (gestion empleados):
+  empleadosFragment       P13
+  detalleEmpleadoFragment P14
+  formEmpleadoFragment    P15
+
+Zona autenticada -- ADMIN:
+  usuariosFragment    P31
+  formUsuarioFragment P32
+  empresaFragment     P34
+
+Total: 27 destinos.
+
+====================================================
+4. nav_graph.xml -- ACCIONES DEFINIDAS EN BLOQUE 1
+====================================================
+
+Solo se definen las acciones del flujo del terminal y las
+mas evidentes de cada lista. El resto se anadiran al
+implementar cada fragment en bloques posteriores.
+
+  action_terminal_to_confirmacion  <- P01 -> P06 (fichaje OK)
+  action_terminal_to_tipo_pausa    <- P01 -> P07 (iniciar pausa)
+  action_terminal_to_login         <- P01 -> P02 (acceso autenticado)
+  action_confirmacion_to_terminal  <- P06 -> P01 (retorno automatico)
+  action_tipo_pausa_to_terminal    <- P07 -> P01 (con tipo seleccionado)
+  action_login_to_recovery         <- P02 -> P03
+  action_reset_to_login            <- P05 -> P02
+  action_parte_diario_to_sin_justificar  <- P17 -> P18
+  action_parte_diario_to_detalle_empleado <- P17 -> P14
+  action_fichajes_to_form_fichaje  <- P19 -> P20
+  action_ausencias_to_form_ausencia <- P23 -> P24
+  action_saldos_globales_to_saldo_individual <- P27 -> P26
+  action_empleados_to_detalle      <- P13 -> P14
+  action_empleados_to_form         <- P13 -> P15 (FAB crear)
+  action_detalle_to_form_empleado  <- P14 -> P15 (editar)
+  action_detalle_to_saldo_individual <- P14 -> P26
+  action_detalle_to_fichajes       <- P14 -> P19
+  action_usuarios_to_form_usuario  <- P31 -> P32
+  action_form_usuario_to_form_empleado <- P32 -> P15
+
+====================================================
+5. TerminalFragment.kt
+====================================================
+
+Stub vacio con KDoc completo. Infla fragment_terminal.xml
+(FrameLayout vacio). Suficiente para que el app arranque en P01
+sin crash. La implementacion completa se realiza en el Bloque 2.
+
+Paquete: com.staffflow.android.ui.fichaje
+Clase:   TerminalFragment : Fragment()
+
+====================================================
+6. DEEP LINK -- resetPasswordFragment (P05)
+====================================================
+
+URI: staffflow://reset-password?token={token}
+
+El backend envia un email con un enlace que abre la app directamente
+en P05. El token del enlace es el parametro de restablecimiento de
+contrasena (E05 POST /auth/password/reset).
+
+Requiere declarar el intent-filter en AndroidManifest.xml con el
+scheme "staffflow". Pendiente de implementar en Bloque 2 al
+desarrollar P05.
+
+====================================================
+7. VERIFICACION
+====================================================
+
+Metodo: Build > Make Project en Android Studio.
+Resultado esperado: BUILD SUCCESSFUL.
+  - nav_graph.xml crea los R.id.* referenciados en MainActivity.
+  - TerminalFragment existe -> no hay ClassNotFoundException al arrancar.
+  - El Drawer se bloquea automaticamente en P01 (zona publica).
+  - La pantalla muestra un FrameLayout vacio (layout correcto para stub).
+
+====================================================
+FIN StaffFlow_Fase3_Bloque1_Tarea6_NavGraph_v1.txt
+====================================================

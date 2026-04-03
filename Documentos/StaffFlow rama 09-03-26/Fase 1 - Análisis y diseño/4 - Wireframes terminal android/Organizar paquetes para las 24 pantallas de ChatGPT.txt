@@ -1,0 +1,402 @@
+```txt
+====================================================
+ORGANIZACIÓN DE PAQUETES EN ANDROID STUDIO
+STAFFFLOW — 24 PANTALLAS
+====================================================
+
+Objetivo:
+Organizar el proyecto Android de forma limpia y escalable
+para que 24 pantallas no conviertan el módulo en un caos.
+
+La idea principal es NO agrupar por tipo técnico
+(todos los fragments juntos, todos los viewmodels juntos, etc.),
+sino agrupar por funcionalidad.
+
+Es decir:
+mejor por feature que por capa pura.
+
+====================================================
+OPCIÓN RECOMENDADA
+PAQUETES POR FEATURE
+====================================================
+
+staffflow-android/
+└── app/src/main/java/com/staffflow/
+    ├── MainActivity.kt
+    ├── StaffFlowApp.kt
+    │
+    ├── core/
+    │   ├── navigation/
+    │   │   ├── AppDestinations.kt
+    │   │   └── RoleNavigationResolver.kt
+    │   │
+    │   ├── network/
+    │   │   ├── RetrofitProvider.kt
+    │   │   ├── AuthInterceptor.kt
+    │   │   └── ApiResult.kt
+    │   │
+    │   ├── datastore/
+    │   │   ├── SessionPreferences.kt
+    │   │   └── UserSessionManager.kt
+    │   │
+    │   ├── ui/
+    │   │   ├── components/
+    │   │   ├── states/
+    │   │   └── theme/
+    │   │
+    │   ├── utils/
+    │   │   ├── DateUtils.kt
+    │   │   ├── ValidationUtils.kt
+    │   │   └── Extensions.kt
+    │   │
+    │   └── model/
+    │       ├── UiState.kt
+    │       └── MenuOption.kt
+    │
+    ├── auth/
+    │   ├── login/
+    │   │   ├── LoginFragment.kt
+    │   │   ├── LoginViewModel.kt
+    │   │   └── fragment_login.xml
+    │   │
+    │   ├── recovery/
+    │   │   ├── RecoveryFragment.kt
+    │   │   ├── RecoveryViewModel.kt
+    │   │   └── fragment_recovery.xml
+    │   │
+    │   ├── reset/
+    │   │   ├── ResetPasswordFragment.kt
+    │   │   ├── ResetPasswordViewModel.kt
+    │   │   └── fragment_reset_password.xml
+    │   │
+    │   └── password/
+    │       ├── ChangePasswordFragment.kt
+    │       ├── ChangePasswordViewModel.kt
+    │       └── fragment_change_password.xml
+    │
+    ├── terminal/
+    │   ├── home/
+    │   │   ├── TerminalFragment.kt
+    │   │   ├── TerminalViewModel.kt
+    │   │   └── fragment_terminal.xml
+    │   │
+    │   ├── pause/
+    │   │   ├── PauseTypeFragment.kt
+    │   │   ├── PauseTypeViewModel.kt
+    │   │   └── fragment_pause_type.xml
+    │   │
+    │   └── feedback/
+    │       ├── TerminalFeedbackFragment.kt
+    │       ├── TerminalFeedbackViewModel.kt
+    │       └── fragment_terminal_feedback.xml
+    │
+    ├── employee/
+    │   ├── profile/
+    │   │   ├── MyProfileFragment.kt
+    │   │   ├── MyProfileViewModel.kt
+    │   │   └── fragment_my_profile.xml
+    │   │
+    │   ├── balance/
+    │   │   ├── MyBalanceFragment.kt
+    │   │   ├── MyBalanceViewModel.kt
+    │   │   └── fragment_my_balance.xml
+    │   │
+    │   ├── punches/
+    │   │   ├── MyPunchesFragment.kt
+    │   │   ├── MyPunchesViewModel.kt
+    │   │   └── fragment_my_punches.xml
+    │   │
+    │   ├── absences/
+    │   │   ├── MyAbsencesFragment.kt
+    │   │   ├── MyAbsencesViewModel.kt
+    │   │   └── fragment_my_absences.xml
+    │   │
+    │   └── daily/
+    │       ├── MyDailyStatusFragment.kt
+    │       ├── MyDailyStatusViewModel.kt
+    │       └── fragment_my_daily_status.xml
+    │
+    ├── staff/
+    │   ├── list/
+    │   │   ├── EmployeesFragment.kt
+    │   │   ├── EmployeesViewModel.kt
+    │   │   └── fragment_employees.xml
+    │   │
+    │   ├── detail/
+    │   │   ├── EmployeeDetailFragment.kt
+    │   │   ├── EmployeeDetailViewModel.kt
+    │   │   └── fragment_employee_detail.xml
+    │   │
+    │   └── form/
+    │       ├── EmployeeFormFragment.kt
+    │       ├── EmployeeFormViewModel.kt
+    │       └── fragment_employee_form.xml
+    │
+    ├── presence/
+    │   ├── daily/
+    │   │   ├── DailyReportFragment.kt
+    │   │   ├── DailyReportViewModel.kt
+    │   │   └── fragment_daily_report.xml
+    │   │
+    │   └── unjustified/
+    │       ├── UnjustifiedEmployeesFragment.kt
+    │       ├── UnjustifiedEmployeesViewModel.kt
+    │       └── fragment_unjustified_employees.xml
+    │
+    ├── punches/
+    │   ├── history/
+    │   │   ├── PunchHistoryFragment.kt
+    │   │   ├── PunchHistoryViewModel.kt
+    │   │   └── fragment_punch_history.xml
+    │   │
+    │   └── form/
+    │       ├── ManualRecordFragment.kt
+    │       ├── ManualRecordViewModel.kt
+    │       └── fragment_manual_record.xml
+    │
+    ├── absences/
+    │   ├── list/
+    │   │   ├── AbsencesFragment.kt
+    │   │   ├── AbsencesViewModel.kt
+    │   │   └── fragment_absences.xml
+    │   │
+    │   └── form/
+    │       ├── AbsenceFormFragment.kt
+    │       ├── AbsenceFormViewModel.kt
+    │       └── fragment_absence_form.xml
+    │
+    ├── balances/
+    │   ├── global/
+    │   │   ├── GlobalBalancesFragment.kt
+    │   │   ├── GlobalBalancesViewModel.kt
+    │   │   └── fragment_global_balances.xml
+    │   │
+    │   └── detail/
+    │       ├── BalanceDetailFragment.kt
+    │       ├── BalanceDetailViewModel.kt
+    │       └── fragment_balance_detail.xml
+    │
+    ├── reports/
+    │   ├── main/
+    │   │   ├── ReportsFragment.kt
+    │   │   ├── ReportsViewModel.kt
+    │   │   └── fragment_reports.xml
+    │   │
+    │   ├── adapter/
+    │   │   ├── ReportsPagerAdapter.kt
+    │   │   └── ReportsTabType.kt
+    │   │
+    │   └── pdf/
+    │       ├── PdfLauncher.kt
+    │       └── PrintHelper.kt
+    │
+    ├── users/
+    │   ├── list/
+    │   │   ├── UsersFragment.kt
+    │   │   ├── UsersViewModel.kt
+    │   │   └── fragment_users.xml
+    │   │
+    │   └── form/
+    │       ├── UserFormFragment.kt
+    │       ├── UserFormViewModel.kt
+    │       └── fragment_user_form.xml
+    │
+    └── company/
+        ├── settings/
+        │   ├── CompanySettingsFragment.kt
+        │   ├── CompanySettingsViewModel.kt
+        │   └── fragment_company_settings.xml
+        │
+        └── model/
+            └── CompanyFormState.kt
+
+
+====================================================
+POR QUÉ ESTA ESTRUCTURA ES MEJOR
+====================================================
+
+Ventajas:
+
+1. Cada funcionalidad está aislada
+   Ejemplo:
+   todo lo de empleados está dentro de /staff/
+   todo lo de ausencias dentro de /absences/
+
+2. Es fácil encontrar archivos
+   Si quieres tocar la pantalla de empleados,
+   no tienes que buscar entre 24 fragments mezclados.
+
+3. Escala mejor
+   Cuando el proyecto crezca, no tendrás carpetas con
+   30 fragments juntos y 30 viewmodels juntos.
+
+4. Se parece más a estructura profesional real
+   Esto queda mejor en portfolio y en entrevista.
+
+
+====================================================
+LO QUE NO RECOMIENDO
+====================================================
+
+Evita esta estructura:
+
+ui/
+ ├── fragments/
+ ├── viewmodels/
+ ├── adapters/
+ ├── models/
+
+Porque con 24 pantallas acabarás con:
+
+- 24 fragments juntos
+- 24 viewmodels juntos
+- nombres parecidos
+- difícil mantenimiento
+
+
+====================================================
+REGLA PRÁCTICA DE NOMBRES
+====================================================
+
+Usa nombres previsibles y consistentes:
+
+Pantalla / Fragment
+-------------------
+LoginFragment
+TerminalFragment
+EmployeesFragment
+EmployeeDetailFragment
+
+ViewModel
+---------
+LoginViewModel
+TerminalViewModel
+EmployeesViewModel
+EmployeeDetailViewModel
+
+Layout XML
+----------
+fragment_login.xml
+fragment_terminal.xml
+fragment_employees.xml
+fragment_employee_detail.xml
+
+
+Si una pantalla tiene create/edit en la misma vista:
+
+EmployeeFormFragment
+UserFormFragment
+AbsenceFormFragment
+
+
+====================================================
+MAINACTIVITY: QUÉ DEBE TENER
+====================================================
+
+MainActivity debe ocuparse solo de:
+
+- alojar el NavHostFragment
+- configurar el Navigation Drawer
+- mostrar/ocultar drawer según destino
+- comprobar sesión guardada
+- resolver navegación inicial según rol
+- cerrar sesión global
+
+MainActivity NO debe contener lógica de negocio.
+
+
+====================================================
+NAV_GRAPH
+====================================================
+
+Crea un nav_graph.xml central para toda la app.
+
+Ejemplo de destinos:
+
+- terminalFragment
+- loginFragment
+- recoveryFragment
+- resetPasswordFragment
+- myBalanceFragment
+- dailyReportFragment
+- employeesFragment
+- employeeDetailFragment
+- employeeFormFragment
+- usersFragment
+- userFormFragment
+- companySettingsFragment
+
+También define aquí:
+
+- acciones entre pantallas
+- argumentos de navegación
+- deep links del reset password
+
+
+====================================================
+ADAPTERS Y COMPONENTES REUTILIZABLES
+====================================================
+
+Los elementos reutilizables deberían ir en:
+
+core/ui/components/
+o dentro de la feature si solo se usan allí.
+
+Ejemplos reutilizables:
+
+- EmployeeAdapter
+- PunchAdapter
+- EmptyStateView
+- LoadingView
+- ErrorRetryView
+- ConfirmDialog
+
+
+====================================================
+MODELOS UI Y STATES
+====================================================
+
+Separa:
+- DTOs de red
+- modelos de UI
+- estado de pantalla
+
+Ejemplo:
+
+LoginUiState
+EmployeesUiState
+BalanceUiState
+
+Esto hace el ViewModel más limpio y más fácil de testear.
+
+
+====================================================
+RECOMENDACIÓN FINAL
+====================================================
+
+Para StaffFlow, la mejor opción es:
+
+- 1 MainActivity
+- 1 nav_graph.xml
+- paquetes por feature
+- 1 Fragment por pantalla
+- 1 ViewModel por pantalla o caso necesario
+- layouts XML con nombres consistentes
+
+Resumen:
+
+Wireframe
+→ Fragment
+
+Feature
+→ paquete propio
+
+Navegación
+→ Navigation Component
+
+Sesión
+→ DataStore
+
+Esto te permitirá implementar las 24 pantallas sin perder el control
+del proyecto.
+```

@@ -1,0 +1,111 @@
+====================================================
+STAFFFLOW -- FASE 3 BLOQUE 1 TAREA 1 -- INFRAESTRUCTURA BASE
+StaffFlow_Fase3_Bloque1_Tarea1_Infraestructura_v1.txt
+Creado: 22/03/2026 (sesion 25)
+====================================================
+
+Este fichero documenta la correccion de NetworkModule.kt y la
+verificacion de que el proyecto Android compila con la BASE_URL
+correcta antes de anadir ningun fragment ni pantalla.
+
+====================================================
+1. CONTEXTO
+====================================================
+
+El proyecto Android arranca con la estructura generada por Android
+Studio (AGP 9.0.1). El fichero NetworkModule.kt fue creado
+manualmente antes de esta sesion con el objeto singleton de Retrofit,
+pero contiene un error en la BASE_URL que provocaria que todas las
+llamadas a la API fallen en tiempo de ejecucion.
+
+Este es el unico cambio de la Tarea 1. Se documenta por separado
+porque es un prerequisito bloqueante para todo el desarrollo
+posterior: si la BASE_URL es incorrecta, ningun endpoint funciona
+y los errores en depuracion son confusos.
+
+====================================================
+2. ERROR DETECTADO
+====================================================
+
+Fichero: app/src/main/java/com/staffflow/android/data/remote/api/NetworkModule.kt
+
+Linea erronea:
+  private const val BASE_URL = "http://10.0.2.2:8080/api/"
+
+Problema:
+  Todos los endpoints del backend de StaffFlow estan bajo /api/v1/.
+  Con esta BASE_URL, Retrofit construye URLs del tipo:
+    http://10.0.2.2:8080/api/auth/login
+  cuando la URL real del backend es:
+    http://10.0.2.2:8080/api/v1/auth/login
+  Resultado: HTTP 404 en todas las llamadas sin mensaje de error util.
+
+====================================================
+3. CORRECCION APLICADA
+====================================================
+
+Linea corregida:
+  private const val BASE_URL = "http://10.0.2.2:8080/api/v1/"
+
+Ningun otro cambio en el fichero. El resto del objeto (OkHttpClient,
+timeouts, logging BODY, GsonConverterFactory) es correcto y coincide
+con el stack definido en StaffFlow_Android_Contexto_v4.txt seccion 1.
+
+====================================================
+4. ESTADO DEL FICHERO TRAS LA CORRECCION
+====================================================
+
+package com.staffflow.android.data.remote.api
+
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+
+object NetworkModule {
+
+    private const val BASE_URL = "http://10.0.2.2:8080/api/v1/"
+
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+}
+
+====================================================
+5. VERIFICACION
+====================================================
+
+Metodo: compilacion completa (Build > Make Project).
+Resultado: BUILD SUCCESSFUL in 18s
+  36 actionable tasks: 4 executed, 32 up-to-date
+  Sin errores ni warnings relacionados con el cambio.
+
+Prueba funcional: no aplica en esta tarea. No hay ningun fragment
+que realice llamadas de red todavia. La compilacion es la
+verificacion suficiente.
+
+====================================================
+6. PENDIENTE
+====================================================
+
+BASE_URL de produccion: pendiente de definir. En la entrega final
+se configurara via BuildConfig o variable de entorno. Fuera del
+alcance de la Fase 3 de desarrollo local.
+
+====================================================
+FIN StaffFlow_Fase3_Bloque1_Tarea1_Infraestructura_v1.txt
+====================================================

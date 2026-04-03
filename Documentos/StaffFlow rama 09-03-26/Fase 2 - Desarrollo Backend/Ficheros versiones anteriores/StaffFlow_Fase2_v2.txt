@@ -1,0 +1,1003 @@
+====================================================
+STAFFFLOW — BORRADOR VIVO FASE 2
+====================================================
+
+Este fichero es el diario de trabajo de la Fase 2 (Desarrollo Backend).
+Se actualiza en cada sesión. Es la fuente de verdad diaria.
+Al cerrar un hito (Bloque o Fase completa) se genera el .docx
+correspondiente a partir de este contenido.
+
+Última actualización: 18/03/2026 (sesión 17)
+Documento relacionado: StaffFlow_Fase2_v2.docx (snapshot parcial — obsoleto)
+                       StaffFlow_Fase2_v3.docx (PENDIENTE GENERAR — cierre Bloque 1)
+                       StaffFlow_Bloque2_Memoria_v1.docx (generado 12/03/2026)
+                       StaffFlow_Bloque3_Memoria_v2.docx (generado 12/03/2026)
+                       StaffFlow_Bloque4_Memoria_v2.docx (generado 13/03/2026 sesión 9)
+                       StaffFlow_Fase2_v6.docx (generado 13/03/2026 sesión 9)
+                       StaffFlow_Bloque5_v3.docx (generado 13/03/2026 sesión 12 — incluye sección H2)
+                       StaffFlow_H2_Configuracion.txt (generado 13/03/2026 sesión 11)
+                       StaffFlow_Fase2_v7.docx (generado 13/03/2026 sesión 12)
+                       StaffFlow_Pruebas_Bloque5.txt (generado 13/03/2026 sesión 12)
+Desviaciones detectadas: ver StaffFlow_Desviaciones.txt
+
+CAMBIOS REGISTRADOS EN ESTA ACTUALIZACIÓN (18/03/2026 sesiones 13-17):
+  - Bloque 6 completo: Tareas 1-4 cerradas y verificadas.
+  - Tarea 1: AusenciaController E30-E34. 7/7 casos verificados en MySQL.
+  - Tarea 2: PresenciaController E35-E37. 3/3 casos verificados en MySQL.
+  - Tarea 3: SaldoController E38-E41. 4/4 casos verificados en MySQL.
+  - Tarea 4: ProcesoCierreDiario @Scheduled 23:55 implementado y verificado.
+    Tres tareas: A (AUSENCIA_INJUSTIFICADA), B (planificaciones), C (saldos).
+  - D-025: ProcesoCierreDiario (cron 23:55, tres tareas, saldos automaticos).
+  - D-026: Restriccion fecha ENCARGADO en E22/E23/E27/E28/E30/E31.
+  - Verificacion completa: H2 y MySQL. 10 casos OK en Tarea 4.
+  - SaldoService: recalcularParaProceso() extraido de recalcular() (E40).
+  - data.sql: 5 usuarios + 3 empleados (incluye encargado01 y terminal_service).
+  - TestProcesoCierreDiarioController: @Profile({"dev","mysql"}).
+    PENDIENTE antes de entrega: revisar si dejar solo "dev" o eliminar.
+  - Bloque 7 pendiente: E42-E47 (informes HTML y PDF).
+
+CAMBIOS REGISTRADOS EN ACTUALIZACIÓN ANTERIOR (13/03/2026 sesión 12):
+  - Verificación funcional E22-E51 completada con MySQL real y PowerShell.
+  - E22-E29 (Fichajes y Pausas): todos los endpoints devuelven HTTP correcto.
+  - E48-E51 (Terminal): todos los endpoints operativos. D-022 detectada y resuelta.
+  - D-022: TerminalService.registrarEntrada() omitía fichaje.setTipo(TipoFichaje.NORMAL).
+    Corregido. Ver detalle en sección DESVIACIONES.
+  - Commit e4e188e en develop: "feat: Bloque 5 verificado - Fichajes E22-E26, Pausas E27-E29, Terminal E48-E51"
+    2 ficheros cambiados (TerminalService.java + data.sql), 139 inserciones.
+  - StaffFlow_Pruebas_Bloque5.txt generado (referencia de pruebas para memoria).
+  - StaffFlow_Fase2_v7.docx actualizado (sección 8bis actualizada con verificación y D-022).
+  - StaffFlow_Bloque5_v3.docx actualizado (sección 11 con resultados reales, D-022 añadida).
+
+CAMBIOS REGISTRADOS EN ACTUALIZACIÓN ANTERIOR (13/03/2026 sesión 11):
+  - FichajeService/Controller (E22-E26) implementados y compilando.
+  - PausaService/Controller (E27-E29) implementados y compilando.
+  - TerminalService/Controller (E48-E51) implementados y compilando.
+  - D-020: FichajePatchRequest ampliado con horaEntrada, horaSalida, tipo.
+  - D-021: dispositivoId en TerminalRequest + usuario sistema terminal_service (id=4).
+  - data.sql: INSERT terminal_service para perfil dev (H2).
+  - application-dev.yml: defer-datasource-initialization + sql.init.mode=always.
+  - Commits ae5fa86 y 0e2136c en develop, pusheados a origin.
+  - StaffFlow_Bloque5_v3.docx generado (E22-E29 + E48-E51 + sección H2 configuración dev).
+  - StaffFlow_H2_Configuracion.txt generado (referencia completa H2: data.sql, credenciales, mecanismo defer).
+
+CAMBIOS REGISTRADOS EN ACTUALIZACIÓN ANTERIOR (13/03/2026 sesión 7-8):
+  - UsuarioRepository ampliado: 7 métodos custom nuevos (existsBy, findByRol, findByActivo).
+  - EmpleadoRepository ampliado: 11 métodos custom nuevos (existsBy, findByCategoria, buscarPorTexto).
+  - UsuarioService.java: E08-E12 implementados con lógica real.
+  - EmpleadoService.java: E13-E18 y E21 implementados. E19-E20 UnsupportedOperationException.
+  - UsuarioController.java: E08-E12 operativos con @PreAuthorize(hasRole(ADMIN)).
+  - EmpleadoController.java: E13-E21 operativos con @PreAuthorize por rol.
+  - AuthService.login() completado: empleadoId real via findByUsuarioId().
+  - 19 errores de compilación detectados y resueltos (incompatibilidades DTO-entidad-enum).
+  - Aplicación arranca con MySQL y todos los endpoints visibles en Swagger.
+  - D-017 registrada: firma obtenerPorId ajustada (parámetro rol eliminado).
+  - D-018 registrada: lógica incluirPin eliminada — EmpleadoResponse no expone PIN por diseño.
+  - BLOQUE 4 IMPLEMENTADO.
+
+CAMBIOS REGISTRADOS EN ACTUALIZACIÓN ANTERIOR (12/03/2026 sesión 6):
+  - EmpresaService E06-E07 implementados con lógica real.
+  - EmpresaController.java creado: E06 GET /empresa, E07 PUT /empresa.
+  - GlobalExceptionHandler.java creado: @RestControllerAdvice con 400/401/403/404/423/500.
+  - PinBloqueadoException.java creada: RuntimeException custom para HTTP 423.
+  - INSERT inicial en configuracion_empresa (id=1) ejecutado en MySQL.
+  - E06 y E07 verificados en Swagger UI con JWT real.
+  - Commit 25d6824 en develop: "Bloque 3 cierre: EmpresaController E06-E07 + GlobalExceptionHandler"
+    4 ficheros, 527 inserciones.
+  - README_v7.md actualizado: estado Bloque 3 cerrado, tabla de commits Fase 2.
+  - StaffFlow_Bloque3_Memoria_v2.docx generado (Bloque 3 completo).
+  - StaffFlow_Fase2_v5.docx generado (portada Bloque 3 Cerrado, commit 25d6824).
+  - BLOQUE 3 CERRADO.
+
+====================================================
+BLOQUE 1 — PREPARACIÓN — CERRADO (10/03/2026)
+====================================================
+
+Objetivo: dejar el proyecto listo para implementar lógica de negocio.
+Periodo: inicio Fase 2 (09 Mar) — cierre 10 Mar.
+
+--- CHECKLIST BLOQUE 1 ---
+
+[✅] Enums definitivos actualizados y commiteados (ad7be84)
+[✅] DDL ejecutado en MySQL 8.0 (staffflow_v5_ddl_mysql.sql — activo)
+[✅] Diagrama ER generado (er_diagram_v5_mysql.png desde MySQL Workbench)
+[✅] 7 entidades JPA corregidas y compilando (D-001..D-007)
+[✅] DTOs compilando en IntelliJ (10/03/2026)
+     32 DTOs: 17 request + 15 response. mvn compile OK.
+     Enum EstadoPresencia añadido (D-012, no persiste en BD).
+     Documentacion para memoria:
+       StaffFlow_Enums_v1.docx  <- 6 enums con valores y decisiones de diseño
+       StaffFlow_DTOs_v1.docx   <- 32 DTOs con campos, tipos, validaciones y notas
+[✅] 7 interfaces Repository creadas, documentadas y compilando (10/03/2026)
+     Documentacion para memoria:
+       StaffFlow_Repositories_v1.docx <- 7 repositories con metodos custom, restricciones y notas
+[✅] 13 esqueletos @Service creados y compilando (10/03/2026)
+     50 metodos esqueleto en 13 servicios.
+     Documentacion para memoria:
+       StaffFlow_Services_v1.docx <- 13 services con firmas y notas de diseño
+[✅] Arranque con perfil MySQL verificado (10/03/2026)
+     HikariPool conecta a MySQL real. Hibernate valida 7 tablas sin errores.
+     3 problemas detectados y resueltos. Ver D-013, D-014, D-015.
+[✅] WARNs de arranque resueltos (10/03/2026 sesión 3)
+     open-in-view: false añadido en application-mysql.yml.
+     dialect: quitado del yml (Hibernate detecta MySQL 8 automáticamente).
+     WARN residual 5.5.5: bug del conector MySQL 9.x con Hibernate 6.6.
+       No afecta al funcionamiento. Documentado y aceptado.
+[✅] Commit en develop: 284b918 (10/03/2026 sesión 3)
+     "feat: DTOs, repositories y services esqueleto - bloque 1"
+     62 ficheros cambiados, 3481 inserciones.
+
+--- SESIÓN 07/03/2026 ---
+
+TAREA 1: Enums definitivos
+  - Se actualizaron y commitearon los 5 enums en develop (commit ad7be84)
+  - TipoFichaje: eliminados ENTRADA y SALIDA, quedaron 9 valores
+  - TipoPausa: AUSENCIA_RETRIBUIDA reemplaza PERSONAL
+  - CategoriaEmpleado: enum nuevo, 5 valores, solo informativo (decisión nº19)
+  - mvn compile OK tras enums
+
+TAREA 2: DDL MySQL
+  - Ejecutado staffflow_v4_ddl_mysql.sql en MySQL 8.0
+  - SHOW TABLES devuelve 7 tablas en orden correcto
+  - Diagrama ER generado desde MySQL Workbench → er_diagram_v4_mysql.png
+
+TAREA 3: Revisión entidades JPA
+  PROBLEMA DETECTADO: las 7 entidades creadas en Fase 0 no estaban
+  alineadas con el DDL definitivo v4. Fueron creadas como placeholders
+  antes de cerrar el modelo de datos.
+  LECCIÓN APRENDIDA: DDL cerrado → entidades JPA → DTOs → Repositories.
+  Ver detalle completo en StaffFlow_Desviaciones.txt (D-001..D-007).
+  Resultado: 7 entidades corregidas, mvn compile OK.
+
+TAREA 4: DTOs (10/03/2026)
+  - 32 DTOs documentados y compilando. Enum EstadoPresencia creado (D-012).
+  - NOTA: E42-E44 sin DTO fijo → resueltos en Bloque 7.
+  - StaffFlow_Enums_v1.docx, StaffFlow_DTOs_v1.docx generados.
+
+TAREA 5: Repositories (10/03/2026)
+  - 7 interfaces Repository compilando. 17 metodos custom en total.
+  - StaffFlow_Repositories_v1.docx generado.
+
+TAREA 6 (completada 10/03/2026): Services esqueleto
+  - 13 esqueletos @Service compilando. 50 metodos con firma correcta.
+  - StaffFlow_Services_v1.docx generado.
+
+TAREA 7 (completada 10/03/2026): Arranque con perfil MySQL
+  D-015: mysql-connector-j no estaba en pom.xml. Añadido scope runtime.
+  D-013: DDL v4 usaba INT. Entidades usan Long → BIGINT. DDL → v5.
+  D-014: CHAR(4) vs VARCHAR. Añadido columnDefinition="CHAR(4)" en Empleado.
+
+--- SESIÓN 10/03/2026 (sesión 3) ---
+
+TAREA 8: Limpiar WARNs de arranque
+  WARN open-in-view: resuelto con spring.jpa.open-in-view=false.
+  WARN dialect/5.5.5: bug del conector MySQL 9.x con Hibernate 6.6.
+    Iteración de 3 pasos sin solución limpia. WARN aceptado y documentado.
+  Estado final application-mysql.yml:
+    open-in-view: false | sin dialect | sslMode=DISABLED | jdbc.time_zone
+
+TAREA 9: Commit Bloque 1
+  commit 284b918 — 62 ficheros — 3481 inserciones.
+
+TAREA 10: Documentación de cierre Bloque 1
+  StaffFlow_Prompt_Dev_1003_v11.txt generado.
+  StaffFlow_BaseDatos_v5.docx generado:
+    ER v5, INT→BIGINT en tablas, FK BIGINT, ADMIN corregido, DDL v5 en Anexo.
+  PENDIENTE: StaffFlow_Fase2_v3.docx (cierre Bloque 1 completo).
+
+====================================================
+BLOQUE 2 — SEGURIDAD JWT — CERRADO (12/03/2026)
+====================================================
+
+Objetivo: proteger la API REST con JWT. Implementar login operativo.
+Periodo: 12/03/2026 (sesión 4, una sesión).
+
+--- CHECKLIST BLOQUE 2 ---
+
+[✅] SecurityConfig.java — dos cadenas independientes (Order=1 terminal, Order=2 API)
+[✅] UserDetailsServiceImpl.java — carga usuario desde BD, verifica activo, mapea Rol
+[✅] JwtTokenProvider.java — genera y valida JWT HS384, claims: sub/rol/empleadoId, 8h
+[✅] JwtAuthFilter.java — OncePerRequestFilter con shouldNotFilter para rutas publicas
+[✅] AuthService.java — login() implementado, E02-E05 esqueleto UnsupportedOperationException
+[✅] AuthController.java — E01 operativo, E02-E05 esqueleto compilando
+[✅] application-mysql.yml — jwt.secret y jwt.expiration-ms añadidos
+[✅] Login verificado en Swagger: POST /api/v1/auth/login → 200 + JWT valido
+[✅] Commit cba406a en develop (12/03/2026)
+     "feat(security): implementa JWT + SecurityConfig (Bloque 2)"
+     8 ficheros cambiados, 954 inserciones.
+[✅] StaffFlow_Bloque2_Memoria_v1.docx generado
+
+--- SESIÓN 12/03/2026 (sesión 4) ---
+
+TAREA 1: Implementar SecurityConfig
+  - Dos SecurityFilterChain: terminalFilterChain (Order=1) y apiFilterChain (Order=2).
+  - terminalFilterChain: cubre /api/v1/terminal/**, sin JWT, stateless, sin CSRF.
+  - apiFilterChain: rutas publicas declaradas, JwtAuthFilter registrado, CSRF desactivado.
+  - Beans expuestos: PasswordEncoder (BCrypt factor 10) y AuthenticationManager.
+  - Decisiones aplicadas: D-18 (sin refresh token), D-21 (PIN terminal vs JWT API).
+
+TAREA 2: Implementar UserDetailsServiceImpl
+  - Carga usuario por username desde UsuarioRepository.
+  - Verifica activo con getActivo() — campo Boolean wrapper, NO isActivo().
+    (Lombok genera isXxx() solo para boolean primitivo, getXxx() para Boolean wrapper.)
+  - Convierte Rol enum a cadena ROLE_XXX para Spring Security.
+
+TAREA 3: Implementar JwtTokenProvider
+  - Algoritmo HS384. SecretKey inicializada en @PostConstruct.
+  - Claims: sub (username), rol (String), empleadoId (Long, null para ADMIN).
+  - Validez: 28800000 ms = 8 horas.
+  - Correccion Integer→Long en getEmpleadoIdDesdeToken: jjwt deserializa
+    numericos como Integer cuando caben en 32 bits. Cast explicito necesario.
+
+TAREA 4: Implementar JwtAuthFilter
+  - OncePerRequestFilter. Extrae Bearer token, valida, carga SecurityContext.
+  - shouldNotFilter() excluye: /api/v1/auth/login, /api/v1/auth/password/recovery,
+    /api/v1/auth/password/reset, /api/health, /api/v1/terminal/**, /swagger-ui/**,
+    /v3/api-docs/**, /h2-console/**.
+  - No registrado en terminalFilterChain.
+
+TAREA 5: Implementar AuthService y AuthController
+  - AuthService.login(): AuthenticationManager → busca usuario → genera JWT →
+    devuelve LoginResponse(token, rol, username, empleadoId).
+  - empleadoId = null para ADMIN, Long para ENCARGADO/EMPLEADO.
+  - LoginResponse: @Data + @AllArgsConstructor sin @Builder.
+    Constructor order: (token, rol, username, empleadoId).
+  - AuthController: E01 con @Valid, E02-E05 esqueleto compilando.
+  - D-016 registrada: controllers esqueleto no creados en Bloque 1.
+    AuthController es el primer controller del proyecto, creado directamente
+    con implementacion real de E01.
+
+TAREA 6: Datos de prueba MySQL
+  INSERT usuario ADMIN con hash BCrypt en tabla usuarios.
+  INCIDENCIA: hash del INSERT inicial era incorrecto (ejemplo generico).
+    Resolucion: UPDATE con hash correcto.
+  INCIDENCIA adicional: Swagger añadia espacio inicial al campo password
+    al usar el valor del schema de ejemplo. Resolucion: escritura manual.
+
+TAREA 7: Verificacion en Swagger
+  INCIDENCIA: login devuelvia 403 con SecurityConfig inicial.
+    Causa: JwtAuthFilter se ejecutaba en /api/v1/auth/login sin shouldNotFilter.
+    Diagnostico: activado logging.level.org.springframework.security=DEBUG
+      en application-mysql.yml (retirado antes del commit).
+    Log clave: "Failed to authenticate since password does not match stored value"
+      → confirmaba que el filtro interceptaba la peticion antes del controller.
+    Resolucion: implementacion de shouldNotFilter() en JwtAuthFilter.
+  Resultado final: 200 con { token, rol: "ADMIN", username: "admin", empleadoId: null }.
+  JWT verificado: algoritmo HS384, validez 8h, claims correctos.
+
+DOCUMENTACIÓN GENERADA EN BLOQUE 2:
+  StaffFlow_Bloque2_Memoria_v1.docx — documentacion tecnica completa del bloque.
+  StaffFlow_Prompt_Dev_1203_v1.txt  — prompt de sesion activo.
+
+====================================================
+BLOQUE 3 — AUTH + EMPRESA — CERRADO (12/03/2026)
+====================================================
+
+Endpoints bloque 3: E01-E07. Todos operativos.
+  AuthController (E01-E05): CERRADO (sesión 5).
+  EmpresaController (E06-E07): CERRADO (sesión 6).
+
+--- CHECKLIST BLOQUE 3 ---
+
+[✅] AuthService.java — E02-E05 implementados con lógica real
+[✅] AuthController.java — E02-E05 operativos con @PreAuthorize
+[✅] OpenApiConfig.java — bean OpenAPI con esquema bearerAuth
+[✅] E01-E05 verificados en Swagger UI con JWT real
+[✅] Commit a0416d4 en develop (12/03/2026)
+     "Bloque 3 parcial: AuthController E02-E05 + OpenApiConfig JWT Swagger"
+     5 ficheros cambiados, 420 inserciones.
+[✅] StaffFlow_Bloque3Auth_Memoria_v1.docx generado (sesión 5 — parcial)
+[✅] EmpresaService.java — E06-E07 implementados
+[✅] EmpresaController.java — E06 GET, E07 PUT con @PreAuthorize hasRole(ADMIN)
+[✅] GlobalExceptionHandler.java — @RestControllerAdvice
+[✅] PinBloqueadoException.java — excepción custom HTTP 423
+[✅] INSERT configuracion_empresa id=1 en MySQL
+[✅] E06-E07 verificados en Swagger UI
+[✅] Commit 25d6824 en develop (12/03/2026)
+     "Bloque 3 cierre: EmpresaController E06-E07 + GlobalExceptionHandler"
+     4 ficheros cambiados, 527 inserciones.
+[✅] README_v7.md actualizado y commiteado
+[✅] StaffFlow_Bloque3_Memoria_v2.docx generado (completo)
+[✅] EmpresaController (E06-E07) — E06 GET y E07 PUT operativos
+[✅] GlobalExceptionHandler.java — @RestControllerAdvice con 400/401/403/404/423/500
+
+--- SESIÓN 12/03/2026 (sesión 5) ---
+
+TAREA 1: Implementar AuthService E02-E05
+  E02 obtenerUsuarioAutenticado():
+    Username extraído del SecurityContext. Devuelve UsuarioResponse
+    vía método privado toUsuarioResponse(). Sin consulta de parámetros.
+  E03 cambiarPassword():
+    Verifica passwordActual con passwordEncoder.matches(). @Transactional.
+    IllegalArgumentException si no coincide → 400.
+    Campos DTO: passwordActual, passwordNueva (NO currentPassword/newPassword).
+  E04 solicitarRecuperacion():
+    Respuesta 200 idéntica si email existe o no (RNF-S04).
+    Token UUID, expiry now()+30min. STUB: token en log.info(). @Transactional.
+  E05 restablecerPassword():
+    Verifica token y expiry. Si inválido → IllegalArgumentException.
+    Tras uso: resetToken=null, resetTokenExpiry=null (1 uso, RNF-S04). @Transactional.
+    Campos DTO: token, passwordNueva.
+
+  INCIDENCIA: LoginResponse espera Rol enum, no String.
+    Causa: se pasaba getRol().name() (String) en lugar de getRol() (Rol enum).
+    Corrección: usuario.getRol() para el constructor. generarToken() sigue
+    usando .name() porque JwtTokenProvider espera String para el claim JWT.
+
+  INCIDENCIA: getters incorrectos en PasswordChangeRequest y PasswordResetRequest.
+    Causa: campos reales son passwordActual/passwordNueva, no currentPassword/newPassword.
+    Corrección: getPasswordActual() y getPasswordNueva().
+
+  Decisión técnica — empleadoId en login():
+    Null para todos los roles en Bloque 3. EmpleadoRepository no inyectado aún.
+    TODO Bloque 4: empleadoRepository.findByUsuarioId(id).map(Empleado::getId).orElse(null)
+
+TAREA 2: Implementar AuthController E02-E05
+  Cada método: recibe DTO con @Valid, delega en AuthService, devuelve ResponseEntity.ok().
+  E02, E03: @PreAuthorize("isAuthenticated()") — cualquier rol autenticado.
+  E04, E05: sin @PreAuthorize — rutas públicas (usuario no autenticado al recuperar).
+
+TAREA 3: Crear OpenApiConfig.java
+  INCIDENCIA: Swagger UI no mostraba botón Authorize.
+    Causa: SpringDoc no expone el botón sin bean OpenAPI con SecurityScheme.
+    Solución: OpenApiConfig.java en com.staffflow.config.
+    Bean: OpenAPI con Info + SecurityRequirement global + Components con
+    SecurityScheme HTTP Bearer JWT ("bearerAuth").
+    Resultado: botón Authorize visible. Usuario pega token sin prefijo "Bearer".
+
+TAREA 4: Corrección application-mysql.yml
+  INCIDENCIA: jwt.secret y jwt.expiration-ms no estaban en yml. 403 persistente.
+    Causa: sección staffflow.jwt ausente. JwtTokenProvider arrancaba con secret vacío.
+    Solución: añadir staffflow.jwt.secret y staffflow.jwt.expiration-ms al yml.
+    Estado final: yml limpio con jwt config, sin logging.level DEBUG.
+
+TAREA 5: Corrección hash BCrypt en MySQL
+  INCIDENCIA: 403 persiste tras corregir yml. Log DEBUG confirma:
+    "Failed to authenticate since password does not match stored value"
+    Causa: hash almacenado en BD no correspondía a la contraseña usada.
+    Diagnóstico: hash generado temporalmente con bean PasswordEncoder del contexto
+    Spring (encode() en main, retirado antes del commit).
+    Hash correcto para admin1234:
+      $2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW
+    UPDATE usuarios SET password_hash='...' WHERE username='admin'.
+
+TAREA 6: Verificación E01-E05 en Swagger
+  Orden de verificación: E01 → E02 → E04 → E05 → E03
+  E01: 200 + { token, rol:ADMIN, username:admin, empleadoId:null }
+  E02: 200 + { id:1, username:admin, email:admin@staffflow.com, rol:ADMIN, activo:true }
+  E04: 200 + { mensaje: "Si el email está registrado..." } — token en log servidor
+  E05: 200 + { mensaje: "Contraseña restablecida correctamente" } — token invalidado
+  E03: 200 + { mensaje: "Contraseña actualizada correctamente" } — restaurada a admin1234
+
+TAREA 7: Commit a0416d4
+  5 ficheros: AuthController.java, AuthService.java, application-mysql.yml,
+              OpenApiConfig.java, StaffflowBackendApplication.java
+  420 inserciones. Warnings LF/CRLF normales en Windows.
+
+DOCUMENTACIÓN GENERADA EN BLOQUE 3 (parcial — sesión 5):
+  StaffFlow_Bloque3Auth_Memoria_v1.docx — AuthController E02-E05 + OpenApiConfig.
+  StaffFlow_Prompt_Dev_1203_v3.txt — prompt activo sesión 5.
+
+--- SESIÓN 12/03/2026 (sesión 6) ---
+
+TAREA 1: Implementar EmpresaService E06-E07
+  E06 obtenerEmpresa():
+    findById(1L) sobre configuracion_empresa. IllegalStateException si no existe → 404.
+    Devuelve EmpresaResponse vía toEmpresaResponse() (único punto conversión entidad→DTO).
+  E07 actualizarEmpresa():
+    findById(1L).orElse(new ConfiguracionEmpresa()). empresa.setId(1L) garantiza INSERT con id=1.
+    Aplica todos los campos del request. logoPath puede ser null. @Transactional.
+    DataIntegrityViolationException si CIF duplicado → GlobalExceptionHandler → 400.
+
+  Decisión técnica — PUT completo en E07:
+    ConfiguracionEmpresa es el único DTO sin PatchRequest en el proyecto.
+    Es un singleton que siempre se actualiza completo. Documentado en DTOs_v1.docx.
+
+TAREA 2: Implementar EmpresaController E06-E07
+  E06 @GetMapping, E07 @PutMapping. Ambos con @PreAuthorize("hasRole('ADMIN')").
+  Controller solo delega en EmpresaService — no accede a repositorios directamente.
+
+TAREA 3: Implementar GlobalExceptionHandler
+  @RestControllerAdvice — centraliza conversión de excepciones en respuestas HTTP.
+  Formato contrato: { error, campo?, timestamp, path } con LinkedHashMap (orden garantizado).
+  Handlers:
+    MethodArgumentNotValidException → 400 con campo concreto
+    IllegalArgumentException        → 400 (contraseña incorrecta, token inválido)
+    DataIntegrityViolationException → 400 (UNIQUE violada en BD)
+    BadCredentialsException         → 401 (login fallido)
+    AccessDeniedException           → 403 (rol insuficiente)
+    IllegalStateException           → 404 (recurso no encontrado)
+    PinBloqueadoException           → 423 (terminal bloqueado, RNF-S05)
+    Exception                       → 500 (no controlada — log.error completo)
+
+TAREA 4: Crear PinBloqueadoException
+  RuntimeException no verificada para HTTP 423 (bloqueo PIN terminal).
+  Se lanzará desde TerminalService en Bloque 5 (E48-E51).
+
+TAREA 5: Datos de prueba empresa
+  INSERT configuracion_empresa id=1 ejecutado en MySQL con datos de demo.
+  Nombre: StaffFlow Demo, CIF: B12345678, dirección, email, teléfono.
+
+TAREA 6: Verificación E06-E07 en Swagger
+  E06 GET: 200 + { id:1, nombreEmpresa:"StaffFlow Demo", cif:"B12345678", ... }
+  E07 PUT: 200 + datos actualizados (nombreEmpresa:"StaffFlow S.L.", dirección nueva)
+
+TAREA 7: Commit 25d6824 y README
+  4 ficheros: EmpresaService.java, EmpresaController.java,
+              GlobalExceptionHandler.java, PinBloqueadoException.java.
+  527 inserciones. Warnings LF/CRLF normales en Windows.
+  README_v7.md: estado Bloque 3 cerrado, tabla 4 commits Fase 2.
+
+DOCUMENTACIÓN GENERADA EN BLOQUE 3 (completo — sesión 6):
+  StaffFlow_Bloque3_Memoria_v2.docx — Bloque 3 completo (E01-E07 + GlobalExceptionHandler).
+  StaffFlow_Fase2_v5.docx — portada Bloque 3 Cerrado, commit 25d6824.
+  StaffFlow_Prompt_Dev_1203_v4.txt — prompt activo sesión 6.
+
+====================================================
+BLOQUE 4 — USUARIOS + EMPLEADOS — CERRADO (13/03/2026)
+====================================================
+
+Endpoints: E08-E21. Controllers: UsuarioController, EmpleadoController.
+Sesiones: 7 (12/03/2026 madrugada) y 8 (13/03/2026 madrugada).
+
+--- CHECKLIST BLOQUE 4 ---
+
+[✅] UsuarioRepository.java — ampliado con 7 métodos custom para Bloque 4
+     Nuevos: existsByUsername, existsByEmail, existsByUsernameAndIdNot,
+             existsByEmailAndIdNot, findByRol, findByActivo, findByRolAndActivo
+[✅] EmpleadoRepository.java — ampliado con 11 métodos custom para Bloque 4
+     Nuevos: existsByDni, existsByNss, existsByPinTerminal, existsByCodigoNfc,
+             existsByDniAndIdNot, existsByNssAndIdNot, existsByPinTerminalAndIdNot,
+             existsByCodigoNfcAndIdNot, findByCategoria, findByCategoriaAndActivo,
+             buscarPorTexto (@Query JPQL OR sobre nombre/apellido1/apellido2/dni)
+[✅] UsuarioService.java — E08-E12 implementados con lógica real
+[✅] EmpleadoService.java — E13-E18 y E21 implementados. E19-E20 UnsupportedOperationException
+[✅] UsuarioController.java — E08-E12 operativos
+[✅] EmpleadoController.java — E13-E21 operativos
+[✅] AuthService.login() — empleadoId completado: findByUsuarioId().map(getId()).orElse(null)
+[✅] 19 errores de compilación resueltos (ver detalle en sesión 7-8)
+[✅] Aplicación arranca con MySQL y todos los endpoints visibles en Swagger
+[✅] D-017 registrada: firma obtenerPorId sin parámetro rol (D-018 anula Opción A)
+[✅] D-018 registrada: lógica incluirPin eliminada — EmpleadoResponse no expone PIN
+[✅] StaffFlow_Bloque4_Memoria_v1.docx generado
+
+--- SESIÓN 12/03/2026 (sesión 7, madrugada) y 13/03/2026 (sesión 8) ---
+
+TAREA 1: Ampliar UsuarioRepository
+  Análisis de StaffFlow_Repositories_v1.docx: el Bloque 1 tenía 3 métodos custom.
+  Los services del Bloque 4 requieren 7 métodos adicionales no previstos.
+  Todos generados automáticamente por Spring Data JPA a partir del nombre.
+  Nuevos:
+    existsByUsername(String) — validación preventiva unicidad en crear (E08)
+    existsByEmail(String) — validación preventiva unicidad en crear (E08)
+    existsByUsernameAndIdNot(String, Long) — unicidad en editar (E11)
+    existsByEmailAndIdNot(String, Long) — unicidad en editar (E11)
+    findByRol(Rol) — listar por rol (E09)
+    findByActivo(Boolean) — listar por estado (E09)
+    findByRolAndActivo(Rol, Boolean) — listar con ambos filtros (E09)
+
+TAREA 2: Ampliar EmpleadoRepository
+  El Bloque 1 tenía 3 métodos custom. Los services del Bloque 4 requieren 11 adicionales.
+  Todos excepto buscarPorTexto generados automáticamente por Spring Data JPA.
+  Nuevos:
+    existsByDni(String) — unicidad DNI en crear (E13)
+    existsByNss(String) — unicidad NSS en crear (E13)
+    existsByPinTerminal(String) — unicidad PIN en crear (E13, distinto de findByPinTerminal)
+    existsByCodigoNfc(String) — unicidad NFC en crear (E13)
+    existsByDniAndIdNot(String, Long) — unicidad DNI en editar (E16)
+    existsByNssAndIdNot(String, Long) — unicidad NSS en editar (E16)
+    existsByPinTerminalAndIdNot(String, Long) — unicidad PIN en editar (E16)
+    existsByCodigoNfcAndIdNot(String, Long) — unicidad NFC en editar (E16)
+    findByCategoria(CategoriaEmpleado) — listar por categoría (E14)
+    findByCategoriaAndActivo(CategoriaEmpleado, boolean) — listar con ambos filtros (E14)
+    buscarPorTexto(String) — @Query JPQL con OR sobre 4 campos (RF-14, E14)
+      LOWER() en JPQL para búsqueda case-insensitive. Parámetro en minúsculas
+      desde el service. Alternativa descartada: Specification<Empleado>.
+
+TAREA 3: Implementar UsuarioService (E08-E12)
+  E08 crear():
+    Validación preventiva username único (existsByUsername → HTTP 409).
+    Validación preventiva email único (existsByEmail → HTTP 409).
+    BCrypt en passwordHash. activo=true. @Transactional.
+    Retorna UsuarioResponse sin passwordHash.
+  E09 listar(String rol, Boolean activo):
+    4 ramas: ambos filtros / solo rol / solo activo / sin filtros (findAll).
+    Rol llega como String desde @RequestParam — Rol.valueOf() para convertir.
+  E10 obtenerPorId(Long id):
+    findById → IllegalStateException si no existe → 404.
+  E11 actualizar(Long id, UsuarioPatchRequest):
+    PATCH semántico: solo actualiza campos no nulos.
+    username: campo inmutable — UsuarioPatchRequest no lo incluye (eliminado del service).
+    email: existsByEmailAndIdNot para unicidad sin falso positivo.
+    rol: ya es Rol enum en el DTO — sin valueOf().
+    activo: no se modifica por este endpoint (solo por E12).
+  E12 desactivar(Long id):
+    activo=false. Nunca SQL DELETE. Historial intacto (decisión nº4).
+
+  INCIDENCIAS resueltas:
+    Rol.valueOf(request.getRol()) → request.getRol() (ya es enum, no String)
+    usuario.getRol().name() → usuario.getRol() en toUsuarioResponse (UsuarioResponse.rol es Rol)
+    Bloque if(request.getUsername()) eliminado — campo no existe en UsuarioPatchRequest
+
+TAREA 4: Implementar EmpleadoService (E13-E21)
+  E13 crear():
+    Verifica usuarioId existe (findById → 404 si no).
+    Validaciones preventivas DNI, NSS, PIN, NFC únicos (HTTP 409).
+    pinTerminal nunca se expone en respuesta (EmpleadoResponse no tiene el campo).
+  E14 listar(Boolean activo, String q, String categoria):
+    Sin parámetros → solo activos (findByActivo(true)).
+    q → buscarPorTexto() con q.trim().toLowerCase().
+    categoria → findByCategoria() o findByCategoriaAndActivo().
+    PIN nunca en respuesta (incluirPin eliminado, D-018).
+  E15 obtenerPorId(Long id):
+    Firma simplificada respecto al esqueleto (D-017, D-018).
+    Sin parámetro rol. Sin lógica de filtrado de PIN.
+  E16 actualizar(Long id, EmpleadoPatchRequest):
+    PATCH semántico. usuarioId inmutable.
+    dni, nss, fechaAlta inmutables — no existen en EmpleadoPatchRequest.
+    categoria: ya es CategoriaEmpleado enum — sin valueOf().
+    jornadaSemanalHoras: Double en DTO, Integer en entidad → .intValue().
+    PIN y NFC: validaciones AndIdNot antes de actualizar.
+  E17 darDeBaja(Long id): activo=false. HTTP 404 si no existe.
+  E18 reactivar(Long id): activo=true. HTTP 404 si no existe. HTTP 409 si ya activo.
+  E19 obtenerEstado(): UnsupportedOperationException — pendiente Bloque 6.
+  E20 exportar(): UnsupportedOperationException — pendiente Bloque 7.
+  E21 obtenerMiPerfil(String username):
+    findByUsername → findByUsuarioId → EmpleadoResponse sin PIN.
+    ADMIN sin perfil → IllegalStateException → 404 (comportamiento esperado).
+
+  INCIDENCIAS resueltas (19 errores de compilación en dos rondas):
+    Ronda 1: categoria con valueOf innecesario; jornadaSemanalHoras Double→Integer.
+    Ronda 2: getDni/getNss/getFechaAlta inexistentes en EmpleadoPatchRequest
+             (campos inmutables, bloques eliminados de actualizar()).
+    Ronda 3: setCategoria recibía String — EmpleadoResponse.categoria es CategoriaEmpleado.
+    Ronda 4 (D-018): setPinTerminal inexistente — EmpleadoResponse no tiene el campo.
+             Toda la lógica incluirPin/boolean rol eliminada. toEmpleadoResponse() simplificado.
+
+TAREA 5: Implementar UsuarioController (E08-E12)
+  Ruta base: /api/v1/usuarios.
+  Todos los métodos: @PreAuthorize("hasRole('ADMIN')").
+  E08: POST / → 201 Created con @Valid.
+  E09: GET / → 200, params opcionales ?rol, ?activo.
+  E10: GET /{id} → 200.
+  E11: PATCH /{id} → 200 con @Valid.
+  E12: DELETE /{id} → 200 + MensajeResponse (no 204, decisión nº15).
+
+TAREA 6: Implementar EmpleadoController (E13-E21)
+  Ruta base: /api/v1/empleados.
+  E13-E18, E20: @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')").
+  E19: @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')").
+  E21 /me: @PreAuthorize("hasRole('EMPLEADO')").
+  E15 GET /{id}: Authentication eliminado de la firma (D-018, sin rol necesario).
+  E21 GET /me: authentication.getName() → username → service.
+
+TAREA 7: Completar AuthService.login() empleadoId
+  Pendiente desde Bloque 3. EmpleadoRepository ya disponible.
+  empleadoId = empleadoRepository.findByUsuarioId(usuario.getId())
+                                  .map(Empleado::getId).orElse(null).
+  ADMIN → null (sin perfil de empleado, decisión nº8).
+  ENCARGADO/EMPLEADO → Long con el id del perfil de empleado.
+
+TAREA 8: Arranque y verificación
+  MySQL no estaba arrancado al primer intento.
+    Error: Communications link failure / Connection refused.
+    Resolución: iniciar servicio MySQL (services.msc → MySQL80 → Iniciar).
+  Segundo arranque: OK. 7 repositories detectados, Hibernate valida tablas.
+  Swagger UI: E08-E21 visibles bajo sus grupos correspondientes.
+
+TAREA 9 (sesión 9): ConflictException — corrección HTTP 409
+  Problema detectado: IllegalStateException se usaba para dos casos semánticamente
+  distintos — "no encontrado" (404) y "dato duplicado" (409). GlobalExceptionHandler
+  mapeaba IllegalStateException siempre a 404, por lo que los conflictos de unicidad
+  devolvían 404 en lugar de 409.
+  Solución:
+    - ConflictException.java creada en paquete exception (RuntimeException custom).
+    - GlobalExceptionHandler.java: handler @ExceptionHandler(ConflictException.class) → HTTP 409.
+    - UsuarioService.java: throws username/email duplicado → ConflictException.
+    - EmpleadoService.java: throws DNI/NSS/PIN/NFC duplicado y reactivar() ya activo → ConflictException.
+  Resultado: IllegalStateException queda exclusivamente para "recurso no encontrado" (404).
+             ConflictException gestiona exclusivamente conflictos de unicidad (409).
+
+TAREA 10 (sesión 9): AuthService.login() empleadoId real
+  TODO pendiente desde Bloque 3 completado.
+  EmpleadoRepository inyectado en AuthService via @RequiredArgsConstructor.
+  Lógica: empleadoId = empleadoRepository.findByUsuarioId(usuario.getId())
+                                          .map(Empleado::getId).orElse(null).
+  ADMIN → null (sin perfil). ENCARGADO/EMPLEADO → id real del perfil de empleado.
+  Verificado: login emp01 devuelve empleadoId:1 correctamente.
+
+TAREA 11 (sesión 9): Verificación completa E08-E21 con JWT real
+  Herramienta: Swagger UI + PowerShell (Invoke-WebRequest).
+  Todos los endpoints verificados en orden. Resultados:
+    E08 POST /usuarios → 201 ✅
+    E09 GET /usuarios (sin filtros, ?rol, ?activo, combinados) → 200 ✅
+    E10 GET /usuarios/{id} → 200 / 404 ✅
+    E11 PATCH /usuarios/{id} → 200 / 409 email duplicado ✅
+    E12 DELETE /usuarios/{id} → 200 MensajeResponse ✅
+    E13 POST /empleados → 201 ✅
+    E14 GET /empleados (4 variantes) → 200 ✅
+    E15 GET /empleados/{id} → 200 ✅
+    E16 PATCH /empleados/{id} → 200 ✅
+    E17 PATCH /empleados/{id}/baja → 200 ✅
+    E18 PATCH /empleados/{id}/reactivar → 200 / 409 ya activo ✅
+    E21 GET /empleados/me (JWT de EMPLEADO) → 200 ✅
+
+TAREA 12 (sesión 9): Commit Bloque 4
+  commit 6fcdaaf en develop.
+  Mensaje: "feat(bloque4): verifica E08-E21, corrige 409 ConflictException y empleadoId en login"
+  10 ficheros cambiados, 1608 inserciones.
+  Nuevos ficheros: ConflictException.java, EmpleadoController.java, UsuarioController.java.
+
+DESVIACIONES REGISTRADAS EN BLOQUE 4:
+  D-017: firma obtenerPorId(Long id, String rol) → obtenerPorId(Long id).
+    La Opción A acordada en sesión 7 (filtrar PIN por rol) fue anulada por D-018.
+  D-018: lógica incluirPin completamente eliminada.
+    EmpleadoResponse no tiene campo pinTerminal por diseño explícito (decisión nº21).
+    El PIN nunca se expone al cliente bajo ningún concepto.
+    Impacto: toEmpleadoResponse(Empleado, boolean) → toEmpleadoResponse(Empleado).
+    EmpleadoController.obtenerPorId() deja de inyectar Authentication.
+
+DOCUMENTACIÓN GENERADA EN BLOQUE 4:
+  StaffFlow_Bloque4_Memoria_v1.docx — documentación técnica completa del bloque.
+  StaffFlow_Fase2.txt — actualizado (este fichero).
+
+====================================================
+BLOQUE 5 — FICHAJES + PAUSAS + TERMINAL — CERRADO (13/03/2026)
+====================================================
+
+Endpoints: E22-E29 + E48-E51. Controllers: FichajeController, PausaController, TerminalController.
+Commits: ae5fa86 (E22-E29), 0e2136c (E48-E51), e4e188e (verificación + D-022). Pusheados a origin/develop.
+
+--- CHECKLIST BLOQUE 5 ---
+
+[✅] FichajeRepository.java — ampliado con 5 métodos: findByEmpleadoId, findByEmpleadoIdAndFecha,
+     findByEmpleadoIdAndFechaBetween, findByFechaAndHoraSalidaIsNull, findByFiltros (@Query JPQL con JOIN FETCH)
+[✅] PausaRepository.java — ampliado con 4 métodos: findByEmpleadoId, findByEmpleadoIdAndFecha,
+     findByEmpleadoIdAndFechaAndHoraFinIsNull, findByFiltros (@Query JPQL con JOIN FETCH)
+[✅] FichajeService.java — E22 crear, E23 modificar, E24 listarFiltros, E25 listarIncompletos, E26 listarMios
+[✅] FichajeController.java — E22-E26 operativos con @PreAuthorize
+[✅] PausaService.java — E27 crear, E28 cerrar, E29 listar
+[✅] PausaController.java — E27-E29 operativos con @PreAuthorize
+[✅] TerminalPinRequest.java — actualizado con campo dispositivoId (D-021)
+[✅] TerminalPausaRequest.java — actualizado con campo dispositivoId (D-021)
+[✅] TerminalEntradaResponse.java, TerminalSalidaResponse.java, TerminalPausaResponse.java — nuevos
+[✅] TerminalService.java — E48-E51 con bloqueo ConcurrentHashMap, obtenerUsuarioSistema()
+[✅] TerminalController.java — E48-E51 operativos, sin JWT (terminalFilterChain Order=1)
+[✅] data.sql — INSERT completo: configuracion_empresa + 5 usuarios + 3 empleados (perfil dev H2)
+[✅] application-dev.yml — defer-datasource-initialization: true, sql.init.mode: always
+[✅] StaffFlow_H2_Configuracion.txt — referencia completa H2: mecanismo defer, data.sql, credenciales dev
+[✅] D-020 registrada: FichajePatchRequest ampliado con horaEntrada, horaSalida, tipo
+[✅] D-021 registrada: dispositivoId en TerminalRequest + usuario sistema terminal_service (id=4)
+[✅] Usuario terminal_service insertado en MySQL (id=4, rol=ADMIN)
+[✅] Commit ae5fa86: 7 ficheros, 1198 inserciones
+[✅] Commit 0e2136c: 9 ficheros, 705 inserciones
+[✅] Verificación funcional E22-E51 completada (13/03/2026 sesión 12)
+     12 endpoints verificados con MySQL real y PowerShell. Todos correctos.
+     D-022 detectada y resuelta durante la verificación. Commit e4e188e.
+
+--- SESIÓN 13/03/2026 (sesión 10-11) ---
+
+TAREA 1: Implementar FichajeRepository y PausaRepository
+  Análisis de Endpoints_v3: se identificaron 5 métodos necesarios para Fichaje y 4 para Pausa.
+  findByFiltros con JOIN FETCH para evitar N+1 en listarFiltros y listarMios.
+  Patrón de condición nullable: (:param IS NULL OR campo = :param) para filtros opcionales.
+
+TAREA 2: Implementar FichajeService (E22-E26)
+  E22 crear(): UNIQUE via findByEmpleadoIdAndFecha().isPresent() → HTTP 409. totalPausasMinutos=0.
+    jornadaEfectivaMinutos no se calcula en creación manual (se calcula en E49 de terminal).
+  E23 modificar(): PATCH selectivo. Observaciones obligatorias (RNF-L02) → 400 si null/blank.
+    Recalcula jornadaEfectivaMinutos si se modifican horaEntrada o horaSalida.
+  E24 listarFiltros(): delega en findByFiltros(). Para ADMIN y ENCARGADO.
+  E25 listarIncompletos(): findByFechaAndHoraSalidaIsNull(LocalDate.now()).
+  E26 listarMios(): fija empleadoId al del token JWT. Para EMPLEADO.
+
+TAREA 3: Implementar PausaService (E27-E29)
+  E27 crear(): pausa activa detectada con findByEmpleadoIdAndFechaAndHoraFinIsNull().ifPresent() → 409.
+    Math.floor para duración. horaFin null → pausa activa.
+  E28 cerrar(): observaciones obligatorias (RNF-L02). actualizarFichajePorPausa() omitido para AUSENCIA_RETRIBUIDA.
+    actualizarFichajePorPausa(): suma duración a totalPausasMinutos, recalcula jornadaEfectivaMinutos con Math.ceil.
+  E29 listar(): filtros opcionales. Solo ADMIN y ENCARGADO.
+
+TAREA 4: Correcciones de compilación en FichajeService y PausaService
+  Error 1: setUsuarioId(Long) no existe → corregido a setUsuario(entidad) (@ManyToOne).
+  Error 2: FichajeResponse.builder() no existe (@AllArgsConstructor sin @Builder) → new FichajeResponse(...).
+  Patrón confirmado: entidades usan setUsuario(entidad), DTOs usan new XxxResponse(...).
+
+TAREA 5: Commit ae5fa86
+  "feat: Bloque 5 - FichajeService/Controller (E22-E26) y PausaService/Controller (E27-E29)"
+  7 ficheros, 1198 inserciones.
+
+TAREA 6: Decisión usuario sistema para terminal (D-021 Opción B)
+  Problema: terminal no tiene JWT pero usuario_id es NOT NULL.
+  Opción A descartada: nullable=true en entidades — degrada el modelo de datos.
+  Opción B adoptada: usuario sistema terminal_service (id=4, rol=ADMIN).
+    INSERT ejecutado en MySQL. data.sql completo para H2: empresa + 5 usuarios (admin, encargado01,
+    emp01, emp02, terminal_service) + 3 empleados (Ana PIN=1111, Carlos PIN=2222, Laura PIN=3333).
+    application-dev.yml actualizado: defer-datasource-initialization + sql.init.mode=always.
+    Referencia completa: StaffFlow_H2_Configuracion.txt.
+
+TAREA 7: Implementar TerminalService (E48-E51)
+  Bloqueo: ConcurrentHashMap<String, AtomicInteger> en memoria. MAX_INTENTOS=5. HTTP 423.
+    Limitación aceptada: mapa se pierde al reiniciar. Suficiente para v1.0 TFG.
+  obtenerUsuarioSistema(): busca terminal_service via UsuarioRepository. EntityNotFoundException si no existe.
+  buscarEmpleadoPorPin(): incrementa contador en mapa si PIN no encontrado.
+  E48 registrarEntrada(): verificarBloqueo → buscarEmpleadoPorPin → activo? → fichaje hoy? → crear Fichaje → reiniciarFallos.
+  E49 registrarSalida(): verificarBloqueo → buscarEmpleadoPorPin → fichaje? → ya salida? → pausa activa? → horaSalida=now() → Math.ceil → guardar.
+  E50 iniciarPausa(): verificarBloqueo → buscarEmpleadoPorPin → fichaje? → pausa activa? → crear Pausa.
+  E51 finalizarPausa(): verificarBloqueo → buscarEmpleadoPorPin → pausa activa? → horaFin=now() → Math.floor → si !AUSENCIA_RETRIBUIDA → actualizar fichaje.
+    Request usa TerminalPinRequest (tipo recuperado de la pausa activa en BD).
+
+TAREA 8: Commit 0e2136c
+  "feat: Bloque 5 completo - TerminalService/Controller (E48-E51), usuario sistema, data.sql"
+  9 ficheros, 705 inserciones. Pusheado a origin/develop.
+
+DESVIACIONES REGISTRADAS EN BLOQUE 5:
+  D-020: FichajePatchRequest ampliado con horaEntrada, horaSalida, tipo.
+    DTOs_v1 declaraba solo observaciones. Endpoints_v3 requería corrección de horas.
+  D-021: dispositivoId añadido a TerminalPinRequest y TerminalPausaRequest.
+    DTOs_v1 no incluía este campo. Necesario para RNF-S05 (bloqueo por dispositivo).
+    Subdecisin Opción B: usuario sistema terminal_service para auditoría (NOT NULL preservado).
+  D-022 (13/03/2026 sesión 12): campo tipo null en TerminalService.registrarEntrada().
+    Detectada durante verificación funcional: HTTP 400 con "Column 'tipo' cannot be null".
+    Causa: la entidad Fichaje se construía sin asignar el campo tipo, que es NOT NULL en el DDL.
+    Corrección: fichaje.setTipo(TipoFichaje.NORMAL) añadido antes de fichajeRepository.save().
+    Todas las entradas desde terminal son jornadas ordinarias (NORMAL). Los tipos especiales
+    los gestiona el encargado desde la aplicación móvil.
+    Impacto: ninguno en el diseño. Corrección de implementación menor.
+
+DOCUMENTACIÓN GENERADA EN BLOQUE 5:
+  StaffFlow_Bloque5_v3.docx — documentación técnica completa actualizada (E22-E29 + E48-E51 + sección 11 verificación real + D-022).
+  StaffFlow_H2_Configuracion.txt — referencia completa H2: motivo, mecanismo defer, data.sql, IDs por perfil, consola H2, credenciales.
+  StaffFlow_Pruebas_Bloque5.txt — referencia de pruebas funcionales para memoria (entorno, peticiones, resultados, incidencias).
+  StaffFlow_Fase2.txt — actualizado (este fichero).
+  StaffFlow_Fase2_v7.docx — actualizado (sesión 12).
+
+====================================================
+BLOQUE 6 — AUSENCIAS + PRESENCIA + SALDOS — CERRADO (18/03/2026)
+====================================================
+
+Endpoints: E30-E41.
+Periodo: sesiones 13-17 (13/03/2026 - 18/03/2026).
+Commit pendiente: al cerrar Bloque 7 completo.
+
+--- CHECKLIST BLOQUE 6 ---
+
+[✅] TAREA 1: AusenciaController E30-E34 — 7/7 verificados (sesion 13)
+[✅] TAREA 2: PresenciaController E35-E37 — 3/3 verificados (sesion 13)
+[✅] TAREA 3: SaldoController E38-E41 — 4/4 verificados (sesion 14)
+[✅] TAREA 4: ProcesoCierreDiario + restriccion D-026 — 10 casos OK (sesion 17)
+
+--- TAREA 1: AUSENCIAS E30-E34 (sesion 13, 13/03/2026) ---
+
+Ficheros creados/modificados:
+  AusenciaController.java           (nuevo)
+  AusenciaService.java              (sustituye esqueleto)
+  PlanificacionAusenciaRepository.java (4 metodos custom nuevos)
+  EmpleadoRepository.java           (findByUsuarioUsername anadido)
+
+E30 POST /api/v1/ausencias (ADMIN, ENCARGADO):
+  Crea ausencia planificada. empleadoId=null = festivo global (RF-26).
+  Validacion UNIQUE(empleado_id, fecha) con existsByEmpleadoIdAndFecha
+  antes de INSERT. ConflictException → 409 con mensaje claro.
+  procesado=false siempre al crear. Usuario resuelto desde JWT para auditoria.
+
+E31 PATCH /api/v1/ausencias/{id} (ADMIN, ENCARGADO):
+  Modifica solo si procesado=false. procesado=true → 409.
+  PATCH selectivo: solo actualiza campos no nulos del request.
+  Campos no modificables por diseño: empleadoId, fecha.
+
+E32 DELETE /api/v1/ausencias/{id} (ADMIN, ENCARGADO):
+  Unico DELETE real del sistema (SQL DELETE, no baja logica).
+  Solo si procesado=false. procesado=true → 409 (RNF-L01).
+  No necesita restriccion de fecha D-026: procesado=false la cubre.
+
+E33 GET /api/v1/ausencias (ADMIN, ENCARGADO):
+  Filtros opcionales combinables: empleadoId, desde, hasta, procesado.
+  Sin filtros incluye festivos globales (empleado_id=null en BD).
+
+E34 GET /api/v1/ausencias/me (EMPLEADO):
+  Ausencias propias. username → findByUsuarioUsername → empleadoId.
+  Declarado antes que /{id} en el controller (patron /me primero).
+
+Repositorio PlanificacionAusenciaRepository — metodos anadidos:
+  existsByEmpleadoIdAndFecha()        validacion UNIQUE en E30
+  findByFiltros()                     filtros opcionales E33 (@Query JPQL)
+  findByEmpleadoIdAndRango()          ausencias propias E34 (@Query JPQL)
+  findPendientesByFechaLessThanEqual() ProcesoCierreDiario Tarea B (@Query JPQL)
+
+Verificacion: 7/7 casos OK en MySQL. Ver StaffFlow_Bloque6_Tarea1_Ausencias.txt.
+Desviacion registrada: D-023 (emp01 con activo=0 — corregido con UPDATE).
+
+--- TAREA 2: PRESENCIA E35-E37 (sesion 13, 13/03/2026) ---
+
+Ficheros creados/modificados:
+  PresenciaController.java           (nuevo)
+  PresenciaService.java              (sustituye esqueleto)
+  DetallePresenciaResponse.java      (renombrado desde ParteDiarioResponse)
+  ParteDiarioResponse.java           (nuevo — objeto raiz con contadores)
+  SinJustificarResponse.java         (nuevo)
+  FichajeRepository.java             (findByFechaWithEmpleado anadido)
+  PausaRepository.java               (findPausasActivasByFecha anadido)
+  PlanificacionAusenciaRepository.java (findByFechaAndProcesadoFalse anadido)
+
+Decision de diseno: patron anti-N+1.
+  4 queries planas al inicio + clasificacion en memoria con Maps y Sets.
+  Sin queries dentro de bucles. Rendimiento O(n) para cualquier volumen de PYME.
+
+Prioridad de estados en clasificarEmpleado() (de mayor a menor):
+  EN_PAUSA > JORNADA_COMPLETADA > JORNADA_INICIADA >
+  AUSENCIA_REGISTRADA > AUSENCIA_PLANIFICADA > SIN_JUSTIFICAR
+
+E35 GET /api/v1/presencia/parte-diario (ADMIN, ENCARGADO):
+  Parte diario completo con contadores globales + array detalle[].
+  ?fecha opcional (defecto hoy). Ordenado por apellido1, apellido2, nombre.
+  Contador fichados incluye EN_PAUSA (subconjunto de fichados).
+
+E36 GET /api/v1/presencia/sin-justificar (ADMIN, ENCARGADO):
+  Lista empleados sin justificacion para una fecha.
+  Si hay festivo global → devuelve List.of() inmediatamente.
+
+E37 GET /api/v1/presencia/parte-diario/me (EMPLEADO):
+  Estado propio del empleado autenticado. Mismo clasificarEmpleado()
+  que E35 para garantizar coherencia. Solo carga datos del empleado concreto.
+
+Verificacion: 3/3 casos OK en MySQL. Ver StaffFlow_Bloque6_Tarea2_Presencia.txt.
+
+--- TAREA 3: SALDOS E38-E41 (sesion 14, 13/03/2026) ---
+
+Ficheros creados/modificados:
+  SaldoController.java               (nuevo)
+  SaldoService.java                  (sustituye esqueleto)
+  SaldoResponse.java                 (nuevo — con 3 clases estaticas internas)
+  SaldoAnualRepository.java          (findByAnio anadido)
+
+Calculo de horas en memoria (E38, E39, E41 — sin query adicional):
+  esperadas  = diasTrabajados * jornadaDiariaMinutos / 60.0
+  trabajadas = esperadas + saldoHoras
+  BigDecimal para precision decimal (decision n22).
+
+Patron findOrCreate en E40:
+  Si no existe registro de saldo para el año, crearSaldoInicial() lo crea
+  con valores del contrato del empleado antes de recalcular.
+  Garantiza que E40 funciona antes de que el proceso nocturno haya actuado.
+
+Idempotencia en E40:
+  Reinicio de todos los contadores a 0 antes de iterar fichajes.
+  Ejecutar N veces produce siempre el mismo resultado.
+
+E38 GET /api/v1/saldos/{empleadoId} (ADMIN, ENCARGADO): saldo individual.
+E39 GET /api/v1/saldos (ADMIN, ENCARGADO): saldo de todos los empleados.
+E40 POST /api/v1/saldos/{empleadoId}/recalcular (solo ADMIN): recalculo completo.
+E41 GET /api/v1/saldos/me (EMPLEADO): saldo propio.
+
+Verificacion: 4/4 casos OK en MySQL. Ver StaffFlow_Bloque6_Tarea3_Saldos.txt.
+
+--- TAREA 4: PROCESOCIERRE DIARIO + D-026 (sesion 17, 18/03/2026) ---
+
+Ficheros creados/modificados:
+  ProcesoCierreDiario.java           (nuevo en service/scheduled — sustituye ProcesoDiarioService)
+  SaldoService.java                  (recalcularParaProceso() extraido)
+  FichajeService.java                (D-026 en E22/E23)
+  PausaService.java                  (D-026 en E27/E28)
+  AusenciaService.java               (D-026 en E30/E31)
+  FichajeController.java             (Authentication anadido en E23)
+  PausaController.java               (Authentication anadido en E28)
+  AusenciaController.java            (Authentication anadido en E31)
+  TestProcesoCierreDiarioController.java (@Profile({"dev","mysql"}) — PENDIENTE revisar)
+
+Fichero eliminado: ProcesoDiarioService.java (sustituido).
+
+ProcesoCierreDiario @Scheduled("0 55 23 * * *"):
+  Un unico ciclo a las 23:55 con tres tareas en secuencia (@Transactional).
+  Usuario sistema cargado una vez al inicio por username "terminal_service".
+
+  TAREA A — Cierre ausencias injustificadas:
+    Para cada empleado activo sin fichaje del dia:
+    Crea AUSENCIA_INJUSTIFICADA con jornadaEfectivaMinutos=0,
+    horaEntrada/horaSalida=null, usuario=terminal_service.
+
+  TAREA B — Procesado planificaciones pendientes:
+    findPendientesByFechaLessThanEqual(hoy.plusDays(1)).
+    plusDays(1): permite procesar festivos globales la noche anterior.
+    Mapeo TipoAusencia → TipoFichaje directo por nombre (valueOf).
+    Festivo global (empleadoId=null): crea fichaje para todos los activos.
+    Marca procesado=true tras crear el fichaje.
+
+  TAREA C — Actualizacion saldos anuales:
+    Para cada empleado activo: saldoService.recalcularParaProceso().
+    recalcularParaProceso(): logica extraida de recalcular() (E40)
+    sin construir SaldoResponse (proceso interno sin respuesta HTTP).
+
+Restriccion D-026 — ENCARGADO solo puede gestionar el dia actual:
+  Patron en los 6 metodos (E22/E23/E27/E28/E30/E31):
+    if (usuario.getRol() == Rol.ENCARGADO && !fecha.isEqual(LocalDate.now()))
+      throw new IllegalArgumentException(...) → HTTP 400
+  Resolucion del rol: controller pasa username, service llama
+  usuarioRepository.findByUsername() (patron D-017 Opcion B).
+  E32 no necesita restriccion: procesado=false la cubre sola.
+
+Verificacion: 10 casos OK (8 en H2 + 2 en MySQL).
+  D-026: ADMIN fecha pasada 201, ADMIN fecha hoy 201,
+         ENCARGADO fecha pasada 400, ENCARGADO fecha hoy 201.
+  Proceso: Tarea A (AUSENCIA_INJUSTIFICADA creada), Tarea B (sin errores),
+           Tarea C (saldo calculado y persistido).
+Ver StaffFlow_Bloque6_Tarea4_CierreDiario_v2.txt.
+
+DESVIACIONES REGISTRADAS EN BLOQUE 6:
+  D-023: emp01 con activo=0 en MySQL. Corregido con UPDATE.
+  D-024: JWT 8h → 12h (expiration-ms=43200000). D-010 aclarado.
+  D-025: ProcesoCierreDiario — cron 23:55, tres tareas, saldos automaticos.
+  D-026: Restriccion fecha ENCARGADO en E22/E23/E27/E28/E30/E31.
+
+DOCUMENTACION GENERADA EN BLOQUE 6:
+  StaffFlow_Bloque6_Tarea1_Ausencias.txt
+  StaffFlow_Bloque6_Tarea2_Presencia.txt
+  StaffFlow_Bloque6_Tarea3_Saldos.txt
+  StaffFlow_Bloque6_Tarea4_CierreDiario_v2.txt
+  StaffFlow_Desviaciones_1803_v1.txt (D-001 a D-026)
+  StaffFlow_Prompt_Dev_1803_v2.txt
+  StaffFlow_Sesion_1803_v2.txt
+
+====================================================
+BLOQUE 7 — INFORMES + PDF (EN CURSO)
+====================================================
+
+Endpoints: E42-E47. iText 7 para PDF, HTML para informe diario.
+Periodo: a partir de 18/03/2026 (sesion 18+).
+Hito Gantt: API funcional 29 Mar 2026.
+
+TAREA 1: Informes HTML diario (E42-E43) — PENDIENTE
+TAREA 2: Informes PDF exportable (E44-E47) — PENDIENTE
+
+Commit Bloque 6+7 al cerrar el Bloque 7 completo.
+
+====================================================
+DECISIONES TRANSVERSALES REGISTRADAS EN FASE 2
+====================================================
+
+JACOCO — Sin umbral fijo (cerrada 09/03/2026).
+  Foco en servicios críticos. Cifra real + justificación al tribunal.
+
+CIERRES AUTOMÁTICOS (cerrada 09/03/2026).
+  ProcesoDiario @Scheduled. CierreDiario y CierreAnual: botón manual.
+
+ESTRATEGIA ANDROID — Patrones de Fragment (cerrada 10/03/2026).
+  ~30h con patrones vs ~60-70h sin reutilización. Wireframes no cambian.
+  Prioridad: BLOQUE A → B → C → D (trabajo futuro: P03/P04/P05).
+
+====================================================
+DESVIACIONES REGISTRADAS EN FASE 2
+====================================================
+
+D-016 (12/03/2026): Controllers esqueleto no creados en Bloque 1.
+  El plan preveía 13 controllers esqueleto compilando al cierre del Bloque 1.
+  No se ejecutaron. Los controllers se crean directamente con implementacion
+  real en cada bloque. Sin impacto en código ni arquitectura.
+  Primer controller creado: AuthController.java (Bloque 2, sesion 4).
+
+D-017 (13/03/2026): Firma obtenerPorId ajustada — parámetro rol eliminado.
+  El esqueleto del Bloque 1 tenía obtenerPorId(Long id).
+  La sesión 7 cambió la firma a obtenerPorId(Long id, String rol) para filtrar PIN.
+  D-018 anuló esa decisión. La firma definitiva vuelve a ser obtenerPorId(Long id).
+
+D-018 (13/03/2026): Lógica incluirPin eliminada — EmpleadoResponse no expone PIN.
+  La Opción A acordada en sesión 7 preveía filtrar pinTerminal por rol en el service.
+  Al implementar toEmpleadoResponse(), se descubrió que EmpleadoResponse no tiene
+  el campo pinTerminal por diseño explícito (decisión nº21, comentario en el DTO).
+  Toda la lógica incluirPin/boolean eliminada. EmpleadoController.obtenerPorId()
+  deja de inyectar Authentication. Comportamiento real: PIN nunca visible en API.
+
+D-022 (13/03/2026 sesión 12): Campo tipo null en TerminalService.registrarEntrada().
+  Detectada durante la verificación funcional del Bloque 5 con MySQL real.
+  Síntoma: HTTP 400 — log IntelliJ mostraba "Column 'tipo' cannot be null" al ejecutar
+  el INSERT en la tabla fichajes para la entrada de Laura (PIN=3333).
+  Causa raíz: TerminalService.registrarEntrada() construía la entidad Fichaje asignando
+  todos los campos (empleado, fecha, horaEntrada, totalPausasMinutos, jornadaEfectiva,
+  observaciones, usuario) excepto tipo, que es NOT NULL en el DDL.
+  Corrección: fichaje.setTipo(TipoFichaje.NORMAL) añadido antes de fichajeRepository.save().
+  Justificación: todas las entradas desde terminal físico son jornadas ordinarias (NORMAL).
+  Los tipos especiales (FESTIVO, VACACIONES, etc.) los gestiona el encargado
+  desde la aplicación móvil — nunca desde el terminal PIN.
+  Impacto: ninguno en el diseño. Corrección de implementación menor.
+  Archivo modificado: TerminalService.java. Commit: e4e188e.
+
+(D-001..D-015 documentadas en StaffFlow_Desviaciones.txt)

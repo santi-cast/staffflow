@@ -1,0 +1,4 @@
+Los diagramas de casos de uso van en Fase 1, Bloque 3 — justo después de cerrar el modelo de datos y antes de especificar los endpoints. El orden lógico es:
+Bloque 2: diagrama de clases → DDL
+Bloque 3: diagramas de casos de uso → especificación de endpoints
+El diagrama de casos de uso es el "por qué" (quién hace qué), y los endpoints son el "cómo" (verbo HTTP, ruta, DTO). Tiene sentido que el tribunal vea primero el diagrama y luego la tabla de endpoints.Déjame leer el SKILL antes de generar el docx.Read docx skillRead docx skillLos diagramas de casos de uso van en Fase 1, Bloque 3 — justo después del diagrama de clases y el DDL, y antes de la especificación de endpoints. 

@@ -1,0 +1,180 @@
+====================================================
+STAFFFLOW -- BLOQUE 7 TAREA 2 -- INFORME SALDOS E44
+StaffFlow_Bloque7_Tarea2_InformeSaldos_v1.txt
+Creado: 21/03/2026 (sesion 20)
+====================================================
+
+Este fichero documenta el diseno detallado, implementacion y
+verificacion del endpoint E44: informe de saldos anuales.
+
+====================================================
+1. DESCRIPCION DEL ENDPOINT
+====================================================
+
+E44: GET /api/v1/informes/saldos
+Roles: ADMIN, ENCARGADO
+RF-34: informe de saldos anuales de empleados.
+
+D-029: renombrado desde /vacaciones (diseno original impreciso).
+  El contenido real abarca vacaciones, asuntos propios, dias
+  trabajados, bajas, permisos, horas y control de calculo.
+
+Parametros:
+  ?anio=      opcional. Defecto: ano actual.
+  ?formato=   json | html. Defecto: json.
+  ?empleadoId= opcional. Uno o varios ids separados por coma.
+               Sin parametro: todos los empleados activos con saldo.
+  ?campos=    opcional. Bloques o campos individuales por coma.
+               Sin parametro: todos los campos.
+
+====================================================
+2. ESTRUCTURA DEL INFORME
+====================================================
+
+Columna fija (siempre presente):
+  Empleado
+
+Bloque DIAS VACACIONES (clave: DIAS_VACACIONES):
+  VAC_PENDIENTE_ANT  -- Pendientes ano anterior
+  VAC_DERECHO        -- Derecho anual
+  VAC_CONSUMIDOS     -- Consumidos ano en curso
+  VAC_DISPONIBLES    -- Disponibles (color: verde/rojo/negro)
+
+Bloque DIAS ASUNTOS PROPIOS (clave: DIAS_ASUNTOS_PROPIOS):
+  AP_PENDIENTE_ANT   -- Pendientes ano anterior
+  AP_DERECHO         -- Derecho anual
+  AP_CONSUMIDOS      -- Consumidos ano en curso
+  AP_DISPONIBLES     -- Disponibles (color: verde/rojo/negro)
+
+Bloque RESTO DE DIAS (clave: RESTO_DIAS):
+  DIAS_TRABAJADOS
+  DIAS_BAJA_MEDICA
+  DIAS_PERMISO_RETRIBUIDO
+  DIAS_AUSENCIA_INJUSTIFICADA
+
+Bloque HORAS (clave: HORAS):
+  HORAS_AUSENCIA_RETRIBUIDA
+  SALDO_HORAS        -- (color: verde/rojo/negro)
+
+Bloque CONTROL (clave: CONTROL):
+  CALCULADO_HASTA
+  ULTIMA_MODIFICACION
+
+Regla de color para disponibles y saldo horas:
+  valor > 0  -> clase valor-pos (verde, font-weight 500)
+  valor < 0  -> clase valor-neg (rojo, font-weight 500)
+  valor == 0 -> sin clase (negro, peso normal)
+
+====================================================
+3. FUENTE DE DATOS
+====================================================
+
+SaldoAnualRepository:
+  Sin ?empleadoId=: findByAnio(anio) filtrado por empleado.activo=true,
+    ordenado alfabeticamente por nombre completo.
+  Con ?empleadoId=: findByEmpleadoIdAndAnio(id, anio) por cada id,
+    ordenado alfabeticamente por nombre completo.
+
+IMPORTANTE: SaldoAnual no se precarga en data.sql.
+  Lo genera ProcesoCierreDiario. En entorno dev hay que llamar a
+  POST /api/v1/test/cierre-diario antes de verificar E44.
+
+====================================================
+4. LOGICA DE SELECCION DE CAMPOS (?campos=)
+====================================================
+
+resolverCampos(List<String> campos):
+  Si null o vacio: devuelve todos los 16 campos (LinkedHashSet).
+  Para cada valor recibido:
+    Si es clave de bloque (ej. DIAS_VACACIONES): expande a sus 4 campos.
+    Si es campo individual valido: lo incluye directamente.
+    Si es desconocido: se ignora silenciosamente.
+  Si tras resolver no hay ningun campo valido: devuelve todos.
+
+El orden de los campos en el HTML sigue siempre el orden de
+CAMPOS_VALIDOS, no el orden del parametro ?campos=. Esto garantiza
+que la tabla siempre tenga la misma estructura visual independientemente
+del orden en que se pidan los campos.
+
+El colspan del bloque en la cabecera nivel 1 se calcula dinamicamente
+con contarCamposBloque(): cuenta cuantos campos del bloque estan activos.
+Si un bloque no tiene ningun campo activo, no aparece en la cabecera.
+
+====================================================
+5. FORMATO JSON
+====================================================
+
+Lista de objetos, uno por empleado:
+  {
+    "empleadoId": 1,
+    "empleado": "Ana Garcia Lopez",
+    "anio": 2026,
+    [campos seleccionados con sus valores]
+  }
+
+Nombres de campo en JSON:
+  vacPendientesAnioAnterior, vacDerechoAnual,
+  vacConsumidosAnioEnCurso, vacDisponibles,
+  apPendientesAnioAnterior, apDerechoAnual,
+  apConsumidosAnioEnCurso, apDisponibles,
+  diasTrabajados, diasBajaMedica,
+  diasPermisoRetribuido, diasAusenciaInjustificada,
+  horasAusenciaRetribuida, saldoHoras,
+  calculadoHasta, ultimaModificacion
+
+Fechas en formato dd/MM/yyyy. BigDecimal sin conversion (valor nativo).
+
+====================================================
+6. FORMATO HTML
+====================================================
+
+Cabecera del informe:
+  INFORME DE SALDOS -- {anio} . Generado el {dd/MM/yyyy}
+
+Tabla con dos niveles de cabecera:
+  Nivel 1: bloques con color de fondo distintivo.
+    bloque-vac:  azul   (#185FA5)
+    bloque-ap:   verde  (#0F6E56)
+    bloque-dias: ambar  (#BA7517)
+    bloque-horas:morado (#534AB7)
+    bloque-ctrl: coral  (#993C1D)
+  Nivel 2: nombres completos de cada columna (sin abreviaturas).
+
+Pie del informe:
+  StaffFlow -- Informe generado el {dd/MM/yyyy}
+
+Scroll horizontal habilitado (tabla muy ancha con todos los campos).
+
+====================================================
+7. VERIFICACION (sesion 20, 21/03/2026)
+====================================================
+
+5/5 casos verificados con perfil dev (H2):
+
+  Caso 1: GET /saldos?anio=2026&formato=json -- OK
+    3 empleados, todos los campos.
+    Ana: vacConsumidos=5, diasTrabajados=14, diasBajaMedica=2,
+         diasAusenciaInjustificada=2, saldoHoras=-24.00.
+    Carlos: apConsumidos=1, diasTrabajados=20, diasPermiso=1,
+            diasAusenciaInjustificada=1, saldoHoras=-17.50.
+    Laura: todo a 0 excepto diasAusenciaInjustificada=1.
+
+  Caso 2: GET /saldos?anio=2026&formato=html -- OK
+    Tabla con 5 bloques coloreados correctamente.
+    Disponibles en verde. Saldo horas rojo (Ana/Carlos), negro (Laura).
+
+  Caso 3: GET /saldos?anio=2026&formato=html&empleadoId=1 -- OK
+    Solo Ana. Una fila. Todos los campos. Datos correctos.
+
+  Caso 4: GET /saldos?anio=2026&formato=html&campos=DIAS_VACACIONES -- OK
+    Solo bloque vacaciones (4 columnas).
+    Resto de bloques ausente en cabecera y datos. 3 empleados.
+
+  Caso 5: GET /saldos?anio=2026&formato=html
+          &empleadoId=1,2&campos=DIAS_VACACIONES,SALDO_HORAS -- OK
+    Ana y Carlos. Bloque vacaciones (4 cols) + bloque horas (1 col).
+    colspan=1 correcto en cabecera de bloque Horas.
+
+====================================================
+FIN StaffFlow_Bloque7_Tarea2_InformeSaldos_v1.txt
+====================================================

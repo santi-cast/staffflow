@@ -1,0 +1,653 @@
+====================================================
+STAFFFLOW — PROMPT DE CONTEXTO COMPLETO v11
+====================================================
+
+Proyecto: StaffFlow v3.0
+Alumno: Santiago
+Centro: iLERNA — TFG DAM 2025/2026
+Entrega: 22 abril 2026
+Repo: https://github.com/santi-cast/staffflow
+
+Fase 0: COMPLETADA
+Fase 1: EN CURSO — Análisis y Diseño (02 Mar - 08 Mar 2026)
+  Bloque 1 (RF + RNF):              CERRADO
+  Bloque 2 (Modelo de Datos y DDL): CERRADO
+  Bloque 3 (Endpoints):             PENDIENTE
+  Bloque 4 (Wireframes Android):    PENDIENTE
+
+====================================================
+ROL DEL ASISTENTE
+====================================================
+
+Tu papel en esta conversación es actuar como asistente técnico
+y gestor del flujo de trabajo del proyecto. Debes ayudarme a:
+- mantener el desarrollo organizado
+- no olvidar pasos importantes
+- revisar lo que ya está hecho
+- sugerir el siguiente paso lógico
+- detectar inconsistencias de diseño
+- ayudar con arquitectura backend y Android
+
+Si necesitas algún documento o diagrama pídelo,
+tengo todo lo anterior documentado.
+
+====================================================
+ARCHIVOS DEL PROYECTO — ÚLTIMA VERSIÓN
+====================================================
+
+Documentación principal:
+  StaffFlow_Fase0_v6.docx                     <- Guía completa Fase 0 (entorno y arranque)
+  StaffFlow_Fase1_v4.docx                     <- Documento Fase 1 (Bloques 1 y 2 cerrados)
+  StaffFlow_BaseDatos_v4.docx                 <- Modelo de datos completo + Anexo I DDL
+  StaffFlow_Arquitectura.docx                 <- Arquitectura técnica (versión inicial — puede estar desactualizada)
+
+Scripts y diagramas:
+  staffflow_v4_ddl_mysql.sql                  <- Script DDL MySQL 8.0 definitivo (249 líneas, 7 tablas)
+  er_diagram_v3.jsx                           <- Diagrama ER interactivo React
+  er_diagram_v3.png                           <- Diagrama ER imagen estática
+  gantt_staffflow.jsx                         <- Diagrama de Gantt interactivo React (sin Fase 0)
+
+Contexto:
+  StaffFlow_Prompt_EstadoActualFase1_v11.txt  <- este archivo
+
+NOTA: Si necesito revisar cualquier documento, pídemelo y te lo adjunto.
+
+====================================================
+STACK TECNOLÓGICO
+====================================================
+
+Backend:
+- Java 21 LTS (Temurin)
+- Spring Boot 3.5.x
+- Maven
+- JPA/Hibernate
+- H2 (desarrollo) / MySQL 8.0 (producción)
+- jjwt 0.12.6
+- SpringDoc OpenAPI (Swagger UI — en lugar de Postman)
+- Lombok
+- spring-boot-starter-mail (recuperación de contraseña)
+- iText 7 (generación de informes PDF firmables)
+- JUnit + JaCoCo (tests — cobertura mínima 70% en paquete service)
+
+Android:
+- Kotlin
+- AGP 9.0.1
+- Retrofit 2.9.0
+- OkHttp 4.12.0 + logging-interceptor
+- Navigation Component 2.8.0
+- DataStore Preferences 1.1.1
+- Coroutines 1.8.1
+- Lifecycle ViewModel + Runtime 2.8.0
+- KSP 2.1.0-1.0.29
+- SIN Hilt (incompatible con AGP 9.x — inyección manual)
+- PrintManager + WebView (impresión de informes desde pantalla)
+
+IDEs:
+- IntelliJ IDEA Community 2025.2.2 (backend)
+- Android Studio Panda 1 (Android)
+
+OS: Windows
+
+====================================================
+ESTRUCTURA DEL REPOSITORIO
+====================================================
+
+staffflow/
+├── staffflow-backend/     -> API REST Spring Boot + Java 21
+└── staffflow-android/     -> App Android Kotlin + Retrofit
+
+Rama master:  código estable (solo recibe merges al cerrar cada fase)
+Rama develop: trabajo diario
+
+Estado Git actual:
+  master  -> b2af932  feat: initial project structure - fase 0  (62 archivos)
+  develop -> db03d55  feat: add health check endpoint  (1 archivo nuevo)
+
+Cierre de Fase 1 (al completar los 4 bloques):
+  git checkout master
+  git merge develop
+  git push origin master
+  git tag v1.0-fase1
+  git push origin v1.0-fase1
+  git checkout develop
+  git push origin develop
+
+====================================================
+ARQUITECTURA BACKEND
+====================================================
+
+Patrón: Arquitectura en Capas (Layered Architecture)
+Flujo: HTTP Request -> controller -> service -> repository -> domain.entity -> HTTP Response
+
+PAQUETES BACKEND (com.staffflow):
+config              -> SecurityConfig.java (temporal permitAll — se reemplaza en Fase 2 con JWT)
+controller          -> HealthController.java creado y funcionando
+domain.entity       -> 7 entidades JPA creadas
+domain.enums        -> 5 enums (valores provisionales — actualizar en Fase 2 con valores definitivos)
+domain.repository   -> vacío, se crea en Fase 2
+dto.request         -> vacío, se crea en Fase 2
+dto.response        -> vacío, se crea en Fase 2
+exception           -> vacío, se crea en Fase 2 (GlobalExceptionHandler)
+security            -> vacío, se crea en Fase 2 (JwtTokenProvider, JwtAuthFilter, UserDetailsServiceImpl)
+service             -> vacío, se crea en Fase 2
+service.scheduled   -> vacío, se crea en Fase 2 (ProcesoDiario, CierreDiario, CierreAnual)
+
+====================================================
+DIAGRAMA ER — 7 TABLAS (VERSIÓN DEFINITIVA v4)
+====================================================
+
+configuracion_empresa (singleton, id siempre = 1)
+  PK id INT AUTO_INCREMENT
+  nombre_empresa VARCHAR(100) NOT NULL
+  cif VARCHAR(20) UNIQUE NOT NULL
+  direccion TEXT NULL
+  email VARCHAR(100) NULL
+  telefono VARCHAR(20) NULL
+  logo_path VARCHAR(255) NULL
+
+usuarios
+  PK id INT AUTO_INCREMENT
+  username VARCHAR(50) UNIQUE NOT NULL
+  password_hash VARCHAR(255) NOT NULL
+  email VARCHAR(100) UNIQUE NOT NULL
+  rol ENUM[ADMIN|ENCARGADO|EMPLEADO] NOT NULL
+  activo BOOLEAN DEFAULT TRUE NOT NULL
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+  reset_token VARCHAR(255) NULL
+  reset_token_expiry DATETIME NULL
+  IDX: username (UNIQUE), email (UNIQUE), activo, reset_token
+
+empleados
+  PK id INT AUTO_INCREMENT
+  FK usuario_id -> usuarios UNIQUE NOT NULL (1 empleado por usuario)
+  nombre VARCHAR(50) NOT NULL
+  apellido1 VARCHAR(50) NOT NULL
+  apellido2 VARCHAR(50) NULL
+  dni VARCHAR(20) UNIQUE NOT NULL
+  nss VARCHAR(20) UNIQUE NOT NULL
+  fecha_alta DATE NOT NULL
+  categoria ENUM[OPERARIO|ADMINISTRATIVO|TECNICO|ENCARGADO|OTRO] NOT NULL  <- campo informativo
+  jornada_semanal_horas INT DEFAULT 40 NOT NULL    <- jornada contratada (dato laboral)
+  jornada_diaria_minutos INT DEFAULT 480 NOT NULL  <- calculado, usado en saldo de horas
+  dias_vacaciones_anuales INT DEFAULT 22 NOT NULL
+  dias_asuntos_propios_anuales INT DEFAULT 3 NOT NULL
+  pin_terminal CHAR(4) UNIQUE NOT NULL             <- IDX UNIQUE -> búsqueda < 100ms (RNF-R03)
+  codigo_nfc VARCHAR(50) UNIQUE NULL               <- campo opcional (futura versión)
+  activo BOOLEAN DEFAULT TRUE NOT NULL
+  IDX: pin_terminal (UNIQUE), dni (UNIQUE), nss (UNIQUE), activo
+
+fichajes
+  PK id INT AUTO_INCREMENT
+  FK empleado_id -> empleados NOT NULL
+  fecha DATE NOT NULL
+  tipo ENUM[NORMAL|FESTIVO_NACIONAL|FESTIVO_LOCAL|VACACIONES|ASUNTO_PROPIO|
+            PERMISO_RETRIBUIDO|BAJA_MEDICA|DIA_LIBRE_COMPENSATORIO|
+            AUSENCIA_INJUSTIFICADA] NOT NULL
+  hora_entrada DATETIME NULL
+  hora_salida DATETIME NULL
+  total_pausas_minutos INT DEFAULT 0 NOT NULL
+  jornada_efectiva_minutos INT DEFAULT 0 NOT NULL  (ceil)
+  FK usuario_id -> usuarios NOT NULL  (auditoría — quién registró)
+  observaciones TEXT NULL
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+  UNIQUE: (empleado_id, fecha) <- 1 fichaje por empleado por día (RNF-I02, RD-ley 8/2019)
+
+pausas
+  PK id INT AUTO_INCREMENT
+  FK empleado_id -> empleados NOT NULL
+  fecha DATE NOT NULL
+  hora_inicio DATETIME NOT NULL
+  hora_fin DATETIME NULL  (NULL = pausa activa en este momento)
+  duracion_minutos INT NULL  (NULL hasta cerrar pausa; floor al cerrar)
+  tipo_pausa ENUM[COMIDA|DESCANSO|AUSENCIA_RETRIBUIDA|OTROS] NOT NULL
+  FK usuario_id -> usuarios NOT NULL  (auditoría)
+  observaciones TEXT NULL
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+  IDX: (empleado_id, fecha)
+
+planificacion_ausencias
+  PK id INT AUTO_INCREMENT
+  FK empleado_id -> empleados NULL  (NULL = festivo global para todos los empleados)
+  fecha DATE NOT NULL
+  tipo_ausencia ENUM[FESTIVO_NACIONAL|FESTIVO_LOCAL|VACACIONES|ASUNTO_PROPIO|
+                     PERMISO_RETRIBUIDO|DIA_LIBRE_COMPENSATORIO] NOT NULL
+  procesado BOOLEAN DEFAULT FALSE NOT NULL  (true = ya se creó el fichaje correspondiente)
+  FK usuario_id -> usuarios NOT NULL  (auditoría — quién planificó)
+  observaciones TEXT NULL
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+  UNIQUE: (empleado_id, fecha)
+  IDX: (fecha, procesado) <- proceso diario 00:01
+
+saldos_anuales
+  PK id INT AUTO_INCREMENT
+  FK empleado_id -> empleados NOT NULL
+  anio INT NOT NULL
+  -- Contadores de días
+  dias_trabajados INT DEFAULT 0 NOT NULL
+  dias_baja_medica INT DEFAULT 0 NOT NULL
+  dias_permiso_retribuido INT DEFAULT 0 NOT NULL
+  dias_ausencia_injustificada INT DEFAULT 0 NOT NULL
+  -- Vacaciones
+  dias_vacaciones_derecho_anio INT NOT NULL
+  dias_vacaciones_pendientes_anio_anterior INT DEFAULT 0 NOT NULL
+  dias_vacaciones_consumidos INT DEFAULT 0 NOT NULL
+  dias_vacaciones_disponibles INT NOT NULL  (calculado: derecho + pendientes - consumidos)
+  -- Asuntos propios
+  dias_asuntos_propios_derecho_anio INT NOT NULL
+  dias_asuntos_propios_pendientes_anterior INT DEFAULT 0 NOT NULL
+  dias_asuntos_propios_consumidos INT DEFAULT 0 NOT NULL
+  dias_asuntos_propios_disponibles INT NOT NULL  (calculado)
+  -- Horas
+  horas_ausencia_retribuida DECIMAL(10,2) DEFAULT 0.00 NOT NULL
+  saldo_horas DECIMAL(10,2) DEFAULT 0.00 NOT NULL  (positivo = horas extra, negativo = deuda)
+  -- Control de proceso
+  calculado_hasta_fecha DATE NULL
+  fecha_ultima_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+  UNIQUE: (empleado_id, anio) <- 1 registro por empleado por año
+  IDX: anio
+
+====================================================
+ENUMS DEFINITIVOS
+====================================================
+
+NOTA: los archivos .java tienen los valores provisionales de Fase 0.
+Actualizar en Fase 2 ANTES de implementar ningún endpoint.
+
+Rol (sin cambios):
+  ADMIN | ENCARGADO | EMPLEADO
+
+TipoFichaje (9 valores — provisional: ENTRADA, SALIDA):
+  NORMAL
+  FESTIVO_NACIONAL
+  FESTIVO_LOCAL
+  VACACIONES
+  ASUNTO_PROPIO
+  PERMISO_RETRIBUIDO
+  BAJA_MEDICA
+  DIA_LIBRE_COMPENSATORIO
+  AUSENCIA_INJUSTIFICADA
+
+TipoAusencia (6 valores):
+  FESTIVO_NACIONAL
+  FESTIVO_LOCAL
+  VACACIONES
+  ASUNTO_PROPIO
+  PERMISO_RETRIBUIDO
+  DIA_LIBRE_COMPENSATORIO
+
+TipoPausa (4 valores):
+  COMIDA
+  DESCANSO
+  AUSENCIA_RETRIBUIDA
+  OTROS
+
+CategoriaEmpleado (5 valores — NUEVO, crear CategoriaEmpleado.java en Fase 2):
+  OPERARIO
+  ADMINISTRATIVO
+  TECNICO
+  ENCARGADO
+  OTRO
+
+====================================================
+ACTORES DEL SISTEMA
+====================================================
+
+ADMIN       -> Acceso total. Gestiona empresa, usuarios, empleados y toda la operativa.
+               NO tiene ficha de empleado — nunca ficha desde el terminal.
+               Uso principal: configuración del sistema, altas/bajas de usuarios.
+
+ENCARGADO   -> Gestiona la operativa diaria. SÍ tiene ficha de empleado — ficha con PIN.
+               No gestiona configuración de empresa ni usuarios.
+               Uso principal: control diario del equipo, fichajes, pausas, ausencias, informes.
+
+EMPLEADO    -> Solo ve y gestiona sus propios datos. SÍ tiene ficha de empleado.
+               Ficha entrada/salida/pausa con PIN de 4 dígitos desde el terminal.
+               Spring Security le bloquea cualquier intento de acceder a datos de otros.
+
+Decisión de diseño — Separación usuarios / empleados:
+  La tabla usuarios gestiona autenticación (quién entra al sistema y con qué rol).
+  La tabla empleados gestiona el perfil laboral (datos de la persona como trabajadora).
+  ADMIN -> registro en usuarios, NO en empleados.
+  ENCARGADO / EMPLEADO -> registro en AMBAS tablas.
+
+====================================================
+PARTE DIARIO — ESTADOS POSIBLES DE UN EMPLEADO
+====================================================
+
+Fichado              -> registro en fichajes con hora_entrada para hoy
+En pausa             -> fichaje de entrada + pausa activa (hora_fin = NULL)
+Ausencia registrada  -> registro en fichajes con tipo de ausencia para hoy
+Ausencia planificada -> registro en planificacion_ausencias con procesado = false para hoy
+Sin justificar       -> no aparece en ninguna tabla (cubierto por RF-31)
+
+====================================================
+MARCO LEGAL — RD-ley 8/2019
+====================================================
+
+Obligaciones que cubre StaffFlow:
+- Registro diario hora inicio/fin          -> tabla fichajes, UNIQUE(empleado_id, fecha)
+- Conservación 4 años                      -> RNF-L01: sin endpoint DELETE en fichajes/pausas
+- Acceso trabajadores                      -> RF-51: EMPLEADO consulta su historial
+- Acceso Inspección de Trabajo             -> RF-38, RF-39, RF-40: PDFs firmables
+- Correcciones con trazabilidad            -> RNF-L02: modificación + observaciones obligatorias
+
+====================================================
+ENDPOINTS CREADOS (Fase 0)
+====================================================
+
+GET /api/health -> {"status":"UP"} — 200 OK — sin autenticación
+
+====================================================
+BLOQUE 1 — ANÁLISIS DE REQUISITOS (CERRADO)
+====================================================
+
+Parte 1: RD-ley 8/2019               -> CERRADA
+Parte 2: Actores                     -> CERRADA
+Parte 3: Requisitos Funcionales      -> CERRADA (49 RF únicos)
+Parte 4: Requisitos No Funcionales   -> CERRADA (29 RNF en 10 bloques)
+Enums definitivos                    -> CERRADOS (5 enums)
+
+====================================================
+RF — RESUMEN POR ROL (49 RF únicos)
+====================================================
+
+ADMIN     -> RF-01 a RF-40  (40 RF)
+ENCARGADO -> RF-08 a RF-49  (hereda RF-08..RF-40 + propios RF-41..RF-49)
+EMPLEADO  -> RF-41 a RF-54  (hereda RF-41..RF-45 auth + propios RF-46..RF-54)
+Total RF únicos: 49
+
+====================================================
+RF ADMIN — RF-01 a RF-40
+====================================================
+
+--- Configuración empresa ---
+RF-01  Editar datos de la empresa (nombre, CIF, dirección, email, teléfono, logo)
+RF-02  Consultar la configuración actual de la empresa
+
+--- Usuarios ---
+RF-03  Crear usuario (rol, username, email, contraseña inicial)
+RF-04  Listar usuarios con filtros por rol y estado (activo/inactivo)
+RF-05  Consultar detalle de un usuario
+RF-06  Editar usuario (username, email, rol)
+RF-07  Desactivar usuario (baja lógica — historial conservado)
+
+--- Empleados ---
+RF-08  Crear perfil de empleado vinculado a un usuario
+RF-09  Editar perfil de empleado
+RF-10  Dar de baja a un empleado (baja lógica — activo = false)
+RF-11  Reactivar un empleado previamente dado de baja
+RF-12  Listar empleados con filtros por estado y búsqueda por nombre/DNI
+RF-13  Consultar perfil completo de un empleado
+RF-14  Buscar empleados por nombre, apellidos o DNI
+RF-15  Consultar estado en tiempo real de todos los empleados
+RF-16  Exportar listado de empleados en CSV o PDF
+
+--- Fichajes ---
+RF-17  Registrar manualmente un fichaje (observaciones obligatorias)
+RF-18  Modificar fichaje existente (observaciones obligatorias)
+RF-19  Historial de fichajes de un empleado con filtros por período y tipo
+RF-20  Todos los fichajes de todos los empleados en una fecha concreta
+RF-21  Empleados con jornada incompleta (entrada sin salida en el día)
+
+--- Pausas ---
+RF-22  Registrar manualmente una pausa
+RF-23  Modificar pausa existente (observaciones obligatorias)
+RF-24  Historial de pausas de un empleado con filtros
+
+--- Planificación de ausencias ---
+RF-25  Planificar ausencia para un empleado
+RF-26  Planificar festivo global (empleado_id = NULL)
+RF-27  Modificar ausencia planificada (solo si procesado = false)
+RF-28  Eliminar ausencia planificada (solo si procesado = false)
+RF-29  Consultar ausencias planificadas de un empleado o de todos
+
+--- Control de presencia ---
+RF-30  Parte diario completo de una fecha
+RF-31  Empleados sin fichaje ni ausencia justificada hoy
+
+--- Informes y saldos ---
+RF-32  Informe de horas trabajadas de un empleado en un período
+RF-33  Informe global de horas de todos los empleados
+RF-34  Informe global de vacaciones de todos los empleados
+RF-35  Saldo anual individual de un empleado
+RF-36  Saldo anual global de todos los empleados para un año
+RF-37  Forzar recálculo del saldo anual de un empleado (idempotente)
+
+--- Informes PDF firmables ---
+RF-38  PDF resumen mensual de un empleado
+RF-39  PDF cierre anual de un empleado
+RF-40  PDF vacaciones y asuntos propios de un empleado
+
+--- Autenticación (compartida con todos los roles) ---
+RF-41  Login con username/contraseña -> JWT válido 8 horas
+RF-42  Logout (invalida token en el cliente)
+RF-43  Cambiar contraseña propia
+RF-44  Solicitar recuperación de contraseña por email (token 1 uso, 30 min)
+RF-45  Restablecer contraseña con token de recuperación
+
+====================================================
+RF ENCARGADO — propios RF-46 a RF-49
+====================================================
+
+RF-46  Registrar entrada propia con PIN desde el terminal
+RF-47  Registrar salida propia con PIN desde el terminal
+RF-48  Iniciar pausa propia con PIN desde el terminal
+RF-49  Finalizar pausa propia con PIN desde el terminal
+Hereda del ADMIN: RF-08 a RF-45
+No hereda: RF-01..RF-07
+
+====================================================
+RF EMPLEADO — propios RF-50 a RF-54
+====================================================
+
+RF-46  Registrar entrada propia con PIN (mismo endpoint que ENCARGADO)
+RF-47  Registrar salida propia con PIN (mismo endpoint que ENCARGADO)
+RF-48  Iniciar pausa propia con PIN (mismo endpoint que ENCARGADO)
+RF-49  Finalizar pausa propia con PIN (mismo endpoint que ENCARGADO)
+RF-50  Consultar propio perfil
+RF-51  Consultar propio historial de fichajes con filtros
+RF-52  Consultar propias ausencias planificadas por período
+RF-53  Consultar propio saldo anual
+RF-54  Consultar propio parte diario (estado del día actual)
+
+Spring Security bloquea al EMPLEADO a solo sus propios datos (HTTP 403).
+
+====================================================
+RNF — CERRADOS Y VERIFICADOS (29 RNF en 10 bloques)
+====================================================
+
+Rendimiento (P95):
+RNF-R01  Consultas simples: P95 < 300ms con 20 usuarios concurrentes
+RNF-R02  Consultas complejas e informes: P95 < 1000ms con 20 usuarios concurrentes
+RNF-R03  Búsqueda por PIN: P95 < 100ms (índice UNIQUE en pin_terminal)
+RNF-R04  Generación de PDF (iText 7): P95 < 3000ms para documentos de hasta 12 meses
+
+Seguridad:
+RNF-S01  BCrypt factor coste configurable en properties (default 10)
+RNF-S02  JWT caducidad 8 horas. Sin refresh token en v1.0
+RNF-S03  Control acceso por rol con Spring Security. HTTP 403 sin rol adecuado
+RNF-S04  Token recuperación contraseña: 1 uso, caduca 30 min
+RNF-S05  Protección fuerza bruta PIN por dispositivo:
+         5 intentos fallidos -> bloqueo 30s + contador regresivo
+         Sin fallos 2 min -> contador se reinicia
+         3 ciclos bloqueo en < 10 min -> ERROR en logs
+RNF-S06  HTTPS obligatorio en producción
+
+Disponibilidad:
+RNF-D01  99% en horario laboral L-V 6:00-22:00 (máx 1,6h inactividad/mes)
+
+Escalabilidad:
+RNF-E01  200 empleados activos manteniendo umbrales RNF-R
+         Volumen 5 años: ~250.000 fichajes + ~500.000 pausas
+
+Mantenibilidad:
+RNF-M01  Arquitectura capas estricta. Sin stored procedures ni triggers
+RNF-M02  Cobertura tests >= 70% líneas (JaCoCo) en com.staffflow.service
+
+Portabilidad:
+RNF-P01  H2 en desarrollo, MySQL 8.0 en producción. Solo cambia properties
+RNF-P02  Android minSdk 24 (Android 7.0)
+
+Usabilidad (terminal de fichaje):
+RNF-U01  Fichaje completo desde standby < 3s
+RNF-U02  PIN 4 dígitos, fichaje automático al cuarto dígito
+RNF-U03  Confirmación visual < 1s: mensajes de estado en pantalla
+RNF-U04  Pantalla standby permanente, retorno < 2s tras fichaje
+RNF-U05  Interfaz completamente en castellano
+
+Observabilidad:
+RNF-O01  Excepciones no controladas -> nivel ERROR (SLF4J + Logback)
+RNF-O02  Acciones administrativas -> nivel INFO
+RNF-O03  Eventos de seguridad -> nivel WARN (3 ciclos PIN -> ERROR)
+
+Integridad de datos:
+RNF-I01  Claves foráneas en todas las relaciones. HTTP 409 si violación
+RNF-I02  UNIQUE(empleado_id, fecha) en fichajes. HTTP 409 si duplicado
+RNF-I03  Validación en capa service. HTTP 400 con descripción del campo
+
+Legal:
+RNF-L01  Fichajes y pausas conservados mínimo 4 años. Sin endpoint DELETE
+RNF-L02  Sin DELETE en fichajes ni pausas. Observaciones obligatorias en modificación
+
+====================================================
+BLOQUE 2 — MODELO DE DATOS Y DDL (CERRADO)
+====================================================
+
+Estado: CERRADO
+Entregables generados:
+  - StaffFlow_BaseDatos_v4.docx  (7 tablas documentadas + Anexo I con DDL)
+  - staffflow_v4_ddl_mysql.sql   (script DDL MySQL 8.0 completo)
+
+Decisiones de diseño cerradas en Bloque 2:
+  - empleados tiene AMBOS campos: jornada_semanal_horas (dato laboral)
+    y jornada_diaria_minutos (usado en cálculo de saldo de horas)
+  - saldos_anuales versión extendida: incluye dias_trabajados,
+    dias_baja_medica, dias_permiso_retribuido, dias_ausencia_injustificada,
+    horas_ausencia_retribuida, fecha_ultima_modificacion
+  - fecha_creacion añadida en fichajes y pausas (trazabilidad retroactiva)
+  - Todas las FK con ON UPDATE CASCADE ON DELETE RESTRICT
+  - utf8mb4_unicode_ci en todas las tablas
+
+====================================================
+PENDIENTE EN FASE 1
+====================================================
+
+- Bloque 3: Especificación de Endpoints
+- Bloque 4: Wireframes Android
+
+====================================================
+PENDIENTE EN FASE 2 (al iniciar, antes de cualquier endpoint)
+====================================================
+
+- Crear CategoriaEmpleado.java con valores: OPERARIO, ADMINISTRATIVO, TECNICO, ENCARGADO, OTRO
+- Actualizar TipoFichaje.java -> 9 valores definitivos (eliminar ENTRADA y SALIDA)
+- Actualizar TipoAusencia.java -> 6 valores definitivos
+- Actualizar TipoPausa.java -> 4 valores definitivos (AUSENCIA_RETRIBUIDA reemplaza PERSONAL)
+
+====================================================
+DECISIONES DE DISEÑO — CERRADAS
+====================================================
+
+1. Registros inmutables
+   Fichajes y pausas NUNCA se eliminan. Errores se corrigen con
+   modificación + observaciones obligatorias. Cumple RD-ley 8/2019.
+
+2. Eliminación de ausencias
+   Solo si procesado = false. Una vez procesada, el fichaje ya existe
+   y se modifica directamente.
+
+3. Filtros opcionales y combinables
+   Todos los endpoints GET aceptan parámetros opcionales combinables.
+
+4. Empleados nunca se borran
+   activo = false conserva historial intacto. Mismo criterio para usuarios.
+
+5. Informes imprimibles desde pantalla
+   Endpoints GET de informes aceptan ?formato=html.
+   Backend devuelve HTML limpio. Android imprime con PrintManager + WebView.
+
+6. Informes firmables (PDF)
+   RF-38, RF-39, RF-40 generan PDF con iText 7. Son los únicos que
+   requieren firma física. El resto usa ?formato=html.
+
+7. Ausencia justificada vs planificada
+   PLANIFICADA: registro en planificacion_ausencias.
+   JUSTIFICADA imprevista: fichaje manual con tipo de ausencia correcto.
+   NO va a planificacion_ausencias.
+
+8. Fichaje terminal vs fichaje manual
+   Terminal PIN -> solo el propio empleado ficha a sí mismo (RF-46..RF-49).
+   Fichaje manual -> ADMIN y ENCARGADO pueden fichar a cualquier empleado (RF-17).
+   El ADMIN NUNCA ficha desde el terminal.
+
+9. Recuperación de contraseña
+   Flujo: email -> token temporal 30 min -> enlace reset -> token invalidado.
+   Campos reset_token y reset_token_expiry en tabla usuarios.
+
+10. Roles y acceso a datos
+    ADMIN y ENCARGADO -> acceso a datos de cualquier empleado.
+    EMPLEADO -> Spring Security bloquea acceso a datos ajenos. HTTP 403.
+
+11. Pantalla standby del terminal
+    Hora en tiempo real + campo PIN siempre visible.
+    RNF-U01..U04 definen criterios de rendimiento y UX.
+
+12. Saldo anual — campos siempre completos
+    Todos los endpoints que devuelven saldo anual incluyen:
+    - Vacaciones: pendientes_año_anterior | derecho_año | consumidas | disponibles
+    - Asuntos propios: pendientes_año_anterior | derecho_año | consumidos | disponibles
+    - Saldo horas: trabajadas | esperadas | diferencia (positivo = extra)
+    Aplica a RF-35, RF-36, RF-53 y PDF de RF-39 y RF-40.
+
+13. DIA_LIBRE_COMPENSATORIO
+    Unifica: día libre por saldo_horas positivo + día libre por trabajar festivo.
+    Aparece en TipoFichaje y TipoAusencia.
+
+14. Visibilidad de datos por rol
+    ADMIN / ENCARGADO -> todos los empleados.
+    EMPLEADO -> Spring Security inyecta ID del autenticado. HTTP 403 si no coincide.
+
+15. Tiempos de respuesta en P95
+    Estándar de la industria. El 95% de peticiones cumplen el umbral.
+
+16. Bloqueo PIN por dispositivo
+    Evita fuerza bruta rotando entre empleados. El atacante no puede
+    evadir el límite cambiando de empleado objetivo.
+
+17. Observabilidad integrada con auditoría
+    campo usuario_id en BD + logs SLF4J = trazabilidad en dos capas.
+
+18. Sin refresh token en v1.0
+    JWT 8 horas cubre una jornada completa. Re-login al expirar.
+
+19. CategoriaEmpleado es campo informativo
+    No afecta permisos (gestionados por rol). Útil para filtros y exports.
+
+20. Swagger UI en lugar de Postman
+    SpringDoc OpenAPI genera Swagger UI automáticamente.
+    Disponible en http://localhost:8080/swagger-ui.html.
+    Las capturas sirven como documentación oficial de la API en la memoria.
+
+21. Jornada en empleados — dos campos complementarios
+    jornada_semanal_horas: dato laboral contractual (ej: 40h semanales).
+    jornada_diaria_minutos: calculado de referencia para el saldo de horas
+    (ej: 480 min = 8h). Ambos campos coexisten sin redundancia problemática
+    porque expresan conceptos distintos.
+
+====================================================
+CONVENCIÓN DE COMMITS
+====================================================
+
+feat: funcionalidad nueva
+fix:  corrección de errores
+docs: documentación
+wip:  trabajo en progreso al final del día
+
+Flujo diario:
+  git add .
+  git commit -m "descripcion"
+  git push
+
+====================================================
+FIN DEL PROMPT
+====================================================

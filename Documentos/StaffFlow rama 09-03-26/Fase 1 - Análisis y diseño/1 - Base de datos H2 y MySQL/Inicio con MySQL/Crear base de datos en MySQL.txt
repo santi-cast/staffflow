@@ -1,0 +1,11 @@
+El script staffflow_v6_ddl_mysql.sql ya incluye los DROP TABLE IF EXISTS al principio, así que no necesitas borrar nada manualmente. El propio script se encarga de borrar y recrear todo.
+Desde MySQL Workbench:
+
+File → Open SQL Script → selecciona staffflow_v6_ddl_mysql.sql
+Pulsa el rayo ⚡ (Execute) o Ctrl+Shift+Enter
+Espera a que termine — verás los mensajes en el panel inferior
+
+Desde terminal:
+bashmysql -u root -p < staffflow_v6_ddl_mysql.sql
+Te pedirá la contraseña de root y ejecutará todo automáticamente.
+En ambos casos el resultado es el mismo: borra las 7 tablas si existen, las recrea con el esquema v6 e inserta todos los datos de prueba. Al terminar tienes la base de datos lista para arrancar el backend con perfil mysql.

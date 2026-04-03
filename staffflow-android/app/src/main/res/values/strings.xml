@@ -1,3 +1,33 @@
 <resources>
-    <string name="app_name">staffflow-android</string>
+    <string name="app_name">StaffFlow</string>
+
+    <!-- Drawer: navegacion -->
+    <string name="nav_mi_hoy">Hoy</string>
+    <string name="nav_mis_fichajes">Mis fichajes</string>
+    <string name="nav_mis_ausencias">Mis ausencias</string>
+    <string name="nav_mi_saldo">Mi saldo</string>
+    <string name="nav_mi_perfil">Mi perfil</string>
+    <string name="nav_parte_diario">Parte diario</string>
+    <string name="nav_empleados">Empleados</string>
+    <string name="nav_fichajes">Fichajes</string>
+    <string name="nav_ausencias">Ausencias</string>
+    <string name="nav_saldos">Saldos</string>
+    <string name="nav_informes">Informes</string>
+    <string name="nav_usuarios">Usuarios</string>
+    <string name="nav_empresa">Mi empresa</string>
+
+    <!-- Drawer: ajustes -->
+    <string name="nav_cambiar_password">Cambiar contraseña</string>
+    <string name="nav_cerrar_sesion">Cerrar sesión</string>
+
+    <!-- Drawer: grupos -->
+    <string name="nav_group_gestion">Gestión</string>
+    <string name="nav_group_ajustes">Ajustes</string>
+
+    <!-- Drawer: header -->
+    <string name="nav_header_desc">Menú de navegación</string>
+
+    <!-- Accesibilidad -->
+    <string name="abrir_menu">Abrir menú</string>
+    <string name="cerrar_menu">Cerrar menú</string>
 </resources>

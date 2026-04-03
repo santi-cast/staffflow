@@ -1,0 +1,297 @@
+====================================================
+STAFFFLOW -- PROMPT DEV 2103_v1
+SNAPSHOT COMPLETO -- HISTORICO DESDE INICIO
+====================================================
+
+Rama: develop
+Fusionar a: StaffFlow_Prompt_Maestro_v8.txt cuando el alcance este cerrado
+Referencia permanente: StaffFlow_Prompt_Maestro_v6.txt
+
+Proyecto: StaffFlow
+Alumno: Santiago Castillo
+Centro: iLERNA -- TFG DAM 2025/2026
+Entrega: 22 abril 2026
+Repo: https://github.com/santi-cast/staffflow
+
+====================================================
+CONVENCION DE NOMBRES
+====================================================
+
+Prompts:      StaffFlow_Prompt_[TIPO]_[DDMM]_v[N].txt
+Desviaciones: StaffFlow_Desviaciones_[DDMM]_v[N].txt
+Mejoras v2.0: StaffFlow_Mejoras_para_Version2.0_[DDMM]_v[N].txt
+Sesiones:     StaffFlow_Sesion_[DDMM]_v[N].txt
+La version reinicia a v1 cada dia nuevo.
+
+Ficheros activos:
+  Prompt dev:    StaffFlow_Prompt_Dev_2103_v1.txt  <- este fichero
+  Desviaciones:  StaffFlow_Desviaciones_2103_v1.txt
+  Mejoras v2.0:  StaffFlow_Mejoras_para_Version2_0_2103_v2.txt
+  Sesion:        StaffFlow_Sesion_2103_v1.txt
+
+====================================================
+CONTEXTO PERSONAL -- LEER SIEMPRE
+====================================================
+
+Santiago estudia DAM online en iLERNA. Evaluacion del TFG:
+  50% video / 30% memoria / 20% codigo
+
+Decision irrevocable (09/03/2026):
+  "Prefiero un 5 aprendiendo que un 10 sin enterarme de nada."
+
+Prioridad del asistente:
+  1. Que Santiago entienda lo que implementa
+  2. Que el resultado sea funcional y demostrable
+  3. Que la documentacion lo respalde academicamente
+
+====================================================
+FASE 0 y FASE 1 -- COMPLETADAS
+====================================================
+
+Stack: Java 21 / Spring Boot 3.5.x / Maven / H2 (dev) / MySQL (prod)
+Android: Kotlin / AGP 9.0.1 / SIN Hilt
+54 RF / 29 RNF / 52 endpoints en 13 controllers / 7 tablas DDL v5
+
+Enums definitivos:
+  Rol(3):          ADMIN | ENCARGADO | EMPLEADO
+  TipoFichaje(9):  NORMAL | FESTIVO_NACIONAL | FESTIVO_LOCAL
+                   VACACIONES | ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                   BAJA_MEDICA | DIA_LIBRE_COMPENSATORIO
+                   AUSENCIA_INJUSTIFICADA
+  TipoAusencia(6): FESTIVO_NACIONAL | FESTIVO_LOCAL | VACACIONES
+                   ASUNTO_PROPIO | PERMISO_RETRIBUIDO
+                   DIA_LIBRE_COMPENSATORIO
+  TipoPausa(4):    COMIDA | DESCANSO | AUSENCIA_RETRIBUIDA | OTROS
+  CategoriaEmpleado(5): OPERARIO | ADMINISTRATIVO | TECNICO
+                        ENCARGADO | OTRO
+
+====================================================
+FASE 2 -- EN CURSO
+====================================================
+
+BLOQUES 1-5 -- COMPLETADOS Y VERIFICADOS
+
+  Bloque 1: 7 entidades JPA / 17 DTOs request / 18 DTOs response /
+            7 JpaRepository. Desviaciones D-001 a D-007, D-013/14/15.
+  Bloque 2: JWT + Security completo. Desviaciones D-012, D-016.
+  Bloque 3: EmpresaController E06-E07. Commit 25d6824.
+  Bloque 4: UsuarioController E08-E12 + EmpleadoController E13-E21.
+            Desviaciones D-017, D-018, D-019.
+            Datos prueba MySQL: admin(1) / test01(2,inactivo) /
+            emp01(3) / terminal_service(4) /
+            Ana Maria Garcia (empleadoId=1, usuarioId=3).
+  Bloque 5: FichajeController E22-E26 + PausaController E27-E29 +
+            TerminalController E48-E51. Desviaciones D-020/21/22.
+            Commits: ae5fa86 + 0e2136c + e4e188e. 12/12 verificados.
+
+BLOQUE 6 -- COMPLETADO (sesiones 13-17)
+
+  Tarea 1: AusenciaController E30-E34. COMPLETADA. 7/7 verificados.
+  Tarea 2: PresenciaController E35-E37. COMPLETADA. 3/3 verificados.
+  Tarea 3: SaldoController E38-E41. COMPLETADA. 4/4 verificados.
+  Tarea 4: ProcesoCierreDiario + restriccion fecha ENCARGADO.
+           COMPLETADA Y VERIFICADA (sesion 17, 18/03/2026).
+           D-025 + D-026. 4/4 pruebas D-026. 3/3 tareas proceso. OK.
+
+BLOQUE 7 -- EN CURSO (sesion 18)
+
+  Tarea 1: InformeController E42-E43 (HTML + JSON).
+           IMPLEMENTADA. Verificacion pendiente con data.sql actualizado.
+           D-027 (parametro ?tipo= en E42 y E43).
+           Mejoras M-006 a M-011. Limitaciones L-004 a L-006.
+  *** PROXIMA ACCION: verificar E42 y E43 con perfil dev (H2) ***
+
+  Tarea 2: E44 informe vacaciones (JSON/HTML)
+  *** PENDIENTE ***
+
+  Tarea 3: E45-E47 informes PDF con iText 7
+  *** PENDIENTE -- requiere anadir iText 7 al pom.xml antes de codificar ***
+
+  Commit Bloque 7 pendiente al cerrar todas las tareas.
+
+====================================================
+ESTADO ACTUAL DEL CODIGO
+====================================================
+
+Compilacion: OK -- arranca limpio con perfil mysql (verificado sesion 18)
+Endpoints operativos: 43 de 52 (E01-E43 + E48-E51 + E52)
+  E42 y E43 implementados y compilando. Verificacion funcional pendiente.
+Endpoints pendientes: E44-E47
+
+Paquetes (com.staffflow):
+  config:     SecurityConfig.java -- OpenApiConfig.java
+  controller: 11 controllers operativos + 1 test dev
+              (nuevo: InformeController.java)
+  domain.entity: 7 entidades JPA
+  domain.enums: 6 enums (5 originales + EstadoPresencia)
+  domain.repository: 7 JpaRepository
+  dto.request: 17 DTOs / dto.response: 18 DTOs
+  exception: GlobalExceptionHandler -- PinBloqueadoException
+             ConflictException
+  security: JwtTokenProvider -- JwtAuthFilter -- UserDetailsServiceImpl
+  service: 10 services operativos (nuevo: InformeService.java)
+  service.scheduled: ProcesoCierreDiario.java
+
+Ficheros creados en Bloque 7 Tarea 1 (sesion 18):
+  InformeService.java   (nuevo -- E42 y E43 implementados, E44 stub)
+  InformeController.java (nuevo -- E42, E43, E44 esqueleto)
+
+Ficheros modificados en Bloque 7 Tarea 1 (sesion 18):
+  PausaRepository.java  (findByEmpleadoIdAndFechaBetween anadido al final)
+  data.sql              (fichajes y pausas de prueba marzo 2026 anadidos)
+
+PENDIENTE ANTES DE ENTREGA FINAL:
+  TestProcesoCierreDiarioController.java tiene @Profile({"dev","mysql"}).
+  Decidir si eliminar el fichero o dejar solo @Profile("dev").
+  ProcesoDiarioService.java debe eliminarse (sustituido por
+  ProcesoCierreDiario.java en sesion 17).
+
+====================================================
+DATA.SQL -- PERFIL DEV (H2)
+====================================================
+
+Usuarios (5):
+  id=1 admin          ADMIN     password: admin1234
+  id=2 encargado01    ENCARGADO password: admin1234
+  id=3 emp01          EMPLEADO  password: admin1234
+  id=4 emp02          EMPLEADO  password: admin1234
+  id=5 terminal_service ADMIN   (solo auditoria, nunca login)
+
+Empleados (3):
+  id=1 Ana Garcia Lopez    (emp01, usuario_id=3)    PIN: 1111
+  id=2 Carlos Lopez Martinez (emp02, usuario_id=4)  PIN: 2222
+  id=3 Laura Fernandez Ruiz (encargado01, usuario_id=2) PIN: 3333
+
+Fichajes marzo 2026 (sesion 18):
+  Ana Garcia (empleado_id=1): NORMAL (mayoria), FESTIVO_LOCAL (06/03),
+    BAJA_MEDICA (11-12/03), AUSENCIA_INJUSTIFICADA automatica (19/03),
+    VACACIONES (23-27/03), DIA_LIBRE_COMPENSATORIO (30/03).
+    Fichajes manuales: 05/03 y 17/03 (usuario_id=2, encargado).
+  Carlos Lopez (empleado_id=2): NORMAL (mayoria), ASUNTO_PROPIO (04/03),
+    FESTIVO_LOCAL (06/03), PERMISO_RETRIBUIDO (19/03).
+    Fichaje manual: 12/03 (usuario_id=2, encargado).
+  Laura Fernandez (empleado_id=3): sin fichajes (verifica caso SIN_REGISTRO).
+
+Pausas marzo 2026 (sesion 18):
+  Ana: pausas de comida en dias NORMAL. Dias 03/03 y 09/03 con dos pausas.
+    Pausa manual: 18/03 (usuario_id=2, fin pausa cerrado por encargado).
+  Carlos: pausas de comida en todos los dias NORMAL. Dia 11/03 con dos pausas.
+
+NOTA: terminal_service existe en data.sql (usuario_id=5).
+  ProcesoCierreDiario lo busca por username "terminal_service".
+  Debe existir tambien en el script de inicializacion de MySQL prod.
+
+====================================================
+REFERENCIA H2 -- BLOQUE PERMANENTE
+====================================================
+
+Perfil dev (H2):
+  spring.jpa.defer-datasource-initialization=true
+  Orden INSERT data.sql: configuracion_empresa -> usuarios ->
+    empleados -> fichajes -> pausas
+  H2 Console: http://localhost:8080/h2-console
+    JDBC URL: jdbc:h2:mem:staffflow / User: sa / Password: (vacio)
+  Credenciales dev JWT: admin/admin1234, encargado01/admin1234,
+    emp01/admin1234
+  PINs terminal dev: Ana Garcia=1111, Carlos Lopez=2222,
+    Laura Fernandez=3333
+
+====================================================
+PROXIMA SESION -- VERIFICACION E42/E43 + TAREA 2 (E44)
+====================================================
+
+PASO 1 -- Verificacion E42 y E43 con perfil dev (H2):
+
+  Casos a verificar (8 en total, ver Bloque7_Tarea1 para detalle):
+    Caso 1: E42 empleadoId=1, marzo completo, formato=html
+    Caso 2: E42 empleadoId=1, marzo completo, formato=json
+    Caso 3: E42 empleadoId=1, tipo=VACACIONES
+    Caso 4: E42 empleadoId=1, tipo=BAJA_MEDICA
+    Caso 5: E42 empleadoId=3 (Laura, sin fichajes)
+    Caso 6: E43 marzo completo, formato=html
+    Caso 7: E43 tipo=AUSENCIA_INJUSTIFICADA
+    Caso 8: E42 un dia con pausa manual (18/03 Ana)
+
+PASO 2 -- Tarea 2: E44 informe vacaciones (JSON/HTML)
+  Endpoint: GET /api/v1/informes/vacaciones?anio=&formato=
+  Roles: ADMIN, ENCARGADO
+  Datos: SaldoAnualRepository.findByAnio() ya existe.
+
+PASO 3 -- Tarea 3: E45-E47 PDF con iText 7
+  ANTES DE CODIFICAR: anadir iText 7 al pom.xml.
+  Dependencia a anadir:
+    groupId: com.itextpdf
+    artifactId: itext7-core
+    version: 7.2.5 (o la mas reciente estable)
+    type: pom
+    scope: compile
+  Verificar version disponible en Maven Central antes de insertar.
+
+====================================================
+ARCHIVOS DE REFERENCIA
+====================================================
+
+TRANSVERSAL:
+  StaffFlow_Desviaciones_2103_v1.txt (D-001 a D-027 -- activo)
+  StaffFlow_Mejoras_para_Version2_0_2103_v2.txt (M-001 a M-011)
+  StaffFlow_Sesion_2103_v1.txt
+  StaffFlow_Fase2_v2.txt (actualizado 18/03/2026 sesion 17)
+  StaffFlow_H2_Configuracion.txt / StaffFlow_Entrega_v2.txt
+  README_v12.md
+
+FASE 1 (snapshots):
+  StaffFlow_Endpoints_v3.docx / StaffFlow_BaseDatos_v4.docx
+  staffflow_v5_ddl_mysql.sql (activo)
+
+FASE 2:
+  StaffFlow_Bloque6_Tarea1_Ausencias.txt (E30-E34, 7/7 OK)
+  StaffFlow_Bloque6_Tarea2_Presencia.txt (E35-E37, 3/3 OK)
+  StaffFlow_Bloque6_Tarea3_Saldos.txt (E38-E41, 4/4 OK)
+  StaffFlow_Bloque6_Tarea4_CierreDiario_v2.txt (18/03/2026)
+  StaffFlow_Bloque7_Tarea1_InformesHTML.txt (21/03/2026)
+
+====================================================
+REGLAS DE TRABAJO
+====================================================
+
+1. No inventar funcionalidades, endpoints ni campos fuera de referencia.
+2. Pedir archivo de referencia si hay duda antes de responder.
+3. Preguntar siempre antes de generar codigo o ficheros nuevos.
+4. Detectar incoherencias antes de proponer correcciones.
+5. Al cerrar sesion: generar Dev nuevo. Nunca sobreescribir.
+6. Avisar si el contexto esta proximo a agotarse.
+7. Si el contexto esta proximo a agotarse: calcular si hay espacio
+   suficiente antes de ejecutar cualquier otra tarea. Si no hay
+   espacio, guardar StaffFlow_Sesion_[DDMM]_v[N].txt primero.
+
+====================================================
+CIERRE DE SESION -- RECORDATORIO
+====================================================
+
+Al cerrar siempre:
+  1. Generar StaffFlow_Prompt_Dev_[DDMM]_v[N+1].txt
+  2. Actualizar StaffFlow_Desviaciones_[DDMM]_v[N+1].txt si hubo cambios
+  3. Actualizar StaffFlow_Mejoras_para_Version2.0_[DDMM]_v[N+1].txt si hubo cambios
+  4. Generar StaffFlow_Sesion_[DDMM]_v[N].txt con el razonamiento completo
+  5. Actualizar ficheros de bloque si hubo cambios
+  6. Presentar para descarga todos los ficheros modificados
+  7. Confirmar que adjuntar en la proxima sesion
+
+====================================================
+FIN PROMPT DEV 2103_v1
+Creado: 21/03/2026
+Actualizado: 21/03/2026
+Motivo: Cierre de sesion 18 -- Bloque 7 Tarea 1 implementada
+v1: Bloque 7 Tarea 1 (E42-E43) implementada. Verificacion pendiente.
+    InformeService.java y InformeController.java creados.
+    PausaRepository.java y data.sql actualizados.
+    D-027 registrada. M-006 a M-011 y L-004 a L-006 documentadas.
+    Proxima sesion: verificar E42/E43 + E44 + pom.xml para iText 7.
+Cambios respecto a Dev 1803_v3:
+  - Bloque 7 Tarea 1 anadida como IMPLEMENTADA (verificacion pendiente)
+  - Estado codigo actualizado: 43/52 endpoints operativos
+  - data.sql documentado con fichajes y pausas de marzo 2026
+  - Proxima sesion actualizada a verificacion + E44 + iText 7
+  - Ficheros activos actualizados a fecha 2103
+Prompt siguiente sesion: Dev [DDMM]_v1 (dia nuevo)
+====================================================

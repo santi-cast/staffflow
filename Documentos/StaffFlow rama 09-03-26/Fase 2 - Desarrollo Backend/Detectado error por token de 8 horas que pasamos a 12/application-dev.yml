@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:staffflow;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    # Necesario para que data.sql se ejecute DESPUÉS de que Hibernate
+    # crea el esquema con ddl-auto: create-drop. Sin esta línea,
+    # Spring Boot intenta ejecutar data.sql antes de que existan las tablas
+    # y falla con "Table not found".
+    defer-datasource-initialization: true
+  sql:
+    init:
+      # Ejecutar data.sql siempre que arranque con este perfil.
+      # 'always' es necesario porque el datasource es embebido (H2 en memoria).
+      mode: always
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+server:
+  port: 8080
+
+staffflow:
+  jwt:
+    secret: staffflow-secret-key-para-desarrollo-minimo-32-caracteres
+    # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
+    # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
+    # Refresh token queda como mejora para v2.0.
+    expiration-ms: 43200000

@@ -1,0 +1,332 @@
+====================================================
+STAFFFLOW -- SESION 1603_v1
+Fecha: 16/03/2026
+Conversacion: sesion 16
+====================================================
+
+Este fichero captura el razonamiento completo, decisiones y codigo
+analizado durante la sesion. Complementa al prompt activo y las
+desviaciones con el detalle que esos ficheros no recogen.
+
+Adjuntar en la proxima sesion junto con el prompt activo.
+
+====================================================
+1. PUNTO DE PARTIDA DE LA SESION
+====================================================
+
+Ficheros adjuntados al inicio:
+  StaffFlow_Desviaciones_v4.txt (D-001 a D-024)
+  StaffFlow_Prompt_Dev_1603_v2.txt
+  StaffFlow_Bloque6_Tarea3_Saldos.txt
+
+Estado al iniciar: Bloque 6 Tareas 1-3 completadas y verificadas
+(E30-E41, 14/14 OK). Tarea 4 pendiente: ProcesoDiario @Scheduled.
+
+====================================================
+2. ANALISIS DEL CIERRE DE DIA -- RAZONAMIENTO COMPLETO
+====================================================
+
+PREGUNTA INICIAL DE SANTIAGO:
+  "ya tenemos como hacer el cierre de dia entonces, no?"
+
+DESCUBRIMIENTO CLAVE:
+  El diseno original tenia el cierre de dia como proceso automatico
+  (@Scheduled). D-010 lo revirtio a manual pero NO resolvio en
+  cascada que pasaba con empleados sin fichaje al final del dia.
+
+ANALISIS DEL FLUJO REAL (dia con 4 trabajadores):
+  Empleado 1: entrada y salida por terminal (E48, E49). OK automatico.
+  Empleado 2: vacaciones planificadas. ProcesoDiario las convierte. OK.
+  Empleado 3: baja medica no planificada. ENCARGADO usa E22. OK.
+  Empleado 4: no aparece. ENCARGADO no actua.
+    -> Su jornada queda INEXISTENTE en BD.
+    -> E35/E36 lo muestran SIN_JUSTIFICAR solo ese dia.
+    -> Al dia siguiente el dato desaparece sin dejar rastro.
+
+CONCLUSION: necesitamos que ProcesoCierreDiario cree AUSENCIA_INJUSTIFICADA
+para el empleado 4 automaticamente si el ENCARGADO no actuo.
+
+DECISION SOBRE EL CRON:
+  Propuesta inicial: dos @Scheduled (23:55 y 00:01).
+  Santiago propuso: un solo @Scheduled a las 23:55 con
+    fecha <= manana para planificaciones.
+  Motivo: mas limpio, un solo ciclo, sin coordinar horarios.
+  Decision final: cron "0 55 23 * * *" (23:55), un unico metodo.
+
+DECISION SOBRE SALDOS EN PROCESODIARIO:
+  Santiago pregunto si ProcesoCierreDiario debe actualizar saldos.
+  Analisis: el cierre del dia (E23 con horaSalida) deja
+    jornadaEfectivaMinutos en el fichaje. E40 recalcula saldos.
+  Conclusion: ProcesoCierreDiario SI debe actualizar saldos (Tarea C)
+    porque a las 23:55 el dia ya esta cerrado con todos los fichajes.
+
+====================================================
+3. ANALISIS DE QUIEN PUEDE TOCAR LOS SALDOS
+====================================================
+
+DEBATE COMPLETO SOBRE CONTROL DE ACCESO:
+
+Problema detectado: si ENCARGADO modifica un fichaje retroactivo
+con E23, los saldos quedan desactualizados sin que ADMIN lo sepa.
+
+Opciones analizadas:
+  1. Flag saldoPendienteRecalculo en saldos_anuales.
+     Descartada: ADMIN no tiene forma activa de verlo.
+  2. Pedir contrasena de ADMIN tipo sudo al ENCARGADO.
+     Descartada para v1.0: ENCARGADO no tiene la contrasena de ADMIN.
+  3. E23 llama internamente a recalculo de saldos como efecto secundario.
+     Aceptada temporalmente pero luego descartada.
+  4. ENCARGADO solo puede modificar registros del dia actual.
+     SOLUCION DEFINITIVA.
+
+DECISION FINAL (Santiago):
+  "el diseño estaba bien. solo admin puede hacer actualizaciones
+   de saldo y de cambios en fichajes de dias anteriores o despues
+   de haberse hecho el cierre de cada dia. el encargado solo debe
+   poder cambiar fichajes, ausencias o pausas antes de que se cierre
+   el dia, no puede hacer nada de eso de dias pasados."
+
+IMPLEMENTACION: restriccion de fecha en E22/E23/E27/E28/E30/E31.
+  Si rol == ENCARGADO y fecha != LocalDate.now() -> HTTP 400.
+  Si rol == ADMIN -> sin restriccion.
+  La restriccion va en el SERVICE, no en el controller.
+
+====================================================
+4. ANALISIS DE E32 -- RAZONAMIENTO DETALLADO
+====================================================
+
+PREGUNTA: necesita E32 la restriccion de fecha?
+
+CODIGO ACTUAL de AusenciaService.eliminar():
+  Solo valida: if (Boolean.TRUE.equals(ausencia.getProcesado()))
+  No valida la fecha en absoluto.
+
+ANALISIS:
+  Caso 1: ausencia con fecha futura y procesado=false.
+    El ENCARGADO puede borrarla. ES LEGITIMO: cambio de planes.
+
+  Caso 2: ausencia con fecha pasada y procesado=false.
+    Solo puede ocurrir si ProcesoCierreDiario fallo (servidor caido).
+    Si el servidor estaba caido, E32 tampoco podia ejecutarse.
+    En condiciones normales: si la fecha ya paso, ProcesoCierreDiario
+    ya habra marcado procesado=true y E32 devuelve 409 automaticamente.
+
+CONCLUSION: E32 se protege solo con la validacion procesado=false.
+No necesita restriccion de fecha adicional.
+
+====================================================
+5. ANALISIS DEL FESTIVO Y CAMBIO DE ANO
+====================================================
+
+FESTIVO:
+  ENCARGADO planifica festivo global con E30 (empleadoId=null).
+  ProcesoCierreDiario Tarea B a las 23:55 del dia anterior:
+    fecha <= manana -> procesa el festivo.
+    Crea fichaje para cada empleado activo.
+  El dia del festivo todos los empleados ya tienen fichaje.
+  Tarea A no tiene nada que hacer.
+
+CAMBIO DE ANO (31 de diciembre):
+  LocalDate.now().plusDays(1) = 1 de enero del año siguiente.
+  Java maneja el cambio de año correctamente.
+  Si hay planificaciones para el 1 de enero con procesado=false,
+  la Tarea B las procesa la noche del 31. Sin problema.
+
+====================================================
+6. MEJORAS PARA V2.0 -- RAZONAMIENTO
+====================================================
+
+M-001: Refresh token.
+  Documentado desde D-024. JWT 12h sin renovacion transparente.
+
+M-002: Endpoint cierre de dia manual.
+  El ENCARGADO no puede adelantar el cierre antes de las 23:55.
+  En v1.0 puede seguir modificando registros del dia actual hasta
+  las 23:55 aunque considere el dia cerrado.
+  En v2.0: POST /api/v1/presencia/cierre-dia verifica con logica
+  de E25/E36 que todo esta cerrado, ejecuta ProcesoCierreDiario
+  inmediatamente y bloquea E22/E23/E27/E28/E30/E31 para ese dia.
+  ADMIN no queda bloqueado.
+
+M-003: Sudo para acciones sensibles del ENCARGADO.
+  No solo para saldos: para cualquier accion sensible.
+
+M-004: Endpoint recalculo saldos para ENCARGADO (protegido por sudo).
+
+M-005: Tabla historial_saldos para trazabilidad.
+  Cada recalculo registra: empleado_id, anio, fecha_recalculo,
+  motivo, usuario_id, snapshot anterior, snapshot nuevo.
+
+====================================================
+7. CODIGO ANALIZADO -- ESTADO ACTUAL Y CAMBIOS NECESARIOS
+====================================================
+
+----------------------------------------------------
+ProcesoDiarioService.java -- ESQUELETO ACTUAL
+----------------------------------------------------
+
+package com.staffflow.service;
+// imports...
+
+@Service
+@RequiredArgsConstructor
+public class ProcesoDiarioService {
+
+    private final PlanificacionAusenciaRepository ausenciaRepository;
+    private final FichajeRepository fichajeRepository;
+    private final EmpleadoRepository empleadoRepository;
+
+    @Scheduled(cron = "0 1 0 * * *")   // <- CAMBIAR a "0 55 23 * * *"
+    public void ejecutar() {
+        // TODO: implementar en Bloque 6
+        throw new UnsupportedOperationException("Pendiente de implementar");
+    }
+}
+
+CAMBIOS NECESARIOS:
+  1. Renombrar clase a ProcesoCierreDiario
+     (y fichero a ProcesoCierreDiario.java)
+  2. Cambiar cron a "0 55 23 * * *"
+  3. Anadir inyeccion de SaldoService y UsuarioRepository
+  4. Implementar tres tareas en secuencia en ejecutar()
+
+----------------------------------------------------
+FichajeService.java -- CAMBIOS NECESARIOS
+----------------------------------------------------
+
+METODOS A MODIFICAR:
+  crear() -- E22: anadir validacion fecha al inicio
+  actualizar() -- E23: anadir validacion fecha al inicio
+
+PATRON A ANADIR (igual en ambos metodos):
+  // Validacion: ENCARGADO solo puede gestionar el dia actual
+  if (esEncargado && !fecha.isEqual(LocalDate.now())) {
+      throw new IllegalArgumentException(
+          "El ENCARGADO solo puede gestionar registros del dia actual");
+  }
+
+NOTA E23: la fecha a validar es la del fichaje existente, no del
+request. Hay que cargar el fichaje primero y luego validar su fecha.
+El fichaje actual ya carga la entidad antes de modificar, asi que
+la validacion va despues de la carga y antes de la modificacion.
+
+----------------------------------------------------
+PausaService.java -- CAMBIOS NECESARIOS
+----------------------------------------------------
+
+METODOS A MODIFICAR:
+  crear() -- E27: validacion fecha al inicio (request.getFecha())
+  cerrar() -- E28: validacion fecha al inicio (pausa.getFecha()
+    despues de cargar la entidad)
+
+NOTA: En cerrar() la pausa se carga al inicio del metodo con
+  pausaRepository.findById(id). La validacion de fecha va despues
+  de esa carga y antes de cualquier modificacion.
+
+----------------------------------------------------
+AusenciaService.java -- CAMBIOS NECESARIOS
+----------------------------------------------------
+
+METODOS A MODIFICAR:
+  crear() -- E30: validacion fecha al inicio (request.getFecha())
+  actualizar() -- E31: validacion fecha al inicio (ausencia.getFecha()
+    despues de cargar la entidad con findById)
+
+NOTA: actualizar() ya carga la ausencia con findById al inicio.
+La validacion de fecha va despues de esa carga y antes del
+check de procesado=true.
+
+----------------------------------------------------
+SaldoService.java -- CAMBIOS NECESARIOS PARA TAREA C
+----------------------------------------------------
+
+METODO ACTUAL: recalcular(Long empleadoId, Integer anio)
+  Es @Transactional y devuelve SaldoResponse.
+  Contiene toda la logica de recalculo correcta y verificada.
+  Es llamado desde E40 (ADMIN) via SaldoController.
+
+PROBLEMA: ProcesoCierreDiario necesita esa logica pero no
+  necesita el SaldoResponse (es proceso interno, no REST).
+
+DOS OPCIONES (decidir con Santiago al iniciar sesion):
+
+  OPCION A (preferida por claridad):
+    Extraer la logica de recalculo a un nuevo metodo:
+      @Transactional
+      public void recalcularParaProceso(Long empleadoId, Integer anio)
+    Este metodo hace todo lo que hace recalcular() pero sin
+    construir ni devolver SaldoResponse.
+    recalcular() existente llama internamente a recalcularParaProceso()
+    y luego construye el SaldoResponse.
+    ProcesoCierreDiario llama a recalcularParaProceso() directamente.
+
+  OPCION B (mas simple, menos limpia):
+    Mantener recalcular() tal cual (ya es public).
+    ProcesoCierreDiario llama a recalcular() e ignora el SaldoResponse.
+    Inconveniente: construye el SaldoResponse innecesariamente
+    para cada empleado activo cada noche.
+
+====================================================
+8. DECISIONES PENDIENTES PARA PROXIMA SESION
+====================================================
+
+Antes de escribir codigo, decidir con Santiago:
+
+DECISION 1 -- Reutilizacion logica recalculo en Tarea C:
+  Opcion A: extraer recalcularParaProceso() en SaldoService (preferida)
+  Opcion B: llamar a recalcular() e ignorar SaldoResponse
+
+DECISION 2 -- Como pasa el rol del controller al service:
+  Opcion A: boolean esEncargado como parametro adicional en cada metodo
+    Ventaja: explicito, no requiere query adicional.
+    Implementacion en controller:
+      boolean esEncargado = authentication.getAuthorities().stream()
+          .anyMatch(a -> a.getAuthority().equals("ROLE_ENCARGADO"));
+  Opcion B: pasar username y resolver rol desde UsuarioRepository
+    Ventaja: consistente con patron D-017 Opcion B del proyecto.
+    Inconveniente: query adicional por peticion.
+
+====================================================
+9. VERIFICACIONES NECESARIAS EN EmpleadoRepository
+====================================================
+
+Antes de implementar Tarea A y C de ProcesoCierreDiario,
+verificar que existe un metodo para obtener todos los
+empleados activos. Posibles nombres:
+  findAllByActivoTrue()
+  findByActivoTrue()
+  findAll() con filtro manual (menos eficiente)
+
+Si no existe, hay que anadirlo al repositorio.
+
+====================================================
+10. RESUMEN DE FICHEROS GENERADOS EN ESTA SESION
+====================================================
+
+Generados y disponibles para descarga:
+  StaffFlow_Desviaciones_1603_v5.txt (D-025 anadida)
+  StaffFlow_Desviaciones_1603_v6.txt (D-010 y D-025 actualizadas)
+  StaffFlow_Desviaciones_1603_v7.txt (D-025 Parte 2 anadida)
+  StaffFlow_Desviaciones_1603_v8.txt (D-026 anadida) <- ACTIVO
+  StaffFlow_Prompt_Dev_1603_v3.txt
+  StaffFlow_Prompt_Dev_1603_v4.txt
+  StaffFlow_Prompt_Dev_1603_v5.txt
+  StaffFlow_Prompt_Dev_1603_v6.txt <- ACTIVO
+  StaffFlow_Prompt_Dev_1603_v7.txt <- ESTE FICHERO LO REFERENCIA
+  StaffFlow_Mejoras_para_Version2.0_1603_v1.txt
+  StaffFlow_Mejoras_para_Version2.0_1603_v2.txt <- ACTIVO
+  StaffFlow_Sesion_1603_v1.txt <- ESTE FICHERO
+
+Ficheros a adjuntar en la proxima sesion:
+  StaffFlow_Prompt_Dev_1603_v7.txt
+  StaffFlow_Desviaciones_1603_v8.txt
+  StaffFlow_Sesion_1603_v1.txt
+  ProcesoDiarioService.java
+  FichajeService.java
+  PausaService.java
+  AusenciaService.java
+  SaldoService.java
+
+====================================================
+FIN StaffFlow_Sesion_1603_v1.txt
+====================================================

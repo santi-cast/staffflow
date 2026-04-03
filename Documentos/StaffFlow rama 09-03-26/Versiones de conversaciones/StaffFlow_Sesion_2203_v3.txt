@@ -1,0 +1,337 @@
+====================================================
+STAFFFLOW -- SESION 2203_v3
+Fecha: 22/03/2026
+Conversacion: sesion 23
+====================================================
+
+Este fichero captura el razonamiento completo, decisiones y
+verificaciones de la sesion 23. Complementa al prompt activo
+y las desviaciones.
+
+Adjuntar en la proxima sesion junto con el prompt activo.
+
+====================================================
+1. PUNTO DE PARTIDA
+====================================================
+
+Estado al entrar: sesion 22 cerrada con v2. E45 Caso 1 verificado OK
+en sesion 22. Objetivo declarado: verificar E45 Casos 2-6 y E46/E47.
+
+Ficheros adjuntados al inicio:
+  StaffFlow_Prompt_Dev_2203_v3.txt
+  StaffFlow_Desviaciones_2203_v2.txt
+  StaffFlow_Mejoras_para_Version2_0_2203_v1.txt
+  StaffFlow_Bloque7_Tarea3_InformesPDF_v2.txt
+  StaffFlow_Entrega_v2.txt
+  StaffFlow_Sesion_2203_v2.txt
+
+====================================================
+2. REVISION SISTEMATICA DE COMENTARIOS -- OBJETIVO PRINCIPAL
+====================================================
+
+Antes de continuar con la verificacion de E45-E47 se decidio hacer
+una revision completa de comentarios y Javadoc de todo el proyecto.
+Objetivo: detectar incoherencias entre el codigo real y su
+documentacion interna acumuladas a lo largo de las sesiones.
+
+Metodologia: lectura de todos los ficheros Java del proyecto
+(controllers, services, entities, enums, repositories, DTOs,
+exception, security) cruzando contra las desviaciones, los
+endpoints reales y el comportamiento verificado.
+
+====================================================
+3. BUG DETECTADO Y CORREGIDO -- PROCESOCIERRE DIARIO TAREA A
+====================================================
+
+DETECCION:
+  Durante la reverificacion del Caso 1 de E45 (Ana marzo completo)
+  se detecto que el 22/03 (domingo) aparecia como AUSENCIA_INJUSTIFICADA
+  en el PDF, no como DIA_LIBRE como el resto de fines de semana.
+
+DIAGNOSTICO:
+  Consulta directa a H2:
+    SELECT * FROM fichajes WHERE empleado_id=1 AND fecha='2026-03-22'
+  Resultado: tipo=AUSENCIA_INJUSTIFICADA, usuario_id=5 (terminal_service).
+  El fichaje fue creado por ProcesoCierreDiario al ejecutarse hoy
+  (domingo 22/03). La Tarea A no distinguia entre dias laborables y
+  fines de semana: el tipo estaba hardcodeado a AUSENCIA_INJUSTIFICADA
+  sin comprobar el dia de la semana.
+
+CAUSA RAIZ:
+  ProcesoCierreDiario.Tarea A usaba setTipo(TipoFichaje.AUSENCIA_INJUSTIFICADA)
+  de forma incondicional. El Javadoc de la clase decia correctamente
+  que los fines de semana recibian DIA_LIBRE, pero el codigo no lo
+  implementaba. D-032 aniadio DIA_LIBRE al enum pero no corrigio
+  la logica de Tarea A.
+
+  NOTA IMPORTANTE: el comportamiento en produccion real es correcto.
+  ProcesoCierreDiario corre cada noche a las 23:55. El sabado por la
+  noche genera el DIA_LIBRE del domingo (Tarea B). El problema solo
+  ocurre si el proceso se ejecuta manualmente el propio domingo antes
+  de que Tarea B haya creado el fichaje del dia. En produccion ese
+  escenario no ocurre porque el proceso siempre corre la noche anterior.
+  Es un artefacto del entorno de prueba, no un bug de produccion.
+  Dicho esto, la logica de Tarea A era incorrecta y se corrigio.
+
+CORRECCION APLICADA en ProcesoCierreDiario.java:
+  boolean esFinDeSemanaHoy = hoy.getDayOfWeek() == DayOfWeek.SATURDAY
+          || hoy.getDayOfWeek() == DayOfWeek.SUNDAY;
+  TipoFichaje tipoTareaA = esFinDeSemanaHoy
+          ? TipoFichaje.DIA_LIBRE
+          : TipoFichaje.AUSENCIA_INJUSTIFICADA;
+  El tipo se calcula antes del bucle y se usa en setTipo().
+  El log tambien se actualizo para mostrar el tipo real creado.
+
+REVERIFICACION Caso 1:
+  Tras aplicar la correccion, relanzar el backend y ejecutar el
+  proceso, el PDF de Ana marzo regenerado muestra el 22/03 como
+  DIA_LIBRE. VERIFICADO OK.
+
+====================================================
+4. INCOHERENCIAS DETECTADAS Y CORREGIDAS
+====================================================
+
+Total: 16 ficheros corregidos (solo Javadoc/comentarios, sin cambios
+de logica excepto ProcesoCierreDiario).
+
+----------------------------------------------------
+CONTROLLERS (1 fichero)
+----------------------------------------------------
+
+HealthController.java:
+  Sin Javadoc ni anotaciones Swagger. Unico controller del proyecto
+  sin documentacion. Anadido Javadoc completo al estilo del resto:
+  descripcion de clase, ruta, seguridad, RF cubierto (RF-45),
+  razon del path /api fuera de /api/v1, y Javadoc del metodo health().
+
+----------------------------------------------------
+SERVICES (2 ficheros)
+----------------------------------------------------
+
+EmpleadoService.java:
+  Javadoc de clase con tres errores:
+  1. Mencionaba "pinTerminal filtrado por rol (Opcion A)" como si
+     fuera la implementacion actual. D-017 y D-018 cancelaron esa
+     decision: el PIN nunca se expone por API, EmpleadoResponse no
+     tiene el campo. Corregido para reflejar D-018.
+  2. Decia "E19 se implementa en Bloque 6 y E20 en Bloque 7". Ambos
+     bloques estan cerrados y ninguno los implemento. Corregido:
+     E19 y E20 estan fuera del alcance de v1.0.
+  3. Descripcion de D-017 incorrecta: decia que la firma definitiva
+     era obtenerPorId(Long id, String rol), cuando la firma real es
+     obtenerPorId(Long id). Corregido.
+  Mensajes de UnsupportedOperationException de E19 y E20 actualizados
+  de "Pendiente de implementar en BloqueX" a "fuera del alcance de v1.0".
+
+PresenciaService.java:
+  Comentario inline en clasificarEmpleado() decia "generadas por
+  ProcesoDiario". Nombre correcto: ProcesoCierreDiario. Corregido.
+
+----------------------------------------------------
+ENTIDADES Y ENUMS (2 ficheros)
+----------------------------------------------------
+
+EstadoPresencia.java:
+  Javadoc de clase con rutas incorrectas de E35/E36/E37. Decia:
+    E35 GET /api/v1/presencia/hoy
+    E36 GET /api/v1/presencia/empleado/{id}
+    E37 GET /api/v1/presencia/resumen
+  Rutas reales confirmadas en Endpoints_v3.docx:
+    E35 GET /api/v1/presencia/parte-diario
+    E36 GET /api/v1/presencia/sin-justificar
+    E37 GET /api/v1/presencia/parte-diario/me
+  Corregido.
+
+PlanificacionAusencia.java:
+  Javadoc de clase decia "@Scheduled, 00:01h". D-025 confirma que
+  el cron es 23:55, no 00:01. Corregido.
+
+----------------------------------------------------
+REPOSITORIES (2 ficheros)
+----------------------------------------------------
+
+PlanificacionAusenciaRepository.java:
+  Tres ocurrencias de "ProcesoDiario" -> "ProcesoCierreDiario".
+  Dos ocurrencias de "00:01" -> "23:55". Corregidos.
+
+SaldoAnualRepository.java:
+  Una ocurrencia de "ProcesoDiario" -> "ProcesoCierreDiario". Corregida.
+
+----------------------------------------------------
+DTOs REQUEST (2 ficheros)
+----------------------------------------------------
+
+AusenciaPatchRequest.java:
+  Javadoc decia "Usado en E34 (PATCH)". E34 es GET /me.
+  El endpoint correcto para PATCH es E31. Corregido.
+
+EmpresaRequest.java:
+  Javadoc decia "Usado en E06 (POST /empresa) y E07 (PUT /empresa)".
+  E06 es GET, no POST, y no usa ningun DTO request.
+  Corregido a "Usado en E07 (PUT /empresa) unicamente".
+
+----------------------------------------------------
+DTOs RESPONSE (5 ficheros)
+----------------------------------------------------
+
+AusenciaResponse.java:
+  Lista de endpoints incorrecta. Decia E31 (GET lista), E32 (GET
+  por empleado), E33 (GET por id), E34 (PATCH). Los endpoints reales:
+  E30 (POST), E31 (PATCH), E32 (DELETE), E33 (GET lista), E34 (GET /me).
+  Tambien: "ProcesoDiario @Scheduled 00:01" -> "ProcesoCierreDiario 23:55".
+  Corregidos.
+
+FichajeResponse.java:
+  Lista de endpoints incorrecta. Decia E23 (GET lista), E24 (GET por
+  empleado), E25 (GET por id), E26 (PATCH). Los endpoints reales:
+  E22 (POST), E23 (PATCH), E24 (GET lista), E25 (GET incompletos),
+  E26 (GET /me). Corregido.
+
+PausaResponse.java:
+  Lista de endpoints incorrecta. Decia E28 (GET lista), E29 (PATCH).
+  Los endpoints reales: E27 (POST), E28 (PATCH), E29 (GET lista).
+  Corregido.
+
+EmpleadoResponse.java:
+  E16 y E21 intercambiados. Decia "E16 (GET perfil propio)" y "E21
+  (PATCH)". Los endpoints reales: E16 es PATCH, E21 es GET /me.
+  Corregido.
+
+UsuarioResponse.java:
+  Decia "E11 (GET perfil propio)". E11 es PATCH. El GET del perfil
+  propio es E02 (/auth/me). Corregido.
+
+----------------------------------------------------
+SECURITY (1 fichero)
+----------------------------------------------------
+
+JwtTokenProvider.java:
+  Javadoc decia "algoritmo HS256" en cuatro sitios. El token real
+  usa HS384 (confirmado decodificando el header del JWT generado:
+  eyJhbGciOiJIUzM4NCJ9 = {"alg":"HS384"}). jjwt 0.12.x selecciona
+  automaticamente HS384 cuando la clave tiene mas de 32 bytes.
+  Tambien: "al menos 32 caracteres para HS256" -> "al menos 48
+  caracteres para HS384". Corregidos los cuatro sitios.
+
+====================================================
+5. DECISION: ENDPOINTS_V3 + DESVIACIONES COMO REFERENCIA DEFINITIVA
+====================================================
+
+Se planteo si generar un Endpoints_v4.docx consolidado con todos
+los cambios de D-027 a D-032 incorporados.
+
+Decision: mantener Endpoints_v3.docx + StaffFlow_Desviaciones como
+referencia definitiva para la entrega. Razones:
+  1. La politica del proyecto establece que los snapshots de Fase 1
+     no se modifican. Cambiarla ahora seria inconsistente.
+  2. Para la memoria del TFG, la trazabilidad diseño-original +
+     desviaciones-justificadas tiene mayor valor academico que un
+     documento consolidado sin historia.
+  3. StaffFlow_Android_Contexto_v2.txt ya contiene los 52 endpoints
+     con rutas reales actualizadas, cubriendo la necesidad de Fase 3.
+  4. Un Endpoints_v4 puede generarse en cualquier momento si fuera
+     necesario para el evaluador.
+
+====================================================
+6. REGLA 8 ANADIDA AL PROMPT
+====================================================
+
+Se detecto que la revision de comentarios de esta sesion no deberia
+haber sido necesaria si la regla hubiera existido desde el principio.
+Se añadio la Regla 8 a REGLAS DE TRABAJO del prompt:
+
+  Los comentarios son parte del codigo: nunca quedan desactualizados.
+  Cada vez que se modifique codigo en un fichero, actualizar tambien
+  los comentarios y Javadoc de ese fichero en la misma sesion.
+  Si se detecta una incoherencia en comentarios sin cambio de codigo,
+  documentarla y corregirla antes de cerrar la sesion.
+
+====================================================
+7. ANDROID CONTEXTO ACTUALIZADO
+====================================================
+
+StaffFlow_Android_Contexto_v2.txt tenia las rutas de E45-E47
+incorrectas (rutas de la implementacion provisional de sesion 21,
+antes de D-031):
+  MAL: /informes/horas/{empleadoId}/pdf
+  MAL: /informes/horas/pdf
+  MAL: /informes/saldos/pdf
+Corregidas a las rutas reales (D-031):
+  OK:  /informes/pdf/horas/{empleadoId}
+  OK:  /informes/pdf/horas
+  OK:  /informes/pdf/saldos
+Generado StaffFlow_Android_Contexto_v3.txt con las rutas corregidas.
+
+====================================================
+8. ESTADO DE VERIFICACION E45-E47
+====================================================
+
+E45 Caso 1 -- Ana marzo completo: VERIFICADO OK (sesiones 22 y 23)
+  Reverificado tras correccion bug Tarea A. 22/03 ahora DIA_LIBRE. OK.
+
+E45 Casos 2-6, E46, E47 -- PENDIENTES (proxima sesion)
+  No se llegaron a verificar en esta sesion por la revision de
+  comentarios que ocupo el tiempo de trabajo.
+
+====================================================
+9. FICHEROS GENERADOS EN SESION 23
+====================================================
+
+CORREGIDOS (codigo):
+  ProcesoCierreDiario.java    (bug Tarea A: DIA_LIBRE en fines de semana)
+
+CORREGIDOS (solo Javadoc/comentarios):
+  HealthController.java
+  EmpleadoService.java
+  PresenciaService.java
+  EstadoPresencia.java
+  PlanificacionAusencia.java
+  PlanificacionAusenciaRepository.java
+  SaldoAnualRepository.java
+  AusenciaPatchRequest.java
+  EmpresaRequest.java
+  AusenciaResponse.java
+  FichajeResponse.java
+  PausaResponse.java
+  EmpleadoResponse.java
+  UsuarioResponse.java
+  JwtTokenProvider.java
+
+DOCUMENTACION:
+  StaffFlow_Prompt_Dev_2203_v5.txt  (Regla 8, ref Android v3)
+  StaffFlow_Android_Contexto_v3.txt (rutas E45-E47 corregidas)
+  StaffFlow_Bloque6_Tarea4_CierreDiario_v3.txt (bug Tarea A documentado)
+  StaffFlow_Bloque7_Tarea3_InformesPDF_v3.txt  (Caso 1 nota correccion)
+  StaffFlow_Sesion_2203_v3.txt (este fichero)
+
+====================================================
+10. PENDIENTE ANTES DE ENTREGA FINAL
+====================================================
+
+  1. Verificar E45 Casos 2-6 y E46, E47 (5 casos pendientes).
+  2. TestProcesoCierreDiarioController.java: @Profile({"dev","mysql"})
+     Decidido: se deja asi para poder hacer tests. No cambiar.
+  3. ProcesoDiarioService.java debe eliminarse del proyecto.
+  4. Commit de Bloque 7 completo al cerrar E45-E47 verificados.
+  5. Actualizar README con PdfController y nuevas rutas PDF.
+  6. Implementar Fase 3 Android.
+     Usar StaffFlow_Android_Contexto_v3.txt como referencia principal.
+
+====================================================
+11. FICHEROS A ADJUNTAR EN LA PROXIMA SESION
+====================================================
+
+Para continuar verificacion E45-E47:
+  StaffFlow_Prompt_Dev_2203_v5.txt              <- obligatorio
+  StaffFlow_Desviaciones_2203_v2.txt            <- obligatorio
+  StaffFlow_Sesion_2203_v3.txt                  <- obligatorio
+  StaffFlow_Bloque7_Tarea3_InformesPDF_v3.txt   <- recomendado
+
+Para arrancar Android (sesion independiente):
+  StaffFlow_Prompt_Dev_2203_v5.txt              <- obligatorio
+  StaffFlow_Android_Contexto_v3.txt             <- obligatorio
+  StaffFlow_Android_Fase3_v1.txt                <- recomendado
+
+====================================================
+FIN StaffFlow_Sesion_2203_v3.txt
+====================================================

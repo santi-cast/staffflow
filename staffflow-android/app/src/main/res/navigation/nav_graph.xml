@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Grafo de navegacion de StaffFlow.
+
+    Destino raiz: terminalFragment (P01).
+    La app arranca siempre en el terminal. Si hay sesion valida en
+    DataStore, MainActivity.checkExistingSession() navega directamente
+    al destino inicial por rol sin pasar por el login.
+
+    Zona publica (sin Drawer, sin JWT):
+      P01 terminalFragment    <- raiz del grafo
+      P02 loginFragment
+      P03 recoveryFragment
+      P05 resetPasswordFragment  <- deep link desde email
+      P06 confirmacionFragment   <- feedback terminal (3s -> P01)
+      P07 tipoPausaFragment      <- seleccion tipo pausa (-> P01)
+
+    Zona autenticada (con Drawer):
+      EMPLEADO:  P08, P09, P10, P11, P12
+      ENCARGADO: P13, P14, P15, P17, P18, P19, P20, P23, P24, P26, P27, P28
+      ADMIN:     P31, P32, P34
+      TODOS:     P04
+
+    Las acciones de navegacion se anadiran en cada bloque conforme
+    se implementen los fragments. En el Bloque 1 solo se definen
+    las acciones del flujo del terminal (P01 <-> P06 <-> P07).
+-->
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/terminalFragment">
+
+    <!-- ============================================================ -->
+    <!-- ZONA PUBLICA - SIN JWT                                        -->
+    <!-- ============================================================ -->
+
+    <!-- P01 Terminal de fichaje (raiz publica) -->
+    <fragment
+        android:id="@+id/terminalFragment"
+        android:name="com.staffflow.android.ui.fichaje.TerminalFragment"
+        android:label="Terminal"
+        tools:layout="@layout/fragment_terminal">
+
+        <!-- P01 -> P06 Confirmacion (entrada, salida o pausa registrada) -->
+        <action
+            android:id="@+id/action_terminal_to_confirmacion"
+            app:destination="@id/confirmacionFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+
+        <!-- P01 -> P07 Tipo pausa (el usuario quiere iniciar una pausa) -->
+        <action
+            android:id="@+id/action_terminal_to_tipo_pausa"
+            app:destination="@id/tipoPausaFragment" />
+
+        <!-- P01 -> P02 Login (acceso a la zona autenticada) -->
+        <action
+            android:id="@+id/action_terminal_to_login"
+            app:destination="@id/loginFragment" />
+
+    </fragment>
+
+    <!-- P06 Confirmacion de fichaje (feedback 3 segundos -> vuelve a P01) -->
+    <fragment
+        android:id="@+id/confirmacionFragment"
+        android:name="com.staffflow.android.ui.fichaje.ConfirmacionFragment"
+        android:label="Confirmacion"
+        tools:layout="@layout/fragment_confirmacion">
+
+        <!-- P06 -> P01 (retorno automatico tras 3 segundos) -->
+        <action
+            android:id="@+id/action_confirmacion_to_terminal"
+            app:destination="@id/terminalFragment"
+            app:popUpTo="@id/terminalFragment"
+            app:popUpToInclusive="true" />
+
+    </fragment>
+
+    <!-- P07 Seleccion de tipo de pausa (-> vuelve a P01 con tipo seleccionado) -->
+    <fragment
+        android:id="@+id/tipoPausaFragment"
+        android:name="com.staffflow.android.ui.fichaje.TipoPausaFragment"
+        android:label="Tipo de pausa"
+        tools:layout="@layout/fragment_tipo_pausa">
+
+        <!-- P07 -> P01 (con tipo seleccionado en el back stack) -->
+        <action
+            android:id="@+id/action_tipo_pausa_to_terminal"
+            app:destination="@id/terminalFragment"
+            app:popUpTo="@id/terminalFragment"
+            app:popUpToInclusive="true" />
+
+    </fragment>
+
+    <!-- P02 Login JWT -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.staffflow.android.ui.login.LoginFragment"
+        android:label="Iniciar sesion"
+        tools:layout="@layout/fragment_login">
+
+        <!-- P02 -> P03 Recuperar contrasena -->
+        <action
+            android:id="@+id/action_login_to_recovery"
+            app:destination="@id/recoveryFragment" />
+
+    </fragment>
+
+    <!-- P03 Recuperar contrasena -->
+    <fragment
+        android:id="@+id/recoveryFragment"
+        android:name="com.staffflow.android.ui.login.RecoveryFragment"
+        android:label="Recuperar contrasena"
+        tools:layout="@layout/fragment_recovery" />
+
+    <!-- P05 Restablecer contrasena con token por email (deep link) -->
+    <fragment
+        android:id="@+id/resetPasswordFragment"
+        android:name="com.staffflow.android.ui.login.ResetPasswordFragment"
+        android:label="Restablecer contrasena"
+        tools:layout="@layout/fragment_reset_password">
+
+        <deepLink app:uri="staffflow://reset-password?token={token}" />
+
+        <!-- P05 -> P02 (tras restablecer correctamente o enlace caducado) -->
+        <action
+            android:id="@+id/action_reset_to_login"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+
+    </fragment>
+
+    <!-- ============================================================ -->
+    <!-- ZONA AUTENTICADA -TODOS LOS ROLES                           -->
+    <!-- ============================================================ -->
+
+    <!-- P04 Cambiar contrasena (acceso desde Drawer -> Ajustes) -->
+    <fragment
+        android:id="@+id/cambiarPasswordFragment"
+        android:name="com.staffflow.android.ui.login.CambiarPasswordFragment"
+        android:label="Cambiar contrasena"
+        tools:layout="@layout/fragment_cambiar_password" />
+
+    <!-- ============================================================ -->
+    <!-- ZONA AUTENTICADA -EMPLEADO                                  -->
+    <!-- ============================================================ -->
+
+    <!-- P08 Mi perfil -->
+    <fragment
+        android:id="@+id/miPerfilFragment"
+        android:name="com.staffflow.android.ui.empleado.MiPerfilFragment"
+        android:label="Mi perfil"
+        tools:layout="@layout/fragment_mi_perfil" />
+
+    <!-- P09 Mi saldo anual (destino inicial EMPLEADO) -->
+    <fragment
+        android:id="@+id/miSaldoFragment"
+        android:name="com.staffflow.android.ui.empleado.MiSaldoFragment"
+        android:label="Mi saldo"
+        tools:layout="@layout/fragment_mi_saldo" />
+
+    <!-- P10 Mis fichajes -->
+    <fragment
+        android:id="@+id/misFichajesFragment"
+        android:name="com.staffflow.android.ui.empleado.MisFichajesFragment"
+        android:label="Mis fichajes"
+        tools:layout="@layout/fragment_mis_fichajes" />
+
+    <!-- P11 Mis ausencias planificadas -->
+    <fragment
+        android:id="@+id/misAusenciasFragment"
+        android:name="com.staffflow.android.ui.empleado.MisAusenciasFragment"
+        android:label="Mis ausencias"
+        tools:layout="@layout/fragment_mis_ausencias" />
+
+    <!-- P12 Mi hoy (estado del dia del empleado) -->
+    <fragment
+        android:id="@+id/miHoyFragment"
+        android:name="com.staffflow.android.ui.empleado.MiHoyFragment"
+        android:label="Hoy"
+        tools:layout="@layout/fragment_mi_hoy" />
+
+    <!-- ============================================================ -->
+    <!-- ZONA AUTENTICADA -ENCARGADO y ADMIN                        -->
+    <!-- ============================================================ -->
+
+    <!-- P17 Parte diario de presencia (destino inicial ENCARGADO) -->
+    <fragment
+        android:id="@+id/parteDiarioFragment"
+        android:name="com.staffflow.android.ui.encargado.ParteDiarioFragment"
+        android:label="Parte diario"
+        tools:layout="@layout/fragment_parte_diario">
+
+        <!-- P17 -> P18 Sin justificar (via chip) -->
+        <action
+            android:id="@+id/action_parte_diario_to_sin_justificar"
+            app:destination="@id/sinJustificarFragment" />
+
+        <!-- P17 -> P14 Detalle empleado (tap en fila) -->
+        <action
+            android:id="@+id/action_parte_diario_to_detalle_empleado"
+            app:destination="@id/detalleEmpleadoFragment" />
+
+    </fragment>
+
+    <!-- P18 Empleados sin justificar -->
+    <fragment
+        android:id="@+id/sinJustificarFragment"
+        android:name="com.staffflow.android.ui.encargado.SinJustificarFragment"
+        android:label="Sin justificar"
+        tools:layout="@layout/fragment_sin_justificar" />
+
+    <!-- P19 Lista de fichajes -->
+    <fragment
+        android:id="@+id/fichajesFragment"
+        android:name="com.staffflow.android.ui.encargado.FichajesFragment"
+        android:label="Fichajes"
+        tools:layout="@layout/fragment_fichajes">
+
+        <!-- P19 -> P20 Registro manual (fichaje o pausa) -->
+        <action
+            android:id="@+id/action_fichajes_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
+    </fragment>
+
+    <!-- P20 Registro manual de fichaje o pausa (formulario reutilizable) -->
+    <fragment
+        android:id="@+id/formFichajeFragment"
+        android:name="com.staffflow.android.ui.encargado.FormFichajeFragment"
+        android:label="Registro manual"
+        tools:layout="@layout/fragment_form_fichaje" />
+
+    <!-- P23 Lista de ausencias planificadas -->
+    <fragment
+        android:id="@+id/ausenciasFragment"
+        android:name="com.staffflow.android.ui.encargado.AusenciasFragment"
+        android:label="Ausencias"
+        tools:layout="@layout/fragment_ausencias">
+
+        <!-- P23 -> P24 Crear o editar ausencia -->
+        <action
+            android:id="@+id/action_ausencias_to_form_ausencia"
+            app:destination="@id/formAusenciaFragment" />
+
+    </fragment>
+
+    <!-- P24 Crear o editar ausencia -->
+    <fragment
+        android:id="@+id/formAusenciaFragment"
+        android:name="com.staffflow.android.ui.encargado.FormAusenciaFragment"
+        android:label="Ausencia"
+        tools:layout="@layout/fragment_form_ausencia" />
+
+    <!-- P26 Saldo anual individual (ENCARGADO/ADMIN) -->
+    <fragment
+        android:id="@+id/saldoIndividualFragment"
+        android:name="com.staffflow.android.ui.encargado.SaldoIndividualFragment"
+        android:label="Saldo individual"
+        tools:layout="@layout/fragment_saldo_individual" />
+
+    <!-- P27 Saldos globales de todos los empleados -->
+    <fragment
+        android:id="@+id/saldosGlobalesFragment"
+        android:name="com.staffflow.android.ui.encargado.SaldosGlobalesFragment"
+        android:label="Saldos"
+        tools:layout="@layout/fragment_saldos_globales">
+
+        <!-- P27 -> P26 Saldo individual (tap en fila) -->
+        <action
+            android:id="@+id/action_saldos_globales_to_saldo_individual"
+            app:destination="@id/saldoIndividualFragment" />
+
+    </fragment>
+
+    <!-- P28 Informes (tabs: horas individual / horas global / saldos) -->
+    <fragment
+        android:id="@+id/informesFragment"
+        android:name="com.staffflow.android.ui.encargado.InformesFragment"
+        android:label="Informes"
+        tools:layout="@layout/fragment_informes" />
+
+    <!-- ============================================================ -->
+    <!-- ZONA AUTENTICADA -ADMIN y ENCARGADO (gestion empleados)    -->
+    <!-- ============================================================ -->
+
+    <!-- P13 Lista de empleados (destino inicial ADMIN) -->
+    <fragment
+        android:id="@+id/empleadosFragment"
+        android:name="com.staffflow.android.ui.shared.EmpleadosFragment"
+        android:label="Empleados"
+        tools:layout="@layout/fragment_empleados">
+
+        <!-- P13 -> P14 Detalle empleado (tap en fila) -->
+        <action
+            android:id="@+id/action_empleados_to_detalle"
+            app:destination="@id/detalleEmpleadoFragment" />
+
+        <!-- P13 -> P15 Crear empleado (FAB) -->
+        <action
+            android:id="@+id/action_empleados_to_form"
+            app:destination="@id/formEmpleadoFragment" />
+
+    </fragment>
+
+    <!-- P14 Detalle de empleado -->
+    <fragment
+        android:id="@+id/detalleEmpleadoFragment"
+        android:name="com.staffflow.android.ui.shared.DetalleEmpleadoFragment"
+        android:label="Detalle empleado"
+        tools:layout="@layout/fragment_detalle_empleado">
+
+        <!-- P14 -> P15 Editar empleado -->
+        <action
+            android:id="@+id/action_detalle_to_form_empleado"
+            app:destination="@id/formEmpleadoFragment" />
+
+        <!-- P14 -> P26 Ver saldo del empleado -->
+        <action
+            android:id="@+id/action_detalle_to_saldo_individual"
+            app:destination="@id/saldoIndividualFragment" />
+
+        <!-- P14 -> P19 Ver fichajes del empleado (filtrados) -->
+        <action
+            android:id="@+id/action_detalle_to_fichajes"
+            app:destination="@id/fichajesFragment" />
+
+    </fragment>
+
+    <!-- P15 Crear o editar empleado -->
+    <fragment
+        android:id="@+id/formEmpleadoFragment"
+        android:name="com.staffflow.android.ui.shared.FormEmpleadoFragment"
+        android:label="Empleado"
+        tools:layout="@layout/fragment_form_empleado" />
+
+    <!-- ============================================================ -->
+    <!-- ZONA AUTENTICADA -ADMIN                                     -->
+    <!-- ============================================================ -->
+
+    <!-- P31 Lista de usuarios del sistema -->
+    <fragment
+        android:id="@+id/usuariosFragment"
+        android:name="com.staffflow.android.ui.admin.UsuariosFragment"
+        android:label="Usuarios"
+        tools:layout="@layout/fragment_usuarios">
+
+        <!-- P31 -> P32 Crear o editar usuario -->
+        <action
+            android:id="@+id/action_usuarios_to_form_usuario"
+            app:destination="@id/formUsuarioFragment" />
+
+    </fragment>
+
+    <!-- P32 Crear o editar usuario -->
+    <fragment
+        android:id="@+id/formUsuarioFragment"
+        android:name="com.staffflow.android.ui.admin.FormUsuarioFragment"
+        android:label="Usuario"
+        tools:layout="@layout/fragment_form_usuario">
+
+        <!-- P32 -> P15 Crear perfil empleado (snackbar tras crear usuario) -->
+        <action
+            android:id="@+id/action_form_usuario_to_form_empleado"
+            app:destination="@id/formEmpleadoFragment" />
+
+    </fragment>
+
+    <!-- P34 Configuracion de la empresa (singleton) -->
+    <fragment
+        android:id="@+id/empresaFragment"
+        android:name="com.staffflow.android.ui.admin.EmpresaFragment"
+        android:label="Mi empresa"
+        tools:layout="@layout/fragment_empresa" />
+
+</navigation>

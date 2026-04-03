@@ -1,0 +1,282 @@
+====================================================
+STAFFFLOW — CONFIGURACIÓN H2 Y DATOS INICIALES
+====================================================
+
+Documento: StaffFlow_H2_Configuracion.txt
+Fecha: 13/03/2026
+Versión: 1.0
+
+
+====================================================
+1. POR QUÉ HAY DOS PERFILES DE BASE DE DATOS
+====================================================
+
+StaffFlow tiene dos perfiles de Spring Boot con bases de datos distintas:
+
+  Perfil 'mysql'  →  MySQL 8.0 en local (desarrollo día a día)
+  Perfil 'dev'    →  H2 en memoria (entrega al tutor, demos, CI)
+
+El perfil activo se controla en application.yaml:
+
+  spring:
+    profiles:
+      active: dev     ← cambiar a 'mysql' para desarrollo local
+
+Para arrancar con MySQL en IntelliJ: Run Configuration →
+  Active profiles: mysql
+
+
+====================================================
+2. QUÉ ES H2 Y POR QUÉ SE PIERDEN LOS DATOS
+====================================================
+
+H2 es una base de datos embebida que vive exclusivamente en la memoria
+RAM del proceso Java. No escribe nada en disco.
+
+Consecuencias directas:
+
+  - Cada vez que se arranca la aplicación, la BD está completamente vacía.
+  - Cada vez que se para la aplicación, todos los datos desaparecen.
+  - No hay servidor externo que arrancar. El tutor solo necesita Java.
+  - No hay configuración de MySQL, credenciales ni puertos.
+
+Esto la hace ideal para entregas académicas porque el proyecto es
+autocontenido: se clona, se arranca, funciona.
+
+
+====================================================
+3. CÓMO HIBERNATE CREA LAS TABLAS EN H2
+====================================================
+
+En el perfil 'dev', application-dev.yml tiene:
+
+  spring:
+    jpa:
+      hibernate:
+        ddl-auto: create-drop
+
+Esto significa:
+
+  Al ARRANCAR  →  Hibernate lee las 7 entidades JPA del proyecto
+                  (@Entity) y genera automáticamente las 7 tablas
+                  en H2 con sus columnas, tipos y restricciones.
+
+  Al PARAR     →  Hibernate elimina todas las tablas (DROP).
+                  La BD queda completamente vacía hasta el próximo
+                  arranque.
+
+Las tablas se crean a partir del código Java, NO desde el fichero
+staffflow_v5_ddl_mysql.sql. Ese DDL solo se usa para MySQL.
+
+Tablas creadas automáticamente en cada arranque:
+  - configuracion_empresa
+  - usuarios
+  - empleados
+  - fichajes
+  - pausas
+  - planificacion_ausencias
+  - saldos_anuales
+
+
+====================================================
+4. EL PROBLEMA: LAS TABLAS ESTÁN VACÍAS AL ARRANCAR
+====================================================
+
+Hibernate crea las tablas vacías. Sin datos iniciales, la aplicación
+arranca pero no funciona en la práctica:
+
+  - POST /api/v1/auth/login → 401 (no hay usuarios en BD)
+  - GET /api/v1/empresa → 404 (no hay registro en configuracion_empresa)
+  - Terminal PIN → falla (no hay empleados ni usuario terminal_service)
+  - Cualquier endpoint protegido → no se puede obtener JWT
+
+La solución es el fichero data.sql, que se ejecuta automáticamente
+justo después de que Hibernate crea las tablas.
+
+
+====================================================
+5. CÓMO FUNCIONA data.sql
+====================================================
+
+Spring Boot busca automáticamente el fichero:
+
+  src/main/resources/data.sql
+
+y lo ejecuta contra la BD activa después de que Hibernate
+haya creado el esquema.
+
+Para que esto funcione con ddl-auto: create-drop es necesario
+indicarle a Spring Boot que espere a que Hibernate termine antes
+de ejecutar el SQL. Esto se controla con dos propiedades en
+application-dev.yml:
+
+  spring:
+    jpa:
+      defer-datasource-initialization: true   ← espera a Hibernate
+    sql:
+      init:
+        mode: always                           ← ejecuta data.sql siempre
+
+Sin defer-datasource-initialization: true, Spring Boot intentaría
+ejecutar data.sql antes de que existieran las tablas y fallaría
+con "Table not found".
+
+Sin sql.init.mode: always, Spring Boot ignoraría data.sql con
+datasources embebidos en algunos contextos de arranque.
+
+IMPORTANTE: data.sql está en src/main/resources/, que es una carpeta
+compartida entre perfiles. Sin embargo, las propiedades que lo
+activan (defer-datasource-initialization y sql.init.mode: always)
+SOLO están en application-dev.yml. En el perfil 'mysql', Spring Boot
+ignora data.sql porque esas propiedades no están presentes.
+
+
+====================================================
+6. QUÉ CONTIENE data.sql
+====================================================
+
+El fichero carga tres bloques de datos en orden estricto
+(el orden importa por las claves foráneas):
+
+  BLOQUE 1 — configuracion_empresa
+    Un único registro con id implícito. Sin él, E06 GET /empresa
+    devuelve 404 y la configuración inicial de la app falla.
+
+  BLOQUE 2 — usuarios (5 registros)
+    Insertados sin ID explícito. H2 los asigna por autoincremento
+    empezando en 1, en el orden en que aparecen en el fichero:
+
+      id=1  admin           ADMIN     contraseña: admin1234
+      id=2  encargado01     ENCARGADO contraseña: admin1234
+      id=3  emp01           EMPLEADO  contraseña: admin1234
+      id=4  emp02           EMPLEADO  contraseña: admin1234
+      id=5  terminal_service ADMIN    (nunca se usa para login)
+
+    Las contraseñas están almacenadas como hash BCrypt (factor 10).
+    El hash de 'admin1234' es:
+      $2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW
+
+    terminal_service existe porque fichajes.usuario_id y
+    pausas.usuario_id son NOT NULL. Los endpoints de terminal
+    (E48-E51) no tienen sesión JWT, así que usan este usuario
+    para cumplir la restricción de integridad referencial.
+    Ver D-021 en StaffFlow_Desviaciones.txt.
+
+  BLOQUE 3 — empleados (3 registros)
+    Referenciados por usuario_id. Los IDs deben coincidir con los
+    asignados en el bloque anterior:
+
+      Ana García    → usuario_id=3 (emp01)    PIN terminal: 1111
+      Carlos López  → usuario_id=4 (emp02)    PIN terminal: 2222
+      Laura Fernández → usuario_id=2 (encargado01) PIN: 3333
+
+    Todos con jornada completa estándar (40h/semana, 480 min/día),
+    22 días de vacaciones y 3 de asuntos propios.
+
+
+====================================================
+7. DEPENDENCIA CRÍTICA: ORDEN DE LOS IDs
+====================================================
+
+H2 asigna IDs de forma secuencial empezando en 1. El orden de los
+INSERT en data.sql determina qué ID recibe cada usuario. Los empleados
+referencian esos IDs en el campo usuario_id.
+
+Si se modifica el orden de los INSERT de usuarios en data.sql, los
+empleados quedarán vinculados al usuario incorrecto y el login
+devolverá empleadoId erróneo en el JWT.
+
+Regla: NO reordenar los INSERT de usuarios sin actualizar también
+los usuario_id de los INSERT de empleados.
+
+Si en el futuro se añaden más usuarios al data.sql, hay que recalcular
+todos los usuario_id de empleados.
+
+
+====================================================
+8. ACCESO A LA CONSOLA H2
+====================================================
+
+Con perfil 'dev' activo, H2 expone una consola web para inspeccionar
+la BD en tiempo real:
+
+  URL:      http://localhost:8080/h2-console
+  JDBC URL: jdbc:h2:mem:staffflow
+  Usuario:  sa
+  Password: (vacío)
+
+Desde aquí se pueden ejecutar consultas SQL, verificar que data.sql
+se cargó correctamente, e inspeccionar el estado de las tablas
+durante las pruebas.
+
+La consola está desactivada en el perfil 'mysql' (la propiedad
+h2.console.enabled solo aparece en application-dev.yml).
+
+
+====================================================
+9. FLUJO COMPLETO AL ARRANCAR CON PERFIL dev
+====================================================
+
+  1. Spring Boot lee application.yaml → perfil activo: dev
+  2. Spring Boot carga application-dev.yml
+  3. HikariCP conecta al datasource H2 en memoria (jdbc:h2:mem:staffflow)
+  4. Hibernate detecta las 7 entidades JPA y ejecuta CREATE TABLE x7
+  5. Spring Boot espera (defer-datasource-initialization: true)
+  6. Spring Boot ejecuta data.sql contra H2:
+       INSERT configuracion_empresa (1 fila)
+       INSERT usuarios x5 (IDs 1-5 asignados por H2)
+       INSERT empleados x3 (usuario_id 2, 3, 4)
+  7. Tomcat arranca en puerto 8080
+  8. Swagger disponible en /swagger-ui.html
+  9. H2 Console disponible en /h2-console
+
+Estado final: BD lista para usar con datos de prueba completos.
+
+
+====================================================
+10. RESUMEN DE CREDENCIALES PARA EL TUTOR
+====================================================
+
+Arranque:
+  mvn spring-boot:run -Dspring-boot.run.profiles=dev
+  (o configurar Active profiles: dev en IntelliJ Run Configuration)
+
+Login en Swagger / app Android:
+  usuario:    admin
+  contraseña: admin1234
+  rol:        ADMIN (acceso total)
+
+Otros usuarios disponibles:
+  encargado01 / admin1234  → ADMIN + ENCARGADO
+  emp01       / admin1234  → EMPLEADO (perfil Ana García)
+  emp02       / admin1234  → EMPLEADO (perfil Carlos López)
+
+Terminal PIN (endpoints E48-E51, sin JWT):
+  Ana García    → PIN 1111
+  Carlos López  → PIN 2222
+  Laura Fernández → PIN 3333
+
+Consola H2 (para inspección de BD en tiempo real):
+  http://localhost:8080/h2-console
+  JDBC URL: jdbc:h2:mem:staffflow  |  Usuario: sa  |  Password: (vacío)
+
+
+====================================================
+11. FICHEROS IMPLICADOS EN ESTA CONFIGURACIÓN
+====================================================
+
+  src/main/resources/application.yaml
+    → spring.profiles.active: dev (cambia a 'mysql' para desarrollo)
+
+  src/main/resources/application-dev.yml
+    → datasource H2, ddl-auto: create-drop
+    → defer-datasource-initialization: true
+    → sql.init.mode: always
+    → h2.console.enabled: true
+
+  src/main/resources/data.sql
+    → datos iniciales: empresa, usuarios, empleados
+
+  src/main/resources/application-mysql.yml
+    → datasource MySQL, ddl-auto: validate
+    → sin sql.init (data.sql se ignora en este perfil)

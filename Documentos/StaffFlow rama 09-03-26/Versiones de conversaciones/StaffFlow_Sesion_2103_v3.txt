@@ -1,0 +1,219 @@
+====================================================
+STAFFFLOW -- SESION 2103_v3
+Fecha: 21/03/2026
+Conversacion: sesion 20
+====================================================
+
+Este fichero captura el razonamiento completo, decisiones y
+verificaciones de la sesion. Complementa al prompt activo y
+las desviaciones con el detalle que esos ficheros no recogen.
+
+Adjuntar en la proxima sesion junto con el prompt activo.
+
+====================================================
+1. PUNTO DE PARTIDA DE LA SESION
+====================================================
+
+Ficheros adjuntados al inicio:
+  StaffFlow_Prompt_Dev_2103_v2.txt
+  StaffFlow_Desviaciones_2103_v2.txt
+  StaffFlow_Sesion_2103_v2.txt
+  StaffFlow_Bloque7_Tarea1_InformesHTML_v2.txt
+  StaffFlow_Entrega_v2.txt
+  StaffFlow_Mejoras_para_Version2_0_2103_v2.txt
+  (mas tarde: InformeService.java, InformeController.java,
+   SaldoAnual.java, SaldoAnualRepository.java,
+   Empleado.java, EmpleadoRepository.java)
+
+Estado al iniciar: E42/E43 verificados, E44 pendiente de implementar.
+Objetivo de sesion: implementar y verificar E44 + documentar M-013.
+
+====================================================
+2. ANALISIS PREVIO A LA IMPLEMENTACION
+====================================================
+
+Antes de codificar se realizo un analisis detallado del diseno
+del informe E44 para establecer exactamente que mostrar y como.
+
+DECISION NOMBRE DEL ENDPOINT:
+  El diseno original llamaba al endpoint /vacaciones pero el
+  contenido real es un informe de saldos completo (vacaciones,
+  asuntos propios, dias trabajados, horas, control). Se decidio
+  renombrar a /saldos para mayor precision. Registrado como D-029.
+
+DECISION COLUMNAS Y BLOQUES:
+  Se definio la estructura de la tabla en iteraciones con Santiago:
+  - Bloque DIAS VACACIONES: Pendientes ano anterior, Derecho anual,
+    Consumidos ano en curso, Disponibles.
+  - Bloque DIAS ASUNTOS PROPIOS: misma estructura.
+  - Bloque RESTO DE DIAS: Dias trabajados, Dias baja medica,
+    Dias permiso retribuido, Dias ausencia injustificada.
+  - Bloque HORAS: Horas ausencia retribuida, Saldo horas.
+  - Bloque CONTROL: Calculado hasta, Ultima modificacion.
+  Columna Empleado siempre presente, no seleccionable.
+
+DECISION COLOR EN CELDA DISPONIBLES Y SALDO HORAS:
+  Positivo -> verde. Negativo -> rojo. Cero -> negro (sin clase).
+  Aplica a: VAC_DISPONIBLES, AP_DISPONIBLES y SALDO_HORAS.
+
+DECISION PARAMETRO ?campos=:
+  Acepta bloques predefinidos (DIAS_VACACIONES, DIAS_ASUNTOS_PROPIOS,
+  RESTO_DIAS, HORAS, CONTROL) y campos individuales (VAC_DERECHO,
+  VAC_CONSUMIDOS, etc.). Sin parametro muestra todos los bloques.
+  Registrado como parte de D-029.
+
+DECISION PARAMETRO ?empleadoId=:
+  Sin parametro: todos los empleados activos con saldo en ese ano.
+  Con uno o varios ids separados por coma: solo esos empleados.
+  Registrado como parte de D-029.
+
+DECISION CABECERA:
+  Una sola linea: INFORME DE SALDOS -- anio . Generado el dd/MM/yyyy.
+  Sin metadatos de roles ni URL.
+
+====================================================
+3. DOCUMENTACION PREVIA A LA IMPLEMENTACION
+====================================================
+
+Antes de codificar se generaron y descargaron:
+  StaffFlow_Mejoras_para_Version2_0_2103_v4.txt (M-013 anadida)
+  StaffFlow_Desviaciones_2103_v3.txt (D-029 anadida)
+
+M-013 -- Auditoria de intervenciones manuales:
+  Idea de Santiago: nueva tabla auditoria_intervenciones que registra
+  INSERT y UPDATE manuales sobre fichajes, pausas y planificacion_ausencias.
+  Campos: tabla_afectada, registro_id, accion, usuario_id, fecha_hora,
+  estado_anterior (JSON), estado_nuevo (JSON), observacion opcional.
+  Complementa M-005 (historial saldos) y M-012 (origen fichaje).
+
+D-029 -- E44 renombrado a /saldos con ?empleadoId= y ?campos=:
+  Tres cambios respecto al diseno original:
+  1. URL /vacaciones -> /saldos (nombre impreciso).
+  2. Parametro ?empleadoId= opcional para filtrar por empleados.
+  3. Parametro ?campos= opcional con bloques y campos individuales.
+
+====================================================
+4. IMPLEMENTACION E44
+====================================================
+
+Ficheros modificados:
+
+  InformeService.java:
+    - Metodo informeVacaciones() (stub) eliminado.
+    - Metodo informeSaldos(anio, formato, empleadoIds, campos) nuevo.
+    - Constantes nuevas: CAMPOS_VALIDOS (lista de 16 campos),
+      BLOQUES (mapa bloque -> lista de campos).
+    - Metodos privados nuevos:
+        resolverCampos(): expande bloques a campos individuales.
+          Sin parametro activa todos. Valores desconocidos ignorados.
+          Si tras resolver no hay campos validos activa todos.
+        construirJsonSaldos(): lista de mapas con solo campos activos.
+        agregarCamposJson(): puebla el mapa con los campos del SaldoAnual.
+        generarHtmlSaldos(): HTML con tabla de dos niveles de cabecera.
+          Calcula colspan dinamicamente segun campos activos por bloque.
+          tieneAlgunCampo() y contarCamposBloque() como auxiliares.
+        claseCelda(): devuelve valor-pos, valor-neg o vacio segun entero.
+        formatearDecimal(): BigDecimal a dos decimales con coma decimal.
+    - CSS nuevas clases en htmlCabeceraInforme():
+        bloque-vac, bloque-ap, bloque-dias, bloque-horas, bloque-ctrl
+        con colores distintos por bloque.
+        valor-pos (verde) y valor-neg (rojo) para celdas de disponibles
+        y saldo horas.
+        col-empleado para columna empleado centrada.
+
+  InformeController.java:
+    - Endpoint /vacaciones renombrado a /saldos.
+    - Metodo informeVacaciones() renombrado a informeSaldos().
+    - Parametros nuevos: List<Long> empleadoId, List<String> campos.
+    - Parametro anio sigue siendo opcional con defecto ano actual.
+    - Javadoc actualizado con D-029 y descripcion de bloques y campos.
+
+====================================================
+5. VERIFICACION E44 (5/5 OK)
+====================================================
+
+Prerrequisito: llamar a POST /api/v1/test/cierre-diario para que
+ProcesoCierreDiario genere saldos_anuales en H2. Sin este paso
+findByAnio() devuelve lista vacia porque data.sql no precarga saldos.
+
+  Caso 1: GET /saldos?anio=2026&formato=json
+    Resultado: 3 empleados, todos los campos.
+    Ana: vacConsumidos=5, diasTrabajados=14, diasBajaMedica=2,
+         diasAusenciaInjustificada=2, saldoHoras=-24.00. OK.
+    Carlos: apConsumidos=1, diasTrabajados=20, diasPermiso=1,
+            diasAusenciaInjustificada=1, saldoHoras=-17.50. OK.
+    Laura: todo a 0 excepto diasAusenciaInjustificada=1. OK.
+
+  Caso 2: GET /saldos?anio=2026&formato=html
+    Tabla con 5 bloques coloreados. Disponibles en verde.
+    Saldo horas: Ana y Carlos en rojo, Laura en negro. OK.
+
+  Caso 3: GET /saldos?anio=2026&formato=html&empleadoId=1
+    Solo Ana. Una fila. Todos los campos. OK.
+
+  Caso 4: GET /saldos?anio=2026&formato=html&campos=DIAS_VACACIONES
+    Solo bloque vacaciones (4 columnas). Resto de bloques ausente.
+    3 empleados. OK.
+
+  Caso 5: GET /saldos?anio=2026&formato=html
+          &empleadoId=1,2&campos=DIAS_VACACIONES,SALDO_HORAS
+    Ana y Carlos. Bloque vacaciones + columna saldo horas.
+    Bloque Horas con colspan=1 correcto (solo SALDO_HORAS activo). OK.
+
+====================================================
+6. NOTA SOBRE SALDOS EN DATA.SQL
+====================================================
+
+Los saldos_anuales no se precargan en data.sql porque en produccion
+los genera ProcesoCierreDiario cada noche de forma incremental.
+Precargarlos en data.sql seria incoherente con el modelo real y
+podria generar conflictos con el proceso automatico.
+
+Para verificar E44 en entorno dev hay que ejecutar primero
+POST /api/v1/test/cierre-diario. Esto queda documentado en el
+prompt activo como nota permanente de data.sql.
+
+====================================================
+7. DOCUMENTACION GENERADA EN ESTA SESION
+====================================================
+
+Ficheros de codigo:
+  InformeService.java      (modificado -- E44 implementado)
+  InformeController.java   (modificado -- /saldos, ?empleadoId=, ?campos=)
+
+Ficheros de documentacion:
+  StaffFlow_Desviaciones_2103_v3.txt      (D-029 anadida)
+  StaffFlow_Mejoras_para_Version2_0_2103_v4.txt (M-013 anadida)
+  StaffFlow_Bloque7_Tarea2_InformeSaldos_v1.txt (nuevo)
+  StaffFlow_Prompt_Dev_2103_v3.txt        <- ACTIVO
+  StaffFlow_Sesion_2103_v3.txt            <- ESTE FICHERO
+
+====================================================
+8. FICHEROS A ADJUNTAR EN LA PROXIMA SESION
+====================================================
+
+  StaffFlow_Prompt_Dev_2103_v3.txt              <- obligatorio
+  StaffFlow_Desviaciones_2103_v3.txt            <- obligatorio
+  StaffFlow_Sesion_2103_v3.txt                  <- obligatorio
+  StaffFlow_Bloque7_Tarea2_InformeSaldos_v1.txt <- recomendado
+
+====================================================
+9. PENDIENTE ANTES DE ENTREGA FINAL
+====================================================
+
+  1. Anadir iText 7 al pom.xml ANTES de implementar E45-E47.
+     Verificar version en Maven Central en la proxima sesion.
+
+  2. E45: GET /api/v1/informes/horas/{empleadoId}/pdf
+  3. E46: GET /api/v1/informes/horas/pdf
+  4. E47: GET /api/v1/informes/saldos/pdf
+
+  5. TestProcesoCierreDiarioController.java tiene @Profile({"dev","mysql"}).
+     Decidir antes de entrega: eliminar o volver a @Profile("dev").
+
+  6. ProcesoDiarioService.java debe eliminarse del proyecto.
+     Sustituido por ProcesoCierreDiario.java en sesion 17.
+
+====================================================
+FIN StaffFlow_Sesion_2103_v3.txt
+====================================================
