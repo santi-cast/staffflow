@@ -60,6 +60,7 @@
     <string name="login_btn">Iniciar sesión</string>
     <string name="login_olvide_password">¿Olvidaste tu contraseña?</string>
     <string name="login_error_campos_vacios">Introduce usuario y contraseña</string>
+    <string name="login_volver_terminal">Volver al terminal</string>
 
     <!-- P07 Tipo de pausa -->
     <string name="tipo_pausa_titulo">Selecciona el tipo de pausa</string>

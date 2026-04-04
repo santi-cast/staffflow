@@ -62,6 +62,11 @@ class LoginFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         configurarFormulario()
         observarViewModel()
+        // Mostrar "Volver al terminal" solo si hay una pantalla anterior en la pila
+        if (findNavController().previousBackStackEntry != null) {
+            binding.btnVolverTerminal.isVisible = true
+            binding.btnVolverTerminal.setOnClickListener { findNavController().popBackStack() }
+        }
     }
 
     override fun onDestroyView() {
