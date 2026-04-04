@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fila reutilizable de label + valor para las cards de saldo (P09).
+    Se incluye via <include> en fragment_mi_saldo.xml.
+    El texto de tvLabel y tvValor se establece desde MiSaldoFragment.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="4dp">
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <TextView
+        android:id="@+id/tvValor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textStyle="bold" />
+
+</LinearLayout>

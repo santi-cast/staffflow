@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menu de la toolbar para P09 MiSaldoFragment.
+    El titulo del item action_anio se actualiza dinamicamente con el año seleccionado.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_anio"
+        android:title="2026"
+        app:showAsAction="always" />
+
+</menu>

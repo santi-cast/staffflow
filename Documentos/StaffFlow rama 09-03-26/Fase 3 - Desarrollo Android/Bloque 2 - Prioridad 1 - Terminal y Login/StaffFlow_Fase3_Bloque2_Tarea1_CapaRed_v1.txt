@@ -1,0 +1,89 @@
+====================================================
+STAFFFLOW -- FASE 3 BLOQUE 2 TAREA 1 -- CAPA DE RED
+StaffFlow_Fase3_Bloque2_Tarea1_CapaRed_v1.txt
+Sesion: 27 (03/04/2026)
+====================================================
+
+====================================================
+OBJETIVO
+====================================================
+
+Crear las interfaces Retrofit y los repositorios para todos los
+endpoints que usan las 6 pantallas del Bloque 2. Hacerlo en una
+sola tarea evita interrumpir la implementacion de cada fragment
+para crear sus dependencias de red.
+
+====================================================
+FICHEROS CREADOS
+====================================================
+
+data/remote/api/TerminalApiService.kt
+  Endpoints: E48 registrarEntrada, E49 registrarSalida,
+             E50 iniciarPausa, E51 finalizarPausa
+  Todos SIN JWT. Request/Response types del dto/.
+
+data/remote/api/AuthApiService.kt
+  Endpoints: E01 login
+  SIN JWT. LoginRequest -> LoginResponse.
+
+data/remote/api/SaldoApiService.kt
+  Endpoints: E41 getMiSaldo(?anio)
+  Con JWT (EMPLEADO). SaldoResponse.
+
+data/remote/api/PresenciaApiService.kt
+  Endpoints: E35 getParteDiario(?fecha)
+  Con JWT (ENCARGADO, ADMIN). ParteDiarioResponse.
+
+data/remote/repository/TerminalRepository.kt
+  Wrappea TerminalApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/AuthRepository.kt
+  Wrappea AuthApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/SaldoRepository.kt
+  Wrappea SaldoApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/PresenciaRepository.kt
+  Wrappea PresenciaApiService. Metodos suspendibles -> Result<T>.
+
+util/ApiExtensions.kt
+  safeApiCall<T>: funcion suspend top-level que ejecuta una llamada
+  Retrofit y devuelve Result<T>. Parsea ErrorResponse via Gson en
+  errores HTTP. Captura IOException para errores de red.
+
+====================================================
+DECISIONES
+====================================================
+
+D-B2-01 -- PATRON REPOSITORIO CON Result<T>:
+  Todos los metodos del repositorio devuelven Result<T>.
+  El ViewModel usa .onSuccess / .onFailure para actualizar el StateFlow
+  de la UI sin necesidad de clases sealed adicionales para este bloque.
+  Justificacion: patron estandar de Kotlin, sin dependencias extra,
+  compatible con el estilo del resto del proyecto.
+
+D-B2-02 -- safeApiCall EN util/ApiExtensions.kt:
+  Funcion suspend top-level compartida por los 4 repositorios.
+  Centraliza el manejo de IOException (sin conexion) y el parseo
+  de ErrorResponse via Gson para errores HTTP.
+  No se uso inline en cada repositorio: el patron se repite 8 veces
+  y centralizar evita duplicacion sin over-engineering.
+
+D-B2-03 -- INSTANCIACION MANUAL EN VIEWMODEL:
+  Sin Hilt (incompatible con AGP 9.x). Cada ViewModel instancia
+  su repositorio directamente:
+    private val repository = TerminalRepository(
+        NetworkModule.retrofit.create(TerminalApiService::class.java)
+    )
+  Patron consistente con SessionManager (companion object getInstance).
+
+====================================================
+VERIFICACION
+====================================================
+
+Revision manual contra Contexto_v5 secciones 4, 5 y 6.
+Compilacion formal: pendiente junto con Tarea 2 (TerminalFragment).
+
+====================================================
+FIN StaffFlow_Fase3_Bloque2_Tarea1_CapaRed_v1.txt
+====================================================

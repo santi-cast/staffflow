@@ -1,0 +1,181 @@
+package com.staffflow.android.ui.empleado
+
+import android.graphics.Color
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.staffflow.android.R
+import com.staffflow.android.databinding.FragmentMiSaldoBinding
+import com.staffflow.android.databinding.ItemSaldoFilaBinding
+import com.staffflow.android.data.remote.dto.SaldoResponse
+import kotlinx.coroutines.launch
+import java.util.Calendar
+
+/**
+ * Mi saldo anual (P09). Destino inicial del rol EMPLEADO.
+ *
+ * Patron C - dato unico solo lectura. Endpoint: E41 GET /saldos/me?anio=
+ *
+ * Tres estados:
+ *   Loading -> CircularProgressIndicator centrado
+ *   Error   -> icono nube + mensaje + boton Reintentar
+ *   Success -> 3 cards (vacaciones, asuntos propios, horas)
+ *
+ * Selector de año en la toolbar: item de menu que muestra el año actual.
+ * Al pulsarlo abre un dialogo con los ultimos 3 años + año siguiente.
+ * saldoHoras: verde si >= 0, rojo si < 0.
+ */
+class MiSaldoFragment : Fragment() {
+
+    private var _binding: FragmentMiSaldoBinding? = null
+    private val binding get() = _binding!!
+
+    private val viewModel: MiSaldoViewModel by viewModels()
+
+    // ------------------------------------------------------------------
+    // Ciclo de vida
+    // ------------------------------------------------------------------
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentMiSaldoBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        configurarMenu()
+        binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
+        observarViewModel()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    // ------------------------------------------------------------------
+    // Menu selector de año en toolbar
+    // ------------------------------------------------------------------
+
+    private fun configurarMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+                inflater.inflate(R.menu.menu_mi_saldo, menu)
+                menu.findItem(R.id.action_anio)?.title = viewModel.anio.value.toString()
+            }
+            override fun onMenuItemSelected(item: MenuItem): Boolean {
+                if (item.itemId == R.id.action_anio) {
+                    mostrarSelectorAnio()
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun mostrarSelectorAnio() {
+        val anioActual = Calendar.getInstance().get(Calendar.YEAR)
+        val anios = ((anioActual - 2)..(anioActual + 1)).map { it.toString() }.toTypedArray()
+        val seleccionado = anios.indexOf(viewModel.anio.value.toString())
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.saldo_selector_anio_titulo)
+            .setSingleChoiceItems(anios, seleccionado) { dialogo, indice ->
+                viewModel.setAnio(anios[indice].toInt())
+                requireActivity().invalidateOptionsMenu()
+                dialogo.dismiss()
+            }
+            .show()
+    }
+
+    // ------------------------------------------------------------------
+    // Observacion del ViewModel
+    // ------------------------------------------------------------------
+
+    private fun observarViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { procesarEstado(it) }
+            }
+        }
+    }
+
+    private fun procesarEstado(estado: MiSaldoViewModel.UiState) {
+        binding.progressIndicator.isVisible = estado is MiSaldoViewModel.UiState.Loading
+        binding.layoutError.isVisible = estado is MiSaldoViewModel.UiState.Error
+        binding.scrollContenido.isVisible = estado is MiSaldoViewModel.UiState.Success
+
+        when (estado) {
+            is MiSaldoViewModel.UiState.Error -> {
+                binding.tvErrorMensaje.text = estado.mensaje
+            }
+            is MiSaldoViewModel.UiState.Success -> {
+                mostrarSaldo(estado.saldo)
+            }
+            else -> Unit
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Relleno de datos
+    // ------------------------------------------------------------------
+
+    private fun mostrarSaldo(saldo: SaldoResponse) {
+        val vac = saldo.vacaciones
+        setFila(binding.filaVacacionesDerecho,   getString(R.string.saldo_derecho),    "${vac.derechoAnio} días")
+        setFila(binding.filaVacacionesConsumidos, getString(R.string.saldo_consumidos), "${vac.consumidos} días")
+        setFila(binding.filaVacacionesDisponibles,getString(R.string.saldo_disponibles),"${vac.disponibles} días")
+
+        val ap = saldo.asuntosPropios
+        setFila(binding.filaAsuntosDerecho,    getString(R.string.saldo_derecho),    "${ap.derechoAnio} días")
+        setFila(binding.filaAsuntosConsumidos, getString(R.string.saldo_consumidos), "${ap.consumidos} días")
+        setFila(binding.filaAsuntosDisponibles,getString(R.string.saldo_disponibles),"${ap.disponibles} días")
+
+        val h = saldo.horas
+        setFila(binding.filaHorasEsperadas,  getString(R.string.saldo_esperadas),  formatHoras(h.esperadas))
+        setFila(binding.filaHorasTrabajadas, getString(R.string.saldo_trabajadas), formatHoras(h.trabajadas))
+
+        val saldoTexto = formatSaldoHoras(h.saldoHoras)
+        val saldoColor = if (h.saldoHoras >= 0)
+            MaterialColors.getColor(requireView(), com.google.android.material.R.attr.colorTertiary)
+        else
+            MaterialColors.getColor(requireView(), com.google.android.material.R.attr.colorError)
+        setFila(binding.filaSaldoHoras, getString(R.string.saldo_saldo_horas), saldoTexto)
+        binding.filaSaldoHoras.tvValor.setTextColor(saldoColor)
+    }
+
+    private fun setFila(fila: ItemSaldoFilaBinding, label: String, valor: String) {
+        fila.tvLabel.text = label
+        fila.tvValor.text = valor
+    }
+
+    // ------------------------------------------------------------------
+    // Helpers de formato
+    // ------------------------------------------------------------------
+
+    private fun formatHoras(horas: Double): String = String.format("%.1f h", horas)
+
+    private fun formatSaldoHoras(horas: Double): String {
+        val signo = if (horas >= 0) "+" else ""
+        return "$signo${String.format("%.1f", horas)} h"
+    }
+}

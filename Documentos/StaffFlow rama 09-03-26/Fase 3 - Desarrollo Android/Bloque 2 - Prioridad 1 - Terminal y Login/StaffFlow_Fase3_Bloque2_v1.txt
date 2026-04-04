@@ -15,7 +15,8 @@ ESTADO GENERAL DEL BLOQUE
 
 Bloque 2: Prioridad 1 - Terminal y Login
 Sesion de inicio: 26 (03/04/2026)
-Estado: EN CURSO
+Sesion de cierre: 28 (04/04/2026)
+Estado: COMPLETADO
 
 Objetivo: implementar las 6 pantallas de Prioridad 1 que forman
 el nucleo demostrable en el video de defensa del PFG.
@@ -29,17 +30,17 @@ Pantallas:
   P17 Parte diario          (destino inicial ENCARGADO)
 
 Tareas:
-  Tarea 1 -- Capa de red Prioridad 1               PENDIENTE
-  Tarea 2 -- P01 TerminalFragment                  PENDIENTE
-  Tarea 3 -- P06 ConfirmacionFragment              PENDIENTE
-  Tarea 4 -- P07 TipoPausaFragment                 PENDIENTE
-  Tarea 5 -- P02 LoginFragment                     PENDIENTE
-  Tarea 6 -- P09 MiSaldoFragment                   PENDIENTE
-  Tarea 7 -- P17 ParteDiarioFragment               PENDIENTE
+  Tarea 1 -- Capa de red Prioridad 1               COMPLETADA
+  Tarea 2 -- P01 TerminalFragment                  COMPLETADA
+  Tarea 3 -- P06 ConfirmacionFragment              COMPLETADA
+  Tarea 4 -- P07 TipoPausaFragment                 COMPLETADA
+  Tarea 5 -- P02 LoginFragment                     COMPLETADA
+  Tarea 6 -- P09 MiSaldoFragment                   COMPLETADA
+  Tarea 7 -- P17 ParteDiarioFragment               COMPLETADA
 
 ====================================================
 TAREA 1 -- CAPA DE RED PRIORIDAD 1
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Objetivo:
@@ -77,7 +78,7 @@ Patron de repositorio:
 
 ====================================================
 TAREA 2 -- P01 TerminalFragment
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Patron: A (Terminal sin JWT)
@@ -102,7 +103,7 @@ Funcionalidad:
 
 ====================================================
 TAREA 3 -- P06 ConfirmacionFragment
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Patron: A (pantalla de feedback, sin interaccion)
@@ -125,7 +126,7 @@ Funcionalidad:
 
 ====================================================
 TAREA 4 -- P07 TipoPausaFragment
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Patron: A (seleccion sin JWT)
@@ -143,7 +144,7 @@ Funcionalidad:
 
 ====================================================
 TAREA 5 -- P02 LoginFragment
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Patron: B (autenticacion JWT)
@@ -169,7 +170,7 @@ Funcionalidad:
 
 ====================================================
 TAREA 6 -- P09 MiSaldoFragment
-PENDIENTE
+Sesion 27 -- 03/04/2026 -- COMPLETADA
 ====================================================
 
 Patron: C (dato unico, solo lectura)
@@ -192,34 +193,43 @@ Funcionalidad:
 
 ====================================================
 TAREA 7 -- P17 ParteDiarioFragment
-PENDIENTE
+Sesion 28 -- 04/04/2026 -- COMPLETADA
 ====================================================
 
-Patron: D (lista paginada, solo lectura)
+Patron: D (lista solo lectura con filtro de fecha)
 Endpoints: E35 GET /presencia/parte-diario?fecha=
 
-Ficheros a crear:
+Ficheros creados:
   ui/encargado/ParteDiarioViewModel.kt
   ui/encargado/ParteDiarioFragment.kt
+  ui/encargado/PresenciaAdapter.kt
   res/layout/fragment_parte_diario.xml
-  res/layout/item_presencia.xml  (item de la lista RecyclerView)
+  res/layout/item_presencia.xml
+  res/layout/item_presencia_skeleton.xml
+  res/drawable/bg_skeleton.xml
+  res/menu/menu_parte_diario.xml
+
+Dependencias anadidas en build.gradle.kts + libs.versions.toml:
+  androidx.recyclerview 1.4.0
+  androidx.swiperefreshlayout 1.1.0
 
 Funcionalidad:
-  Selector de fecha en toolbar (hoy por defecto).
+  Selector de fecha en toolbar con MaterialDatePicker (hoy por defecto).
   Chips resumen: fichados | en pausa | ausencias | sin justificar.
   Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
-  RecyclerView con skeleton list en carga (no spinner).
-  Cada fila muestra: nombre + estado + hora entrada.
+  RecyclerView con skeleton list en carga (5 items grises, sin shimmer).
+  Cada fila muestra: nombre + estado (coloreado) + hora entrada.
   Color de fila segun EstadoPresencia:
-    JORNADA_INICIADA    -> verde
-    EN_PAUSA            -> naranja
-    JORNADA_COMPLETADA  -> verde oscuro
-    AUSENCIA_REGISTRADA / AUSENCIA_PLANIFICADA -> azul
-    SIN_JUSTIFICAR      -> rojo
+    JORNADA_INICIADA    -> verde   (#4CAF50)
+    EN_PAUSA            -> naranja (#FF9800)
+    JORNADA_COMPLETADA  -> verde oscuro (#2E7D32)
+    AUSENCIA_REGISTRADA / AUSENCIA_PLANIFICADA -> azul (#1976D2)
+    SIN_JUSTIFICAR      -> rojo   (#F44336)
   Tap en fila -> action_parte_diario_to_detalle_empleado (P14, Bloque 3).
   Pull to refresh.
   Error: icono nube + mensaje + boton Reintentar.
   Estado vacio: icono + "No hay empleados registrados hoy".
+  Cuatro estados: Loading | Success | Empty | Error.
 
 ====================================================
 FIN StaffFlow_Fase3_Bloque2_v1.txt

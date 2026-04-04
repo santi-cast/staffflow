@@ -1,0 +1,1117 @@
+====================================================
+STAFFFLOW -- CONTEXTO ANDROID COMPLETO
+StaffFlow_Android_Contexto_v6.txt
+Creado: 21/03/2026
+Actualizado: 04/04/2026
+Cambios v3: Rutas E45-E47 corregidas segun D-031 (PdfController
+    separado bajo /api/v1/informes/pdf). Las rutas anteriores
+    apuntaban a la implementacion provisional de sesion 21.
+Cambios v4: E53 anadido (GET /informes/pdf/vacaciones, sesion 24,
+    D-033). Nombre descarga E47 corregido a informe_saldos_{yyyyMMdd}.pdf.
+    Seccion de manejo de PDFs actualizada con E53.
+Cambios v5: Seccion 1 actualizada con ficheros de infraestructura
+    creados en Bloque 1 (sesiones 25-26). Seccion 12 actualizada:
+    Bloque 1 COMPLETADO, Prioridad 1 EN CURSO (Bloque 2).
+Cambios v6: Seccion 1 actualizada con todos los ficheros del Bloque 2
+    (sesiones 27-28). Seccion 12: Bloque 2 COMPLETADO, Bloque 3 PENDIENTE.
+====================================================
+
+Este fichero contiene todo el contexto del backend necesario para
+implementar la aplicacion Android de StaffFlow sin necesidad de
+adjuntar ningun fichero Java del backend. Incluye todos los DTOs,
+enums, endpoints, data classes Kotlin, y decisiones de arquitectura.
+
+====================================================
+1. STACK ANDROID
+====================================================
+
+Lenguaje:          Kotlin
+AGP:               9.0.1
+Arquitectura:      Single Activity + Navigation Component
+Networking:        Retrofit 2.9.0 + OkHttp 4.12.0 + logging-interceptor
+Persistencia:      Preferences DataStore 1.1.1 (NO SharedPreferences)
+Async:             Coroutines 1.8.1 + StateFlow/LiveData
+Lifecycle:         ViewModel + Runtime 2.8.0
+Navigation:        Navigation Component 2.8.0
+KSP:               2.1.0-1.0.29 (NO kapt -- incompatible con AGP 9.x)
+DI:                Manual con object singleton (SIN Hilt -- incompatible AGP 9.x)
+UI:                Material Design 3
+ViewBinding:       habilitado en app/build.gradle.kts
+
+BASE URL emulador: http://10.0.2.2:8080/api/v1/
+BASE URL prod:     configurar en BuildConfig
+
+----------------------------------------------------
+FICHEROS DE INFRAESTRUCTURA -- BLOQUE 1 (COMPLETADO)
+----------------------------------------------------
+
+Creados en sesiones 25-26. Ya existen en el proyecto.
+
+data/local/SessionManager.kt
+  DataStore Preferences wrapper. Singleton (companion object getInstance).
+  Almacena: token (String), rol (Rol), username (String), empleadoId (Long?).
+  API: saveSession() / clear() / getToken() / getRol() / getUsername() / getEmpleadoId()
+  Nota: empleadoId es null para rol ADMIN (no tiene perfil empleado).
+
+data/local/AuthEventBus.kt
+  SharedFlow singleton para notificacion global de HTTP 401.
+  sealed class AuthEvent { object SessionExpired }
+  object AuthEventBus { fun post(event) / val events: SharedFlow<AuthEvent> }
+  Usa MutableSharedFlow(extraBufferCapacity=1) + tryEmit para llamadas desde hilo de red.
+
+data/remote/api/NetworkModule.kt
+  OkHttpClient con HttpLoggingInterceptor (Level.BODY) + AuthInterceptor.
+  @Volatile var authToken: String? = null  <- acceso sincrono desde interceptor.
+  AuthInterceptor: aniade header Authorization si authToken != null.
+                   Si response.code == 401 -> AuthEventBus.post(SessionExpired).
+  Retrofit con GsonConverterFactory. BASE_URL = "http://10.0.2.2:8080/api/v1/"
+
+domain/model/  <- 6 enums (uno por fichero):
+  Rol.kt, TipoFichaje.kt, TipoAusencia.kt,
+  TipoPausa.kt, CategoriaEmpleado.kt, EstadoPresencia.kt
+
+data/remote/dto/Responses.kt  <- 16 data classes (LoginResponse, EmpleadoResponse,
+  SaldoResponse con nested classes, TerminalResponses, ErrorResponse, etc.)
+
+data/remote/dto/Requests.kt  <- 16 data classes (LoginRequest, EmpleadoRequest,
+  FichajePatchRequest con observaciones obligatoria RNF-L02, TerminalPinRequest, etc.)
+
+res/layout/activity_main.xml
+  DrawerLayout -> CoordinatorLayout -> AppBarLayout (MaterialToolbar)
+               -> FragmentContainerView (NavHostFragment)
+  NavigationView (drawer_menu + nav_header_main)
+
+res/menu/drawer_menu.xml
+  group_empleado / group_encargado / group_admin / group_ajustes
+  IDs de items = IDs de destino en nav_graph (NavigationUI automatico).
+  nav_cerrar_sesion gestionado manualmente con MaterialAlertDialogBuilder.
+
+MainActivity.kt
+  refreshDrawerMenu() / hideDrawerMenu() / navigateToInitialDestination(rol)
+  setupDestinationListener() / checkExistingSession() / handleSessionExpired()
+  showLogoutDialog() / collectAuthEvents()
+  NOTA: findNavController() puede fallar con FragmentContainerView.
+        Usar: supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+
+res/navigation/nav_graph.xml
+  27 destinos. startDestination = terminalFragment (P01).
+  NOTA XML: "--" dentro de comentarios provoca SAXParseException.
+            Usar " -" como separador en lugar de " -- ".
+
+ui/fichaje/TerminalFragment.kt
+  Stub reemplazado en Bloque 2. Ver seccion BLOQUE 2 mas abajo.
+
+----------------------------------------------------
+FICHEROS DE BLOQUE 2 -- PRIORIDAD 1 (COMPLETADO)
+----------------------------------------------------
+
+Creados en sesiones 27-28. Ya existen en el proyecto.
+
+util/ApiExtensions.kt
+  safeApiCall<T>: suspend top-level. Ejecuta llamada Retrofit, devuelve
+  Result<T>. Parsea ErrorResponse via Gson en errores HTTP. Captura
+  IOException para errores de red ("Sin conexion con el servidor").
+
+data/remote/api/TerminalApiService.kt
+  E48 POST /terminal/entrada    -> TerminalEntradaResponse   (SIN JWT)
+  E49 POST /terminal/salida     -> TerminalSalidaResponse    (SIN JWT)
+  E50 POST /terminal/pausa/iniciar   -> TerminalPausaResponse (SIN JWT)
+  E51 POST /terminal/pausa/finalizar -> TerminalPausaResponse (SIN JWT)
+
+data/remote/api/AuthApiService.kt
+  E01 POST /auth/login          -> LoginResponse             (SIN JWT)
+
+data/remote/api/SaldoApiService.kt
+  E41 GET /saldos/me?anio=      -> SaldoResponse             (JWT EMPLEADO)
+
+data/remote/api/PresenciaApiService.kt
+  E35 GET /presencia/parte-diario?fecha= -> ParteDiarioResponse (JWT ENCARGADO/ADMIN)
+
+data/remote/repository/TerminalRepository.kt
+  Wrappea TerminalApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/AuthRepository.kt
+  Wrappea AuthApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/SaldoRepository.kt
+  Wrappea SaldoApiService. Metodos suspendibles -> Result<T>.
+
+data/remote/repository/PresenciaRepository.kt
+  Wrappea PresenciaApiService. Metodos suspendibles -> Result<T>.
+
+ui/fichaje/TerminalViewModel.kt
+  AndroidViewModel (necesita Application para Settings.Secure.ANDROID_ID).
+  dispositivoId: ANDROID_ID del dispositivo.
+  enum AccionTerminal { ENTRADA, SALIDA, INICIAR_PAUSA, FINALIZAR_PAUSA }
+  sealed class TerminalUiState { Idle | Loading | Exito(...) | Error(mensaje) }
+  _pin: MutableStateFlow<String> ("" a 4 digitos).
+  appendDigito(digito): al 4o digito llama ejecutarAccion() automaticamente.
+  setAccionConPausa(tipoPausa): action=INICIAR_PAUSA + guarda tipo.
+  resetEstado(): emite Idle (llamado por Fragment antes de navegar a P06).
+  Decision 25: todos los botones deshabilitados durante llamada de red.
+
+ui/fichaje/TerminalFragment.kt
+  setFragmentResultListener("tipoPausa") en onViewCreated -> setAccionConPausa().
+  actualizarDisplayPin(pin): une "●"/"○" con "  " separador.
+  actualizarBotonesAccion(accion): alpha 1f (activo) / 0.5f (inactivo).
+  On Exito: viewModel.resetEstado() luego navigate(P06) con bundle de datos.
+  setInteraccionHabilitada(Boolean): deshabilita/habilita los 15 botones.
+  Bundle keys: "accion", "nombre", "horaEntrada", "horaSalida",
+    "jornadaEfectivaMinutos", "horaInicioPausa", "duracionPausaMinutos", "tipoPausa"
+
+ui/fichaje/ConfirmacionFragment.kt
+  Sin ViewModel. Lee requireArguments() para construir mensaje.
+  Cuenta atras coroutine: 3 -> 1 con delay(1000), luego navigate(P01).
+  formatearJornada(minutos): "${h}h ${m.padStart(2, '0')}m".
+
+ui/fichaje/TipoPausaFragment.kt
+  Sin ViewModel. 4 botones -> seleccionar(TipoPausa.X).
+  seleccionar: setFragmentResult("tipoPausa", bundleOf("tipo" to tipo))
+               luego navigate(action_tipo_pausa_to_terminal).
+
+ui/login/LoginViewModel.kt
+  sealed class LoginUiState { Idle | Loading | Exito(rol: Rol) | Error(mensaje) }
+  login(username, password): llama E01, on success:
+    sessionManager.saveSession(token, rol, username, empleadoId)
+    NetworkModule.authToken = token  <- ANTES de emitir Exito
+    emite Exito(resp.rol)
+  Orden critico: token en memoria ANTES de emitir Exito.
+
+ui/login/LoginFragment.kt
+  tilPassword.error para todos los mensajes de error (401, 423, red).
+  etPassword.setOnEditorActionListener con IME_ACTION_DONE -> login.
+  On Exito: (activity as MainActivity).refreshDrawerMenu()
+            (activity as MainActivity).navigateToInitialDestination(rol)
+
+ui/empleado/MiSaldoViewModel.kt
+  AndroidViewModel. _anio: MutableStateFlow<Int> (Calendar.YEAR actual).
+  sealed class UiState { Loading | Success(saldo) | Error(mensaje) }
+  init { cargarSaldo() }
+  setAnio(anio): actualiza y recarga.
+
+ui/empleado/MiSaldoFragment.kt
+  MenuProvider: selector de anio via MaterialAlertDialogBuilder.setSingleChoiceItems
+    (4 opciones: anioActual-2 .. anioActual+1).
+  3 estados: progressIndicator (inicial visible) | layoutError | scrollContenido.
+  saldoHoras color: colorTertiary si >= 0, colorError si < 0.
+  setFila(fila, label, valor): helper para ItemSaldoFilaBinding.
+
+ui/encargado/PresenciaAdapter.kt
+  ListAdapter<DetallePresenciaResponse, ViewHolder>(DiffCallback()).
+  colorParaEstado(): JORNADA_INICIADA->#4CAF50, EN_PAUSA->#FF9800,
+    JORNADA_COMPLETADA->#2E7D32, AUSENCIA_*->#1976D2, SIN_JUSTIFICAR->#F44336.
+  DiffCallback.areItemsTheSame: empleadoId.
+
+ui/encargado/ParteDiarioViewModel.kt
+  AndroidViewModel. _fecha: MutableStateFlow<String> (hoy en yyyy-MM-dd).
+  sealed class UiState { Loading | Success(data) | Empty | Error(mensaje) }
+  Empty si resp.detalle.isEmpty(). setFecha() y reintentar() publicos.
+
+ui/encargado/ParteDiarioFragment.kt
+  MenuProvider: MaterialDatePicker para seleccionar fecha en toolbar.
+  swipeRefresh.setOnRefreshListener { viewModel.reintentar() }
+  chipSinJustificar.isEnabled = data.sinJustificar > 0
+  formatearFechaDisplay(): "yyyy-MM-dd" -> "dd/MM/yyyy" para toolbar.
+  fila -> action_parte_diario_to_detalle_empleado (P14, Bloque 3).
+
+Layouts Bloque 2 (res/layout/):
+  fragment_terminal.xml        (ScrollView -> numpad PIN + 4 botones accion)
+  fragment_confirmacion.xml    (mensaje principal/secundario + cuenta atras)
+  fragment_tipo_pausa.xml      (4 botones/cards de tipo de pausa)
+  fragment_login.xml           (2 TextInputLayout + CircularProgressIndicator)
+  fragment_mi_saldo.xml        (3 MaterialCardView con item_saldo_fila)
+  item_saldo_fila.xml          (LinearLayout: tvLabel + tvValor)
+  fragment_parte_diario.xml    (ChipGroup + 4 estados: skeleton/error/vacio/RV)
+  item_presencia.xml           (MaterialCardView: borde color + nombre + estado + hora)
+  item_presencia_skeleton.xml  (MaterialCardView con 2 View grises bg_skeleton)
+  bg_skeleton.xml              (ShapeDrawable #E0E0E0 corners 4dp)
+
+Menus Bloque 2 (res/menu/):
+  menu_mi_saldo.xml            (action_anio para selector de anio)
+  menu_parte_diario.xml        (action_fecha para selector de fecha)
+
+Dependencias anadidas en Bloque 2:
+  androidx.recyclerview 1.4.0
+  androidx.swiperefreshlayout 1.1.0
+
+====================================================
+2. CREDENCIALES DE PRUEBA
+====================================================
+
+JWT (login con usuario/password):
+  admin / admin1234          (rol ADMIN)
+  encargado01 / admin1234    (rol ENCARGADO)
+  emp01 / admin1234          (rol EMPLEADO, empleadoId=1, Ana Garcia)
+  emp02 / admin1234          (rol EMPLEADO, empleadoId=2, Carlos Lopez)
+
+Terminal (sin JWT, solo PIN):
+  Ana Garcia    PIN: 1111   (EMP-001)
+  Carlos Lopez  PIN: 2222   (EMP-002)
+  Laura Fernandez PIN: 3333 (EMP-003, rol ENCARGADO)
+
+Autenticacion:
+  Header: Authorization: Bearer {token}
+  Token expira: 12h
+  Almacenar en Preferences DataStore
+
+====================================================
+3. ENUMS KOTLIN
+====================================================
+
+enum class Rol { ADMIN, ENCARGADO, EMPLEADO }
+
+enum class TipoFichaje {
+    NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL,
+    VACACIONES, ASUNTO_PROPIO, PERMISO_RETRIBUIDO,
+    BAJA_MEDICA, DIA_LIBRE_COMPENSATORIO, DIA_LIBRE,
+    AUSENCIA_INJUSTIFICADA
+}
+
+enum class TipoAusencia {
+    FESTIVO_NACIONAL, FESTIVO_LOCAL, VACACIONES,
+    ASUNTO_PROPIO, PERMISO_RETRIBUIDO, DIA_LIBRE_COMPENSATORIO,
+    DIA_LIBRE
+}
+
+enum class TipoPausa { COMIDA, DESCANSO, AUSENCIA_RETRIBUIDA, OTROS }
+
+enum class CategoriaEmpleado {
+    OPERARIO, ADMINISTRATIVO, TECNICO, ENCARGADO, OTRO
+}
+
+enum class EstadoPresencia {
+    JORNADA_INICIADA, EN_PAUSA, JORNADA_COMPLETADA,
+    AUSENCIA_REGISTRADA, AUSENCIA_PLANIFICADA, SIN_JUSTIFICAR
+}
+
+Colores por EstadoPresencia en Android:
+  JORNADA_INICIADA    -> verde
+  EN_PAUSA            -> naranja
+  JORNADA_COMPLETADA  -> verde (mas oscuro)
+  AUSENCIA_REGISTRADA -> azul
+  AUSENCIA_PLANIFICADA-> azul (mas claro)
+  SIN_JUSTIFICAR      -> rojo
+
+====================================================
+4. DATA CLASSES KOTLIN (RESPONSES)
+====================================================
+
+-- LoginResponse --
+data class LoginResponse(
+    val token: String,
+    val rol: Rol,
+    val username: String,
+    val empleadoId: Long?   // NULL si es ADMIN (no tiene perfil empleado)
+)
+
+-- UsuarioResponse --
+data class UsuarioResponse(
+    val id: Long,
+    val username: String,
+    val email: String,
+    val rol: Rol,
+    val activo: Boolean,
+    val fechaCreacion: String  // LocalDateTime serializado como String
+)
+
+-- EmpleadoResponse --
+data class EmpleadoResponse(
+    val id: Long,
+    val usuarioId: Long,
+    val nombre: String,
+    val apellido1: String,
+    val apellido2: String?,    // NULL si no tiene segundo apellido
+    val dni: String,
+    val numeroEmpleado: String, // Formato EMP-001 (D-030, renombrado desde nss)
+    val fechaAlta: String,      // LocalDate como String "yyyy-MM-dd"
+    val categoria: CategoriaEmpleado,
+    val jornadaSemanalHoras: Int,
+    val jornadaDiariaMinutos: Int,
+    val diasVacacionesAnuales: Int,
+    val diasAsuntosPropiosAnuales: Int,
+    val codigoNfc: String?,    // NULL si no tiene NFC
+    val activo: Boolean
+    // NOTA: pinTerminal NUNCA se incluye en este DTO por seguridad
+)
+
+-- EmpresaResponse --
+data class EmpresaResponse(
+    val id: Long,              // Siempre 1 (singleton)
+    val nombreEmpresa: String,
+    val cif: String,
+    val direccion: String?,
+    val email: String?,
+    val telefono: String?,
+    val logoPath: String?      // NULL si no se ha configurado logo
+)
+
+-- FichajeResponse --
+data class FichajeResponse(
+    val id: Long,
+    val empleadoId: Long,
+    val fecha: String,          // "yyyy-MM-dd"
+    val tipo: TipoFichaje,
+    val horaEntrada: String?,   // NULL en ausencias planificadas
+    val horaSalida: String?,    // NULL si jornada en curso
+    val totalPausasMinutos: Int,
+    val jornadaEfectivaMinutos: Int,
+    val usuarioId: Long,
+    val observaciones: String?,
+    val fechaCreacion: String
+)
+
+-- PausaResponse --
+data class PausaResponse(
+    val id: Long,
+    val empleadoId: Long,
+    val fecha: String,
+    val horaInicio: String,
+    val horaFin: String?,       // NULL = pausa activa en curso
+    val duracionMinutos: Int?,  // NULL hasta cerrar la pausa
+    val tipoPausa: TipoPausa,
+    val usuarioId: Long,
+    val observaciones: String?,
+    val fechaCreacion: String
+)
+
+-- AusenciaResponse --
+data class AusenciaResponse(
+    val id: Long,
+    val empleadoId: Long?,      // NULL = festivo global
+    val fecha: String,
+    val tipoAusencia: TipoAusencia,
+    val procesado: Boolean,     // true = ya tiene fichaje generado
+    val usuarioId: Long,
+    val observaciones: String?,
+    val fechaCreacion: String
+)
+
+-- SaldoResponse --
+data class SaldoResponse(
+    val empleadoId: Long,
+    val anio: Int,
+    val vacaciones: VacacionesDesglose,
+    val asuntosPropios: AsuntosPropiosDesglose,
+    val horas: HorasDesglose,
+    val calculadoHastaFecha: String?
+) {
+    data class VacacionesDesglose(
+        val derechoAnio: Int,
+        val pendientesAnterior: Int,
+        val consumidos: Int,
+        val disponibles: Int
+    )
+    data class AsuntosPropiosDesglose(
+        val derechoAnio: Int,
+        val pendientesAnterior: Int,
+        val consumidos: Int,
+        val disponibles: Int
+    )
+    data class HorasDesglose(
+        val esperadas: Double,
+        val trabajadas: Double,
+        val saldoHoras: Double  // positivo=extra, negativo=deficit
+    )
+}
+
+-- ParteDiarioResponse --
+data class ParteDiarioResponse(
+    val fecha: String,
+    val totalEmpleados: Int,
+    val fichados: Int,
+    val enPausa: Int,
+    val ausencias: Int,
+    val sinJustificar: Int,
+    val detalle: List<DetallePresenciaResponse>
+)
+
+-- DetallePresenciaResponse --
+data class DetallePresenciaResponse(
+    val empleadoId: Long,
+    val nombre: String,
+    val apellido1: String,
+    val apellido2: String?,
+    val estado: EstadoPresencia,
+    val horaEntrada: String?,
+    val horaSalida: String?,
+    val pausaActiva: Boolean,
+    val fichajeTipo: TipoFichaje?
+)
+
+-- SinJustificarResponse --
+data class SinJustificarResponse(
+    val empleadoId: Long,
+    val nombre: String,
+    val apellido1: String,
+    val apellido2: String?
+)
+
+-- MensajeResponse --
+data class MensajeResponse(val mensaje: String)
+
+-- ErrorResponse --
+data class ErrorResponse(
+    val status: Int,
+    val error: String,
+    val mensaje: String,
+    val timestamp: String
+)
+
+-- TERMINAL RESPONSES --
+data class TerminalEntradaResponse(
+    val nombre: String,
+    val horaEntrada: String,
+    val mensaje: String
+)
+
+data class TerminalSalidaResponse(
+    val nombre: String,
+    val horaSalida: String,
+    val jornadaEfectivaMinutos: Int,
+    val mensaje: String
+)
+
+data class TerminalPausaResponse(
+    val nombre: String,
+    val horaInicioPausa: String?,   // NULL en E51 (finalizar)
+    val duracionPausaMinutos: Int?, // NULL en E50 (iniciar)
+    val mensaje: String
+)
+
+====================================================
+5. DATA CLASSES KOTLIN (REQUESTS)
+====================================================
+
+-- LoginRequest --
+data class LoginRequest(val username: String, val password: String)
+
+-- PasswordChangeRequest --
+data class PasswordChangeRequest(
+    val passwordActual: String,
+    val passwordNueva: String    // minimo 8 caracteres
+)
+
+-- PasswordRecoveryRequest --
+data class PasswordRecoveryRequest(val email: String)
+
+-- PasswordResetRequest --
+data class PasswordResetRequest(val token: String, val passwordNueva: String)
+
+-- UsuarioRequest --
+data class UsuarioRequest(
+    val username: String,
+    val password: String,   // minimo 8 caracteres, BCrypt en backend
+    val email: String,
+    val rol: Rol
+)
+
+-- UsuarioPatchRequest --
+data class UsuarioPatchRequest(
+    val email: String? = null,
+    val rol: Rol? = null,
+    val activo: Boolean? = null
+)
+
+-- EmpleadoRequest --
+data class EmpleadoRequest(
+    val usuarioId: Long,
+    val nombre: String,
+    val apellido1: String,
+    val apellido2: String? = null,
+    val dni: String,
+    val numeroEmpleado: String,  // Formato EMP-001 (D-030)
+    val fechaAlta: String,       // "yyyy-MM-dd"
+    val categoria: CategoriaEmpleado,
+    val jornadaSemanalHoras: Double,
+    val jornadaDiariaMinutos: Int,
+    val diasVacacionesAnuales: Int,
+    val diasAsuntosPropiosAnuales: Int,
+    val pinTerminal: String,     // exactamente 4 digitos numericos
+    val codigoNfc: String? = null
+)
+
+-- EmpleadoPatchRequest --
+data class EmpleadoPatchRequest(
+    val nombre: String? = null,
+    val apellido1: String? = null,
+    val apellido2: String? = null,
+    val categoria: CategoriaEmpleado? = null,
+    val jornadaSemanalHoras: Double? = null,
+    val jornadaDiariaMinutos: Int? = null,
+    val diasVacacionesAnuales: Int? = null,
+    val diasAsuntosPropiosAnuales: Int? = null,
+    val pinTerminal: String? = null,  // 4 digitos
+    val codigoNfc: String? = null,
+    val activo: Boolean? = null
+)
+
+-- EmpresaRequest --
+data class EmpresaRequest(
+    val nombreEmpresa: String,
+    val cif: String,
+    val direccion: String? = null,
+    val email: String? = null,
+    val telefono: String? = null,
+    val logoPath: String? = null
+)
+
+-- FichajeRequest --
+data class FichajeRequest(
+    val empleadoId: Long,
+    val fecha: String,           // "yyyy-MM-dd"
+    val tipo: TipoFichaje,
+    val horaEntrada: String? = null,   // "yyyy-MM-ddTHH:mm:ss"
+    val horaSalida: String? = null,
+    val observaciones: String? = null
+)
+
+-- FichajePatchRequest --
+data class FichajePatchRequest(
+    val tipo: TipoFichaje? = null,
+    val horaEntrada: String? = null,
+    val horaSalida: String? = null,
+    val observaciones: String          // OBLIGATORIO aunque sea PATCH (RNF-L02)
+)
+
+-- PausaRequest --
+data class PausaRequest(
+    val empleadoId: Long,
+    val fecha: String,
+    val horaInicio: String,
+    val horaFin: String? = null,       // NULL = pausa activa
+    val tipoPausa: TipoPausa,
+    val observaciones: String? = null
+)
+
+-- PausaPatchRequest --
+data class PausaPatchRequest(
+    val horaInicio: String? = null,
+    val horaFin: String? = null,
+    val tipoPausa: TipoPausa? = null,
+    val observaciones: String? = null
+)
+
+-- AusenciaRequest --
+data class AusenciaRequest(
+    val empleadoId: Long? = null,      // NULL = festivo global
+    val fecha: String,                 // "yyyy-MM-dd"
+    val tipoAusencia: TipoAusencia,
+    val observaciones: String? = null
+)
+
+-- AusenciaPatchRequest --
+data class AusenciaPatchRequest(
+    val tipoAusencia: TipoAusencia? = null,
+    val observaciones: String? = null
+)
+
+-- TerminalPinRequest --
+data class TerminalPinRequest(
+    val pin: String,               // exactamente 4 digitos
+    val dispositivoId: String      // ID unico del dispositivo Android
+)
+
+-- TerminalPausaRequest --
+data class TerminalPausaRequest(
+    val pin: String,
+    val tipoPausa: TipoPausa,
+    val dispositivoId: String
+)
+
+====================================================
+6. ENDPOINTS COMPLETOS POR CONTROLLER
+====================================================
+
+BASE: /api/v1/
+JWT requerido salvo indicacion contraria.
+Autorizacion: Authorization: Bearer {token}
+
+----------------------------------------------------
+AUTH -- /api/v1/auth
+----------------------------------------------------
+
+E01  POST   /auth/login            SIN JWT
+     Request:  LoginRequest
+     Response: LoginResponse
+     Errores:  401 credenciales invalidas | 423 PIN bloqueado
+
+E02  GET    /auth/me               TODOS LOS ROLES
+     Response: UsuarioResponse
+
+E03  PUT    /auth/password         TODOS LOS ROLES
+     Request:  PasswordChangeRequest
+     Response: MensajeResponse
+     Errores:  401 password actual incorrecta
+
+E04  POST   /auth/password/recovery  SIN JWT
+     Request:  PasswordRecoveryRequest
+     Response: MensajeResponse (siempre 200, anti-enumeracion)
+
+E05  POST   /auth/password/reset   SIN JWT
+     Request:  PasswordResetRequest
+     Response: MensajeResponse
+     Errores:  400 token expirado o invalido
+
+----------------------------------------------------
+EMPRESA -- /api/v1/empresa
+----------------------------------------------------
+
+E06  GET    /empresa               ADMIN
+     Response: EmpresaResponse
+
+E07  PUT    /empresa               ADMIN
+     Request:  EmpresaRequest
+     Response: EmpresaResponse
+     Errores:  409 CIF duplicado
+
+----------------------------------------------------
+USUARIOS -- /api/v1/usuarios
+----------------------------------------------------
+
+E08  POST   /usuarios              ADMIN
+     Request:  UsuarioRequest
+     Response: UsuarioResponse (201)
+     Errores:  409 username o email duplicado
+
+E09  GET    /usuarios              ADMIN
+     Params:   ?rol= ?activo=
+     Response: List<UsuarioResponse>
+
+E10  GET    /usuarios/{id}         ADMIN
+     Response: UsuarioResponse
+     Errores:  404 no encontrado
+
+E11  PATCH  /usuarios/{id}         ADMIN
+     Request:  UsuarioPatchRequest
+     Response: UsuarioResponse
+     Errores:  409 username o email duplicado
+
+E12  DELETE /usuarios/{id}         ADMIN
+     Response: MensajeResponse
+     Nota: baja logica (activo=false), NO DELETE fisico
+
+----------------------------------------------------
+EMPLEADOS -- /api/v1/empleados
+----------------------------------------------------
+
+E13  POST   /empleados             ADMIN, ENCARGADO
+     Request:  EmpleadoRequest
+     Response: EmpleadoResponse (201)
+     Errores:  404 usuarioId no existe
+               409 DNI, numeroEmpleado, PIN o NFC duplicado
+
+E14  GET    /empleados             ADMIN, ENCARGADO
+     Params:   ?activo= ?q= ?categoria=
+     Response: List<EmpleadoResponse>
+
+E15  GET    /empleados/{id}        ADMIN, ENCARGADO
+     Response: EmpleadoResponse
+     Nota: PIN solo visible para ADMIN
+
+E16  PATCH  /empleados/{id}        ADMIN, ENCARGADO
+     Request:  EmpleadoPatchRequest
+     Response: EmpleadoResponse
+     Errores:  409 PIN, DNI o numeroEmpleado duplicado
+
+E17  PATCH  /empleados/{id}/baja   ADMIN, ENCARGADO
+     Response: MensajeResponse
+
+E18  PATCH  /empleados/{id}/reactivar  ADMIN, ENCARGADO
+     Response: MensajeResponse
+     Errores:  409 ya estaba activo
+
+E21  GET    /empleados/me          EMPLEADO
+     Response: EmpleadoResponse (sin PIN)
+
+----------------------------------------------------
+FICHAJES -- /api/v1/fichajes
+----------------------------------------------------
+
+E22  POST   /fichajes              ADMIN, ENCARGADO
+     Request:  FichajeRequest
+     Response: FichajeResponse (201)
+     Nota: observaciones obligatorias (RNF-L02)
+     Errores:  404 empleadoId no existe
+               409 ya existe fichaje ese dia para ese empleado
+
+E23  PATCH  /fichajes/{id}         ADMIN, ENCARGADO
+     Request:  FichajePatchRequest
+     Response: FichajeResponse
+     Nota: observaciones OBLIGATORIAS aunque sea PATCH
+
+E24  GET    /fichajes              ADMIN, ENCARGADO
+     Params:   ?empleadoId= ?desde= ?hasta= ?tipo=
+     Response: List<FichajeResponse>
+
+E25  GET    /fichajes/incompletos  ADMIN, ENCARGADO
+     Params:   ?fecha= (defecto: hoy)
+     Response: List<FichajeResponse> (horaSalida=null)
+
+E26  GET    /fichajes/me           EMPLEADO
+     Params:   ?desde= ?hasta= ?tipo=
+     Response: List<FichajeResponse>
+
+----------------------------------------------------
+PAUSAS -- /api/v1/pausas
+----------------------------------------------------
+
+E27  POST   /pausas                ADMIN, ENCARGADO
+     Request:  PausaRequest
+     Response: PausaResponse (201)
+     Errores:  409 ya hay pausa activa ese dia
+
+E28  PATCH  /pausas/{id}           ADMIN, ENCARGADO
+     Request:  PausaPatchRequest
+     Response: PausaResponse
+
+E29  GET    /pausas                ADMIN, ENCARGADO
+     Params:   ?empleadoId= ?desde= ?hasta= ?tipoPausa=
+     Response: List<PausaResponse>
+
+----------------------------------------------------
+AUSENCIAS -- /api/v1/ausencias
+----------------------------------------------------
+
+E30  POST   /ausencias             ADMIN, ENCARGADO
+     Request:  AusenciaRequest
+     Response: AusenciaResponse (201)
+     Nota: empleadoId=null -> festivo global
+     Errores:  409 ya existe ausencia ese dia para ese empleado
+
+E31  PATCH  /ausencias/{id}        ADMIN, ENCARGADO
+     Request:  AusenciaPatchRequest
+     Response: AusenciaResponse
+     Errores:  409 procesado=true (modificar fichaje directamente)
+
+E32  DELETE /ausencias/{id}        ADMIN, ENCARGADO
+     Response: 204 No Content
+     Errores:  409 procesado=true (unico DELETE real del sistema)
+
+E33  GET    /ausencias             ADMIN, ENCARGADO
+     Params:   ?empleadoId= ?desde= ?hasta= ?procesado=
+     Response: List<AusenciaResponse>
+
+E34  GET    /ausencias/me          EMPLEADO
+     Params:   ?desde= ?hasta=
+     Response: List<AusenciaResponse>
+
+----------------------------------------------------
+PRESENCIA -- /api/v1/presencia
+----------------------------------------------------
+
+E35  GET    /presencia/parte-diario         ADMIN, ENCARGADO
+     Params:   ?fecha= (defecto: hoy)
+     Response: ParteDiarioResponse
+
+E36  GET    /presencia/sin-justificar       ADMIN, ENCARGADO
+     Params:   ?fecha= (defecto: hoy)
+     Response: List<SinJustificarResponse>
+
+E37  GET    /presencia/parte-diario/me      EMPLEADO
+     Params:   ?fecha= (defecto: hoy)
+     Response: DetallePresenciaResponse
+
+----------------------------------------------------
+SALDOS -- /api/v1/saldos
+----------------------------------------------------
+
+E38  GET    /saldos/{empleadoId}            ADMIN, ENCARGADO
+     Params:   ?anio= (defecto: ano actual)
+     Response: SaldoResponse
+
+E39  GET    /saldos                         ADMIN, ENCARGADO
+     Params:   ?anio= (defecto: ano actual)
+     Response: List<SaldoResponse>
+
+E40  POST   /saldos/{empleadoId}/recalcular ADMIN
+     Params:   ?anio= (defecto: ano actual)
+     Response: SaldoResponse
+
+E41  GET    /saldos/me                      EMPLEADO
+     Params:   ?anio= (defecto: ano actual)
+     Response: SaldoResponse
+
+----------------------------------------------------
+INFORMES -- /api/v1/informes
+----------------------------------------------------
+
+E42  GET    /informes/horas/{empleadoId}    ADMIN, ENCARGADO
+     Params:   ?desde= ?hasta= ?formato=json|html ?tipo=
+     Response: Map (JSON) o String (HTML)
+     Nota: ?formato=html -> usar PrintManager + WebView en Android
+
+E43  GET    /informes/horas                 ADMIN, ENCARGADO
+     Params:   ?desde= ?hasta= ?formato=json|html ?tipo=
+     Response: List<Map> (JSON) o String (HTML)
+
+E44  GET    /informes/saldos               ADMIN, ENCARGADO
+     Params:   ?anio= ?formato=json|html ?empleadoId= ?campos=
+     Response: List<Map> (JSON) o String (HTML)
+
+E45  GET    /informes/pdf/horas/{empleadoId}  ADMIN, ENCARGADO
+     Params:   ?desde= ?hasta=
+     Response: byte[] application/pdf
+     Descarga: informe_horas_{id}_{desde}_{hasta}.pdf
+     Android:  guardar byte[] -> FileProvider -> Intent ACTION_VIEW
+     Nota:     Ruta bajo /informes/pdf (D-031 -- PdfController separado)
+
+E46  GET    /informes/pdf/horas              ADMIN, ENCARGADO
+     Params:   ?desde= ?hasta=
+     Response: byte[] application/pdf
+     Descarga: informe_horas_global_{desde}_{hasta}.pdf
+     Nota:     Ruta bajo /informes/pdf (D-031 -- PdfController separado)
+
+E47  GET    /informes/pdf/saldos             ADMIN, ENCARGADO
+     Params:   ?anio= ?empleadoId=
+     Response: byte[] application/pdf
+     Descarga: informe_saldos_{yyyyMMdd}.pdf
+     Nota:     Ruta bajo /informes/pdf (D-031 -- PdfController separado)
+
+E53  GET    /informes/pdf/vacaciones         ADMIN, ENCARGADO
+     Params:   ?empleadoId= (obligatorio) ?anio= (defecto: ano actual)
+     Response: byte[] application/pdf
+     Descarga: informe_vacaciones_{empleadoId}_{yyyyMMdd}.pdf
+     Contenido: listado de fechas de vacaciones y asuntos propios
+               disfrutados con total y dias pendientes de disfrutar.
+     Nota:     Nuevo endpoint D-033. No planificado en Fase 1.
+
+----------------------------------------------------
+TERMINAL -- /api/v1/terminal (SIN JWT, PUBLICO)
+----------------------------------------------------
+
+E48  POST   /terminal/entrada               SIN JWT
+     Request:  TerminalPinRequest
+     Response: TerminalEntradaResponse
+     Errores:  404 PIN no encontrado | 409 ya ficho hoy | 423 bloqueado
+
+E49  POST   /terminal/salida                SIN JWT
+     Request:  TerminalPinRequest
+     Response: TerminalSalidaResponse
+     Errores:  400 sin entrada | 409 ya hay salida / pausa activa | 423
+
+E50  POST   /terminal/pausa/iniciar         SIN JWT
+     Request:  TerminalPausaRequest (pin + tipoPausa + dispositivoId)
+     Response: TerminalPausaResponse (horaInicioPausa, duracionNull)
+     Errores:  400 sin entrada | 409 ya hay pausa activa | 423
+
+E51  POST   /terminal/pausa/finalizar       SIN JWT
+     Request:  TerminalPinRequest
+     Response: TerminalPausaResponse (horaInicioNull, duracionPausaMinutos)
+     Errores:  400 sin pausa activa | 423
+
+----------------------------------------------------
+HEALTH (informativo)
+----------------------------------------------------
+
+GET  /health  -> {"status":"UP"}  SIN JWT
+
+====================================================
+7. PATRON DE MANEJO DE ERRORES EN ANDROID
+====================================================
+
+Todos los errores del backend devuelven ErrorResponse:
+  {"status": 404, "error": "Not Found", "mensaje": "...", "timestamp": "..."}
+
+Codigos relevantes para Android:
+  400 -> datos invalidos, mostrar mensaje en campo concreto
+  401 -> credenciales invalidas o token expirado
+  403 -> rol insuficiente (no deberia ocurrir si la UI oculta bien las opciones)
+  404 -> recurso no encontrado
+  409 -> conflicto (duplicado, procesado=true, etc.)
+  423 -> dispositivo bloqueado (terminal: 5 intentos fallidos)
+  500 -> error interno del servidor
+
+Flujo sesion expirada (401 en endpoint autenticado):
+  DataStore.clear() -> hideDrawer() -> navigate(P02) ->
+  snackbar("La sesion ha caducado")
+
+====================================================
+8. PATRONES OBLIGATORIOS EN ANDROID
+====================================================
+
+PATRON BOTON CON LLAMADA DE RED (Decision 25):
+  binding.btnAccion.isEnabled = false
+  try {
+      viewModel.ejecutarAccion()
+  } finally {
+      binding.btnAccion.isEnabled = true
+  }
+
+DIALOGO DE CONFIRMACION (Decision 26):
+  Usar MaterialAlertDialogBuilder (nunca AlertDialog estandar)
+  Boton destructivo: setNegativeButton (aparece en rojo con MD3)
+  Usos:
+    - Cerrar sesion (Drawer -> Ajustes)
+    - Eliminar ausencia (P23/P24, solo si procesado=false)
+
+NAVEGACION (Decision 24-A):
+  SIEMPRE con findNavController().navigate()
+  NUNCA startActivity() para pantallas internas
+  NUNCA FragmentManager manual
+
+JWT EN DATASTORE:
+  Guardar: token, rol, username, empleadoId
+  Leer al arrancar: si existe y no ha expirado -> navegar a destino por rol
+  Limpiar: en cerrar sesion y en 401
+
+DESTINO INICIAL POR ROL:
+  ADMIN     -> P13 EmpleadosFragment
+  ENCARGADO -> P17 ParteDiarioFragment
+  EMPLEADO  -> P09 MiSaldoFragment
+
+NOTA IMPORTANTE -- campo NSS en wireframes:
+  Los wireframes muestran "NSS" en P08, P14 y P15.
+  En v1.0 el campo se llama numeroEmpleado (D-030, renombrado).
+  Las etiquetas en la UI deben mostrar "Numero de empleado".
+  Valores de prueba: EMP-001, EMP-002, EMP-003.
+
+====================================================
+9. ESTRUCTURA DE FRAGMENTS (nav_graph.xml)
+====================================================
+
+Zona publica (sin Drawer):
+  TerminalFragment       P01 (raiz)
+  ConfirmacionFragment   P06
+  TipoPausaFragment      P07
+  LoginFragment          P02
+  RecoveryFragment       P03
+  ResetPasswordFragment  P05 (deep link)
+
+Zona autenticada (con Drawer):
+  MiPerfilFragment       P08  EMPLEADO
+  MiSaldoFragment        P09  EMPLEADO (destino inicial)
+  MisFichajesFragment    P10  EMPLEADO
+  MisAusenciasFragment   P11  EMPLEADO
+  MiHoyFragment          P12  EMPLEADO
+  EmpleadosFragment      P13  ADMIN (destino inicial ADMIN)
+  DetalleEmpleadoFragment P14 ADMIN, ENCARGADO
+  FormEmpleadoFragment   P15  ADMIN, ENCARGADO
+  ParteDiarioFragment    P17  ENCARGADO (destino inicial ENCARGADO)
+  SinJustificarFragment  P18  ADMIN, ENCARGADO
+  FichajesFragment       P19  ADMIN, ENCARGADO
+  FormFichajeFragment    P20  ADMIN, ENCARGADO (fichaje/pausa, argumento nav)
+  AusenciasFragment      P23  ADMIN, ENCARGADO
+  FormAusenciaFragment   P24  ADMIN, ENCARGADO
+  SaldoIndividualFragment P26 ADMIN, ENCARGADO
+  SaldosGlobalesFragment P27  ADMIN, ENCARGADO
+  InformesFragment       P28  ADMIN, ENCARGADO (tabs)
+  UsuariosFragment       P31  ADMIN
+  FormUsuarioFragment    P32  ADMIN
+  EmpresaFragment        P34  ADMIN
+  CambiarPasswordFragment P04 TODOS
+
+====================================================
+10. DRAWER POR ROL
+====================================================
+
+EMPLEADO:
+  Hoy (P12) | Mis fichajes (P10) | Mis ausencias (P11)
+  Mi saldo (P09) | Mi perfil (P08)
+  Ajustes: Cambiar contrasena (P04) | Cerrar sesion
+
+ENCARGADO (todo lo de EMPLEADO mas):
+  Parte diario (P17) | Empleados (P13) | Fichajes (P19)
+  Ausencias (P23) | Saldos (P27) | Informes (P28)
+  Ajustes: Cambiar contrasena (P04) | Cerrar sesion
+
+ADMIN (todo lo de ENCARGADO mas):
+  Usuarios (P31) | Mi empresa (P34)
+  Ajustes: Cambiar contrasena (P04) | Cerrar sesion
+
+====================================================
+11. MANEJO DE PDFs EN ANDROID
+====================================================
+
+Los endpoints E45, E46, E47 y E53 devuelven byte[] con Content-Type application/pdf.
+Para abrir el PDF en Android:
+
+1. Guardar byte[] en fichero temporal:
+   val file = File(context.cacheDir, nombreFichero)
+   file.writeBytes(pdfBytes)
+
+2. Obtener URI con FileProvider:
+   val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+
+3. Abrir con Intent:
+   val intent = Intent(Intent.ACTION_VIEW).apply {
+       setDataAndType(uri, "application/pdf")
+       addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+   }
+   startActivity(intent)
+
+Requiere FileProvider en AndroidManifest.xml y res/xml/file_paths.xml.
+
+====================================================
+12. ORDEN DE IMPLEMENTACION -- ESTADO ACTUAL
+====================================================
+
+----------------------------------------------------
+BLOQUE 1 -- INFRAESTRUCTURA BASE            COMPLETADO
+Sesiones 25-26 (22/03/2026 - 03/04/2026)
+----------------------------------------------------
+
+  Tarea 1: NetworkModule.kt -- BASE_URL corregida a /api/v1/
+  Tarea 2: Estructura de paquetes (12 paquetes hoja)
+  Tarea 3: Enums Kotlin (6) + DTOs Kotlin (Responses.kt, Requests.kt)
+  Tarea 4: activity_main.xml (DrawerLayout + Toolbar + NavHostFragment)
+  Tarea 5: MainActivity.kt (sesion, drawer, navegacion, AuthEventBus)
+  Tarea 6: nav_graph.xml (27 destinos) + TerminalFragment stub
+
+----------------------------------------------------
+BLOQUE 2 -- PRIORIDAD 1: TERMINAL Y LOGIN   COMPLETADO
+Sesiones 27-28 (03/04/2026 - 04/04/2026)
+Diario: StaffFlow_Fase3_Bloque2_v1.txt
+----------------------------------------------------
+
+  Tarea 1: Capa de red (4 ApiService + 4 Repository)    COMPLETADA
+  Tarea 2: P01 TerminalFragment (E48-E51)               COMPLETADA
+  Tarea 3: P06 ConfirmacionFragment (feedback 3s)       COMPLETADA
+  Tarea 4: P07 TipoPausaFragment (FragmentResult)       COMPLETADA
+  Tarea 5: P02 LoginFragment (JWT, E01)                 COMPLETADA
+  Tarea 6: P09 MiSaldoFragment (E41)                    COMPLETADA
+  Tarea 7: P17 ParteDiarioFragment (E35)                COMPLETADA
+
+----------------------------------------------------
+BLOQUE 3 -- PRIORIDAD 2: GESTION OPERATIVA  PENDIENTE
+----------------------------------------------------
+
+  P13 Lista empleados (E14)
+  P14 Detalle empleado (E15, E17, E18)
+  P15 Formulario empleado (E13, E16)
+  P12 Mi hoy (E37)
+  P27 Saldos globales (E39)
+  P26 Saldo individual (E38, E40)
+
+----------------------------------------------------
+BLOQUE 4 -- PRIORIDAD 3: FICHAJES Y AUSENCIAS  PENDIENTE
+----------------------------------------------------
+
+  P19 Lista fichajes (E24, E25)
+  P20 Registro manual fichaje/pausa (E22, E23, E27, E28)
+  P23 Lista ausencias (E33)
+  P24 Formulario ausencia (E30, E31, E32)
+  P10 Mis fichajes (E26)
+  P11 Mis ausencias (E34)
+
+----------------------------------------------------
+BLOQUE 5 -- PRIORIDAD 4: ADMIN Y PERFIL     PENDIENTE
+----------------------------------------------------
+
+  P31 Lista usuarios (E09)
+  P32 Formulario usuario (E08, E11, E12)
+  P34 Configuracion empresa (E06, E07)
+  P08 Mi perfil (E21)
+  P28 Informes tabs (E42-E47, E53)
+
+----------------------------------------------------
+BLOQUE 6 -- PRIORIDAD 5: FLUJOS SECUNDARIOS PENDIENTE
+----------------------------------------------------
+
+  P03 Recuperar contrasena (E04)
+  P04 Cambiar contrasena (E03)
+  P05 Restablecer contrasena (E05)
+  P18 Sin justificar (E36)
+
+====================================================
+FIN StaffFlow_Android_Contexto_v6.txt
+====================================================

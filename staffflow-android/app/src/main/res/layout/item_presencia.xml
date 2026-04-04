@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Item del RecyclerView del parte diario (P17).
+
+    Estructura:
+      - Borde izquierdo coloreado (4dp) segun EstadoPresencia
+      - Nombre + apellido1 del empleado (bold)
+      - Estado en texto (bodySmall, mismo color que el borde)
+      - Hora de entrada alineada a la derecha
+
+    El color del borde y del texto de estado se establece desde PresenciaAdapter
+    segun EstadoPresencia del empleado.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="6dp"
+    app:cardElevation="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Borde de estado (coloreado desde el adapter) -->
+        <View
+            android:id="@+id/viewBordeEstado"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:minHeight="56dp"
+            android:background="#4CAF50" />
+
+        <!-- Nombre y estado -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEstado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Hora de entrada -->
+        <TextView
+            android:id="@+id/tvHoraEntrada"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:paddingEnd="12dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

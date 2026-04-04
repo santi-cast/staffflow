@@ -30,4 +30,48 @@
     <!-- Accesibilidad -->
     <string name="abrir_menu">Abrir menú</string>
     <string name="cerrar_menu">Cerrar menú</string>
+
+    <!-- P17 Parte diario -->
+    <string name="parte_diario_selector_fecha_titulo">Selecciona una fecha</string>
+    <string name="parte_diario_vacio">No hay empleados registrados hoy</string>
+
+    <!-- Comun -->
+    <string name="reintentar">Reintentar</string>
+
+    <!-- P09 Mi saldo -->
+    <string name="saldo_selector_anio_titulo">Selecciona el año</string>
+    <string name="saldo_vacaciones_titulo">Vacaciones</string>
+    <string name="saldo_asuntos_titulo">Asuntos propios</string>
+    <string name="saldo_horas_titulo">Horas</string>
+    <string name="saldo_derecho">Derecho</string>
+    <string name="saldo_consumidos">Consumidos</string>
+    <string name="saldo_disponibles">Disponibles</string>
+    <string name="saldo_esperadas">Esperadas</string>
+    <string name="saldo_trabajadas">Trabajadas</string>
+    <string name="saldo_saldo_horas">Saldo</string>
+
+    <!-- P06 Confirmacion de fichaje -->
+    <string name="confirmacion_volviendo">Volviendo en %ds…</string>
+
+    <!-- P02 Login -->
+    <string name="login_subtitulo">Acceso para empleados</string>
+    <string name="login_username_hint">Usuario</string>
+    <string name="login_password_hint">Contraseña</string>
+    <string name="login_btn">Iniciar sesión</string>
+    <string name="login_olvide_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_error_campos_vacios">Introduce usuario y contraseña</string>
+
+    <!-- P07 Tipo de pausa -->
+    <string name="tipo_pausa_titulo">Selecciona el tipo de pausa</string>
+    <string name="tipo_pausa_comida">Comida</string>
+    <string name="tipo_pausa_descanso">Descanso</string>
+    <string name="tipo_pausa_ausencia_retribuida">Ausencia retribuida</string>
+    <string name="tipo_pausa_otros">Otros</string>
+
+    <!-- P01 Terminal de fichaje -->
+    <string name="terminal_titulo">Terminal de fichaje</string>
+    <string name="terminal_btn_entrada">Entrada</string>
+    <string name="terminal_btn_salida">Salida</string>
+    <string name="terminal_btn_iniciar_pausa">Iniciar pausa</string>
+    <string name="terminal_btn_finalizar_pausa">Finalizar pausa</string>
 </resources>

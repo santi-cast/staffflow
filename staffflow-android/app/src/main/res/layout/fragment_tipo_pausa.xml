@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout de seleccion de tipo de pausa (P07).
+
+    Pantalla publica sin JWT. Se accede desde P01 al pulsar "Iniciar pausa".
+    El usuario selecciona uno de los 4 tipos y la pantalla vuelve a P01
+    automaticamente enviando el tipo seleccionado via FragmentResult.
+
+    Sin boton de cancelar explicito: el usuario puede usar el boton Back
+    del sistema para volver sin seleccionar (P01 no recibe FragmentResult).
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingHorizontal="32dp"
+    android:paddingVertical="40dp">
+
+    <!-- Titulo -->
+    <TextView
+        android:id="@+id/tvTitulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/tipo_pausa_titulo"
+        android:textAppearance="?attr/textAppearanceHeadlineSmall"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Botones de seleccion centrados verticalmente -->
+    <LinearLayout
+        android:id="@+id/layoutBotones"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnComida"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/tipo_pausa_comida"
+            android:textSize="16sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDescanso"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/tipo_pausa_descanso"
+            android:textSize="16sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAusenciaRetribuida"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="12dp"
+            android:text="@string/tipo_pausa_ausencia_retribuida"
+            android:textSize="16sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOtros"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:text="@string/tipo_pausa_otros"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

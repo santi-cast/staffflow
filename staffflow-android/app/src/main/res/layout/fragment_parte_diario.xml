@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout del parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+
+    Patron D - lista solo lectura. Endpoint: E35 GET /presencia/parte-diario?fecha=
+
+    Estructura:
+      - ChipGroup con los 4 chips de resumen (GONE hasta que haya datos)
+      - FrameLayout de contenido con 4 estados gestionados por visibilidad:
+          CARGANDO: layoutSkeleton (5 items grises, sin spinner)
+          ERROR:    layoutError (nube + mensaje + Reintentar)
+          VACIO:    layoutVacio (icono + mensaje)
+          EXITO:    SwipeRefreshLayout > RecyclerView
+
+    El selector de fecha se muestra en la toolbar via MenuProvider (menu_parte_diario.xml).
+    El chip "Sin justificar" navega a P18 (action_parte_diario_to_sin_justificar).
+    Tap en fila del RecyclerView -> P14 (action_parte_diario_to_detalle_empleado).
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Chips de resumen (GONE hasta que haya datos) -->
+    <HorizontalScrollView
+        android:id="@+id/scrollChips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="8dp"
+        android:paddingTop="8dp"
+        android:visibility="gone">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleLine="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFichados"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fichados: 0"
+                android:clickable="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEnPausa"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="En pausa: 0"
+                android:clickable="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAusencias"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ausencias: 0"
+                android:clickable="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSinJustificar"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sin justificar: 0"
+                android:clickable="true" />
+
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <!-- Area de contenido (estados excluyentes) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ESTADO: CARGANDO - skeleton list (sin spinner) -->
+        <LinearLayout
+            android:id="@+id/layoutSkeleton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:visibility="visible">
+
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: ERROR -->
+        <LinearLayout
+            android:id="@+id/layoutError"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☁"
+                android:textSize="64sp"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/tvErrorMensaje"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="12dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReintentar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/reintentar" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: VACIO -->
+        <LinearLayout
+            android:id="@+id/layoutVacio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋"
+                android:textSize="64sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/parte_diario_vacio"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: EXITO - SwipeRefreshLayout + RecyclerView -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </FrameLayout>
+
+</LinearLayout>

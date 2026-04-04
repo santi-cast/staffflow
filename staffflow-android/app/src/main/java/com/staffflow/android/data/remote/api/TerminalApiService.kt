@@ -1,0 +1,59 @@
+package com.staffflow.android.data.remote.api
+
+import com.staffflow.android.data.remote.dto.TerminalEntradaResponse
+import com.staffflow.android.data.remote.dto.TerminalPausaResponse
+import com.staffflow.android.data.remote.dto.TerminalPinRequest
+import com.staffflow.android.data.remote.dto.TerminalPausaRequest
+import com.staffflow.android.data.remote.dto.TerminalSalidaResponse
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.POST
+
+/**
+ * Interfaz Retrofit para los endpoints del terminal de fichaje.
+ *
+ * Todos los endpoints son PUBLICOS (sin JWT). La identificacion
+ * del empleado se hace por PIN de 4 digitos.
+ *
+ * Endpoints cubiertos:
+ *   E48 POST /terminal/entrada         -> TerminalEntradaResponse
+ *   E49 POST /terminal/salida          -> TerminalSalidaResponse
+ *   E50 POST /terminal/pausa/iniciar   -> TerminalPausaResponse
+ *   E51 POST /terminal/pausa/finalizar -> TerminalPausaResponse
+ *
+ * Errores comunes:
+ *   404 PIN no reconocido
+ *   409 operacion no permitida en el estado actual (ya ficho, pausa activa, etc.)
+ *   423 dispositivo bloqueado por exceso de intentos fallidos
+ */
+interface TerminalApiService {
+
+    /**
+     * E48 - Registra la entrada de un empleado por PIN.
+     * Sin JWT. Devuelve nombre, horaEntrada y mensaje de bienvenida.
+     */
+    @POST("terminal/entrada")
+    suspend fun registrarEntrada(@Body request: TerminalPinRequest): Response<TerminalEntradaResponse>
+
+    /**
+     * E49 - Registra la salida de un empleado por PIN.
+     * Sin JWT. Devuelve nombre, horaSalida y jornadaEfectivaMinutos.
+     */
+    @POST("terminal/salida")
+    suspend fun registrarSalida(@Body request: TerminalPinRequest): Response<TerminalSalidaResponse>
+
+    /**
+     * E50 - Inicia una pausa para el empleado identificado por PIN.
+     * Sin JWT. El tipo de pausa viene de P07 (TipoPausaFragment).
+     * Devuelve TerminalPausaResponse con horaInicioPausa (duracionNull).
+     */
+    @POST("terminal/pausa/iniciar")
+    suspend fun iniciarPausa(@Body request: TerminalPausaRequest): Response<TerminalPausaResponse>
+
+    /**
+     * E51 - Finaliza la pausa activa del empleado identificado por PIN.
+     * Sin JWT. Devuelve TerminalPausaResponse con duracionPausaMinutos (horaInicioNull).
+     */
+    @POST("terminal/pausa/finalizar")
+    suspend fun finalizarPausa(@Body request: TerminalPinRequest): Response<TerminalPausaResponse>
+}

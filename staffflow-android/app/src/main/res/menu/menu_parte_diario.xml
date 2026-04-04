@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menu de la toolbar para P17 ParteDiarioFragment.
+    El titulo del item action_fecha se actualiza dinamicamente con la fecha seleccionada.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_fecha"
+        android:title="Hoy"
+        app:showAsAction="always" />
+
+</menu>

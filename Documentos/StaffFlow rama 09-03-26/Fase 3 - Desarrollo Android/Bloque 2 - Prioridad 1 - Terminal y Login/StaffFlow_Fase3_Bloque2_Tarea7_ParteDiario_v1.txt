@@ -1,0 +1,127 @@
+====================================================
+STAFFFLOW -- FASE 3 BLOQUE 2 TAREA 7 -- P17 PARTE DIARIO
+StaffFlow_Fase3_Bloque2_Tarea7_ParteDiario_v1.txt
+Sesion: 28 (04/04/2026)
+====================================================
+
+====================================================
+OBJETIVO
+====================================================
+
+Implementar P17 ParteDiarioFragment, destino inicial del rol ENCARGADO.
+Patron D: lista de presencia de empleados filtrable por fecha.
+Endpoint: E35 GET /presencia/parte-diario?fecha=
+
+====================================================
+FICHEROS CREADOS
+====================================================
+
+ui/encargado/ParteDiarioViewModel.kt
+  AndroidViewModel. _fecha: MutableStateFlow<String> (hoy por defecto).
+  _uiState: MutableStateFlow<UiState>.
+  sealed class UiState { Loading | Success(data) | Empty | Error(mensaje) }
+  setFecha(fecha): actualiza _fecha y recarga.
+  reintentar(): recarga con fecha actual.
+  companion object hoy(): SimpleDateFormat("yyyy-MM-dd").format(Date())
+  Empty si resp.detalle.isEmpty().
+
+ui/encargado/ParteDiarioFragment.kt
+  by viewModels(). MenuProvider para fecha en toolbar.
+  MaterialDatePicker en mostrarSelectorFecha().
+  swipeRefresh.setOnRefreshListener { viewModel.reintentar() }
+  chipSinJustificar.isEnabled = data.sinJustificar > 0
+  chipSinJustificar -> action_parte_diario_to_sin_justificar (P18)
+  fila RecyclerView -> action_parte_diario_to_detalle_empleado (P14)
+  formatearFechaDisplay(): "yyyy-MM-dd" -> "dd/MM/yyyy" para toolbar.
+
+ui/encargado/PresenciaAdapter.kt
+  ListAdapter<DetallePresenciaResponse, ViewHolder>(DiffCallback()).
+  colorParaEstado(): JORNADA_INICIADA -> #4CAF50 (verde)
+                     EN_PAUSA -> #FF9800 (naranja)
+                     JORNADA_COMPLETADA -> #2E7D32 (verde oscuro)
+                     AUSENCIA_REGISTRADA/PLANIFICADA -> #1976D2 (azul)
+                     SIN_JUSTIFICAR -> #F44336 (rojo)
+  DiffCallback.areItemsTheSame: empleadoId.
+  onClick: callback al Fragment para navegar a P14.
+
+res/layout/fragment_parte_diario.xml
+  LinearLayout vertical.
+  HorizontalScrollView -> ChipGroup (4 chips: fichados/enPausa/
+    ausencias/sinJustificar). GONE hasta estado Success.
+  FrameLayout (4 estados excluyentes):
+    layoutSkeleton (5x include item_presencia_skeleton, visible inicial)
+    layoutError (nube + tvErrorMensaje + btnReintentar, GONE)
+    layoutVacio (icono + texto, GONE)
+    SwipeRefreshLayout -> RecyclerView (GONE)
+
+res/layout/item_presencia.xml
+  MaterialCardView.
+  viewBordeEstado: View 5dp ancho, color segun EstadoPresencia.
+  tvNombre: texto bold.
+  tvEstado: textAppearanceBodySmall, color segun EstadoPresencia.
+  tvHoraEntrada: texto derecha "--:--" si null.
+
+res/layout/item_presencia_skeleton.xml
+  MaterialCardView con 2 View grises (bg_skeleton):
+  fila nombre (ancho 60%) + fila estado (ancho 40%).
+  Simula item_presencia sin shimmer library.
+
+res/drawable/bg_skeleton.xml
+  ShapeDrawable rectangular: color #E0E0E0, corners radius 4dp.
+  Usado como background en skeleton placeholders.
+
+res/menu/menu_parte_diario.xml
+  Item action_fecha: showAsAction="always", titulo = fecha formateada.
+  Pulsarlo abre MaterialDatePicker.
+
+====================================================
+DEPENDENCIAS ANADIDAS
+====================================================
+
+libs.versions.toml:
+  recyclerview = "1.4.0"
+  swiperefreshlayout = "1.1.0"
+  androidx-recyclerview = { group = "androidx.recyclerview", ... }
+  androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", ... }
+
+app/build.gradle.kts:
+  implementation(libs.androidx.recyclerview)
+  implementation(libs.androidx.swiperefreshlayout)
+
+Motivo: RecyclerView y SwipeRefreshLayout no estaban declarados en el
+proyecto. Material3 no los incluye transitivamente para uso en layout
+y ViewBinding.
+
+====================================================
+DECISIONES
+====================================================
+
+D-B2-07 -- SKELETON SIN SHIMMER:
+  La lista de carga muestra 5 items grises estaticos (5x include
+  item_presencia_skeleton) en lugar de usar la libreria Shimmer.
+  Justificacion: evitar dependencia externa; el efecto visual es
+  suficiente para una lista de presencia. Shimmer se puede anadir
+  en v2.0 (M-020 propuesta para Bloque 6).
+
+D-B2-08 -- COLOR DIRECTO CON Color.parseColor():
+  Los colores de estado se definen inline en PresenciaAdapter con
+  Color.parseColor("#RRGGBB"). No se definen en res/values/colors.xml
+  porque estos colores son semanticos del estado de presencia y no
+  forman parte del tema general de la app. Si se anade theming dinamico
+  en v2.0 se pueden migrar.
+
+D-B2-09 -- MenuProvider PARA FECHA EN TOOLBAR:
+  MenuProvider (androidx.core) reemplaza el deprecated
+  setHasOptionsMenu(). Se registra con viewLifecycleOwner y
+  Lifecycle.State.RESUMED. Patron consistente con P09 MiSaldoFragment.
+
+====================================================
+VERIFICACION
+====================================================
+
+Revision manual contra Contexto_v5 secciones 4 y 6.
+Compilacion formal: pendiente con el commit de cierre del Bloque 2.
+
+====================================================
+FIN StaffFlow_Fase3_Bloque2_Tarea7_ParteDiario_v1.txt
+====================================================

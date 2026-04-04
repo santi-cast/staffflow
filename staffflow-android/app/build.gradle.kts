@@ -46,6 +46,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.swiperefreshlayout)
 
     // Retrofit + OkHttp
     implementation(libs.retrofit)
