@@ -156,9 +156,9 @@ class MiSaldoFragment : Fragment() {
 
         val saldoTexto = formatSaldoHoras(h.saldoHoras)
         val saldoColor = if (h.saldoHoras >= 0)
-            MaterialColors.getColor(requireView(), com.google.android.material.R.attr.colorTertiary)
+            MaterialColors.getColor(requireView(), com.google.android.material.R.attr.colorTertiary, 0)
         else
-            MaterialColors.getColor(requireView(), com.google.android.material.R.attr.colorError)
+            MaterialColors.getColor(requireView(), androidx.appcompat.R.attr.colorError, 0)
         setFila(binding.filaSaldoHoras, getString(R.string.saldo_saldo_horas), saldoTexto)
         binding.filaSaldoHoras.tvValor.setTextColor(saldoColor)
     }

@@ -13,11 +13,12 @@
 
     Sin botones: el usuario no interactua con esta pantalla.
 -->
-<androidx.constraintlayout.widget.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
     android:padding="32dp">
 
     <!-- Icono de exito -->
@@ -27,40 +28,26 @@
         android:layout_height="wrap_content"
         android:text="✓"
         android:textSize="80sp"
-        android:textColor="?attr/colorPrimary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tvMensajePrincipal"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVerticalChainStyle="packed"
-        app:layout_constraintVerticalBias="0.4" />
+        android:textColor="?attr/colorPrimary" />
 
     <!-- Mensaje principal: Bienvenido / Hasta luego / Pausa iniciada / finalizada -->
     <TextView
         android:id="@+id/tvMensajePrincipal"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceHeadlineSmall"
-        android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/tvIcono"
-        app:layout_constraintBottom_toTopOf="@id/tvMensajeSecundario"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginTop="24dp" />
 
     <!-- Mensaje secundario: hora, jornada efectiva, tipo de pausa, duracion -->
     <TextView
         android:id="@+id/tvMensajeSecundario"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tvMensajePrincipal"
-        app:layout_constraintBottom_toTopOf="@id/tvCuentaAtras"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginTop="8dp" />
 
     <!-- Cuenta atras "Volviendo en Xs..." -->
     <TextView
@@ -70,10 +57,6 @@
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/tvMensajeSecundario"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginTop="32dp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
