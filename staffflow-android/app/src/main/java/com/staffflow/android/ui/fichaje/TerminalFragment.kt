@@ -63,6 +63,9 @@ class TerminalFragment : Fragment() {
         configurarNumpad()
         configurarFragmentResult()
         observarViewModel()
+        binding.btnIrALogin.setOnClickListener {
+            findNavController().navigate(R.id.action_terminal_to_login)
+        }
     }
 
     override fun onDestroyView() {
@@ -215,6 +218,7 @@ class TerminalFragment : Fragment() {
             btn8.isEnabled = habilitada
             btn9.isEnabled = habilitada
             btnBorrar.isEnabled = habilitada
+            btnIrALogin.isEnabled = habilitada
         }
     }
 }

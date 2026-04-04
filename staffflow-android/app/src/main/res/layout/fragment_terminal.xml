@@ -278,6 +278,18 @@
 
         </LinearLayout>
 
+        <!-- Enlace a login con usuario y contraseña -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnIrALogin"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/terminal_btn_login"
+            app:layout_constraintTop_toBottomOf="@id/layoutNumpad"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp" />
+
         <!-- Indicador de carga centrado (GONE durante idle/error) -->
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progressIndicator"

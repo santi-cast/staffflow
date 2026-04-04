@@ -74,4 +74,5 @@
     <string name="terminal_btn_salida">Salida</string>
     <string name="terminal_btn_iniciar_pausa">Iniciar pausa</string>
     <string name="terminal_btn_finalizar_pausa">Finalizar pausa</string>
+    <string name="terminal_btn_login">Iniciar sesión con cuenta</string>
 </resources>
