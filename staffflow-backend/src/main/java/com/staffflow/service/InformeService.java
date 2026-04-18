@@ -809,7 +809,32 @@ public class InformeService {
         sb.append("<th>Dur.</th><th>Motivo</th><th>Observaciones</th>\n");
         sb.append("</tr>\n</thead>\n<tbody>\n");
 
+        // Subtotales semanales + total global: mismo patron que PdfService
+        int semanaActual    = -1;
+        int minutosSemanales = 0;
+        int totalMinutos    = 0;
+        int minutosDiarios  = empleado.getJornadaDiariaMinutos();
+
         for (DiaInforme dia : dias) {
+            // Detectar cambio de semana e insertar fila subtotal
+            int semana = dia.fecha.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+            if (semanaActual == -1) {
+                semanaActual = semana;
+            } else if (semana != semanaActual) {
+                sb.append(filaSubtotalSemana(semanaActual, minutosSemanales));
+                semanaActual     = semana;
+                minutosSemanales = 0;
+            }
+
+            // Acumular minutos para el subtotal de esta semana y el total global
+            if (dia.tieneDatos) {
+                minutosSemanales += dia.horasEfectivas;
+                totalMinutos     += dia.horasEfectivas;
+            } else if ("BAJA_MEDICA".equals(dia.tipo) || "PERMISO_RETRIBUIDO".equals(dia.tipo)) {
+                minutosSemanales += minutosDiarios;
+                totalMinutos     += minutosDiarios;
+            }
+
             String claseFila = "";
             if (!dia.tieneFichaje) claseFila = "fila-libre";
             else if (!"NORMAL".equals(dia.tipo)) claseFila = "fila-ausencia";
@@ -840,6 +865,14 @@ public class InformeService {
                 }
             }
         }
+
+        // Subtotal de la ultima semana
+        if (semanaActual != -1) {
+            sb.append(filaSubtotalSemana(semanaActual, minutosSemanales));
+        }
+
+        // Fila total global
+        sb.append(filaTotalHoras(totalMinutos));
 
         sb.append("</tbody>\n</table>\n</div>\n");
 
@@ -883,6 +916,30 @@ public class InformeService {
           .append("</div>\n</div>\n</body>\n</html>");
 
         return sb.toString();
+    }
+
+    /**
+     * Fila de subtotal semanal para la tabla de detalle HTML.
+     * 12 columnas: 5 para la etiqueta, 1 para horas efectivas, 6 vacias.
+     * Misma logica que PdfService (subtotales semanales con fondo azul claro).
+     */
+    private String filaSubtotalSemana(int semana, int minutos) {
+        return "<tr class=\"subtotal-semana\">\n"
+             + "  <td colspan=\"5\">Subtotal semana " + semana + "</td>\n"
+             + "  <td>" + formatearMinutos(minutos) + "</td>\n"
+             + "  <td colspan=\"6\"></td>\n"
+             + "</tr>\n";
+    }
+
+    private String filaTotalHoras(int minutos) {
+        String estilo = "style=\"background:#2c3e6b;color:#ffffff;font-weight:700;"
+                      + "font-size:12px;text-transform:uppercase;letter-spacing:0.5px;"
+                      + "border:1px solid #1a2d56;padding:7px 10px;\"";
+        return "<tr class=\"total-horas\">\n"
+             + "  <td colspan=\"5\" " + estilo + ">TOTAL</td>\n"
+             + "  <td " + estilo + ">" + formatearMinutos(minutos) + "</td>\n"
+             + "  <td colspan=\"6\" " + estilo + "></td>\n"
+             + "</tr>\n";
     }
 
     private String celdaDia(DiaInforme dia) {
@@ -1068,6 +1125,24 @@ public class InformeService {
                     .fila-pausa-extra td {
                       background: #fafbfd;
                       border-top: none;
+                    }
+                    .subtotal-semana td {
+                      background: #dce4f5;
+                      color: #2c3e6b;
+                      font-weight: 600;
+                      font-size: 11px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.4px;
+                      border: 1px solid #b8c8e8;
+                    }
+                    table.detalle tbody tr.total-horas td {
+                      background: #2c3e6b;
+                      color: #ffffff;
+                      font-weight: 700;
+                      font-size: 12px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      border: 1px solid #1a2d56;
                     }
                     .sin-intervenciones {
                       color: #9aa5be;

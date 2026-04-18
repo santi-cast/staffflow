@@ -3,6 +3,7 @@ package com.staffflow.controller;
 import com.staffflow.dto.request.TerminalPausaRequest;
 import com.staffflow.dto.request.TerminalPinRequest;
 import com.staffflow.dto.response.TerminalEntradaResponse;
+import com.staffflow.dto.response.TerminalEstadoResponse;
 import com.staffflow.dto.response.TerminalPausaResponse;
 import com.staffflow.dto.response.TerminalSalidaResponse;
 import com.staffflow.service.TerminalService;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
  *   E49 POST /api/v1/terminal/salida          → registrar salida   (RF-47)
  *   E50 POST /api/v1/terminal/pausa/iniciar   → iniciar pausa      (RF-48)
  *   E51 POST /api/v1/terminal/pausa/finalizar → finalizar pausa    (RF-49)
+ *   E52 POST /api/v1/terminal/estado          → consultar estado del día (P06 bienvenida)
  *
  * El bloqueo por dispositivo (RNF-S05) se gestiona en TerminalService:
  *   HTTP 423 tras 5 intentos fallidos de PIN desde el mismo dispositivoId.
@@ -41,6 +43,34 @@ import org.springframework.web.bind.annotation.*;
 public class TerminalController {
 
     private final TerminalService terminalService;
+
+    // ---------------------------------------------------------------
+    // E52 — POST /api/v1/terminal/estado
+    // Consultar estado del dia para la pantalla de bienvenida (P06)
+    // ---------------------------------------------------------------
+
+    /**
+     * Consulta el estado de la jornada del empleado para el dia actual (E52).
+     *
+     * Llamado desde P06 justo despues de introducir el PIN, antes de
+     * seleccionar la accion. Devuelve el nombre del empleado y su estado
+     * actual (sin entrada, en jornada, en pausa o jornada cerrada).
+     *
+     * Codigos HTTP:
+     *   200 OK  → estado consultado correctamente
+     *   404     → PIN no encontrado
+     *   423     → dispositivo bloqueado
+     *
+     * @param request pin + dispositivoId
+     * @return nombre del empleado y estado de su jornada de hoy
+     */
+    @Operation(summary = "Consultar estado del dia por PIN",
+               description = "Endpoint publico. Sin JWT. Devuelve el nombre y estado actual del empleado.")
+    @PostMapping("/estado")
+    public ResponseEntity<TerminalEstadoResponse> obtenerEstado(
+            @Valid @RequestBody TerminalPinRequest request) {
+        return ResponseEntity.ok(terminalService.obtenerEstado(request));
+    }
 
     // ---------------------------------------------------------------
     // E48 — POST /api/v1/terminal/entrada

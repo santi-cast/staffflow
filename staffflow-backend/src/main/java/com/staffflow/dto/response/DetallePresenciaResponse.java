@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Detalle de presencia de un empleado concreto en un día dado.
@@ -71,4 +72,27 @@ public class DetallePresenciaResponse {
     // Con valor: permite al ENCARGADO identificar el tipo de jornada
     // sin necesidad de consultar el fichaje completo.
     private TipoFichaje fichajeTipo;
+
+    /**
+     * Pausas del dia. Solo se rellena en E37 (presencia/me).
+     * En E35 (parte diario) siempre es null para evitar N+1 queries.
+     */
+    private List<PausaResumen> pausas;
+
+    /**
+     * Resumen de una pausa del dia para mostrar en P12 (Mi hoy).
+     *
+     * horaInicio y horaFin vienen formateadas como "HH:mm".
+     * horaFin es null si la pausa sigue activa.
+     * duracionMinutos es null si la pausa sigue activa.
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PausaResumen {
+        private String horaInicio;
+        private String horaFin;          // null si pausa activa
+        private String tipoPausa;        // TipoPausa.name()
+        private Integer duracionMinutos; // null si pausa activa
+    }
 }

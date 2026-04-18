@@ -62,7 +62,7 @@ INSERT INTO usuarios (username, password_hash, email, rol, activo, fecha_creacio
 VALUES (
     'admin',
     '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
-    'admin@staffflow.demo',
+    'santicastnuevo@gmail.com',
     'ADMIN',
     TRUE,
     '2026-01-01 00:00:00'

@@ -78,6 +78,18 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
      */
     Optional<Pausa> findByEmpleadoIdAndFechaAndHoraFinIsNull(Long empleadoId, LocalDate fecha);
 
+    /**
+     * Cuenta el número de pausas de un empleado en una fecha concreta.
+     *
+     * <p>Usado por TerminalService en E49 (salida) para incluir el número
+     * de pausas en el resumen de jornada que ve el empleado al fichar salida.</p>
+     *
+     * @param empleadoId id del empleado
+     * @param fecha      fecha de las pausas
+     * @return número de pausas del empleado en esa fecha
+     */
+    int countByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha);
+
     // ---------------------------------------------------------------
     // Métodos añadidos en Bloque 5 (sesión 10)
     // ---------------------------------------------------------------

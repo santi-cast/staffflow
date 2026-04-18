@@ -9,12 +9,15 @@ import com.staffflow.dto.request.EmpleadoPatchRequest;
 import com.staffflow.dto.request.EmpleadoRequest;
 import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.MensajeResponse;
+import com.staffflow.dto.response.ParteDiarioResponse;
 import com.staffflow.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 /**
@@ -64,6 +67,8 @@ public class EmpleadoService {
 
     private final EmpleadoRepository empleadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PresenciaService presenciaService;
+    private final PdfService pdfService;
 
     // ----------------------------------------------------------------
     // E13 — POST /api/v1/empleados
@@ -102,18 +107,10 @@ public class EmpleadoService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Usuario con id " + request.getUsuarioId() + " no encontrado"));
 
-        // Validaciones preventivas de unicidad (HTTP 409 con mensaje claro)
+        // Validación preventiva de unicidad de DNI (HTTP 409 con mensaje claro)
         if (empleadoRepository.existsByDni(request.getDni())) {
             throw new ConflictException(
                     "El DNI '" + request.getDni() + "' ya está registrado");
-        }
-        if (empleadoRepository.existsByNumeroEmpleado(request.getNumeroEmpleado())) {
-            throw new ConflictException(
-                    "El número de empleado '" + request.getNumeroEmpleado() + "' ya está registrado");
-        }
-        if (empleadoRepository.existsByPinTerminal(request.getPinTerminal())) {
-            throw new ConflictException(
-                    "El PIN de terminal '" + request.getPinTerminal() + "' ya está registrado");
         }
         if (request.getCodigoNfc() != null
                 && empleadoRepository.existsByCodigoNfc(request.getCodigoNfc())) {
@@ -121,28 +118,44 @@ public class EmpleadoService {
                     "El código NFC '" + request.getCodigoNfc() + "' ya está registrado");
         }
 
+        // Auto-generar número de empleado: EMP-001, EMP-002, ...
+        // Usa count() para incluir empleados dados de baja (evita reutilizar números).
+        long total = empleadoRepository.count();
+        String numeroEmpleado = String.format("EMP-%03d", total + 1);
+        while (empleadoRepository.existsByNumeroEmpleado(numeroEmpleado)) {
+            total++;
+            numeroEmpleado = String.format("EMP-%03d", total + 1);
+        }
+
+        // Auto-generar PIN de 4 dígitos único
+        String pin = generarPinUnico();
+
+        // Calcular jornada diaria: (horas/semana / 5 días) * 60 minutos
+        int jornadaDiariaMinutos = (int) Math.round(request.getJornadaSemanalHoras() / 5.0 * 60);
+
         Empleado empleado = new Empleado();
         empleado.setUsuario(usuario);
         empleado.setNombre(request.getNombre());
         empleado.setApellido1(request.getApellido1());
         empleado.setApellido2(request.getApellido2());
         empleado.setDni(request.getDni());
-        empleado.setNumeroEmpleado(request.getNumeroEmpleado());
-        empleado.setFechaAlta(request.getFechaAlta());
+        empleado.setNumeroEmpleado(numeroEmpleado);
+        empleado.setFechaAlta(LocalDate.now());
         // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()
         empleado.setCategoria(request.getCategoria());
-        // jornadaSemanalHoras es Double en el DTO e Integer en la entidad — conversión explícita
-        empleado.setJornadaSemanalHoras(request.getJornadaSemanalHoras().intValue());
-        empleado.setJornadaDiariaMinutos(request.getJornadaDiariaMinutos());
+        empleado.setJornadaSemanalHoras(request.getJornadaSemanalHoras());
+        empleado.setJornadaDiariaMinutos(jornadaDiariaMinutos);
         empleado.setDiasVacacionesAnuales(request.getDiasVacacionesAnuales());
         empleado.setDiasAsuntosPropiosAnuales(request.getDiasAsuntosPropiosAnuales());
-        empleado.setPinTerminal(request.getPinTerminal());
+        empleado.setPinTerminal(pin);
         empleado.setCodigoNfc(request.getCodigoNfc());
         empleado.setActivo(true);
 
         Empleado guardado = empleadoRepository.save(empleado);
-        // En creación el ADMIN siempre recibe el PIN (acaba de crearlo)
-        return toEmpleadoResponse(guardado);
+        // En creación se devuelve el PIN para que el ADMIN/ENCARGADO lo entregue al empleado
+        EmpleadoResponse response = toEmpleadoResponse(guardado);
+        response.setPinTerminal(guardado.getPinTerminal());
+        return response;
     }
 
     // ----------------------------------------------------------------
@@ -178,6 +191,19 @@ public class EmpleadoService {
             // Búsqueda por texto en nombre, apellidos o DNI (RF-14)
             String termino = q.trim().toLowerCase();
             empleados = empleadoRepository.buscarPorTexto(termino);
+            // Aplicar filtros activo y categoria en memoria sobre el resultado de la búsqueda
+            if (activo != null) {
+                final Boolean activoFinal = activo;
+                empleados = empleados.stream()
+                        .filter(e -> activoFinal.equals(e.getActivo()))
+                        .collect(Collectors.toList());
+            }
+            if (categoria != null) {
+                final CategoriaEmpleado cat = CategoriaEmpleado.valueOf(categoria);
+                empleados = empleados.stream()
+                        .filter(e -> cat.equals(e.getCategoria()))
+                        .collect(Collectors.toList());
+            }
         } else if (categoria != null) {
             CategoriaEmpleado cat = CategoriaEmpleado.valueOf(categoria);
             empleados = (activo != null)
@@ -217,8 +243,10 @@ public class EmpleadoService {
         Empleado empleado = empleadoRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado con id " + id + " no encontrado"));
-        // pinTerminal nunca se expone en la respuesta (decisión nº21)
-        return toEmpleadoResponse(empleado);
+        // PIN incluido en el detalle individual para que ADMIN/ENCARGADO pueda entregárselo al empleado
+        EmpleadoResponse response = toEmpleadoResponse(empleado);
+        response.setPinTerminal(empleado.getPinTerminal());
+        return response;
     }
 
     // ----------------------------------------------------------------
@@ -271,8 +299,7 @@ public class EmpleadoService {
             empleado.setCategoria(request.getCategoria());
         }
         if (request.getJornadaSemanalHoras() != null) {
-            // jornadaSemanalHoras es Double en el DTO e Integer en la entidad — conversión explícita
-            empleado.setJornadaSemanalHoras(request.getJornadaSemanalHoras().intValue());
+            empleado.setJornadaSemanalHoras(request.getJornadaSemanalHoras());
         }
         if (request.getJornadaDiariaMinutos() != null) {
             empleado.setJornadaDiariaMinutos(request.getJornadaDiariaMinutos());
@@ -358,9 +385,19 @@ public class EmpleadoService {
     // RF-15: Estado en tiempo real de los empleados
     // ----------------------------------------------------------------
 
-    public Object obtenerEstado(java.time.LocalDate fecha) {
-        throw new UnsupportedOperationException(
-                "E19 fuera del alcance de v1.0. Previsto para v2.0.");
+    /**
+     * Devuelve el estado en tiempo real de todos los empleados activos
+     * para la fecha indicada.
+     *
+     * Delega en PresenciaService.obtenerParteDiario() que ya implementa
+     * la lógica completa de clasificación por EstadoPresencia.
+     *
+     * @param fecha fecha de consulta
+     * @return ParteDiarioResponse con contadores globales y detalle por empleado
+     */
+    @Transactional(readOnly = true)
+    public ParteDiarioResponse obtenerEstado(LocalDate fecha) {
+        return presenciaService.obtenerParteDiario(fecha);
     }
 
     // ----------------------------------------------------------------
@@ -368,9 +405,57 @@ public class EmpleadoService {
     // RF-16: Exportar listado de empleados
     // ----------------------------------------------------------------
 
+    /**
+     * Exporta el listado de empleados activos en formato CSV o PDF.
+     *
+     * CSV: genera un archivo de texto con cabecera y una fila por empleado.
+     * PDF: delega en PdfService para generar un documento con tabla estilizada.
+     *
+     * @param formato "csv" o "pdf"
+     * @param activo  filtro por estado (null = solo activos por defecto)
+     * @return bytes del archivo generado
+     * @throws IllegalArgumentException si el formato no es "csv" ni "pdf"
+     */
+    @Transactional(readOnly = true)
     public byte[] exportar(String formato, Boolean activo) {
-        throw new UnsupportedOperationException(
-                "E20 fuera del alcance de v1.0. Previsto para v2.0.");
+        boolean soloActivos = (activo == null) || activo;
+        List<Empleado> empleados = soloActivos
+                ? empleadoRepository.findByActivo(true)
+                : empleadoRepository.findAll();
+
+        if ("pdf".equalsIgnoreCase(formato)) {
+            return pdfService.exportarEmpleados(empleados);
+        } else if ("csv".equalsIgnoreCase(formato)) {
+            return generarCsvEmpleados(empleados);
+        } else {
+            throw new IllegalArgumentException(
+                    "Formato no soportado: '" + formato + "'. Use 'csv' o 'pdf'.");
+        }
+    }
+
+    private byte[] generarCsvEmpleados(List<Empleado> empleados) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("N\u00BA Empleado,Nombre,Apellido 1,Apellido 2,DNI,Categor\u00EDa,Jornada (h/sem),Fecha Alta\n");
+        for (Empleado e : empleados) {
+            sb.append(e.getNumeroEmpleado()).append(',')
+              .append(escaparCsv(e.getNombre())).append(',')
+              .append(escaparCsv(e.getApellido1())).append(',')
+              .append(escaparCsv(e.getApellido2() != null ? e.getApellido2() : "")).append(',')
+              .append(escaparCsv(e.getDni())).append(',')
+              .append(e.getCategoria() != null ? e.getCategoria().name() : "").append(',')
+              .append(e.getJornadaSemanalHoras()).append(',')
+              .append(e.getFechaAlta() != null ? e.getFechaAlta().toString() : "")
+              .append('\n');
+        }
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private String escaparCsv(String valor) {
+        if (valor == null) return "";
+        if (valor.contains(",") || valor.contains("\"") || valor.contains("\n")) {
+            return "\"" + valor.replace("\"", "\"\"") + "\"";
+        }
+        return valor;
     }
 
     // ----------------------------------------------------------------
@@ -401,6 +486,20 @@ public class EmpleadoService {
     // ----------------------------------------------------------------
     // Conversión entidad → DTO (uso interno)
     // ----------------------------------------------------------------
+
+    /**
+     * Genera un PIN de 4 dígitos aleatorio que no esté ya asignado a otro empleado.
+     * En sistemas con muchos empleados (>9000) la probabilidad de colisión aumenta,
+     * pero para el alcance de este proyecto (decenas de empleados) es despreciable.
+     */
+    private String generarPinUnico() {
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        String pin;
+        do {
+            pin = String.format("%04d", random.nextInt(10000));
+        } while (empleadoRepository.existsByPinTerminal(pin));
+        return pin;
+    }
 
     private EmpleadoResponse toEmpleadoResponse(Empleado empleado) {
         EmpleadoResponse response = new EmpleadoResponse();

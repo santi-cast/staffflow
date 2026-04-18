@@ -42,4 +42,7 @@ public class LoginResponse {
     // Con valor: Android lo usa para construir peticiones de datos propios
     // del empleado (fichajes, saldos, ausencias).
     private Long empleadoId;
+
+    // Nombre para mostrar en la UI (nombre + apellido1 del empleado, o username si ADMIN).
+    private String nombre;
 }

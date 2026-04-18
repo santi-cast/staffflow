@@ -1,5 +1,6 @@
 package com.staffflow.exception;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -183,6 +184,28 @@ public class GlobalExceptionHandler {
                 .body(buildError(ex.getMessage(), null, request));
     }
 
+    /**
+     * Maneja EntityNotFoundException de JPA (404).
+     *
+     * <p>jakarta.persistence.EntityNotFoundException la lanza TerminalService
+     * cuando el PIN introducido no corresponde a ningun empleado registrado.
+     * Se mapea a 404 para que el terminal pueda distinguir PIN incorrecto
+     * de bloqueo (423) o error interno (500).
+     *
+     * @param ex excepcion con el mensaje descriptivo
+     * @param request informacion de la peticion HTTP
+     * @return 404 con { error, timestamp, path }
+     */
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEntityNotFound(
+            EntityNotFoundException ex, WebRequest request) {
+
+        log.warn("Entidad no encontrada: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(buildError(ex.getMessage(), null, request));
+    }
+
     // ─── 409 CONFLICT ────────────────────────────────────────────────────────
 
     /**
@@ -233,6 +256,29 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.LOCKED)
                 .body(buildError(ex.getMessage(), null, request));
+    }
+
+    // ─── 501 NOT IMPLEMENTED ─────────────────────────────────────────────────
+
+    /**
+     * Maneja funcionalidades no implementadas en v1.0 (501).
+     *
+     * <p>UnsupportedOperationException se usa en los servicios para marcar
+     * endpoints definidos en el contrato pero pendientes de implementación
+     * en versiones futuras (E19, E20).</p>
+     *
+     * @param ex excepción con el mensaje descriptivo de la feature
+     * @param request información de la petición HTTP
+     * @return 501 con { error, timestamp, path }
+     */
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<Map<String, Object>> handleUnsupportedOperation(
+            UnsupportedOperationException ex, WebRequest request) {
+
+        log.info("Funcionalidad no implementada: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(buildError("Funcionalidad no disponible en v1.0", null, request));
     }
 
     // ─── 500 INTERNAL SERVER ERROR ───────────────────────────────────────────

@@ -10,12 +10,15 @@ import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.PausaRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
+import com.staffflow.domain.enums.EstadoTerminal;
 import com.staffflow.dto.request.TerminalPausaRequest;
 import com.staffflow.dto.request.TerminalPinRequest;
 import com.staffflow.dto.response.TerminalEntradaResponse;
+import com.staffflow.dto.response.TerminalEstadoResponse;
 import com.staffflow.dto.response.TerminalPausaResponse;
 import com.staffflow.dto.response.TerminalSalidaResponse;
 import com.staffflow.exception.ConflictException;
+import com.staffflow.exception.PinBloqueadoException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -230,9 +234,15 @@ public class TerminalService {
         fichajeRepository.save(fichaje);
         reiniciarFallos(request.getDispositivoId());
 
+        // Contar pausas del día para el resumen de jornada
+        int numeroPausas = pausaRepository.countByEmpleadoIdAndFecha(empleado.getId(), hoy);
+
         return new TerminalSalidaResponse(
                 empleado.getNombre(),
+                fichaje.getHoraEntrada(),
                 ahora,
+                fichaje.getTotalPausasMinutos(),
+                numeroPausas,
                 jornadaEfectiva,
                 "\u2714 Salida registrada"
         );
@@ -303,6 +313,7 @@ public class TerminalService {
                 empleado.getNombre(),
                 ahora,
                 null,
+                null,
                 "\u2714 Pausa iniciada"
         );
     }
@@ -369,10 +380,89 @@ public class TerminalService {
 
         return new TerminalPausaResponse(
                 empleado.getNombre(),
-                null,
+                pausa.getHoraInicio(),
+                ahora,
                 duracion,
                 "\u2714 Pausa finalizada"
         );
+    }
+
+    // ---------------------------------------------------------------
+    // E52 — POST /api/v1/terminal/estado
+    // Consultar estado del dia para la pantalla de bienvenida (P06)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve el estado de la jornada del empleado para el día actual (E52).
+     *
+     * Se llama desde P06 justo después de que el empleado introduce su PIN,
+     * antes de que elija la acción a registrar. Permite mostrar:
+     *   - El nombre del empleado para el saludo personalizado
+     *   - El resumen de lo que ya tiene registrado hoy
+     *
+     * Flujo:
+     *   1. Verificar bloqueo del dispositivo (423 si bloqueado).
+     *   2. Buscar empleado por PIN → 404 si no existe.
+     *   3. Consultar fichaje de hoy (puede no existir).
+     *   4. Si hay fichaje y está abierto, consultar pausa activa.
+     *   5. Determinar el estado y devolver TerminalEstadoResponse.
+     *
+     * No modifica ningún dato. Solo lectura.
+     *
+     * @param request pin + dispositivoId
+     * @return nombre del empleado y estado de la jornada de hoy
+     */
+    @Transactional(readOnly = true)
+    public TerminalEstadoResponse obtenerEstado(TerminalPinRequest request) {
+
+        verificarBloqueo(request.getDispositivoId());
+
+        Empleado empleado = buscarEmpleadoPorPin(request.getPin(), request.getDispositivoId());
+
+        LocalDate hoy = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+
+        // Sin fichaje de entrada hoy
+        var fichajeOpt = fichajeRepository.findByEmpleadoIdAndFecha(empleado.getId(), hoy);
+        if (fichajeOpt.isEmpty()) {
+            reiniciarFallos(request.getDispositivoId());
+            return new TerminalEstadoResponse(
+                    empleado.getNombre(), EstadoTerminal.SIN_ENTRADA,
+                    null, null, null, null);
+        }
+
+        Fichaje fichaje = fichajeOpt.get();
+        String horaEntrada = fichaje.getHoraEntrada() != null
+                ? fichaje.getHoraEntrada().format(fmt) : null;
+
+        // Jornada cerrada (hay salida registrada)
+        if (fichaje.getHoraSalida() != null) {
+            String horaSalida = fichaje.getHoraSalida().format(fmt);
+            reiniciarFallos(request.getDispositivoId());
+            return new TerminalEstadoResponse(
+                    empleado.getNombre(), EstadoTerminal.JORNADA_CERRADA,
+                    horaEntrada, horaSalida, null, null);
+        }
+
+        // Pausa activa en curso
+        var pausaOpt = pausaRepository.findByEmpleadoIdAndFechaAndHoraFinIsNull(empleado.getId(), hoy);
+        if (pausaOpt.isPresent()) {
+            Pausa pausa = pausaOpt.get();
+            String horaInicioPausa = pausa.getHoraInicio() != null
+                    ? pausa.getHoraInicio().format(fmt) : null;
+            String tipoPausa = pausa.getTipoPausa() != null
+                    ? pausa.getTipoPausa().name() : null;
+            reiniciarFallos(request.getDispositivoId());
+            return new TerminalEstadoResponse(
+                    empleado.getNombre(), EstadoTerminal.EN_PAUSA,
+                    horaEntrada, null, horaInicioPausa, tipoPausa);
+        }
+
+        // En jornada (entrada registrada, sin pausa activa, sin salida)
+        reiniciarFallos(request.getDispositivoId());
+        return new TerminalEstadoResponse(
+                empleado.getNombre(), EstadoTerminal.EN_JORNADA,
+                horaEntrada, null, null, null);
     }
 
     // ---------------------------------------------------------------
@@ -408,7 +498,7 @@ public class TerminalService {
     private void verificarBloqueo(String dispositivoId) {
         AtomicInteger intentos = intentosFallidos.get(dispositivoId);
         if (intentos != null && intentos.get() >= MAX_INTENTOS) {
-            throw new ResponseStatusException(HttpStatus.LOCKED,
+            throw new PinBloqueadoException(
                     "Dispositivo bloqueado por " + MAX_INTENTOS
                     + " intentos fallidos de PIN. Contacta con el encargado");
         }

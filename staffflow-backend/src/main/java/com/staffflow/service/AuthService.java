@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -76,6 +77,9 @@ public class AuthService {
      */
     private final PasswordEncoder passwordEncoder;
 
+    /** Servicio de email: envía el correo de recuperación de contraseña (E04). */
+    private final EmailService emailService;
+
     // =========================================================================
     // E01 — POST /api/v1/auth/login
     // =========================================================================
@@ -103,12 +107,14 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
                 .orElseThrow(); // No puede fallar: Authentication acaba de verificar que existe
 
-        // 3. Determinar empleadoId.
-        // ADMIN no tiene perfil de empleado → null.
-        // ENCARGADO/EMPLEADO: se resuelve consultando EmpleadoRepository.
-        Long empleadoId = empleadoRepository.findByUsuarioId(usuario.getId())
-                .map(Empleado::getId)
-                .orElse(null);
+        // 3. Determinar empleadoId y nombre para mostrar en la UI.
+        // ADMIN no tiene perfil de empleado → empleadoId=null, nombre=username.
+        // ENCARGADO/EMPLEADO: nombre = nombre + apellido1 del empleado.
+        var optEmpleado = empleadoRepository.findByUsuarioId(usuario.getId());
+        Long empleadoId = optEmpleado.map(Empleado::getId).orElse(null);
+        String nombre = optEmpleado
+                .map(e -> e.getNombre() + " " + e.getApellido1())
+                .orElse(usuario.getUsername());
 
         String token = jwtTokenProvider.generarToken(
                 usuario.getUsername(),
@@ -116,7 +122,7 @@ public class AuthService {
                 empleadoId
         );
 
-        return new LoginResponse(token, usuario.getRol(), usuario.getUsername(), empleadoId);
+        return new LoginResponse(token, usuario.getRol(), usuario.getUsername(), empleadoId, nombre);
     }
 
     // =========================================================================
@@ -203,9 +209,8 @@ public class AuthService {
     /**
      * Solicita un token de recuperación de contraseña por email.
      *
-     * <p>STUB: el email no se envía realmente. El token se loguea con
-     * log.info() para poder usarlo en pruebas. En producción se sustituiría
-     * el log por una llamada a JavaMailSender.</p>
+     * <p>El correo se envía de forma asíncrona via {@link EmailService} usando
+     * Gmail SMTP con las credenciales configuradas por variables de entorno.</p>
      *
      * <p>Decisión de seguridad (RNF-S04): si el email no existe en BD se
      * devuelve exactamente la misma respuesta 200 que si existe. Esto evita
@@ -220,24 +225,29 @@ public class AuthService {
      */
     @Transactional
     public MensajeResponse solicitarRecuperacion(PasswordRecoveryRequest request) {
-        // Buscar usuario por email
         // Si no existe, devolvemos la misma respuesta sin hacer nada (RNF-S04)
         usuarioRepository.findByEmail(request.getEmail()).ifPresent(usuario -> {
-            // Generar token UUID de un solo uso
-            String token = UUID.randomUUID().toString();
+            // Generar contraseña temporal legible (8 chars: letras + dígitos)
+            String passwordTemporal = generarPasswordTemporal();
 
-            // Guardar token y fecha de expiración (ahora + 30 minutos)
-            usuario.setResetToken(token);
-            usuario.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
+            // Reemplazar la contraseña del usuario con la temporal (hasheada)
+            usuario.setPasswordHash(passwordEncoder.encode(passwordTemporal));
             usuarioRepository.save(usuario);
 
-            // STUB: en producción aquí iría el envío de email
-            // Se loguea en INFO para poder usarlo en pruebas con Swagger
-            log.info("[STUB EMAIL] Token recuperacion para {}: {}", usuario.getEmail(), token);
+            emailService.enviarPasswordTemporal(usuario.getEmail(), passwordTemporal);
         });
 
-        // Respuesta idéntica independientemente de si el email existe o no
-        return new MensajeResponse("Si el email está registrado recibirás las instrucciones de recuperación");
+        return new MensajeResponse("Si el email está registrado recibirás tu contraseña temporal");
+    }
+
+    private String generarPasswordTemporal() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     // =========================================================================

@@ -4,6 +4,7 @@ import com.staffflow.dto.request.EmpleadoPatchRequest;
 import com.staffflow.dto.request.EmpleadoRequest;
 import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.MensajeResponse;
+import com.staffflow.dto.response.ParteDiarioResponse;
 import com.staffflow.service.EmpleadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +43,8 @@ import java.util.List;
  *
  * RF cubiertos: RF-08 a RF-16, RF-50.
  *
- * Nota sobre E19 y E20: los métodos están implementados en el controller
- * pero el service lanza UnsupportedOperationException hasta que se
- * implementen en Bloque 6 (E19) y Bloque 7 (E20).
+ * E19 delega en PresenciaService.obtenerParteDiario() — misma respuesta que E35.
+ * E20 exporta el listado de empleados activos en CSV o PDF.
  */
 @RestController
 @RequestMapping("/api/v1/empleados")
@@ -224,18 +224,18 @@ public class EmpleadoController {
 
     /**
      * Devuelve el estado en tiempo real de todos los empleados activos
-     * para una fecha dada.
+     * para una fecha dada (RF-15).
      *
-     * Pendiente de implementación en Bloque 6. El service lanza
-     * UnsupportedOperationException hasta entonces, que GlobalExceptionHandler
-     * convierte en HTTP 500 con mensaje descriptivo.
+     * Devuelve los mismos datos que E35 (/api/v1/presencia/parte-diario)
+     * desde el grupo de empleados para mantener la numeración correlativa
+     * del contrato de la API.
      *
      * @param fecha fecha para la consulta (defecto: hoy)
-     * @return estado de empleados por fecha
+     * @return ParteDiarioResponse con contadores globales y detalle por empleado
      */
     @GetMapping("/estado")
     @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
-    public ResponseEntity<Object> obtenerEstado(
+    public ResponseEntity<ParteDiarioResponse> obtenerEstado(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         LocalDate fechaConsulta = (fecha != null) ? fecha : LocalDate.now();
@@ -245,17 +245,13 @@ public class EmpleadoController {
     // ----------------------------------------------------------------
     // E20 — GET /api/v1/empleados/export
     // RF-16: Exportar listado de empleados
-    // Pendiente de implementación en Bloque 7
     // ----------------------------------------------------------------
 
     /**
-     * Exporta el listado de empleados en formato CSV o PDF.
-     *
-     * Pendiente de implementación en Bloque 7. El service lanza
-     * UnsupportedOperationException hasta entonces.
+     * Exporta el listado de empleados activos en formato CSV o PDF.
      *
      * @param formato "csv" o "pdf"
-     * @param activo  filtro por estado — opcional
+     * @param activo  filtro por estado — opcional (null = solo activos)
      * @return fichero binario (text/csv o application/pdf)
      */
     @GetMapping("/export")

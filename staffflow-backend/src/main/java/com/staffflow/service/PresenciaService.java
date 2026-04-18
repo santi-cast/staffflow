@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -275,7 +276,23 @@ public class PresenciaService {
         boolean festivoGlobal = ausencias.stream()
                 .anyMatch(a -> a.getEmpleado() == null);
 
-        return clasificarEmpleado(emp, fichaje, enPausa, tieneAusenciaIndividual, festivoGlobal);
+        DetallePresenciaResponse response = clasificarEmpleado(
+                emp, fichaje, enPausa, tieneAusenciaIndividual, festivoGlobal);
+
+        // Cargar pausas del dia para mostrarlas en P12 (Mi hoy)
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        List<DetallePresenciaResponse.PausaResumen> pausasHoy = pausaRepository
+                .findByEmpleadoIdAndFecha(emp.getId(), fecha)
+                .stream()
+                .map(p -> new DetallePresenciaResponse.PausaResumen(
+                        p.getHoraInicio() != null ? p.getHoraInicio().format(fmt) : null,
+                        p.getHoraFin() != null ? p.getHoraFin().format(fmt) : null,
+                        p.getTipoPausa() != null ? p.getTipoPausa().name() : null,
+                        p.getDuracionMinutos()))
+                .collect(Collectors.toList());
+        response.setPausas(pausasHoy);
+
+        return response;
     }
 
     // ================================================================
@@ -347,6 +364,7 @@ public class PresenciaService {
                 fichaje != null ? fichaje.getHoraEntrada() : null,
                 fichaje != null ? fichaje.getHoraSalida() : null,
                 pausaActiva,
-                fichaje != null ? fichaje.getTipo() : null);
+                fichaje != null ? fichaje.getTipo() : null,
+                null);   // pausas: solo se rellena en E37 via obtenerMiPresencia()
     }
 }

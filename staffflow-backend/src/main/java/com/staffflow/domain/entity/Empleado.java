@@ -56,8 +56,9 @@ public class Empleado {
     private CategoriaEmpleado categoria;
 
     // Horas semanales contractuales. Base para el cálculo de saldo de horas.
+    // Double para soportar jornadas parciales con decimales (ej: 37.5h).
     @Column(name = "jornada_semanal_horas", nullable = false)
-    private Integer jornadaSemanalHoras = 40;
+    private Double jornadaSemanalHoras = 40.0;
 
     // Minutos de jornada diaria esperada. Usado en el cálculo de jornada efectiva.
     @Column(name = "jornada_diaria_minutos", nullable = false)

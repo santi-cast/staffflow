@@ -9,10 +9,9 @@ import java.time.LocalDateTime;
 /**
  * Respuesta del terminal al iniciar (E50) o finalizar (E51) una pausa.
  *
- * En E50 (iniciar): horaInicioPausa tiene valor, duracionPausaMinutos es null.
- * En E51 (finalizar): horaInicioPausa es null, duracionPausaMinutos tiene valor.
- * El mismo DTO sirve para ambos endpoints — el campo no usado llega null
- * al cliente y la app Android ignora los campos null.
+ * En E50 (iniciar): horaInicioPausa tiene valor; horaFinPausa y duracionPausaMinutos son null.
+ * En E51 (finalizar): los tres campos tienen valor (inicio, fin y duración).
+ * El mismo DTO sirve para ambos endpoints — los campos no usados llegan null.
  *
  * @author Santiago Castillo
  */
@@ -24,11 +23,11 @@ public class TerminalPausaResponse {
     /** Nombre del empleado, para confirmación visual en el terminal. */
     private String nombre;
 
-    /**
-     * Hora de inicio de la pausa. Solo se rellena en E50 (iniciar).
-     * Null en E51 (finalizar).
-     */
+    /** Hora de inicio de la pausa. Disponible en E50 y E51. */
     private LocalDateTime horaInicioPausa;
+
+    /** Hora de fin de la pausa. Solo se rellena en E51 (finalizar). Null en E50. */
+    private LocalDateTime horaFinPausa;
 
     /**
      * Duración de la pausa en minutos. Solo se rellena en E51 (finalizar).

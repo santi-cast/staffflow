@@ -34,6 +34,9 @@ public class SaldoResponse {
     /** ID del empleado al que pertenece este saldo. */
     private Long empleadoId;
 
+    /** Nombre completo del empleado (nombre + apellido1). */
+    private String nombreCompleto;
+
     /** Año al que corresponde el saldo (ej: 2026). */
     private Integer anio;
 

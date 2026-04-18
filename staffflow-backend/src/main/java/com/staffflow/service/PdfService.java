@@ -770,7 +770,7 @@ public class PdfService {
                                       Empleado empleado) throws Exception {
         // Horas diarias segun contrato (jornada semanal / 5 dias laborables)
         int minutosDiarios = (empleado != null && empleado.getJornadaSemanalHoras() != null)
-                ? (empleado.getJornadaSemanalHoras() * 60) / 5
+                ? (int) Math.round(empleado.getJornadaSemanalHoras() * 60 / 5)
                 : 480; // fallback 8h
         PdfFont fontBold = PdfFontFactory.createFont(
                 com.itextpdf.io.font.constants.StandardFonts.HELVETICA_BOLD);
@@ -1584,5 +1584,104 @@ public class PdfService {
     private String formatearDecimal(BigDecimal bd) {
         if (bd == null) return "0,00";
         return String.format("%.2f", bd).replace('.', ',');
+    }
+
+    // =========================================================================
+    // E20 — GET /api/v1/empleados/export?formato=pdf
+    // RF-16: Exportar listado de empleados en PDF
+    // =========================================================================
+
+    /**
+     * Genera el PDF del listado de empleados (E20).
+     *
+     * <p>Tabla con cabecera corporativa y una fila por empleado. Columnas:
+     * N° Empleado, Nombre completo, DNI, Categoría, Jornada (h/sem), Fecha Alta.</p>
+     *
+     * @param empleados lista de empleados a exportar
+     * @return bytes del PDF generado
+     */
+    public byte[] exportarEmpleados(List<Empleado> empleados) {
+        EmpresaResponse empresa = obtenerEmpresa();
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            PdfWriter writer = new PdfWriter(baos);
+            PdfDocument pdfDoc = new PdfDocument(writer);
+            Document doc = new Document(pdfDoc, PageSize.A4);
+            doc.setMargins(MARGEN, MARGEN, MARGEN, MARGEN);
+
+            PdfFont fontBold = PdfFontFactory.createFont(
+                    com.itextpdf.io.font.constants.StandardFonts.HELVETICA_BOLD);
+            PdfFont fontNormal = PdfFontFactory.createFont(
+                    com.itextpdf.io.font.constants.StandardFonts.HELVETICA);
+
+            // Cabecera del documento
+            doc.add(new Paragraph(empresa.getNombreEmpresa() != null ? empresa.getNombreEmpresa() : "StaffFlow")
+                    .setFont(fontBold)
+                    .setFontSize(FONT_SIZE_TITULO)
+                    .setFontColor(COLOR_CABECERA)
+                    .setTextAlignment(TextAlignment.CENTER));
+            doc.add(new Paragraph("Listado de empleados — generado el "
+                    + LocalDateTime.now().format(FMT_GENERA))
+                    .setFont(fontNormal)
+                    .setFontSize(FONT_SIZE_PIE)
+                    .setFontColor(ColorConstants.GRAY)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(12f));
+
+            // Tabla: 6 columnas con anchos proporcionales
+            float[] anchos = {70f, 140f, 70f, 90f, 60f, 70f};
+            Table tabla = new Table(UnitValue.createPointArray(anchos));
+            tabla.setWidth(UnitValue.createPercentValue(100));
+
+            String[] cabeceras = {"N° Empleado", "Nombre completo", "DNI",
+                    "Categoría", "Jornada h/sem", "Fecha alta"};
+            for (String cab : cabeceras) {
+                tabla.addHeaderCell(new Cell()
+                        .add(new Paragraph(cab).setFont(fontBold).setFontSize(FONT_SIZE_CABECERA))
+                        .setBackgroundColor(COLOR_CABECERA)
+                        .setFontColor(ColorConstants.WHITE)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setPadding(4f));
+            }
+
+            for (int i = 0; i < empleados.size(); i++) {
+                Empleado e = empleados.get(i);
+                DeviceRgb fondo = (i % 2 == 0) ? null : new DeviceRgb(245, 245, 245);
+                String nombreCompleto = e.getNombre() + " " + e.getApellido1()
+                        + (e.getApellido2() != null ? " " + e.getApellido2() : "");
+
+                String[] celdas = {
+                        e.getNumeroEmpleado(),
+                        nombreCompleto,
+                        e.getDni(),
+                        e.getCategoria() != null ? e.getCategoria().name() : "—",
+                        e.getJornadaSemanalHoras() + "h",
+                        e.getFechaAlta() != null ? e.getFechaAlta().format(FMT_FECHA) : "—"
+                };
+
+                for (String valor : celdas) {
+                    Cell celda = new Cell()
+                            .add(new Paragraph(valor).setFont(fontNormal).setFontSize(FONT_SIZE_NORMAL))
+                            .setPadding(3f);
+                    if (fondo != null) celda.setBackgroundColor(fondo);
+                    tabla.addCell(celda);
+                }
+            }
+
+            doc.add(tabla);
+
+            doc.add(new Paragraph("Total: " + empleados.size() + " empleados")
+                    .setFont(fontBold)
+                    .setFontSize(FONT_SIZE_NORMAL)
+                    .setFontColor(COLOR_CABECERA)
+                    .setMarginTop(8f));
+
+            doc.close();
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            log.error("Error generando PDF E20: {}", e.getMessage(), e);
+            throw new IllegalStateException("Error generando el PDF de empleados: " + e.getMessage(), e);
+        }
     }
 }

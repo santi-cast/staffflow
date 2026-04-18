@@ -74,7 +74,14 @@ public class SaldoService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado no encontrado con id: " + empleadoId));
 
-        // 404 si no hay saldo registrado para ese año
+        // Si no existe el registro para este año, calcularlo on-demand a partir
+        // de los fichajes existentes (mismo patron que E40). Esto evita el 404
+        // antes del primer cierre diario del año y elimina la necesidad de
+        // precarga manual en entornos de desarrollo.
+        if (saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta).isEmpty()) {
+            recalcularParaProceso(empleadoId, anioConsulta);
+        }
+
         SaldoAnual saldo = saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta)
                 .orElseThrow(() -> new IllegalStateException(
                         "No existe saldo para el empleado " + empleadoId
@@ -100,6 +107,15 @@ public class SaldoService {
      */
     public List<SaldoResponse> listarTodos(Integer anio) {
         int anioConsulta = resolverAnio(anio);
+
+        // Crear on-demand el saldo de cualquier empleado activo que no lo tenga todavía.
+        // Cubre tanto el primer acceso del año como empleados creados después del
+        // primer cierre diario (ej: un nuevo ENCARGADO sin saldo aún). El filtro
+        // doble evita recalcular los que ya existen. N+1 aceptable a escala PYME.
+        empleadoRepository.findAll().stream()
+                .filter(e -> Boolean.TRUE.equals(e.getActivo()))
+                .filter(e -> saldoRepository.findByEmpleadoIdAndAnio(e.getId(), anioConsulta).isEmpty())
+                .forEach(e -> recalcularParaProceso(e.getId(), anioConsulta));
 
         List<SaldoAnual> saldos = saldoRepository.findByAnio(anioConsulta);
 
@@ -304,7 +320,13 @@ public class SaldoService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado no encontrado para el usuario: " + username));
 
-        // 404 si no hay saldo para ese año
+        // Si no existe el registro para este año, calcularlo on-demand.
+        // Mismo patron que E38 y E40. Evita el 404 antes del primer cierre
+        // diario del año.
+        if (saldoRepository.findByEmpleadoIdAndAnio(empleado.getId(), anioConsulta).isEmpty()) {
+            recalcularParaProceso(empleado.getId(), anioConsulta);
+        }
+
         SaldoAnual saldo = saldoRepository
                 .findByEmpleadoIdAndAnio(empleado.getId(), anioConsulta)
                 .orElseThrow(() -> new IllegalStateException(
@@ -421,8 +443,11 @@ public class SaldoService {
                 saldo.getDiasAsuntosPropiosDisponibles()
         );
 
+        String nombreCompleto = empleado.getNombre() + " " + empleado.getApellido1();
+
         return new SaldoResponse(
                 saldo.getEmpleado().getId(),
+                nombreCompleto,
                 saldo.getAnio(),
                 vacaciones,
                 asuntosPropios,

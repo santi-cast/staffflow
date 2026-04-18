@@ -49,8 +49,8 @@ public class EmpleadoResponse {
     // Informativa: no determina permisos de acceso (decisión nº19).
     private CategoriaEmpleado categoria;
 
-    // Horas semanales contractuales (decisión nº22).
-    private Integer jornadaSemanalHoras;
+    // Horas semanales contractuales (decisión nº22). Double para soportar jornadas parciales.
+    private Double jornadaSemanalHoras;
 
     // Minutos de jornada diaria esperada. Base para el cálculo de jornada efectiva.
     private Integer jornadaDiariaMinutos;
@@ -65,7 +65,8 @@ public class EmpleadoResponse {
     // Baja lógica: activo=false. Nunca DELETE físico (decisión nº4).
     private Boolean activo;
 
-    // NUNCA incluir: pinTerminal.
-    // El PIN es un dato de seguridad del terminal que no se expone
-    // al cliente bajo ningún concepto (decisión nº21).
+    // PIN del terminal. Solo se devuelve en E13 (crear) y E15 (detalle por id).
+    // Null en E14 (listado), E16 (patch) y E21 (/me) para no exponer el PIN
+    // al empleado ni en listados masivos (decisión nº21 revisada).
+    private String pinTerminal;
 }
