@@ -66,7 +66,11 @@ class ParteDiarioViewModel(application: Application) : AndroidViewModel(applicat
     private fun cargarParteDiario() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
-            repository.getParteDiario(_fecha.value).fold(
+            // Para "hoy" se manda null para que el backend use su propio LocalDate.now()
+            // y evitar desfases de zona horaria entre emulador y servidor.
+            // Solo se manda fecha explicita cuando el usuario selecciona una fecha pasada.
+            val fechaParam = if (_fecha.value == hoy()) null else _fecha.value
+            repository.getParteDiario(fechaParam).fold(
                 onSuccess = { resp ->
                     _uiState.value = if (resp.detalle.isEmpty()) UiState.Empty
                                      else UiState.Success(resp)

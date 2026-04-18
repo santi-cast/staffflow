@@ -1,62 +1,250 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de la pantalla de confirmacion de fichaje (P06).
+    Layout de la pantalla de bienvenida y confirmacion de fichaje (P06).
 
-    Pantalla de feedback sin interaccion. Se muestra durante 3 segundos
-    tras una operacion exitosa en el terminal (P01) y vuelve automaticamente.
+    Tiene dos fases visuales gestionadas desde ConfirmacionFragment:
 
-    Estructura:
-      - Icono de exito (checkmark grande centrado)
-      - Mensaje principal (Bienvenido / Hasta luego / Pausa iniciada / finalizada)
-      - Mensaje secundario (hora, jornada, tipo de pausa, duracion)
-      - Cuenta atras "Volviendo en Xs..."
+    Fase A - Seleccion de accion (layoutSeleccion VISIBLE, layoutResultado GONE):
+      El empleado elige que quiere registrar tras introducir su PIN.
+      Incluye mensaje de error (GONE por defecto) para 404/409/423.
 
-    Sin botones: el usuario no interactua con esta pantalla.
+    Fase B - Resultado (layoutResultado VISIBLE, layoutSeleccion GONE):
+      Muestra el icono de exito, los datos del fichaje y la cuenta atras de 5s.
+
+    Diseño: mismo marco/fondo que el terminal (P01). Card centrada en pantalla.
 -->
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="32dp">
+    android:background="?attr/colorSurfaceVariant">
 
-    <!-- Icono de exito -->
-    <TextView
-        android:id="@+id/tvIcono"
+    <!-- Tarjeta: centrada verticalmente, misma estetica que el terminal -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardConfirmacion"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginVertical="24dp"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingHorizontal="28dp"
+            android:paddingVertical="36dp">
+
+            <!-- Logo: "Staff" bold + "Flow" thin -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Staff"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:fontFamily="sans-serif"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Flow"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:fontFamily="sans-serif-thin"
+                    android:textColor="?attr/colorPrimary" />
+            </LinearLayout>
+
+            <!-- ============================================================ -->
+            <!-- FASE A: Seleccion de accion                                   -->
+            <!-- ============================================================ -->
+            <LinearLayout
+                android:id="@+id/layoutSeleccion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <!-- Bienvenida: "Hola, [nombre]" -->
+                <TextView
+                    android:id="@+id/tvBienvenida"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Resumen del dia: estado actual + fichajes/pausas -->
+                <TextView
+                    android:id="@+id/tvEstadoDia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="center"
+                    android:layout_marginBottom="28dp" />
+
+                <!-- Titulo -->
+                <TextView
+                    android:id="@+id/tvQueRegistrar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/confirmacion_que_fichar"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Error (GONE por defecto; visible si la llamada al API falla) -->
+                <TextView
+                    android:id="@+id/tvError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    android:textColor="?attr/colorError"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Fila 1: Entrada | Salida -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEntrada"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:minWidth="120dp"
+                        android:layout_marginEnd="8dp"
+                        android:text="@string/terminal_btn_entrada" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSalida"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:minWidth="120dp"
+                        android:visibility="gone"
+                        android:text="@string/terminal_btn_salida" />
+
+                </LinearLayout>
+
+                <!-- Fila 2: Iniciar pausa | Finalizar pausa -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="4dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnIniciarPausa"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:minWidth="120dp"
+                        android:layout_marginEnd="8dp"
+                        android:visibility="gone"
+                        android:text="@string/terminal_btn_iniciar_pausa" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFinalizarPausa"
+                        android:layout_width="wrap_content"
+                        android:layout_height="56dp"
+                        android:minWidth="120dp"
+                        android:visibility="gone"
+                        android:text="@string/terminal_btn_finalizar_pausa" />
+
+                </LinearLayout>
+
+                <!-- Cancelar: vuelve al terminal sin registrar nada -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelar"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/terminal_btn_cancelar" />
+
+            </LinearLayout>
+
+            <!-- ============================================================ -->
+            <!-- FASE B: Resultado del fichaje                                 -->
+            <!-- ============================================================ -->
+            <LinearLayout
+                android:id="@+id/layoutResultado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="24dp"
+                android:visibility="gone">
+
+                <!-- Icono de exito -->
+                <TextView
+                    android:id="@+id/tvIcono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✓"
+                    android:textSize="80sp"
+                    android:textColor="?attr/colorPrimary" />
+
+                <!-- Mensaje principal: Bienvenido / Hasta luego / Pausa iniciada / finalizada -->
+                <TextView
+                    android:id="@+id/tvMensajePrincipal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:layout_marginTop="24dp" />
+
+                <!-- Mensaje secundario: hora, jornada, tipo de pausa, duracion -->
+                <TextView
+                    android:id="@+id/tvMensajeSecundario"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Cuenta atras "Volviendo en Xs..." -->
+                <TextView
+                    android:id="@+id/tvCuentaAtras"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginTop="32dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Indicador de carga (GONE durante idle) -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressIndicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="✓"
-        android:textSize="80sp"
-        android:textColor="?attr/colorPrimary" />
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Mensaje principal: Bienvenido / Hasta luego / Pausa iniciada / finalizada -->
-    <TextView
-        android:id="@+id/tvMensajePrincipal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall"
-        android:layout_marginTop="24dp" />
-
-    <!-- Mensaje secundario: hora, jornada efectiva, tipo de pausa, duracion -->
-    <TextView
-        android:id="@+id/tvMensajeSecundario"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="8dp" />
-
-    <!-- Cuenta atras "Volviendo en Xs..." -->
-    <TextView
-        android:id="@+id/tvCuentaAtras"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:layout_marginTop="32dp" />
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

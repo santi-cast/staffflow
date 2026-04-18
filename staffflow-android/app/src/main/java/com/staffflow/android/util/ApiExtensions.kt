@@ -26,7 +26,8 @@ suspend fun <T> safeApiCall(call: suspend () -> Response<T>): Result<T> {
         } else {
             val errorBody = response.errorBody()?.string()
             val mensaje = try {
-                Gson().fromJson(errorBody, ErrorResponse::class.java).mensaje
+                Gson().fromJson(errorBody, ErrorResponse::class.java).error
+                    ?: "Error ${response.code()}"
             } catch (e: Exception) {
                 "Error ${response.code()}"
             }

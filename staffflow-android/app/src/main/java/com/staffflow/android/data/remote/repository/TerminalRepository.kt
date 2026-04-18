@@ -2,6 +2,7 @@ package com.staffflow.android.data.remote.repository
 
 import com.staffflow.android.data.remote.api.TerminalApiService
 import com.staffflow.android.data.remote.dto.TerminalEntradaResponse
+import com.staffflow.android.data.remote.dto.TerminalEstadoResponse
 import com.staffflow.android.data.remote.dto.TerminalPausaResponse
 import com.staffflow.android.data.remote.dto.TerminalPinRequest
 import com.staffflow.android.data.remote.dto.TerminalPausaRequest
@@ -23,6 +24,13 @@ import com.staffflow.android.util.safeApiCall
  * @param api Instancia de TerminalApiService creada por NetworkModule.retrofit.
  */
 class TerminalRepository(private val api: TerminalApiService) {
+
+    /**
+     * E52 - Consulta el estado de la jornada del empleado para el dia actual.
+     * Sin JWT. Llamado desde P06 antes de mostrar los botones de accion.
+     */
+    suspend fun obtenerEstado(request: TerminalPinRequest): Result<TerminalEstadoResponse> =
+        safeApiCall { api.obtenerEstado(request) }
 
     /**
      * E48 - Registra la entrada de un empleado por PIN.

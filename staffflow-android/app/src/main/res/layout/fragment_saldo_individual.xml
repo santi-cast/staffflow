@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout de Saldo individual (P26).
+
+    Patron C - dato unico, solo lectura. Endpoint: E38 GET /saldos/{empleadoId}?anio=
+    Roles: ENCARGADO y ADMIN.
+
+    Identico a fragment_mi_saldo.xml (P09) pero para un empleado especifico.
+    Recibe empleadoId como argumento de navegacion.
+    Acceso desde P14 (chip "Ver saldo") y P27 (tap en fila).
+
+    Tres estados gestionados por visibilidad:
+      CARGANDO -> progressIndicator visible, resto GONE
+      ERROR    -> layoutError visible, resto GONE
+      EXITO    -> scrollContenido visible, resto GONE
+
+    El selector de año se muestra en la toolbar via MenuProvider (menu_saldo_individual.xml).
+    saldoHoras: verde si >= 0, rojo si < 0.
+-->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ESTADO: CARGANDO -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="visible" />
+
+    <!-- ESTADO: ERROR -->
+    <LinearLayout
+        android:id="@+id/layoutError"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="☁"
+            android:textSize="64sp"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/tvErrorMensaje"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReintentar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/reintentar" />
+
+    </LinearLayout>
+
+    <!-- ESTADO: EXITO -->
+    <ScrollView
+        android:id="@+id/scrollContenido"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Card: Vacaciones -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardElevation="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/saldo_vacaciones_titulo"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:layout_marginBottom="8dp" />
+
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesAnterior" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesAnual" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesAnoCurso" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesConsumidos" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesDisponibles" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card: Asuntos propios -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardElevation="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/saldo_asuntos_titulo"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:layout_marginBottom="8dp" />
+
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosAnterior" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosAnual" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosAnoCurso" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosConsumidos" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosDisponibles" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card: Horas -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardElevation="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/saldo_horas_titulo"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:layout_marginBottom="8dp" />
+
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaHorasEsperadas" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaHorasTrabajadas" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaSaldoHoras" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Boton recalcular saldo (E40) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecalcular"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/saldo_recalcular" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</FrameLayout>

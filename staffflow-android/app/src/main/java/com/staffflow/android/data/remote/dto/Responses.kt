@@ -18,7 +18,8 @@ data class LoginResponse(
     val token: String,
     val rol: Rol,
     val username: String,
-    val empleadoId: Long?
+    val empleadoId: Long?,
+    val nombre: String?
 )
 
 /**
@@ -58,7 +59,8 @@ data class EmpleadoResponse(
     val diasVacacionesAnuales: Int,
     val diasAsuntosPropiosAnuales: Int,
     val codigoNfc: String?,
-    val activo: Boolean
+    val activo: Boolean,
+    val pinTerminal: String? = null  // Solo presente en E13 (crear) y E15 (detalle por id)
 )
 
 /**
@@ -146,6 +148,7 @@ data class AusenciaResponse(
  */
 data class SaldoResponse(
     val empleadoId: Long,
+    val nombreCompleto: String,
     val anio: Int,
     val vacaciones: VacacionesDesglose,
     val asuntosPropios: AsuntosPropiosDesglose,
@@ -194,6 +197,7 @@ data class ParteDiarioResponse(
  * Tambien devuelto por E37 GET /presencia/parte-diario/me para el
  * empleado autenticado (P12 MiHoyFragment).
  * El color de la fila en P17 se determina segun el campo estado.
+ * El campo pausas solo viene relleno en E37 (nunca en E35).
  */
 data class DetallePresenciaResponse(
     val empleadoId: Long,
@@ -204,8 +208,20 @@ data class DetallePresenciaResponse(
     val horaEntrada: String?,
     val horaSalida: String?,
     val pausaActiva: Boolean,
-    val fichajeTipo: TipoFichaje?
-)
+    val fichajeTipo: TipoFichaje?,
+    val pausas: List<PausaResumen>? = null
+) {
+    /**
+     * Resumen de una pausa del dia (solo en E37).
+     * horaFin y duracionMinutos son null si la pausa sigue activa.
+     */
+    data class PausaResumen(
+        val horaInicio: String?,
+        val horaFin: String?,
+        val tipoPausa: String?,
+        val duracionMinutos: Int?
+    )
+}
 
 /**
  * Empleado sin justificar del dia (E36 GET /presencia/sin-justificar).
@@ -237,8 +253,22 @@ data class ErrorResponse(
 )
 
 /**
+ * Respuesta al consultar el estado del dia por PIN (E52 POST /terminal/estado).
+ * Devuelta por P06 (ConfirmacionFragment) antes de seleccionar la accion.
+ * Las horas vienen formateadas como "HH:mm" desde el backend.
+ */
+data class TerminalEstadoResponse(
+    val nombre: String,
+    val estado: String,         // EstadoTerminal.name(): SIN_ENTRADA | EN_JORNADA | EN_PAUSA | JORNADA_CERRADA
+    val horaEntrada: String?,
+    val horaSalida: String?,
+    val horaInicioPausa: String?,
+    val tipoPausa: String?      // TipoPausa.name() o null
+)
+
+/**
  * Respuesta al registrar la entrada desde el terminal (E48 POST /terminal/entrada).
- * Mostrada en P06 (ConfirmacionFragment) durante 3 segundos.
+ * Mostrada en P06 (ConfirmacionFragment) durante 5 segundos.
  */
 data class TerminalEntradaResponse(
     val nombre: String,
@@ -252,7 +282,10 @@ data class TerminalEntradaResponse(
  */
 data class TerminalSalidaResponse(
     val nombre: String,
+    val horaEntrada: String,
     val horaSalida: String,
+    val totalPausasMinutos: Int,
+    val numeroPausas: Int,
     val jornadaEfectivaMinutos: Int,
     val mensaje: String
 )
@@ -267,6 +300,7 @@ data class TerminalSalidaResponse(
 data class TerminalPausaResponse(
     val nombre: String,
     val horaInicioPausa: String?,
+    val horaFinPausa: String?,
     val duracionPausaMinutos: Int?,
     val mensaje: String
 )

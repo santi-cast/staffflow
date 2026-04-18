@@ -62,9 +62,10 @@ data class UsuarioPatchRequest(
 /**
  * Creacion de un empleado vinculado a un usuario existente (E13 POST /empleados).
  *
- * numeroEmpleado tiene formato EMP-001 (D-030).
- * pinTerminal debe tener exactamente 4 digitos numericos.
- * Error 409 si DNI, numeroEmpleado, PIN o codigoNfc ya existen.
+ * El backend auto-genera: numeroEmpleado (EMP-XXX), fechaAlta (hoy),
+ * jornadaDiariaMinutos (jornadaSemanal/5*60) y pinTerminal (4 digitos unicos).
+ * El PIN generado se devuelve en EmpleadoResponse para que el admin lo entregue al empleado.
+ * Error 409 si DNI o codigoNfc ya existen.
  */
 data class EmpleadoRequest(
     val usuarioId: Long,
@@ -72,14 +73,10 @@ data class EmpleadoRequest(
     val apellido1: String,
     val apellido2: String? = null,
     val dni: String,
-    val numeroEmpleado: String,
-    val fechaAlta: String,
     val categoria: CategoriaEmpleado,
     val jornadaSemanalHoras: Double,
-    val jornadaDiariaMinutos: Int,
     val diasVacacionesAnuales: Int,
     val diasAsuntosPropiosAnuales: Int,
-    val pinTerminal: String,
     val codigoNfc: String? = null
 )
 

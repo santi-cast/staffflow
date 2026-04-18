@@ -71,7 +71,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         token = resp.token,
                         rol = resp.rol,
                         username = resp.username,
-                        empleadoId = resp.empleadoId
+                        empleadoId = resp.empleadoId,
+                        nombre = resp.nombre
                     )
                     // 2. Actualizar authToken en memoria para el interceptor
                     NetworkModule.authToken = resp.token

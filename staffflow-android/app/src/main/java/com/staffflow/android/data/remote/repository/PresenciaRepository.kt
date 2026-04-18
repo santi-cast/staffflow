@@ -1,7 +1,9 @@
 package com.staffflow.android.data.remote.repository
 
 import com.staffflow.android.data.remote.api.PresenciaApiService
+import com.staffflow.android.data.remote.dto.DetallePresenciaResponse
 import com.staffflow.android.data.remote.dto.ParteDiarioResponse
+import com.staffflow.android.data.remote.dto.SinJustificarResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
@@ -10,7 +12,9 @@ import com.staffflow.android.util.safeApiCall
  * Todos los metodos son suspendibles y devuelven Result<T>.
  * El ViewModel consume Result.onSuccess / Result.onFailure.
  *
- * Requiere JWT con rol ENCARGADO o ADMIN. El AuthInterceptor lo adjunta automaticamente.
+ * E35 requiere JWT con rol ENCARGADO o ADMIN.
+ * E37 requiere JWT con rol EMPLEADO.
+ * El AuthInterceptor adjunta el token automaticamente.
  *
  * @param api Instancia de PresenciaApiService creada por NetworkModule.retrofit.
  */
@@ -23,4 +27,20 @@ class PresenciaRepository(private val api: PresenciaApiService) {
      */
     suspend fun getParteDiario(fecha: String? = null): Result<ParteDiarioResponse> =
         safeApiCall { api.getParteDiario(fecha) }
+
+    /**
+     * E36 - Empleados sin justificar para una fecha concreta.
+     * P18 (SinJustificarFragment) llama a este metodo al cargar.
+     * @param fecha Fecha en formato "yyyy-MM-dd". null = hoy.
+     */
+    suspend fun getSinJustificar(fecha: String? = null): Result<List<SinJustificarResponse>> =
+        safeApiCall { api.getSinJustificar(fecha) }
+
+    /**
+     * E37 - Estado de presencia del empleado autenticado.
+     * P12 (MiHoyFragment) llama a este metodo al cargar y en onResume.
+     * @param fecha Fecha en formato "yyyy-MM-dd". null = hoy.
+     */
+    suspend fun getMiPresencia(fecha: String? = null): Result<DetallePresenciaResponse> =
+        safeApiCall { api.getMiPresencia(fecha) }
 }

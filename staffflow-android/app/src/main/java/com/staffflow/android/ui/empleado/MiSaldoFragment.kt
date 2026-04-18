@@ -66,6 +66,11 @@ class MiSaldoFragment : Fragment() {
         observarViewModel()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.reintentar()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -141,14 +146,18 @@ class MiSaldoFragment : Fragment() {
 
     private fun mostrarSaldo(saldo: SaldoResponse) {
         val vac = saldo.vacaciones
-        setFila(binding.filaVacacionesDerecho,   getString(R.string.saldo_derecho),    "${vac.derechoAnio} días")
-        setFila(binding.filaVacacionesConsumidos, getString(R.string.saldo_consumidos), "${vac.consumidos} días")
-        setFila(binding.filaVacacionesDisponibles,getString(R.string.saldo_disponibles),"${vac.disponibles} días")
+        setFila(binding.filaVacacionesAnterior,   "Derecho año anterior",    "${vac.pendientesAnterior} días")
+        setFila(binding.filaVacacionesAnual,      "Derecho anual",           "${vac.derechoAnio} días")
+        setFila(binding.filaVacacionesAnoCurso,   "Derecho total año en curso",  "${vac.pendientesAnterior + vac.derechoAnio} días")
+        setFila(binding.filaVacacionesConsumidos, "Consumidos año en curso",    "${vac.consumidos} días")
+        setFila(binding.filaVacacionesDisponibles,"Disponibles año en curso",   "${vac.disponibles} días")
 
         val ap = saldo.asuntosPropios
-        setFila(binding.filaAsuntosDerecho,    getString(R.string.saldo_derecho),    "${ap.derechoAnio} días")
-        setFila(binding.filaAsuntosConsumidos, getString(R.string.saldo_consumidos), "${ap.consumidos} días")
-        setFila(binding.filaAsuntosDisponibles,getString(R.string.saldo_disponibles),"${ap.disponibles} días")
+        setFila(binding.filaAsuntosAnterior,   "Derecho año anterior",          "${ap.pendientesAnterior} días")
+        setFila(binding.filaAsuntosAnual,      "Derecho anual",                 "${ap.derechoAnio} días")
+        setFila(binding.filaAsuntosAnoCurso,   "Derecho total año en curso",    "${ap.pendientesAnterior + ap.derechoAnio} días")
+        setFila(binding.filaAsuntosConsumidos, "Consumidos año en curso",       "${ap.consumidos} días")
+        setFila(binding.filaAsuntosDisponibles,"Disponibles año en curso",      "${ap.disponibles} días")
 
         val h = saldo.horas
         setFila(binding.filaHorasEsperadas,  getString(R.string.saldo_esperadas),  formatHoras(h.esperadas))

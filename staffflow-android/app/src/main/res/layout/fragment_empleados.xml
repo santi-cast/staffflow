@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout de la lista de empleados (P13).
+
+    Patron E - lista con busqueda. Endpoint: E14 GET /empleados?q=
+
+    Estructura:
+      - CoordinatorLayout raiz
+      - FrameLayout con 4 estados gestionados por visibilidad:
+          CARGANDO: layoutSkeleton (5 items grises, sin spinner)
+          ERROR:    layoutError (nube + mensaje + Reintentar)
+          VACIO:    layoutVacio (icono + mensaje)
+          EXITO:    SwipeRefreshLayout > RecyclerView
+
+    Los empleados se crean desde P32 (FormUsuario) al dar de alta un usuario
+    con rol EMPLEADO o ENCARGADO — no hay FAB de alta directa aqui.
+
+    El SearchView se muestra en la toolbar via MenuProvider (menu_empleados.xml).
+    Tap en fila -> P14 (action_empleados_to_detalle).
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Area de contenido (estados excluyentes) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- ESTADO: CARGANDO - skeleton list -->
+        <LinearLayout
+            android:id="@+id/layoutSkeleton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:visibility="visible">
+
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+            <include layout="@layout/item_presencia_skeleton" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: ERROR -->
+        <LinearLayout
+            android:id="@+id/layoutError"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☁"
+                android:textSize="64sp"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/tvErrorMensaje"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="12dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReintentar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/reintentar" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: VACIO -->
+        <LinearLayout
+            android:id="@+id/layoutVacio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👥"
+                android:textSize="64sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/empleados_vacio"
+                android:gravity="center"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="12dp" />
+
+        </LinearLayout>
+
+        <!-- ESTADO: EXITO - SwipeRefreshLayout + RecyclerView -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false" />
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    </FrameLayout>
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

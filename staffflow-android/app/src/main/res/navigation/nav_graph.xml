@@ -40,10 +40,10 @@
     <fragment
         android:id="@+id/terminalFragment"
         android:name="com.staffflow.android.ui.fichaje.TerminalFragment"
-        android:label="Terminal"
+        android:label=""
         tools:layout="@layout/fragment_terminal">
 
-        <!-- P01 -> P06 Confirmacion (entrada, salida o pausa registrada) -->
+        <!-- P01 -> P06 Bienvenida (tras introducir el PIN de 4 digitos) -->
         <action
             android:id="@+id/action_terminal_to_confirmacion"
             app:destination="@id/confirmacionFragment"
@@ -52,11 +52,6 @@
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim" />
 
-        <!-- P01 -> P07 Tipo pausa (el usuario quiere iniciar una pausa) -->
-        <action
-            android:id="@+id/action_terminal_to_tipo_pausa"
-            app:destination="@id/tipoPausaFragment" />
-
         <!-- P01 -> P02 Login (acceso a la zona autenticada) -->
         <action
             android:id="@+id/action_terminal_to_login"
@@ -64,37 +59,33 @@
 
     </fragment>
 
-    <!-- P06 Confirmacion de fichaje (feedback 3 segundos -> vuelve a P01) -->
+    <!-- P06 Bienvenida y confirmacion de fichaje -->
     <fragment
         android:id="@+id/confirmacionFragment"
         android:name="com.staffflow.android.ui.fichaje.ConfirmacionFragment"
-        android:label="Confirmacion"
+        android:label=""
         tools:layout="@layout/fragment_confirmacion">
 
-        <!-- P06 -> P01 (retorno automatico tras 3 segundos) -->
+        <!-- P06 -> P01 (cancelar o retorno automatico tras 5 segundos) -->
         <action
             android:id="@+id/action_confirmacion_to_terminal"
             app:destination="@id/terminalFragment"
             app:popUpTo="@id/terminalFragment"
             app:popUpToInclusive="true" />
 
+        <!-- P06 -> P07 Tipo pausa (el usuario quiere iniciar una pausa) -->
+        <action
+            android:id="@+id/action_confirmacion_to_tipo_pausa"
+            app:destination="@id/tipoPausaFragment" />
+
     </fragment>
 
-    <!-- P07 Seleccion de tipo de pausa (-> vuelve a P01 con tipo seleccionado) -->
+    <!-- P07 Seleccion de tipo de pausa (usa popBackStack para volver a P06) -->
     <fragment
         android:id="@+id/tipoPausaFragment"
         android:name="com.staffflow.android.ui.fichaje.TipoPausaFragment"
         android:label="Tipo de pausa"
-        tools:layout="@layout/fragment_tipo_pausa">
-
-        <!-- P07 -> P01 (con tipo seleccionado en el back stack) -->
-        <action
-            android:id="@+id/action_tipo_pausa_to_terminal"
-            app:destination="@id/terminalFragment"
-            app:popUpTo="@id/terminalFragment"
-            app:popUpToInclusive="true" />
-
-    </fragment>
+        tools:layout="@layout/fragment_tipo_pausa" />
 
     <!-- P02 Login JWT -->
     <fragment
@@ -335,7 +326,7 @@
     <!-- P15 Crear o editar empleado -->
     <fragment
         android:id="@+id/formEmpleadoFragment"
-        android:name="com.staffflow.android.ui.shared.FormEmpleadoFragment"
+        android:name="com.staffflow.android.ui.admin.FormEmpleadoFragment"
         android:label="Empleado"
         tools:layout="@layout/fragment_form_empleado" />
 

@@ -30,17 +30,31 @@
         android:paddingHorizontal="32dp"
         android:paddingVertical="48dp">
 
-        <!-- Titulo -->
-        <TextView
+        <!-- Logo: "Staff" bold + "Flow" thin -->
+        <LinearLayout
             android:id="@+id/tvTitulo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textAppearance="?attr/textAppearanceDisplaySmall"
-            android:textColor="?attr/colorPrimary"
+            android:orientation="horizontal"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Staff"
+                android:textAppearance="?attr/textAppearanceDisplaySmall"
+                android:fontFamily="sans-serif"
+                android:textStyle="bold"
+                android:textColor="?attr/colorPrimary" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Flow"
+                android:textAppearance="?attr/textAppearanceDisplaySmall"
+                android:fontFamily="sans-serif-thin"
+                android:textColor="?attr/colorPrimary" />
+        </LinearLayout>
 
         <!-- Subtitulo -->
         <TextView

@@ -1,6 +1,7 @@
 package com.staffflow.android.data.remote.api
 
 import com.staffflow.android.data.remote.dto.TerminalEntradaResponse
+import com.staffflow.android.data.remote.dto.TerminalEstadoResponse
 import com.staffflow.android.data.remote.dto.TerminalPausaResponse
 import com.staffflow.android.data.remote.dto.TerminalPinRequest
 import com.staffflow.android.data.remote.dto.TerminalPausaRequest
@@ -16,6 +17,7 @@ import retrofit2.http.POST
  * del empleado se hace por PIN de 4 digitos.
  *
  * Endpoints cubiertos:
+ *   E52 POST /terminal/estado          -> TerminalEstadoResponse (bienvenida P06)
  *   E48 POST /terminal/entrada         -> TerminalEntradaResponse
  *   E49 POST /terminal/salida          -> TerminalSalidaResponse
  *   E50 POST /terminal/pausa/iniciar   -> TerminalPausaResponse
@@ -27,6 +29,14 @@ import retrofit2.http.POST
  *   423 dispositivo bloqueado por exceso de intentos fallidos
  */
 interface TerminalApiService {
+
+    /**
+     * E52 - Consulta el estado de la jornada del empleado para el dia actual.
+     * Sin JWT. Llamado desde P06 antes de mostrar los botones de accion.
+     * Devuelve nombre y estado (SIN_ENTRADA / EN_JORNADA / EN_PAUSA / JORNADA_CERRADA).
+     */
+    @POST("terminal/estado")
+    suspend fun obtenerEstado(@Body request: TerminalPinRequest): Response<TerminalEstadoResponse>
 
     /**
      * E48 - Registra la entrada de un empleado por PIN.

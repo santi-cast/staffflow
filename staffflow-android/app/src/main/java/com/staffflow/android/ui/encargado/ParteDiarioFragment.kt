@@ -17,8 +17,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.staffflow.android.R
+import java.util.Calendar
 import com.staffflow.android.databinding.FragmentParteDiarioBinding
 import com.staffflow.android.data.remote.dto.ParteDiarioResponse
 import kotlinx.coroutines.launch
@@ -70,6 +72,11 @@ class ParteDiarioFragment : Fragment() {
         observarViewModel()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.reintentar()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -113,7 +120,10 @@ class ParteDiarioFragment : Fragment() {
         }
 
         binding.chipSinJustificar.setOnClickListener {
-            findNavController().navigate(R.id.action_parte_diario_to_sin_justificar)
+            val bundle = android.os.Bundle().apply {
+                putString("fecha", viewModel.fecha.value)
+            }
+            findNavController().navigate(R.id.action_parte_diario_to_sin_justificar, bundle)
         }
     }
 
@@ -125,6 +135,7 @@ class ParteDiarioFragment : Fragment() {
         val datePicker = MaterialDatePicker.Builder.datePicker()
             .setTitleText(R.string.parte_diario_selector_fecha_titulo)
             .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+            .setCalendarConstraints(CalendarConstraints.Builder().setFirstDayOfWeek(Calendar.MONDAY).build())
             .build()
 
         datePicker.addOnPositiveButtonClickListener { millis ->

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout del formulario de ausencia planificada (P24).
+
+    Modo alta   (ausenciaId=-1): campos vacios, solo btnGuardar.
+    Modo edicion (ausenciaId>0): campos pre-rellenados, btnGuardar + btnEliminar.
+    Solo lectura (procesado=true): campos deshabilitados, bannerProcesado visible,
+                                   btnGuardar oculto, btnEliminar oculto.
+
+    Campos:
+      - tilEmpleadoId: ID de empleado (null = festivo global)
+      - tilFecha: fecha yyyy-MM-dd
+      - tilTipoAusencia: AutoCompleteTextView con TipoAusencia
+      - tilObservaciones: campo opcional
+      - bannerProcesado: aviso informativo cuando procesado=true
+      - btnGuardar / btnEliminar / progressIndicator
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Banner: ausencia ya procesada (solo lectura) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bannerProcesado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer"
+            app:cardElevation="0dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:text="@string/form_ausencia_banner_procesado"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSecondaryContainer" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ID de empleado (null = festivo global) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilEmpleadoId"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="@string/form_ausencia_hint_empleado_id">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEmpleadoId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Fecha -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilFecha"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="@string/form_ausencia_hint_fecha">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFecha"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tipo de ausencia (dropdown) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTipoAusencia"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="@string/form_ausencia_hint_tipo">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvTipoAusencia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:focusableInTouchMode="false" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Observaciones (opcional) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilObservaciones"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:hint="@string/form_ausencia_hint_observaciones">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etObservaciones"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:minLines="2" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Boton guardar -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuardar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/form_ausencia_guardar" />
+
+        <!-- Boton eliminar (solo en modo edicion, procesado=false) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEliminar"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/form_ausencia_eliminar"
+            android:textColor="?attr/colorError"
+            android:visibility="gone"
+            app:strokeColor="?attr/colorError" />
+
+        <!-- Indicador de progreso -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:trackCornerRadius="4dp" />
+
+    </LinearLayout>
+
+</ScrollView>

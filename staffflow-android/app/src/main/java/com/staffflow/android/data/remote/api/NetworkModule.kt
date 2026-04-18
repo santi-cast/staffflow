@@ -56,7 +56,9 @@ object NetworkModule {
 
         val response = chain.proceed(request)
 
-        if (response.code == 401) {
+        // Solo disparar SessionExpired en rutas autenticadas.
+        // /auth/login devuelve 401 por credenciales incorrectas — no es sesion caducada.
+        if (response.code == 401 && !request.url.encodedPath.contains("/auth/login")) {
             AuthEventBus.post(AuthEvent.SessionExpired)
         }
 

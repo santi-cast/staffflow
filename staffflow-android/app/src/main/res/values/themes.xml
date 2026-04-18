@@ -6,4 +6,42 @@
     </style>
 
     <style name="Theme.Staffflowandroid" parent="Base.Theme.Staffflowandroid" />
+
+    <!--
+        Estilo para las teclas del numpad del terminal (P01).
+        Flat UI: fondo gris muy suave (colorSurfaceContainerLow), sin borde, sin sombra.
+        Hereda de TonalButton para tener fondo automatico sin stroke.
+    -->
+    <style name="Widget.StaffFlow.PinKey" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textSize">22sp</item>
+        <item name="backgroundTint">?attr/colorSurfaceContainerLow</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.StaffFlow.PinKey</item>
+    </style>
+
+    <style name="ShapeAppearance.StaffFlow.PinKey" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
+
+    <!--
+        Boton CONFIRMAR del terminal: fondo oscuro (colorOnSurface), texto claro.
+        Efecto "invertido" para diferenciar la accion principal.
+    -->
+    <style name="Widget.StaffFlow.ConfirmarButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">?attr/colorOnSurface</item>
+        <item name="android:textColor">?attr/colorSurface</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.StaffFlow.PinKey</item>
+    </style>
+
 </resources>

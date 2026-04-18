@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menu de la toolbar para MisAusenciasFragment (P11).
+    action_rango_fechas_mis_ausencias: abre MaterialDatePicker de rango.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_rango_fechas_mis_ausencias"
+        android:title="@string/mis_ausencias_menu_rango_fechas"
+        android:icon="@android:drawable/ic_menu_today"
+        app:showAsAction="ifRoom" />
+
+</menu>

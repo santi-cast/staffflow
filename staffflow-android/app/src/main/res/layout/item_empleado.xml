@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Item del RecyclerView de lista de empleados (P13).
+
+    Estructura:
+      - Borde izquierdo colorPrimary (4dp): activos / colorOutline: dados de baja
+      - Nombre completo (bold)
+      - Numero de empleado (bodySmall, muted)
+      - Categoria alineada a la derecha
+
+    El color del borde se establece desde EmpleadoAdapter segun el campo activo.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="6dp"
+    app:cardElevation="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Borde de estado (activo = colorPrimary / baja = gris) -->
+        <View
+            android:id="@+id/viewBorde"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:minHeight="56dp" />
+
+        <!-- Nombre y numero de empleado -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNumeroEmpleado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- Categoria alineada a la derecha -->
+        <TextView
+            android:id="@+id/tvCategoria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:paddingEnd="12dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

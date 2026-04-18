@@ -6,62 +6,51 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.TerminalApiService
-import com.staffflow.android.data.remote.dto.TerminalPausaRequest
 import com.staffflow.android.data.remote.dto.TerminalPinRequest
 import com.staffflow.android.data.remote.repository.TerminalRepository
-import com.staffflow.android.domain.model.TipoPausa
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Accion seleccionada en el terminal. Determina que endpoint se llama
- * al completar los 4 digitos del PIN.
+ * Estado de la UI del terminal de fichaje (P01).
  *
- *   ENTRADA        -> E48 POST /terminal/entrada
- *   SALIDA         -> E49 POST /terminal/salida
- *   INICIAR_PAUSA  -> E50 POST /terminal/pausa/iniciar (requiere tipoPausaSeleccionado)
- *   FINALIZAR_PAUSA-> E51 POST /terminal/pausa/finalizar
- */
-enum class AccionTerminal { ENTRADA, SALIDA, INICIAR_PAUSA, FINALIZAR_PAUSA }
-
-/**
- * Estado de la UI del terminal.
- *
- *   Idle    -> esperando interaccion del usuario
- *   Loading -> llamada de red en curso (botones deshabilitados)
- *   Exito   -> operacion completada, TerminalFragment navega a P06
- *   Error   -> mensaje de error visible en pantalla (sin salir del terminal)
+ *   EsperandoPin   -> numpad habilitado (estado inicial y tras resetear)
+ *   VerificandoPin -> llamando a E52; spinner visible, numpad deshabilitado
+ *   Error          -> E52 fallo (PIN incorrecto u otro error); mensaje visible,
+ *                     numpad deshabilitado; se resetea automaticamente tras 2s
+ *   PinVerificado  -> E52 OK; el Fragment navega a P06 con todos los datos del estado
  */
 sealed class TerminalUiState {
-    object Idle : TerminalUiState()
-    object Loading : TerminalUiState()
-    data class Exito(
-        val accion: AccionTerminal,
-        val nombre: String,
-        val horaEntrada: String? = null,
-        val horaSalida: String? = null,
-        val jornadaEfectivaMinutos: Int? = null,
-        val horaInicioPausa: String? = null,
-        val duracionPausaMinutos: Int? = null,
-        val tipoPausa: TipoPausa? = null
-    ) : TerminalUiState()
+    object EsperandoPin : TerminalUiState()
+    object VerificandoPin : TerminalUiState()
     data class Error(val mensaje: String) : TerminalUiState()
+    data class PinVerificado(
+        val pin: String,
+        val nombre: String,
+        val estadoDia: String,
+        val horaEntrada: String?,
+        val horaSalida: String?,
+        val horaInicioPausa: String?,
+        val tipoPausa: String?
+    ) : TerminalUiState()
 }
 
 /**
  * ViewModel del terminal de fichaje (P01).
  *
- * Gestiona el PIN en curso, la accion activa y el estado de la UI.
- * Al completar los 4 digitos llama automaticamente al endpoint correspondiente
- * segun la accion activa (E48/E49/E50/E51).
+ * Gestiona la entrada del PIN y verifica su validez contra el backend (E52)
+ * antes de navegar a P06. De este modo, P06 recibe los datos del estado del
+ * empleado ya cargados y no necesita llamar a E52 de nuevo.
  *
- * Usa AndroidViewModel para obtener el Application context necesario para
- * leer Settings.Secure.ANDROID_ID sin pasar Context al ViewModel.
- *
- * Instanciacion manual del repositorio (sin Hilt -- D-B2-03):
- *   NetworkModule.retrofit.create(TerminalApiService::class.java)
+ * Flujo:
+ *   1. El usuario introduce 4 digitos -> appendDigito() -> verificarPin()
+ *   2. verificarPin() llama a E52:
+ *      - Exito  -> PinVerificado; el Fragment navega a P06 con los datos del estado
+ *      - Error  -> Error(mensaje); el Fragment muestra el error y resetea tras 2s
+ *   3. TerminalFragment llama a resetEstado() tras navegar a P06 para limpiar el PIN
  */
 class TerminalViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -69,10 +58,6 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
         NetworkModule.retrofit.create(TerminalApiService::class.java)
     )
 
-    /**
-     * ID unico del dispositivo Android. Se envia en todas las peticiones
-     * al terminal para el control de bloqueo por intentos (HTTP 423).
-     */
     private val dispositivoId: String = Settings.Secure.getString(
         application.contentResolver,
         Settings.Secure.ANDROID_ID
@@ -82,153 +67,77 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
     /** PIN introducido hasta ahora (0-4 digitos). TerminalFragment actualiza el display. */
     val pin: StateFlow<String> = _pin.asStateFlow()
 
-    private val _accionActiva = MutableStateFlow(AccionTerminal.ENTRADA)
-    /** Accion seleccionada. Determina el endpoint y el boton activo en la UI. */
-    val accionActiva: StateFlow<AccionTerminal> = _accionActiva.asStateFlow()
-
-    private val _uiState = MutableStateFlow<TerminalUiState>(TerminalUiState.Idle)
-    /** Estado de la UI. TerminalFragment observa este flow para actualizar la pantalla. */
+    private val _uiState = MutableStateFlow<TerminalUiState>(TerminalUiState.EsperandoPin)
+    /** Estado de la UI. TerminalFragment observa este flow. */
     val uiState: StateFlow<TerminalUiState> = _uiState.asStateFlow()
 
     /**
-     * Tipo de pausa seleccionado en P07 (TipoPausaFragment) via FragmentResult.
-     * Solo es relevante cuando accionActiva == INICIAR_PAUSA.
-     */
-    private var tipoPausaSeleccionado: TipoPausa? = null
-
-    // ------------------------------------------------------------------
-    // Gestion de acciones
-    // ------------------------------------------------------------------
-
-    /** Establece la accion activa y limpia el PIN y el estado. */
-    fun setAccion(accion: AccionTerminal) {
-        _accionActiva.value = accion
-        resetPin()
-        _uiState.value = TerminalUiState.Idle
-    }
-
-    /**
-     * Establece INICIAR_PAUSA como accion activa y guarda el tipo de pausa
-     * recibido desde P07 via FragmentResult("tipoPausa").
-     */
-    fun setAccionConPausa(tipoPausa: TipoPausa) {
-        tipoPausaSeleccionado = tipoPausa
-        _accionActiva.value = AccionTerminal.INICIAR_PAUSA
-        resetPin()
-        _uiState.value = TerminalUiState.Idle
-    }
-
-    // ------------------------------------------------------------------
-    // Gestion del PIN
-    // ------------------------------------------------------------------
-
-    /**
-     * Aniade un digito al PIN. Si es el cuarto, lanza la llamada de red.
-     * No hace nada si ya hay 4 digitos o si hay una llamada en curso.
+     * Aniade un digito al PIN.
+     * Al completar los 4 digitos llama automaticamente a E52 para verificar el PIN.
+     * Ignora la pulsacion si ya se esta verificando o si el PIN ya fue verificado.
      */
     fun appendDigito(digito: Int) {
-        if (_pin.value.length >= 4 || _uiState.value is TerminalUiState.Loading) return
+        val estado = _uiState.value
+        if (estado is TerminalUiState.VerificandoPin || estado is TerminalUiState.PinVerificado) return
+        if (_pin.value.length >= 4) return
         val nuevo = _pin.value + digito.toString()
         _pin.value = nuevo
-        if (nuevo.length == 4) ejecutarAccion(nuevo)
+        if (nuevo.length == 4) {
+            verificarPin(nuevo)
+        }
     }
 
     /**
      * Borra el ultimo digito del PIN.
-     * Si habia un error visible, lo limpia al empezar a escribir de nuevo.
+     * Ignorado si se esta verificando el PIN.
      */
     fun borrarDigito() {
-        if (_uiState.value is TerminalUiState.Loading) return
+        if (_uiState.value is TerminalUiState.VerificandoPin) return
+        if (_uiState.value is TerminalUiState.PinVerificado) return
         if (_pin.value.isNotEmpty()) _pin.value = _pin.value.dropLast(1)
-        if (_uiState.value is TerminalUiState.Error) _uiState.value = TerminalUiState.Idle
     }
 
     /**
-     * Resetea el PIN y el estado a Idle. Llamado desde TerminalFragment
-     * justo antes de navegar a ConfirmacionFragment para que al volver
-     * el terminal quede limpio.
+     * Resetea el estado al inicial: PIN vacio, estado EsperandoPin.
+     * Llamado desde TerminalFragment tras navegar a P06.
      */
     fun resetEstado() {
-        _uiState.value = TerminalUiState.Idle
-        resetPin()
+        _pin.value = ""
+        _uiState.value = TerminalUiState.EsperandoPin
     }
 
-    private fun resetPin() { _pin.value = "" }
-
-    // ------------------------------------------------------------------
-    // Llamada de red
-    // ------------------------------------------------------------------
-
-    private fun ejecutarAccion(pin: String) {
+    /**
+     * Llama a E52 para verificar el PIN y obtener el estado del empleado.
+     * En exito emite PinVerificado con todos los datos de la respuesta.
+     * En error emite Error(mensaje) y resetea automaticamente tras 2 segundos.
+     */
+    private fun verificarPin(pin: String) {
         viewModelScope.launch {
-            _uiState.value = TerminalUiState.Loading
-            val pinRequest = TerminalPinRequest(pin = pin, dispositivoId = dispositivoId)
-
-            when (_accionActiva.value) {
-
-                AccionTerminal.ENTRADA -> {
-                    repository.registrarEntrada(pinRequest).fold(
-                        onSuccess = { resp ->
-                            _uiState.value = TerminalUiState.Exito(
-                                accion = AccionTerminal.ENTRADA,
-                                nombre = resp.nombre,
-                                horaEntrada = resp.horaEntrada
-                            )
-                        },
-                        onFailure = { _uiState.value = TerminalUiState.Error(it.message ?: "Error") }
-                    )
-                }
-
-                AccionTerminal.SALIDA -> {
-                    repository.registrarSalida(pinRequest).fold(
-                        onSuccess = { resp ->
-                            _uiState.value = TerminalUiState.Exito(
-                                accion = AccionTerminal.SALIDA,
-                                nombre = resp.nombre,
-                                horaSalida = resp.horaSalida,
-                                jornadaEfectivaMinutos = resp.jornadaEfectivaMinutos
-                            )
-                        },
-                        onFailure = { _uiState.value = TerminalUiState.Error(it.message ?: "Error") }
-                    )
-                }
-
-                AccionTerminal.INICIAR_PAUSA -> {
-                    val tipo = tipoPausaSeleccionado ?: run {
-                        _uiState.value = TerminalUiState.Error("Selecciona el tipo de pausa primero")
-                        return@launch
-                    }
-                    val pausaRequest = TerminalPausaRequest(
+            _uiState.value = TerminalUiState.VerificandoPin
+            val request = TerminalPinRequest(pin = pin, dispositivoId = dispositivoId)
+            repository.obtenerEstado(request).fold(
+                onSuccess = { resp ->
+                    _uiState.value = TerminalUiState.PinVerificado(
                         pin = pin,
-                        tipoPausa = tipo,
-                        dispositivoId = dispositivoId
+                        nombre = resp.nombre,
+                        estadoDia = resp.estado,
+                        horaEntrada = resp.horaEntrada,
+                        horaSalida = resp.horaSalida,
+                        horaInicioPausa = resp.horaInicioPausa,
+                        tipoPausa = resp.tipoPausa
                     )
-                    repository.iniciarPausa(pausaRequest).fold(
-                        onSuccess = { resp ->
-                            _uiState.value = TerminalUiState.Exito(
-                                accion = AccionTerminal.INICIAR_PAUSA,
-                                nombre = resp.nombre,
-                                horaInicioPausa = resp.horaInicioPausa,
-                                tipoPausa = tipo
-                            )
-                        },
-                        onFailure = { _uiState.value = TerminalUiState.Error(it.message ?: "Error") }
-                    )
+                },
+                onFailure = { error ->
+                    val mensaje = if (error.message == "Sin conexion con el servidor") {
+                        "Sin conexión con el servidor"
+                    } else {
+                        "PIN incorrecto"
+                    }
+                    _uiState.value = TerminalUiState.Error(mensaje)
+                    delay(2000)
+                    resetEstado()
                 }
-
-                AccionTerminal.FINALIZAR_PAUSA -> {
-                    repository.finalizarPausa(pinRequest).fold(
-                        onSuccess = { resp ->
-                            _uiState.value = TerminalUiState.Exito(
-                                accion = AccionTerminal.FINALIZAR_PAUSA,
-                                nombre = resp.nombre,
-                                duracionPausaMinutos = resp.duracionPausaMinutos
-                            )
-                        },
-                        onFailure = { _uiState.value = TerminalUiState.Error(it.message ?: "Error") }
-                    )
-                }
-            }
+            )
         }
     }
 }

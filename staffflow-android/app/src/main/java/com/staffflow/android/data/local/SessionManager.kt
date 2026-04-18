@@ -38,18 +38,20 @@ class SessionManager private constructor(context: Context) {
         val ROL         = stringPreferencesKey("rol")
         val USERNAME    = stringPreferencesKey("username")
         val EMPLEADO_ID = longPreferencesKey("empleado_id")
+        val NOMBRE      = stringPreferencesKey("nombre")
     }
 
     // ------------------------------------------------------------------
     // Escritura
     // ------------------------------------------------------------------
 
-    suspend fun saveSession(token: String, rol: Rol, username: String, empleadoId: Long?) {
+    suspend fun saveSession(token: String, rol: Rol, username: String, empleadoId: Long?, nombre: String?) {
         dataStore.edit { prefs ->
             prefs[Keys.TOKEN]    = token
             prefs[Keys.ROL]      = rol.name
             prefs[Keys.USERNAME] = username
             if (empleadoId != null) prefs[Keys.EMPLEADO_ID] = empleadoId
+            if (nombre != null) prefs[Keys.NOMBRE] = nombre
         }
     }
 
@@ -75,6 +77,9 @@ class SessionManager private constructor(context: Context) {
 
     suspend fun getEmpleadoId(): Long? =
         dataStore.data.map { it[Keys.EMPLEADO_ID] }.first()
+
+    suspend fun getNombre(): String? =
+        dataStore.data.map { it[Keys.NOMBRE] }.first()
 
     // ------------------------------------------------------------------
     // Singleton

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rutas de ficheros accesibles via FileProvider.
+    Usado para abrir PDFs descargados con Intent ACTION_VIEW.
+    cache-path: ficheros temporales en context.cacheDir.
+-->
+<paths>
+    <cache-path name="pdfs" path="." />
+</paths>

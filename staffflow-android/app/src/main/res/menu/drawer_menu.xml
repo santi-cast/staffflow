@@ -5,7 +5,7 @@
     Los grupos se muestran u ocultan en MainActivity segun el rol
     leido del DataStore tras el login:
 
-      group_empleado  -> visible para EMPLEADO, ENCARGADO y ADMIN
+      group_empleado  -> visible para EMPLEADO y ENCARGADO (no ADMIN)
       group_encargado -> visible para ENCARGADO y ADMIN
       group_admin     -> visible solo para ADMIN
       group_ajustes   -> visible para todos los roles autenticados
@@ -20,7 +20,7 @@
 -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Visible para todos los roles autenticados (EMPLEADO, ENCARGADO, ADMIN) -->
+    <!-- Visible para EMPLEADO y ENCARGADO (ADMIN no tiene perfil de empleado) -->
     <group
         android:id="@+id/group_empleado"
         android:checkableBehavior="single">

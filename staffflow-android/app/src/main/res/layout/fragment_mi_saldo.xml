@@ -99,7 +99,11 @@
                         android:layout_marginBottom="8dp" />
 
                     <include layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaVacacionesDerecho" />
+                        android:id="@+id/filaVacacionesAnterior" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesAnual" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesAnoCurso" />
                     <include layout="@layout/item_saldo_fila"
                         android:id="@+id/filaVacacionesConsumidos" />
                     <include layout="@layout/item_saldo_fila"
@@ -129,7 +133,11 @@
                         android:layout_marginBottom="8dp" />
 
                     <include layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaAsuntosDerecho" />
+                        android:id="@+id/filaAsuntosAnterior" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosAnual" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosAnoCurso" />
                     <include layout="@layout/item_saldo_fila"
                         android:id="@+id/filaAsuntosConsumidos" />
                     <include layout="@layout/item_saldo_fila"

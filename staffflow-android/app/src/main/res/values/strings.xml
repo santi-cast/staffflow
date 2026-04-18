@@ -50,8 +50,15 @@
     <string name="saldo_trabajadas">Trabajadas</string>
     <string name="saldo_saldo_horas">Saldo</string>
 
-    <!-- P06 Confirmacion de fichaje -->
+    <!-- P06 Bienvenida y confirmacion de fichaje -->
+    <string name="confirmacion_bienvenida">Hola, %s</string>
+    <string name="confirmacion_que_fichar">¿Qué quieres registrar?</string>
     <string name="confirmacion_volviendo">Volviendo en %ds…</string>
+    <string name="confirmacion_estado_sin_entrada">Sin fichaje de entrada hoy</string>
+    <string name="confirmacion_estado_en_jornada">Entrada a las %s</string>
+    <string name="confirmacion_estado_en_pausa">Entrada a las %1$s · Pausa (%2$s) desde las %3$s</string>
+    <string name="confirmacion_estado_jornada_cerrada">Entrada: %1$s · Salida: %2$s</string>
+    <string name="confirmacion_jornada_completada">Tu jornada de hoy ya está cerrada</string>
 
     <!-- P02 Login -->
     <string name="login_subtitulo">Acceso para empleados</string>
@@ -69,6 +76,186 @@
     <string name="tipo_pausa_ausencia_retribuida">Ausencia retribuida</string>
     <string name="tipo_pausa_otros">Otros</string>
 
+    <!-- P15 Formulario de empleado -->
+    <string name="form_empleado_titulo_alta">Nuevo empleado</string>
+    <string name="form_empleado_titulo_edicion">Editar empleado</string>
+    <string name="form_empleado_guardar">Guardar</string>
+    <string name="form_empleado_hint_usuario_id">ID de usuario</string>
+    <string name="form_empleado_hint_nombre">Nombre</string>
+    <string name="form_empleado_hint_apellido1">Primer apellido</string>
+    <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
+    <string name="form_empleado_hint_dni">DNI</string>
+    <string name="form_empleado_hint_numero">Número de empleado (EMP-001)</string>
+    <string name="form_empleado_hint_fecha_alta">Fecha de alta (yyyy-MM-dd)</string>
+    <string name="form_empleado_hint_categoria">Categoría</string>
+    <string name="form_empleado_hint_jornada_semanal">Horas semanales</string>
+    <string name="form_empleado_hint_jornada_diaria">Minutos jornada diaria</string>
+    <string name="form_empleado_hint_vacaciones">Días de vacaciones al año</string>
+    <string name="form_empleado_hint_asuntos">Días de asuntos propios al año</string>
+    <string name="form_empleado_hint_pin">PIN terminal (4 dígitos)</string>
+    <string name="form_empleado_error_campos">Rellena todos los campos obligatorios</string>
+    <string name="form_empleado_error_pin">El PIN debe tener exactamente 4 dígitos</string>
+
+    <!-- P14 Detalle de empleado -->
+    <string name="detalle_empleado_activo">Activo</string>
+    <string name="detalle_empleado_baja">Baja</string>
+    <string name="detalle_empleado_ver_saldo">Ver saldo</string>
+    <string name="detalle_empleado_ver_fichajes">Ver fichajes</string>
+    <string name="detalle_empleado_editar">Editar empleado</string>
+    <string name="detalle_empleado_pin">PIN terminal</string>
+
+    <!-- P13 Lista de empleados -->
+    <string name="empleados_vacio">No hay empleados registrados</string>
+    <string name="empleados_buscar_hint">Buscar por nombre o número…</string>
+
+    <!-- P27 Saldos globales -->
+    <string name="saldo_globales_vacio">No hay saldos para este año</string>
+    <string name="saldo_globales_col_vacaciones">Vacaciones</string>
+    <string name="saldo_globales_col_asuntos">A. propios</string>
+    <string name="saldo_globales_col_horas">Saldo h.</string>
+    <string name="saldo_recalcular">Recalcular saldo</string>
+    <string name="saldo_recalcular_confirmacion">¿Recalcular el saldo de este empleado para el año seleccionado?</string>
+    <string name="saldo_recalcular_exito">Saldo recalculado correctamente</string>
+    <string name="form_guardado_titulo">Guardado correctamente</string>
+    <string name="form_guardado_recalcular_mensaje">¿Desea recalcular el saldo del empleado para este año?</string>
+
+    <!-- P12 Mi hoy -->
+    <string name="mi_hoy_estado_label">Estado de hoy</string>
+    <string name="mi_hoy_estado_sin_justificar">Sin fichaje de entrada hoy</string>
+    <string name="mi_hoy_estado_jornada_iniciada">Jornada en curso</string>
+    <string name="mi_hoy_estado_en_pausa">En pausa</string>
+    <string name="mi_hoy_estado_jornada_completada">Jornada completada</string>
+    <string name="mi_hoy_estado_ausencia_registrada">Ausencia registrada</string>
+    <string name="mi_hoy_estado_ausencia_planificada">Ausencia planificada</string>
+    <string name="mi_hoy_card_horario">Horario</string>
+    <string name="mi_hoy_card_pausa">Pausa activa</string>
+    <string name="mi_hoy_hora_entrada">Entrada</string>
+    <string name="mi_hoy_hora_salida">Salida</string>
+    <string name="mi_hoy_jornada_total">Total jornada</string>
+    <string name="mi_hoy_pausa_estado">Estado</string>
+    <string name="mi_hoy_pausa_activa">Pausa en curso</string>
+    <string name="mi_hoy_card_pausas">Pausas del día</string>
+    <string name="mi_hoy_pausa_activa_label">activa</string>
+
+    <!-- P23 Lista de ausencias -->
+    <string name="ausencias_vacio">No hay ausencias en este periodo</string>
+    <string name="ausencias_fab_desc">Nueva ausencia</string>
+    <string name="ausencias_selector_rango_titulo">Selecciona el periodo</string>
+    <string name="ausencias_menu_rango_fechas">Periodo</string>
+
+    <!-- P20 Formulario fichaje/pausa -->
+    <string name="form_fichaje_hint_empleado_id">ID de empleado</string>
+    <string name="form_fichaje_hint_fecha">Fecha (yyyy-MM-dd)</string>
+    <string name="form_fichaje_hint_tipo">Tipo de fichaje</string>
+    <string name="form_fichaje_hint_hora_entrada">Hora entrada (HH:mm)</string>
+    <string name="form_fichaje_hint_hora_salida">Hora salida (HH:mm)</string>
+    <string name="form_fichaje_hint_tipo_pausa">Tipo de pausa</string>
+    <string name="form_fichaje_hint_hora_inicio">Hora inicio (HH:mm)</string>
+    <string name="form_fichaje_hint_hora_fin">Hora fin (HH:mm)</string>
+    <string name="form_fichaje_hint_observaciones">Observaciones</string>
+    <string name="form_fichaje_observaciones_helper">Obligatorio (RNF-L02)</string>
+    <string name="form_fichaje_guardar">Guardar</string>
+
+    <!-- P19 Lista de fichajes -->
+    <string name="fichajes_vacio">No hay fichajes en este periodo</string>
+    <string name="fichajes_fab_desc">Nuevo fichaje</string>
+    <string name="fichajes_selector_rango_titulo">Selecciona el periodo</string>
+    <string name="fichajes_menu_rango_fechas">Periodo</string>
+
+    <!-- P08 Mi perfil (empleado) -->
+    <string name="mi_perfil_datos_personales">Datos personales</string>
+    <string name="mi_perfil_condiciones">Condiciones laborales</string>
+    <string name="mi_perfil_horas_semanales">%d horas semanales</string>
+    <string name="mi_perfil_dias_anio">%d días al año</string>
+    <string name="mi_perfil_cambiar_password">Cambiar contraseña</string>
+
+    <!-- P34 Configuracion empresa -->
+    <string name="empresa_hint_nombre">Nombre de empresa</string>
+    <string name="empresa_hint_cif">CIF</string>
+    <string name="empresa_hint_direccion">Dirección (opcional)</string>
+    <string name="empresa_hint_email">Email (opcional)</string>
+    <string name="empresa_hint_telefono">Teléfono (opcional)</string>
+    <string name="empresa_guardar">Guardar</string>
+    <string name="empresa_guardado">Configuración guardada</string>
+
+    <!-- P32 Formulario de usuario -->
+    <string name="form_usuario_hint_username">Usuario</string>
+    <string name="form_usuario_hint_password">Contraseña</string>
+    <string name="form_usuario_hint_email">Email</string>
+    <string name="form_usuario_hint_rol">Rol</string>
+    <string name="form_usuario_hint_activo">Estado</string>
+    <string name="form_usuario_guardar">Guardar</string>
+    <string name="form_usuario_desactivar">Desactivar usuario</string>
+    <string name="form_usuario_seccion_perfil">Perfil de empleado</string>
+    <string name="form_usuario_dialogo_desactivar_titulo">Desactivar usuario</string>
+    <string name="form_usuario_dialogo_desactivar_mensaje">El usuario no podrá iniciar sesión. Esta acción se puede revertir editando el usuario.</string>
+    <string name="form_usuario_dialogo_cancelar">Cancelar</string>
+    <string name="form_usuario_dialogo_confirmar">Desactivar</string>
+
+    <!-- P31 Lista de usuarios -->
+    <string name="usuarios_vacio">No hay usuarios registrados</string>
+    <string name="usuarios_fab_desc">Nuevo usuario</string>
+
+    <!-- P11 Mis ausencias (empleado) -->
+    <string name="mis_ausencias_vacio">No hay ausencias en este periodo</string>
+    <string name="mis_ausencias_selector_rango_titulo">Selecciona el periodo</string>
+    <string name="mis_ausencias_menu_rango_fechas">Periodo</string>
+
+    <!-- P10 Mis fichajes (empleado) -->
+    <string name="mis_fichajes_vacio">No hay fichajes en este periodo</string>
+    <string name="mis_fichajes_selector_rango_titulo">Selecciona el periodo</string>
+    <string name="mis_fichajes_menu_rango_fechas">Periodo</string>
+
+    <!-- P24 Formulario de ausencia planificada -->
+    <string name="form_ausencia_hint_empleado_id">ID de empleado (vacío = festivo global)</string>
+    <string name="form_ausencia_hint_fecha">Fecha (yyyy-MM-dd)</string>
+    <string name="form_ausencia_hint_tipo">Tipo de ausencia</string>
+    <string name="form_ausencia_hint_observaciones">Observaciones (opcional)</string>
+    <string name="form_ausencia_guardar">Guardar</string>
+    <string name="form_ausencia_eliminar">Eliminar ausencia</string>
+    <string name="form_ausencia_banner_procesado">Esta ausencia ya fue procesada y no se puede modificar.</string>
+    <string name="form_ausencia_dialogo_eliminar_titulo">Eliminar ausencia</string>
+    <string name="form_ausencia_dialogo_eliminar_mensaje">¿Estás seguro de que quieres eliminar esta ausencia? Esta acción no se puede deshacer.</string>
+    <string name="form_ausencia_dialogo_cancelar">Cancelar</string>
+    <string name="form_ausencia_dialogo_confirmar">Eliminar</string>
+
+    <!-- P28 Informes -->
+    <string name="informes_selector_rango_titulo">Selecciona el rango de fechas</string>
+    <string name="informes_selector_anio_titulo">Selecciona el año</string>
+    <string name="informes_error_abrir_pdf">No se pudo abrir el PDF</string>
+    <string name="informes_print_job_nombre">StaffFlow — Informe</string>
+
+    <!-- P03 Recuperar contraseña -->
+    <string name="recovery_descripcion">Introduce tu email y te enviaremos instrucciones para recuperar tu contraseña.</string>
+    <string name="recovery_hint_email">Email</string>
+    <string name="recovery_btn_enviar">Enviar instrucciones</string>
+    <string name="recovery_error_email_vacio">Introduce tu email</string>
+    <string name="recovery_confirmacion_titulo">¡Correo enviado!</string>
+    <string name="recovery_confirmacion_mensaje">Si el email está registrado recibirás un correo con instrucciones para recuperar tu contraseña.</string>
+
+    <!-- P04 Cambiar contraseña -->
+    <string name="cambiar_password_hint_actual">Contraseña actual</string>
+    <string name="cambiar_password_hint_nueva">Nueva contraseña</string>
+    <string name="cambiar_password_hint_repetir">Repetir nueva contraseña</string>
+    <string name="cambiar_password_btn_guardar">Guardar contraseña</string>
+    <string name="cambiar_password_error_campos_vacios">Rellena todos los campos</string>
+    <string name="cambiar_password_error_no_coinciden">Las contraseñas no coinciden</string>
+    <string name="cambiar_password_exito">Contraseña actualizada</string>
+
+    <!-- P05 Restablecer contraseña -->
+    <string name="reset_password_hint_nueva">Nueva contraseña</string>
+    <string name="reset_password_hint_repetir">Repetir nueva contraseña</string>
+    <string name="reset_password_btn_restablecer">Restablecer contraseña</string>
+    <string name="reset_password_btn_volver_login">Volver al inicio de sesión</string>
+    <string name="reset_password_exito">Contraseña restablecida correctamente</string>
+    <string name="reset_password_error_titulo">Enlace no válido</string>
+    <string name="reset_password_error_token_invalido">El enlace de restablecimiento no es válido o ha expirado.</string>
+    <string name="reset_password_error_campos_vacios">Rellena todos los campos</string>
+    <string name="reset_password_error_no_coinciden">Las contraseñas no coinciden</string>
+
+    <!-- P18 Sin justificar -->
+    <string name="sin_justificar_vacio">Todos los empleados están justificados hoy</string>
+
     <!-- P01 Terminal de fichaje -->
     <string name="terminal_titulo">Terminal de fichaje</string>
     <string name="terminal_btn_entrada">Entrada</string>
@@ -76,4 +263,7 @@
     <string name="terminal_btn_iniciar_pausa">Iniciar pausa</string>
     <string name="terminal_btn_finalizar_pausa">Finalizar pausa</string>
     <string name="terminal_btn_login">Iniciar sesión con cuenta</string>
+    <string name="terminal_btn_cancelar">Cancelar</string>
+    <string name="terminal_btn_limpiar">⌫</string>
+    <string name="terminal_btn_confirmar">OK</string>
 </resources>

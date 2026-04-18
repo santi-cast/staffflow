@@ -15,6 +15,7 @@ import androidx.navigation.fragment.findNavController
 import com.staffflow.android.MainActivity
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentLoginBinding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -67,6 +68,13 @@ class LoginFragment : Fragment() {
             binding.btnVolverTerminal.isVisible = true
             binding.btnVolverTerminal.setOnClickListener { findNavController().popBackStack() }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.etUsername.text?.clear()
+        binding.etPassword.text?.clear()
+        limpiarError()
     }
 
     override fun onDestroyView() {
@@ -134,6 +142,13 @@ class LoginFragment : Fragment() {
             is LoginUiState.Loading -> limpiarError()
             is LoginUiState.Error -> {
                 binding.tilPassword.error = estado.mensaje
+                viewLifecycleOwner.lifecycleScope.launch {
+                    delay(2000)
+                    limpiarError()
+                    binding.etUsername.text?.clear()
+                    binding.etPassword.text?.clear()
+                    binding.etUsername.requestFocus()
+                }
             }
             is LoginUiState.Exito -> {
                 viewModel.resetEstado()

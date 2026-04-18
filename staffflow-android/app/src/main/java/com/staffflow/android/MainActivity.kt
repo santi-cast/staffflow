@@ -1,6 +1,7 @@
 package com.staffflow.android
 
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -38,7 +39,7 @@ import kotlinx.coroutines.launch
  * navigateToInitialDestination(rol) tras un login exitoso (E01).
  *
  * Destinos iniciales por rol:
- *   ADMIN     -> empleadosFragment  (P13)
+ *   ADMIN     -> usuariosFragment    (P32 pendiente; por ahora lista de usuarios)
  *   ENCARGADO -> parteDiarioFragment (P17)
  *   EMPLEADO  -> miSaldoFragment    (P09)
  */
@@ -49,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
 
     private val sessionManager by lazy { SessionManager.getInstance(this) }
+    private var nombreUsuario: String? = null
 
     /**
      * Destinos de nivel superior: muestran el icono de hamburguesa en lugar
@@ -59,7 +61,8 @@ class MainActivity : AppCompatActivity() {
         R.id.loginFragment,
         R.id.miSaldoFragment,
         R.id.parteDiarioFragment,
-        R.id.empleadosFragment
+        R.id.empleadosFragment,
+        R.id.usuariosFragment
     )
 
     /**
@@ -68,14 +71,37 @@ class MainActivity : AppCompatActivity() {
      */
     private val publicDestinations = setOf(
         R.id.terminalFragment,
+        R.id.confirmacionFragment,
+        R.id.tipoPausaFragment,
         R.id.loginFragment,
         R.id.recoveryFragment,
         R.id.resetPasswordFragment
     )
 
+    /**
+     * Pantallas kiosk: la Toolbar se oculta porque el layout ya tiene su propio titulo.
+     * Son pantallas de zona publica sin navegacion estructural.
+     */
+    private val kioskDestinations = setOf(
+        R.id.terminalFragment,
+        R.id.confirmacionFragment,
+        R.id.tipoPausaFragment
+    )
+
     // ------------------------------------------------------------------
     // Ciclo de vida
     // ------------------------------------------------------------------
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        // Forzar locale español independientemente del idioma del dispositivo.
+        // MaterialDatePicker, AlertDialog y cualquier recurso de sistema usan
+        // este contexto para resolver cadenas de idioma.
+        val locale = java.util.Locale("es", "ES")
+        java.util.Locale.setDefault(locale)
+        val config = newBase.resources.configuration
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +109,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
+        // Ocultar el titulo por defecto de la ActionBar: el logo custom en toolbar
+        // (toolbarBrand) ya hace de titulo en todas las pantallas.
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
@@ -113,6 +142,9 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val rol      = sessionManager.getRol()
             val username = sessionManager.getUsername() ?: ""
+            nombreUsuario = sessionManager.getNombre() ?: username
+            binding.tvToolbarNombre.text = " · $nombreUsuario"
+            binding.tvToolbarNombre.visibility = View.VISIBLE
 
             val header = binding.navigationView.getHeaderView(0)
             header.findViewById<TextView>(R.id.tvHeaderUsername).text = username
@@ -133,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                     menu.setGroupVisible(R.id.group_ajustes,   true)
                 }
                 Rol.ADMIN -> {
-                    menu.setGroupVisible(R.id.group_empleado,  true)
+                    menu.setGroupVisible(R.id.group_empleado,  false)
                     menu.setGroupVisible(R.id.group_encargado, true)
                     menu.setGroupVisible(R.id.group_admin,     true)
                     menu.setGroupVisible(R.id.group_ajustes,   true)
@@ -163,7 +195,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun navigateToInitialDestination(rol: Rol) {
         val destination = when (rol) {
-            Rol.ADMIN     -> R.id.empleadosFragment
+            Rol.ADMIN     -> R.id.usuariosFragment
             Rol.ENCARGADO -> R.id.parteDiarioFragment
             Rol.EMPLEADO  -> R.id.miSaldoFragment
         }
@@ -179,11 +211,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupDestinationListener() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            if (destination.id in kioskDestinations) {
+                supportActionBar?.hide()
+            } else {
+                supportActionBar?.show()
+            }
             if (destination.id in publicDestinations) {
                 binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 binding.toolbar.navigationIcon = null
+                // Zona publica: logo sin nombre de usuario
+                binding.tvToolbarNombre.visibility = View.GONE
             } else {
                 binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                // Zona autenticada: logo + nombre del usuario
+                nombreUsuario?.let {
+                    binding.tvToolbarNombre.text = " · $it"
+                    binding.tvToolbarNombre.visibility = View.VISIBLE
+                }
             }
         }
     }
@@ -209,15 +253,18 @@ class MainActivity : AppCompatActivity() {
      * Al arrancar, comprueba si hay token en DataStore.
      * Si existe, configura el Drawer y navega al destino inicial por rol
      * sin pasar por el login (Decision 24-C).
+     *
+     * Nota: el terminal (P01) es SIEMPRE la pantalla de inicio, independientemente
+     * de si hay sesion activa. La sesion se carga en memoria para que el
+     * AuthInterceptor la use y para que LoginFragment pueda saltar el formulario
+     * si el token sigue siendo valido, pero no se navega automaticamente.
      */
     private fun checkExistingSession() {
         lifecycleScope.launch {
             val token = sessionManager.getToken()
             if (token != null) {
                 NetworkModule.authToken = token
-                val rol = sessionManager.getRol()
                 refreshDrawerMenu()
-                if (rol != null) navigateToInitialDestination(rol)
             }
         }
     }
@@ -236,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.loginFragment,
                 null,
                 NavOptions.Builder()
-                    .setPopUpTo(navController.graph.startDestinationId, inclusive = false)
+                    .setPopUpTo(0, inclusive = true)
                     .build()
             )
             Snackbar.make(binding.root, "La sesión ha caducado", Snackbar.LENGTH_LONG).show()
@@ -274,10 +321,10 @@ class MainActivity : AppCompatActivity() {
                     NetworkModule.authToken = null
                     hideDrawerMenu()
                     navController.navigate(
-                        R.id.loginFragment,
+                        R.id.terminalFragment,
                         null,
                         NavOptions.Builder()
-                            .setPopUpTo(navController.graph.startDestinationId, inclusive = false)
+                            .setPopUpTo(0, inclusive = true)
                             .build()
                     )
                 }

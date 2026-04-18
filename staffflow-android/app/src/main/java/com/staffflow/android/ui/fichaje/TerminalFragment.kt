@@ -4,9 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -14,28 +16,30 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentTerminalBinding
-import com.staffflow.android.domain.model.TipoPausa
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Terminal de fichaje por PIN (P01).
  *
- * Pantalla raiz de la zona publica. Permite a los empleados registrar
- * entrada, salida e inicio/fin de pausa mediante PIN de 4 digitos,
- * sin necesidad de autenticacion JWT.
+ * Pantalla raiz de la zona publica. Solo gestiona la entrada del PIN.
+ * La accion de fichaje se elige en P06 (ConfirmacionFragment) tras introducir el PIN.
  *
- * Endpoints: E48 POST /terminal/entrada  | E49 POST /terminal/salida
- *            E50 POST /terminal/pausa/iniciar | E51 POST /terminal/pausa/finalizar
+ * Diseno kiosk premium (inspirado en la imagen de referencia):
+ *   - Logo: simbolo + "Staff" (bold) + "Flow" (thin).
+ *   - Reloj en sans-serif-thin 88sp como elemento hero.
+ *   - Fecha corta sin año con letterSpacing amplio en mayusculas.
+ *   - 4 circulos PIN: grises de placeholder → oscuros al introducir digito.
+ *   - Numpad flat 3x3 + 0 centrado, sin ⌫ en el grid.
+ *   - LIMPIAR (outlined): borra el PIN completo.
+ *   - CONFIRMAR (filled dark): solo habilitado con 4 digitos, navega a P06.
+ *   - Modo kiosk: barras del sistema ocultas en esta pantalla.
  *
- * Flujo:
- *   1. Usuario selecciona accion (Entrada | Salida | Iniciar pausa | Finalizar pausa).
- *   2. Para Iniciar pausa: navega a P07 (TipoPausaFragment), recibe FragmentResult.
- *   3. Usuario introduce 4 digitos -> llamada automatica al endpoint.
- *   4. Exito  -> navega a P06 (ConfirmacionFragment) con datos del resultado.
- *   5. Error  -> muestra mensaje en pantalla, el terminal permanece activo.
- *   6. HTTP 423 -> "Dispositivo bloqueado" (5 intentos fallidos).
- *
- * Decision 25: todos los botones se deshabilitan durante la llamada de red.
+ * Flujo (distinto al diseno anterior):
+ *   Antes: 4o digito -> auto-navega a P06.
+ *   Ahora: 4o digito -> habilita CONFIRMAR -> usuario confirma -> navega a P06.
  */
 class TerminalFragment : Fragment() {
 
@@ -59,13 +63,22 @@ class TerminalFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        configurarBotonesAccion()
+        configurarFecha()
         configurarNumpad()
-        configurarFragmentResult()
         observarViewModel()
         binding.btnIrALogin.setOnClickListener {
             findNavController().navigate(R.id.action_terminal_to_login)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ocultarBarrasSistema()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mostrarBarrasSistema()
     }
 
     override fun onDestroyView() {
@@ -74,24 +87,42 @@ class TerminalFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
+    // Modo kiosk
+    // ------------------------------------------------------------------
+
+    /**
+     * Oculta la barra de estado y la barra de navegacion del sistema.
+     * El usuario puede recuperarlas deslizando desde el borde (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE).
+     * Se restauran en onPause para que el resto de fragmentos las vea correctamente.
+     */
+    private fun ocultarBarrasSistema() {
+        val window = requireActivity().window
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, binding.root).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    private fun mostrarBarrasSistema() {
+        val window = requireActivity().window
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        WindowInsetsControllerCompat(window, binding.root)
+            .show(WindowInsetsCompat.Type.systemBars())
+    }
+
+    // ------------------------------------------------------------------
     // Configuracion
     // ------------------------------------------------------------------
 
-    private fun configurarBotonesAccion() {
-        binding.btnEntrada.setOnClickListener {
-            viewModel.setAccion(AccionTerminal.ENTRADA)
-        }
-        binding.btnSalida.setOnClickListener {
-            viewModel.setAccion(AccionTerminal.SALIDA)
-        }
-        binding.btnIniciarPausa.setOnClickListener {
-            // Navega a P07 para seleccionar el tipo de pausa.
-            // Al volver, FragmentResult("tipoPausa") activa INICIAR_PAUSA en el ViewModel.
-            findNavController().navigate(R.id.action_terminal_to_tipo_pausa)
-        }
-        binding.btnFinalizarPausa.setOnClickListener {
-            viewModel.setAccion(AccionTerminal.FINALIZAR_PAUSA)
-        }
+    /**
+     * Formato corto sin año, mayusculas y letterSpacing amplio: "MIÉ., 4 ABR"
+     * (coincide con el estilo de la imagen de referencia "WED, OCT 25").
+     */
+    private fun configurarFecha() {
+        val fmt = DateTimeFormatter.ofPattern("EEE, d MMM", Locale("es", "ES"))
+        binding.tvFecha.text = LocalDate.now().format(fmt).uppercase(Locale("es", "ES"))
     }
 
     private fun configurarNumpad() {
@@ -103,20 +134,7 @@ class TerminalFragment : Fragment() {
         ).forEach { (btn, digito) ->
             btn.setOnClickListener { viewModel.appendDigito(digito) }
         }
-        binding.btnBorrar.setOnClickListener { viewModel.borrarDigito() }
-    }
-
-    /**
-     * Escucha el resultado de P07 (TipoPausaFragment).
-     * Cuando el usuario selecciona un tipo de pausa, el ViewModel activa
-     * INICIAR_PAUSA y guarda el tipo para la llamada a E50.
-     */
-    private fun configurarFragmentResult() {
-        setFragmentResultListener("tipoPausa") { _, bundle ->
-            @Suppress("DEPRECATION")
-            val tipo = bundle.getSerializable("tipo") as TipoPausa
-            viewModel.setAccionConPausa(tipo)
-        }
+        binding.btnLimpiar.setOnClickListener { viewModel.borrarDigito() }
     }
 
     // ------------------------------------------------------------------
@@ -127,7 +145,6 @@ class TerminalFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.pin.collect { actualizarDisplayPin(it) } }
-                launch { viewModel.accionActiva.collect { actualizarBotonesAccion(it) } }
                 launch { viewModel.uiState.collect { procesarEstado(it) } }
             }
         }
@@ -138,87 +155,68 @@ class TerminalFragment : Fragment() {
     // ------------------------------------------------------------------
 
     /**
-     * Actualiza los 4 circulos del display de PIN.
-     * Digito introducido -> "●", posicion vacia -> "○".
+     * Actualiza los 4 circulos del indicador de PIN.
+     * Posicion con digito -> bg_pin_lleno (circulo oscuro).
+     * Posicion vacia      -> bg_pin_vacio (circulo gris placeholder).
      */
     private fun actualizarDisplayPin(pin: String) {
-        binding.tvPin.text = (0..3).joinToString("  ") { i ->
-            if (i < pin.length) "●" else "○"
-        }
-    }
-
-    /**
-     * Marca el boton de la accion activa con alpha=1.0.
-     * Los botones inactivos quedan con alpha=0.5.
-     * El boton "Iniciar pausa" no se marca directamente desde aqui:
-     * se activa al volver de P07 via FragmentResult.
-     */
-    private fun actualizarBotonesAccion(accionActiva: AccionTerminal) {
-        listOf(
-            AccionTerminal.ENTRADA to binding.btnEntrada,
-            AccionTerminal.SALIDA to binding.btnSalida,
-            AccionTerminal.INICIAR_PAUSA to binding.btnIniciarPausa,
-            AccionTerminal.FINALIZAR_PAUSA to binding.btnFinalizarPausa
-        ).forEach { (accion, btn) ->
-            btn.alpha = if (accion == accionActiva) 1f else 0.5f
+        val circles = listOf(binding.vPin1, binding.vPin2, binding.vPin3, binding.vPin4)
+        circles.forEachIndexed { index, view ->
+            view.setBackgroundResource(
+                if (index < pin.length) R.drawable.bg_pin_lleno
+                else R.drawable.bg_pin_vacio
+            )
         }
     }
 
     private fun procesarEstado(estado: TerminalUiState) {
-        val cargando = estado is TerminalUiState.Loading
-        setInteraccionHabilitada(!cargando)
-        binding.progressIndicator.isVisible = cargando
+        binding.progressIndicator.isVisible = estado is TerminalUiState.VerificandoPin
+        binding.tvError.isVisible = estado is TerminalUiState.Error
 
         when (estado) {
-            is TerminalUiState.Idle -> {
-                binding.tvError.isVisible = false
+            is TerminalUiState.EsperandoPin -> {
+                setNumpadHabilitado(true)
             }
-            is TerminalUiState.Loading -> {
-                binding.tvError.isVisible = false
+            is TerminalUiState.VerificandoPin -> {
+                setNumpadHabilitado(false)
             }
             is TerminalUiState.Error -> {
                 binding.tvError.text = estado.mensaje
-                binding.tvError.isVisible = true
+                setNumpadHabilitado(false)
             }
-            is TerminalUiState.Exito -> {
-                // Resetear antes de navegar para que al volver el terminal quede limpio
-                viewModel.resetEstado()
+            is TerminalUiState.PinVerificado -> {
+                setNumpadHabilitado(false)
                 findNavController().navigate(
                     R.id.action_terminal_to_confirmacion,
                     Bundle().apply {
-                        putString("accion", estado.accion.name)
+                        putString("pin", estado.pin)
                         putString("nombre", estado.nombre)
+                        putString("estadoDia", estado.estadoDia)
                         estado.horaEntrada?.let { putString("horaEntrada", it) }
                         estado.horaSalida?.let { putString("horaSalida", it) }
-                        estado.jornadaEfectivaMinutos?.let { putInt("jornadaEfectivaMinutos", it) }
                         estado.horaInicioPausa?.let { putString("horaInicioPausa", it) }
-                        estado.duracionPausaMinutos?.let { putInt("duracionPausaMinutos", it) }
-                        estado.tipoPausa?.let { putString("tipoPausa", it.name) }
+                        estado.tipoPausa?.let { putString("tipoPausa", it) }
                     }
                 )
+                viewModel.resetEstado()
             }
         }
     }
 
-    /** Habilita o deshabilita todos los botones interactivos. Decision 25. */
-    private fun setInteraccionHabilitada(habilitada: Boolean) {
+    private fun setNumpadHabilitado(habilitado: Boolean) {
         with(binding) {
-            btnEntrada.isEnabled = habilitada
-            btnSalida.isEnabled = habilitada
-            btnIniciarPausa.isEnabled = habilitada
-            btnFinalizarPausa.isEnabled = habilitada
-            btn0.isEnabled = habilitada
-            btn1.isEnabled = habilitada
-            btn2.isEnabled = habilitada
-            btn3.isEnabled = habilitada
-            btn4.isEnabled = habilitada
-            btn5.isEnabled = habilitada
-            btn6.isEnabled = habilitada
-            btn7.isEnabled = habilitada
-            btn8.isEnabled = habilitada
-            btn9.isEnabled = habilitada
-            btnBorrar.isEnabled = habilitada
-            btnIrALogin.isEnabled = habilitada
+            btn0.isEnabled = habilitado
+            btn1.isEnabled = habilitado
+            btn2.isEnabled = habilitado
+            btn3.isEnabled = habilitado
+            btn4.isEnabled = habilitado
+            btn5.isEnabled = habilitado
+            btn6.isEnabled = habilitado
+            btn7.isEnabled = habilitado
+            btn8.isEnabled = habilitado
+            btn9.isEnabled = habilitado
+            btnLimpiar.isEnabled = habilitado
+            btnIrALogin.isEnabled = habilitado
         }
     }
 }

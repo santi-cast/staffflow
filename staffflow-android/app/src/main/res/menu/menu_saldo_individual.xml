@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Menu de la toolbar en P26 SaldoIndividualFragment.
+    Muestra el año seleccionado como accion en la toolbar.
+    Al pulsarlo se abre el dialogo selector de año.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_anio"
+        android:title=""
+        app:showAsAction="always" />
+
+</menu>
