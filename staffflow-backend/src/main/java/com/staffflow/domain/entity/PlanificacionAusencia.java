@@ -36,7 +36,7 @@ public class PlanificacionAusencia {
     private Long id;
 
     // NULL = festivo global: aplica a todos los empleados activos (RF-26).
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empleado_id", nullable = true)
     private Empleado empleado;
 
@@ -55,7 +55,7 @@ public class PlanificacionAusencia {
     private Boolean procesado = false;
 
     // Auditoría: usuario que planificó la ausencia (RNF-L01).
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 

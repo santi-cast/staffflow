@@ -30,7 +30,7 @@ public class Fichaje {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empleado_id", nullable = false)
     private Empleado empleado;
 
@@ -59,7 +59,7 @@ public class Fichaje {
     private Integer jornadaEfectivaMinutos = 0;
 
     // Auditoría: usuario que registró o modificó el fichaje (RNF-L01).
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 

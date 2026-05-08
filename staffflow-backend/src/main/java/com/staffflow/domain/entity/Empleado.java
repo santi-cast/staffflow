@@ -25,7 +25,7 @@ public class Empleado {
     private Long id;
 
     // Relación 1:1 obligatoria. Un empleado siempre tiene usuario asociado.
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 

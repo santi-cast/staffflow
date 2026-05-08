@@ -29,7 +29,7 @@ public class Pausa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empleado_id", nullable = false)
     private Empleado empleado;
 
@@ -54,7 +54,7 @@ public class Pausa {
     private TipoPausa tipoPausa;
 
     // Auditoría: usuario que registró la pausa (RNF-L01).
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
