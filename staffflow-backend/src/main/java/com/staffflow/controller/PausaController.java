@@ -153,7 +153,7 @@ public class PausaController {
      * @return 200 con lista de PausaResponse del empleado autenticado
      */
     @Operation(summary = "Mis pausas",
-               description = "Lista las pausas del empleado autenticado. Solo accesible por EMPLEADO.")
+               description = "Lista las pausas del empleado autenticado. Accesible por EMPLEADO y ENCARGADO.")
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<PausaResponse>> listarPropias(

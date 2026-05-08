@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/test")
 @RequiredArgsConstructor
-@Profile({"dev", "mysql"})
+@Profile("dev")
 public class TestProcesoCierreDiarioController {
 
     private final ProcesoCierreDiario procesoCierreDiario;

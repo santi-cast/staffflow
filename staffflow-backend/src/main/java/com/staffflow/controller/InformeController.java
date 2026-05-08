@@ -50,7 +50,7 @@ public class InformeController {
      * Informe de horas del empleado autenticado en HTML (E-me).
      *
      * Devuelve el mismo HTML que E42 pero filtrado por el empleado del token.
-     * Solo accesible por EMPLEADO. El service resuelve username → empleadoId.
+     * Accesible por EMPLEADO y ENCARGADO. El service resuelve username → empleadoId.
      *
      * @param desde          fecha de inicio del periodo (?desde=yyyy-MM-dd)
      * @param hasta          fecha de fin del periodo (?hasta=yyyy-MM-dd)

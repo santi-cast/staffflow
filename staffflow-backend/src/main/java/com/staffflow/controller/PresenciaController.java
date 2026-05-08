@@ -85,7 +85,7 @@ public class PresenciaController {
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     @Operation(summary = "Estado propio del día",
                description = "Devuelve el estado de presencia del empleado autenticado para la fecha indicada. " +
-                             "Por defecto hoy. Solo accesible por el propio empleado (RF-54).")
+                             "Por defecto hoy. Accesible por EMPLEADO y ENCARGADO sobre sus propios datos (RF-54).")
     public ResponseEntity<DetallePresenciaResponse> obtenerMiPresencia(
             @Parameter(description = "Fecha a consultar en formato YYYY-MM-DD. Por defecto hoy.")
             @RequestParam(required = false)

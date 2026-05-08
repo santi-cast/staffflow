@@ -36,7 +36,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>Decision 18: sin refresh token en v1.0 (JWT de 8h cubre jornada completa).</li>
  *   <li>RNF-S05: bloqueo por dispositivo gestionado en TerminalController, no aqui.</li>
  *   <li>Block 5: {@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
- *       en tiempo de ejecucion. Sin esta anotacion, las 56 anotaciones {@code @PreAuthorize}
+ *       en tiempo de ejecucion. Sin esta anotacion, las 53 anotaciones {@code @PreAuthorize}
  *       de los controllers son decorativas y la seguridad opera solo en la capa URL.</li>
  * </ul>
  *
@@ -117,7 +117,7 @@ public class SecurityConfig {
      *   <li>ADMIN o ENCARGADO: empleados, fichajes, pausas, ausencias, presencia,
      *       saldos (sin /me), informes y PDFs.</li>
      *   <li>TODOS los roles autenticados: logout y cambio de contrasena.</li>
-     *   <li>SOLO EMPLEADO: endpoints /me de cada recurso.</li>
+     *   <li>EMPLEADO o ENCARGADO: endpoints /me de cada recurso (ADMIN excluido).</li>
      * </ul>
      *
      * <p>El {@link JwtAuthFilter} se registra antes de {@link UsernamePasswordAuthenticationFilter}

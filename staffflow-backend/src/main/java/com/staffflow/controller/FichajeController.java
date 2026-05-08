@@ -242,7 +242,7 @@ public class FichajeController {
      * @return 200 con lista de FichajeResponse del empleado autenticado
      */
     @Operation(summary = "Mis fichajes",
-               description = "Lista los fichajes del empleado autenticado. Solo accesible por EMPLEADO.")
+               description = "Lista los fichajes del empleado autenticado. Accesible por EMPLEADO y ENCARGADO.")
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<FichajeResponse>> listarPropios(

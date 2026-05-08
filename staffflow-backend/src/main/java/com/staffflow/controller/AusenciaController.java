@@ -80,7 +80,7 @@ public class AusenciaController {
      * @return 200 con lista de AusenciaResponse del empleado autenticado
      */
     @Operation(summary = "Mis ausencias planificadas",
-               description = "Devuelve las ausencias planificadas del empleado autenticado. Solo accesible por EMPLEADO.")
+               description = "Devuelve las ausencias planificadas del empleado autenticado. Accesible por EMPLEADO y ENCARGADO.")
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<AusenciaResponse>> listarPropias(
