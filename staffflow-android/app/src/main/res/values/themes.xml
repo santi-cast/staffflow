@@ -3,6 +3,10 @@
     <style name="Base.Theme.Staffflowandroid" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="colorSurfaceVariant">@color/surface_variant_light</item>
     </style>
 
     <style name="Theme.Staffflowandroid" parent="Base.Theme.Staffflowandroid" />
@@ -19,7 +23,8 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:fontFamily">sans-serif-light</item>
         <item name="android:textSize">22sp</item>
-        <item name="backgroundTint">?attr/colorSurfaceContainerLow</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/bg_pin_key</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="shapeAppearance">@style/ShapeAppearance.StaffFlow.PinKey</item>
     </style>

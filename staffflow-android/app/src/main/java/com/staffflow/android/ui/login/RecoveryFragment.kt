@@ -64,6 +64,10 @@ class RecoveryFragment : Fragment() {
     }
 
     private fun configurarListeners() {
+        binding.btnVolverLogin.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
         binding.btnEnviar.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             if (email.isBlank()) {

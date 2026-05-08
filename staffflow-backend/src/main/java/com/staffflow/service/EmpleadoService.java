@@ -243,9 +243,10 @@ public class EmpleadoService {
         Empleado empleado = empleadoRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado con id " + id + " no encontrado"));
-        // PIN incluido en el detalle individual para que ADMIN/ENCARGADO pueda entregárselo al empleado
+        // PIN y email incluidos en el detalle individual (solo ADMIN los consume en Android)
         EmpleadoResponse response = toEmpleadoResponse(empleado);
         response.setPinTerminal(empleado.getPinTerminal());
+        response.setEmail(empleado.getUsuario().getEmail());
         return response;
     }
 

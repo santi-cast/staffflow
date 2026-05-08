@@ -17,7 +17,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurfaceVariant">
+    android:background="@color/surface_variant_light">
 
     <!-- Tarjeta terminal: ocupa casi toda la pantalla -->
     <com.google.android.material.card.MaterialCardView
@@ -136,13 +136,13 @@
                 android:visibility="gone" />
 
             <!--
-                Numpad: botones 76x76dp, gap 6dp.
-                Grid total: 76*3 + 6*2 = 240dp.
-                Ultima fila: ⌫ y 0 centrados dentro del mismo ancho de 240dp.
+                Numpad: botones 76x76dp, gap 10dp.
+                Grid total: 76*3 + 10*2 = 248dp.
+                Ultima fila: ⌫ y 0 centrados dentro del mismo ancho de 248dp.
             -->
             <LinearLayout
                 android:id="@+id/layoutNumpad"
-                android:layout_width="240dp"
+                android:layout_width="248dp"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:layout_marginTop="24dp">
@@ -152,20 +152,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="6dp">
+                    android:layout_marginBottom="10dp">
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn1"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="1" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn2"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="2" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn3"
@@ -180,20 +180,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="6dp">
+                    android:layout_marginBottom="10dp">
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn4"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="4" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn5"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="5" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn6"
@@ -208,20 +208,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="6dp">
+                    android:layout_marginBottom="10dp">
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn7"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="7" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn8"
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="8" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn9"
@@ -246,7 +246,7 @@
                         style="@style/Widget.StaffFlow.PinKey"
                         android:layout_width="76dp"
                         android:layout_height="76dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="10dp"
                         android:text="⌫"
                         android:textSize="22sp" />
                     <com.google.android.material.button.MaterialButton
@@ -264,17 +264,21 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Acceso con cuenta: fuera de la tarjeta, al pie -->
-    <com.google.android.material.button.MaterialButton
+    <TextView
         android:id="@+id/btnIrALogin"
-        style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
         android:text="@string/terminal_btn_login"
-        android:textSize="12sp"
-        android:alpha="0.6"
-        android:layout_marginBottom="12dp"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="15sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

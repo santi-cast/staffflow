@@ -23,6 +23,48 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <!-- Banner de terminal bloqueado (GONE por defecto, visible cuando hay bloqueo) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bannerTerminalBloqueado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#FFEBEE"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#EF9A9A"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/parte_diario_banner_bloqueado"
+                android:textColor="#C62828"
+                android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDesbloquearTerminal"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/parte_diario_btn_desbloquear"
+                android:textColor="#C62828"
+                app:strokeColor="#C62828" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Chips de resumen (GONE hasta que haya datos) -->
     <HorizontalScrollView
         android:id="@+id/scrollChips"
@@ -39,11 +81,11 @@
             app:singleLine="true">
 
             <com.google.android.material.chip.Chip
-                android:id="@+id/chipFichados"
+                android:id="@+id/chipTrabajando"
                 style="@style/Widget.Material3.Chip.Assist"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Fichados: 0"
+                android:text="Trabajando: 0"
                 android:clickable="false" />
 
             <com.google.android.material.chip.Chip
@@ -63,12 +105,29 @@
                 android:clickable="false" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/chipJornadaCompletada"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Completada: 0"
+                android:clickable="false" />
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chipSinJustificar"
                 style="@style/Widget.Material3.Chip.Assist"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sin justificar: 0"
-                android:clickable="true" />
+                android:clickable="false" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEstadoDia"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/parte_diario_chip_sin_completar"
+                android:clickable="false"
+                android:visibility="gone" />
 
         </com.google.android.material.chip.ChipGroup>
     </HorizontalScrollView>

@@ -38,9 +38,10 @@ import java.util.stream.Collectors;
  *   - UNIQUE(empleado_id, fecha): un solo fichaje por empleado por día.
  *   - jornadaEfectivaMinutos se calcula con Math.ceil sobre minutos brutos
  *     menos totalPausasMinutos (ya almacenado en el fichaje).
- *   - D-026: ENCARGADO solo puede gestionar registros del dia actual.
+ *   - D-026: ENCARGADO puede gestionar hoy y fechas futuras, no el pasado.
  *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
  *     crear() (E22) y actualizar() (E23).
+ *   - Fichajes en fechas futuras no permitidos para ningún rol.
  *
  * Patrón de autenticación:
  *   El controller pasa authentication.getName() (username) a los métodos
@@ -123,12 +124,18 @@ public class FichajeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
-        // Restriccion D-026: ENCARGADO solo puede gestionar el dia actual.
+        // Fichajes en fechas futuras no permitidos para ningún rol.
+        if (request.getFecha().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "No se pueden registrar fichajes en fechas futuras");
+        }
+
+        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear fichajes para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && !request.getFecha().isEqual(LocalDate.now())) {
+                && request.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // Verificar unicidad empleado+fecha antes de persistir
@@ -153,16 +160,20 @@ public class FichajeService {
         fichaje.setUsuario(usuario);                         // auditoría: quién creó el fichaje (@ManyToOne)
         fichaje.setTotalPausasMinutos(0);                    // sin pausas al crear manualmente
 
-        // Calcular jornadaEfectivaMinutos si hay entrada y salida
-        // Fórmula: Math.ceil(minutos brutos - totalPausasMinutos)
-        // Al crear manualmente no hay pausas todavía → totalPausasMinutos = 0
+        // Calcular jornadaEfectivaMinutos según el tipo de fichaje
         if (request.getHoraEntrada() != null && request.getHoraSalida() != null) {
+            // Jornada normal con horas: diferencia entrada-salida menos pausas
             long minutosBrutos = ChronoUnit.MINUTES.between(
                     request.getHoraEntrada(), request.getHoraSalida());
             int jornadaEfectiva = (int) Math.ceil((double) minutosBrutos);
             fichaje.setJornadaEfectivaMinutos(jornadaEfectiva);
+        } else if (request.getTipo() == TipoFichaje.BAJA_MEDICA
+                || request.getTipo() == TipoFichaje.PERMISO_RETRIBUIDO) {
+            // Ausencias retribuidas: el empleado no pierde su cuota diaria.
+            // Es como si hubiera trabajado su jornada completa.
+            fichaje.setJornadaEfectivaMinutos(empleado.getJornadaDiariaMinutos());
         } else {
-            // Sin horas (ej: VACACIONES, FESTIVO) → jornada efectiva 0
+            // Resto de ausencias (VACACIONES, FESTIVO, DIA_LIBRE, etc.) → 0
             fichaje.setJornadaEfectivaMinutos(0);
         }
 
@@ -218,13 +229,19 @@ public class FichajeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
-        // Restriccion D-026: ENCARGADO solo puede modificar el dia actual.
+        // Fichajes en fechas futuras no modificables para ningún rol.
+        if (fichaje.getFecha().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "No se pueden modificar fichajes en fechas futuras");
+        }
+
+        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la del fichaje cargado de BD, no del request.
         // ADMIN puede modificar fichajes de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && !fichaje.getFecha().isEqual(LocalDate.now())) {
+                && fichaje.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // Aplicar solo los campos que llegan con valor (patrón PATCH)
@@ -280,9 +297,6 @@ public class FichajeService {
     @Transactional(readOnly = true)
     public List<FichajeResponse> listar(Long empleadoId, LocalDate desde,
                                         LocalDate hasta, TipoFichaje tipo) {
-
-        // Delegar filtrado al repositorio con método custom
-        // El repositorio usa @Query con parámetros opcionales (IS NULL OR = ?)
         return fichajeRepository
                 .findByFiltros(empleadoId, desde, hasta, tipo)
                 .stream()
@@ -382,6 +396,9 @@ public class FichajeService {
         // Orden de campos según declaración en FichajeResponse.java:
         // id, empleadoId, fecha, tipo, horaEntrada, horaSalida,
         // totalPausasMinutos, jornadaEfectivaMinutos, usuarioId, observaciones, fechaCreacion
+        String nombreCompleto = empleado.getNombre() + " " + empleado.getApellido1()
+                + (empleado.getApellido2() != null ? " " + empleado.getApellido2() : "");
+
         return new FichajeResponse(
                 fichaje.getId(),
                 empleado.getId(),
@@ -393,7 +410,8 @@ public class FichajeService {
                 fichaje.getJornadaEfectivaMinutos(),
                 fichaje.getUsuario() != null ? fichaje.getUsuario().getId() : null,
                 fichaje.getObservaciones(),
-                fichaje.getFechaCreacion()
+                fichaje.getFechaCreacion(),
+                nombreCompleto
         );
     }
 }

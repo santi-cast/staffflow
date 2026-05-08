@@ -38,12 +38,12 @@ public class ParteDiarioResponse {
     // Base de referencia para los contadores siguientes.
     private Integer totalEmpleados;
 
-    // Empleados con estado JORNADA_INICIADA o JORNADA_COMPLETADA.
-    // Incluye EN_PAUSA porque siguen contando como fichados.
-    private Integer fichados;
+    // Empleados con entrada registrada y sin salida (JORNADA_INICIADA + EN_PAUSA).
+    // No incluye JORNADA_COMPLETADA: esos ya terminaron su jornada.
+    private Integer trabajando;
 
     // Empleados con estado EN_PAUSA en este momento.
-    // Subconjunto de fichados: un empleado en pausa también está fichado.
+    // Subconjunto de trabajando: un empleado en pausa tiene entrada sin salida.
     private Integer enPausa;
 
     // Empleados con estado AUSENCIA_REGISTRADA o AUSENCIA_PLANIFICADA.
@@ -51,9 +51,13 @@ public class ParteDiarioResponse {
     private Integer ausencias;
 
     // Empleados con estado SIN_JUSTIFICAR.
-    // Requieren atención inmediata: no tienen fichaje ni ausencia registrada.
+    // Requieren atención inmediada: no tienen fichaje ni ausencia registrada.
     // Es el contador más relevante para el encargado (RF-31).
     private Integer sinJustificar;
+
+    // Empleados con estado JORNADA_COMPLETADA (entrada y salida registradas).
+    // Subconjunto de fichados que ya han terminado su jornada.
+    private Integer jornadaCompletada;
 
     // Detalle individual de cada empleado activo.
     // Ordenado por apellido1, apellido2, nombre para facilitar la lectura.

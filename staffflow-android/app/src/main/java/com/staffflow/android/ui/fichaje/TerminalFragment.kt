@@ -1,9 +1,12 @@
 package com.staffflow.android.ui.fichaje
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -14,9 +17,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.staffflow.android.R
+import com.staffflow.android.data.remote.api.NetworkModule
+import com.staffflow.android.databinding.DialogCambiarIpBinding
 import com.staffflow.android.databinding.FragmentTerminalBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -171,7 +181,7 @@ class TerminalFragment : Fragment() {
 
     private fun procesarEstado(estado: TerminalUiState) {
         binding.progressIndicator.isVisible = estado is TerminalUiState.VerificandoPin
-        binding.tvError.isVisible = estado is TerminalUiState.Error
+        binding.tvError.isVisible = estado is TerminalUiState.Error || estado is TerminalUiState.Bloqueado
 
         when (estado) {
             is TerminalUiState.EsperandoPin -> {
@@ -181,6 +191,13 @@ class TerminalFragment : Fragment() {
                 setNumpadHabilitado(false)
             }
             is TerminalUiState.Error -> {
+                binding.tvError.text = estado.mensaje
+                setNumpadHabilitado(false)
+            }
+            is TerminalUiState.ErrorConexion -> {
+                mostrarDialogoCambiarIp(estado.pin)
+            }
+            is TerminalUiState.Bloqueado -> {
                 binding.tvError.text = estado.mensaje
                 setNumpadHabilitado(false)
             }
@@ -203,6 +220,75 @@ class TerminalFragment : Fragment() {
         }
     }
 
+    private fun mostrarDialogoCambiarIp(pin: String) {
+        val dialogBinding = DialogCambiarIpBinding.inflate(layoutInflater)
+
+        dialogBinding.etIp.setText(NetworkModule.currentIp)
+        dialogBinding.etIp.setSelection(dialogBinding.etIp.text?.length ?: 0)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialogo_ip_titulo)
+            .setMessage(R.string.dialogo_ip_mensaje)
+            .setView(dialogBinding.root)
+            .setNegativeButton(R.string.dialogo_ip_cancelar) { _, _ -> viewModel.resetEstado() }
+            .setPositiveButton(R.string.dialogo_ip_btn_guardar, null)
+            .create()
+
+        dialog.setOnDismissListener { viewModel.resetEstado() }
+
+        dialog.setOnShowListener {
+            val btnGuardar = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+            btnGuardar.isEnabled = false
+
+            dialogBinding.etIp.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable?) {
+                    dialogBinding.tvResultadoConexion.visibility = View.GONE
+                    btnGuardar.isEnabled = false
+                }
+            })
+
+            dialogBinding.btnProbarConexion.setOnClickListener {
+                val ip = dialogBinding.etIp.text?.toString()?.trim() ?: return@setOnClickListener
+                dialogBinding.btnProbarConexion.isEnabled = false
+                dialogBinding.tvResultadoConexion.isVisible = true
+                dialogBinding.tvResultadoConexion.text = getString(R.string.cargando)
+
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val ok = withContext(Dispatchers.IO) {
+                        try {
+                            Socket().use { socket ->
+                                socket.connect(InetSocketAddress(ip, 8080), 5000)
+                                true
+                            }
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                    dialogBinding.btnProbarConexion.isEnabled = true
+                    if (ok) {
+                        dialogBinding.tvResultadoConexion.text = getString(R.string.dialogo_ip_resultado_ok)
+                        dialogBinding.tvResultadoConexion.setTextColor(ContextCompat.getColor(requireContext(), R.color.color_exito))
+                        btnGuardar.isEnabled = true
+                    } else {
+                        dialogBinding.tvResultadoConexion.text = getString(R.string.dialogo_ip_resultado_error)
+                        dialogBinding.tvResultadoConexion.setTextColor(ContextCompat.getColor(requireContext(), R.color.color_error))
+                        btnGuardar.isEnabled = false
+                    }
+                }
+            }
+
+            btnGuardar.setOnClickListener {
+                val ip = dialogBinding.etIp.text?.toString()?.trim() ?: return@setOnClickListener
+                dialog.dismiss()
+                viewModel.guardarIpYReintentarPin(ip, pin)
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun setNumpadHabilitado(habilitado: Boolean) {
         with(binding) {
             btn0.isEnabled = habilitado
@@ -216,7 +302,6 @@ class TerminalFragment : Fragment() {
             btn8.isEnabled = habilitado
             btn9.isEnabled = habilitado
             btnLimpiar.isEnabled = habilitado
-            btnIrALogin.isEnabled = habilitado
         }
     }
 }

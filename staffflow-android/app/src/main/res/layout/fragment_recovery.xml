@@ -48,6 +48,19 @@
                 android:layout_marginTop="16dp"
                 android:text="@string/recovery_btn_enviar" />
 
+            <TextView
+                android:id="@+id/btnVolverLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/recovery_btn_volver_login"
+                android:textColor="?attr/colorPrimary"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground" />
+
             <com.google.android.material.progressindicator.CircularProgressIndicator
                 android:id="@+id/progressIndicator"
                 android:layout_width="wrap_content"

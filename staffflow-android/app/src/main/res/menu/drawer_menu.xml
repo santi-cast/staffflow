@@ -52,7 +52,7 @@
             android:id="@+id/empleadosFragment"
             android:title="@string/nav_empleados" />
         <item
-            android:id="@+id/fichajesFragment"
+            android:id="@+id/resumenSemanalFragment"
             android:title="@string/nav_fichajes" />
         <item
             android:id="@+id/ausenciasFragment"

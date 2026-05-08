@@ -82,7 +82,8 @@ class FichajesFragment : Fragment() {
     // ------------------------------------------------------------------
 
     private fun configurarRecyclerView() {
-        adapter = FichajeAdapter { fichaje ->
+        val empleadoId = arguments?.getLong("empleadoId", -1L) ?: -1L
+        adapter = FichajeAdapter(mostrarNombre = empleadoId == -1L) { fichaje ->
             // Pasamos todos los campos porque no existe GET /fichajes/{id}
             val args = Bundle().apply {
                 putString("variante", "FICHAJE")

@@ -69,8 +69,16 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain terminalFilterChain(HttpSecurity http) throws Exception {
         http
-            // Limita esta cadena a las rutas del terminal (E48, E49, E50, E51)
-            .securityMatcher("/api/v1/terminal/**")
+            // Limita esta cadena a los endpoints PIN publicos (E48-E52).
+            // /api/v1/terminal/bloqueo (E53-E54) queda FUERA — requiere JWT y cae
+            // a apiFilterChain (Order=2) donde se valida rol ENCARGADO/ADMIN.
+            .securityMatcher(
+                "/api/v1/terminal/entrada",
+                "/api/v1/terminal/salida",
+                "/api/v1/terminal/pausa/iniciar",
+                "/api/v1/terminal/pausa/finalizar",
+                "/api/v1/terminal/estado"
+            )
 
             // CSRF desactivado: API REST stateless, no hay formularios HTML ni cookies de sesion
             .csrf(csrf -> csrf.disable())
@@ -146,6 +154,9 @@ public class SecurityConfig {
                 // Swagger UI y OpenAPI spec: accesibles sin autenticacion para desarrollo
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
+                // --- ADMIN o ENCARGADO: bloqueo del terminal (E53-E54) ---
+                .requestMatchers("/api/v1/terminal/bloqueo").hasAnyRole("ADMIN", "ENCARGADO")
+
                 // --- SOLO ADMIN ---
                 // E06-E07: configuracion de empresa
                 .requestMatchers("/api/v1/empresa/**").hasRole("ADMIN")
@@ -154,24 +165,29 @@ public class SecurityConfig {
                 // E40: recalcular saldo (solo ADMIN segun Endpoints_v3)
                 .requestMatchers("/api/v1/saldos/*/recalcular").hasRole("ADMIN")
 
-                // --- EMPLEADO: endpoints /me (datos propios) ---
+                // --- EMPLEADO y ENCARGADO: endpoints /me (datos propios) ---
                 // E21: perfil propio
-                .requestMatchers("/api/v1/empleados/me").hasRole("EMPLEADO")
+                .requestMatchers("/api/v1/empleados/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E26: fichajes propios
-                .requestMatchers("/api/v1/fichajes/me").hasRole("EMPLEADO")
-                // E34: ausencias propias
-                .requestMatchers("/api/v1/ausencias/me").hasRole("EMPLEADO")
+                .requestMatchers("/api/v1/fichajes/me").hasAnyRole("EMPLEADO", "ENCARGADO")
+                // E34: ausencias propias | E-ausencias: informe HTML de ausencias
+                .requestMatchers("/api/v1/ausencias/me/informe").hasAnyRole("EMPLEADO", "ENCARGADO")
+                .requestMatchers("/api/v1/ausencias/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E41: saldo propio
-                .requestMatchers("/api/v1/saldos/me").hasRole("EMPLEADO")
+                .requestMatchers("/api/v1/saldos/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E37: parte diario propio
-                .requestMatchers("/api/v1/presencia/parte-diario/me").hasRole("EMPLEADO")
+                .requestMatchers("/api/v1/presencia/parte-diario/me").hasAnyRole("EMPLEADO", "ENCARGADO")
+                // E35: pausas propias
+                .requestMatchers("/api/v1/pausas/me").hasAnyRole("EMPLEADO", "ENCARGADO")
+                // E-me: informe de horas propio
+                .requestMatchers("/api/v1/informes/me/**").hasAnyRole("EMPLEADO", "ENCARGADO")
 
                 // --- ADMIN o ENCARGADO ---
                 // E13-E20: gestion de empleados (sin /me, ya cubierto arriba)
                 .requestMatchers("/api/v1/empleados/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E22-E25: fichajes (sin /me)
                 .requestMatchers("/api/v1/fichajes/**").hasAnyRole("ADMIN", "ENCARGADO")
-                // E27-E29: pausas
+                // E27-E29: pausas (sin /me, ya cubierto arriba)
                 .requestMatchers("/api/v1/pausas/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E30-E33: ausencias (sin /me)
                 .requestMatchers("/api/v1/ausencias/**").hasAnyRole("ADMIN", "ENCARGADO")

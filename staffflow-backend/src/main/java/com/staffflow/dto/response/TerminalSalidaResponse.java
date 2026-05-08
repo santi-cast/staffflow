@@ -30,17 +30,18 @@ public class TerminalSalidaResponse {
     /** Hora en que se registró la salida. */
     private LocalDateTime horaSalida;
 
-    /** Total de minutos en pausa durante la jornada (sin contar ausencia retribuida). */
-    private Integer totalPausasMinutos;
+    /** Total de segundos en pausa durante la jornada (sin contar ausencia retribuida). */
+    private Integer totalPausasSegundos;
 
     /** Número de pausas registradas en el día. */
     private Integer numeroPausas;
 
     /**
-     * Minutos efectivos trabajados en la jornada.
-     * Calculado como Math.ceil(horaSalida - horaEntrada en minutos - totalPausasMinutos).
+     * Segundos efectivos trabajados en la jornada.
+     * Calculado como ChronoUnit.SECONDS(horaSalida - horaEntrada) - totalPausasSegundos.
+     * La entidad Fichaje sigue almacenando jornadaEfectivaMinutos para SaldoService.
      */
-    private Integer jornadaEfectivaMinutos;
+    private Integer jornadaEfectivaSegundos;
 
     /** Mensaje de confirmación para mostrar en pantalla del terminal. */
     private String mensaje;

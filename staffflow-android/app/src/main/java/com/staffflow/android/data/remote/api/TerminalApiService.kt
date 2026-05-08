@@ -1,5 +1,6 @@
 package com.staffflow.android.data.remote.api
 
+import com.staffflow.android.data.remote.dto.TerminalBloqueoResponse
 import com.staffflow.android.data.remote.dto.TerminalEntradaResponse
 import com.staffflow.android.data.remote.dto.TerminalEstadoResponse
 import com.staffflow.android.data.remote.dto.TerminalPausaResponse
@@ -8,6 +9,8 @@ import com.staffflow.android.data.remote.dto.TerminalPausaRequest
 import com.staffflow.android.data.remote.dto.TerminalSalidaResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
@@ -66,4 +69,18 @@ interface TerminalApiService {
      */
     @POST("terminal/pausa/finalizar")
     suspend fun finalizarPausa(@Body request: TerminalPinRequest): Response<TerminalPausaResponse>
+
+    /**
+     * E53 - Consulta si hay algún dispositivo de terminal bloqueado por intentos fallidos.
+     * Requiere JWT (ENCARGADO o ADMIN). Llamado desde ParteDiarioFragment al cargar.
+     */
+    @GET("terminal/bloqueo")
+    suspend fun getBloqueo(): Response<TerminalBloqueoResponse>
+
+    /**
+     * E54 - Desbloquea el terminal reseteando todos los contadores de intentos fallidos.
+     * Requiere JWT (ENCARGADO o ADMIN). Devuelve { "bloqueado": false } tras el reset.
+     */
+    @DELETE("terminal/bloqueo")
+    suspend fun deleteBloqueo(): Response<TerminalBloqueoResponse>
 }

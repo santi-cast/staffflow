@@ -1,9 +1,12 @@
 package com.staffflow.controller;
 
 import com.staffflow.dto.request.AusenciaPatchRequest;
+import com.staffflow.dto.request.AusenciaRangoRequest;
 import com.staffflow.dto.request.AusenciaRequest;
 import com.staffflow.dto.response.AusenciaResponse;
+import com.staffflow.dto.response.PlanificacionVacApResponse;
 import com.staffflow.service.AusenciaService;
+import com.staffflow.service.InformeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,6 +54,9 @@ public class AusenciaController {
     /** Servicio que contiene toda la lógica de negocio de ausencias. */
     private final AusenciaService ausenciaService;
 
+    /** Servicio de informes para generación del HTML de ausencias (E-ausencias). */
+    private final InformeService informeService;
+
     // ------------------------------------------------------------------
     // E34 — GET /api/v1/ausencias/me
     // NOTA: declarado ANTES de /{id} para que Spring MVC no confunda
@@ -90,6 +96,86 @@ public class AusenciaController {
     }
 
     // ------------------------------------------------------------------
+    // E-ausencias — GET /api/v1/ausencias/me/informe
+    // Informe HTML de ausencias propias (ejecutadas + planificadas)
+    // NOTA: declarado ANTES de /me y /{id} para evitar conflictos de ruta
+    // ------------------------------------------------------------------
+
+    /**
+     * Devuelve el informe HTML de ausencias del empleado autenticado.
+     *
+     * Combina planificacion_ausencias y fichajes tipo ausencia.
+     * Por defecto muestra el año en curso completo.
+     * filtro=VACACIONES_AP muestra solo vacaciones y asuntos propios.
+     *
+     * @param desde  fecha de inicio (defecto: 1 enero del año actual)
+     * @param hasta  fecha de fin (defecto: 31 diciembre del año actual)
+     * @param filtro "TODAS" (defecto) o "VACACIONES_AP"
+     * @param authentication objeto de seguridad para extraer el username
+     * @return 200 con HTML del informe de ausencias
+     */
+    @Operation(summary = "Informe HTML de mis ausencias",
+               description = "Genera el informe HTML de ausencias del empleado autenticado. Combina planificadas y ejecutadas.")
+    @GetMapping("/me/informe")
+    @PreAuthorize("hasRole('EMPLEADO')")
+    public ResponseEntity<String> informeAusenciasMe(
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "TODAS") String filtro,
+            Authentication authentication) {
+
+        int anio = java.time.LocalDate.now().getYear();
+        LocalDate desdeEfectivo = desde != null ? desde : LocalDate.of(anio, 1, 1);
+        LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.of(anio, 12, 31);
+
+        String html = informeService.informeAusenciasMe(
+                authentication.getName(), desdeEfectivo, hastaEfectivo, filtro);
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/html;charset=UTF-8")
+                .body(html);
+    }
+
+    // ------------------------------------------------------------------
+    // E-ausencias-id — GET /api/v1/ausencias/{empleadoId}/informe
+    // Informe HTML de ausencias de un empleado por id (ADMIN/ENCARGADO)
+    // ------------------------------------------------------------------
+
+    /**
+     * Devuelve el informe HTML de ausencias de un empleado concreto.
+     * Misma lógica que /me/informe pero accesible por ADMIN y ENCARGADO.
+     *
+     * @param empleadoId id del empleado
+     * @param desde  fecha de inicio (defecto: 1 enero del año actual)
+     * @param hasta  fecha de fin (defecto: 31 diciembre del año actual)
+     * @param filtro "TODAS" (defecto) o "VACACIONES_AP"
+     * @return 200 con HTML del informe de ausencias
+     */
+    @GetMapping("/{empleadoId}/informe")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<String> informeAusenciasEmpleado(
+            @PathVariable Long empleadoId,
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "TODAS") String filtro) {
+
+        int anio = java.time.LocalDate.now().getYear();
+        LocalDate desdeEfectivo = desde != null ? desde : LocalDate.of(anio, 1, 1);
+        LocalDate hastaEfectivo = hasta != null ? hasta : LocalDate.of(anio, 12, 31);
+
+        String html = informeService.informeAusenciasEmpleado(
+                empleadoId, desdeEfectivo, hastaEfectivo, filtro);
+
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/html;charset=UTF-8")
+                .body(html);
+    }
+
+    // ------------------------------------------------------------------
     // E30 — POST /api/v1/ausencias
     // RF-25: ausencia individual | RF-26: festivo global (empleadoId null)
     // ------------------------------------------------------------------
@@ -111,6 +197,20 @@ public class AusenciaController {
      * @param authentication objeto de seguridad para auditoría
      * @return 201 con AusenciaResponse de la ausencia creada
      */
+    @Operation(summary = "Planificar rango de ausencias",
+               description = "Crea una ausencia por cada día del rango [fechaDesde, fechaHasta]. " +
+                             "Si hay conflictos y sobrescribir=false devuelve 409 con fechasConflictivas.")
+    @PostMapping("/rango")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<List<AusenciaResponse>> crearRango(
+            @Valid @RequestBody AusenciaRangoRequest request,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+        List<AusenciaResponse> creadas = ausenciaService.crearRango(request, username);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creadas);
+    }
+
     @Operation(summary = "Planificar ausencia",
                description = "Crea una ausencia planificada. Si empleadoId es null, crea un festivo global (RF-26).")
     @PostMapping
@@ -158,6 +258,36 @@ public class AusenciaController {
             @RequestParam(required = false) Boolean procesado) {
 
         return ResponseEntity.ok(ausenciaService.listar(empleadoId, desde, hasta, procesado));
+    }
+
+    // ------------------------------------------------------------------
+    // E-planificacion-vac-ap — GET /api/v1/ausencias/planificacion-vac-ap
+    // Días pendientes de planificar para vacaciones y asuntos propios
+    // NOTA: declarado ANTES de /{id} para evitar conflicto de ruta
+    // ------------------------------------------------------------------
+
+    /**
+     * Devuelve los días pendientes de planificar para vacaciones y asuntos
+     * propios de un empleado en un año concreto.
+     *
+     * Si no existe SaldoAnual para ese año, lo crea on-demand con el derecho
+     * del empleado. El flag anioFuturoSinCierre=true indica que los pendientes
+     * del año anterior aún no están incluidos (cierre anual no ejecutado).
+     *
+     * @param empleadoId id del empleado
+     * @param anio       año a consultar (defecto: año actual)
+     * @return desglose de disponibles, planificados y pendientesPlanificar para vac y AP
+     */
+    @Operation(summary = "Días pendientes de planificar vacaciones y AP",
+               description = "Calcula los días pendientes de planificar para vacaciones y asuntos propios de un empleado.")
+    @GetMapping("/planificacion-vac-ap")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<PlanificacionVacApResponse> getPlanificacionVacAp(
+            @RequestParam Long empleadoId,
+            @RequestParam(required = false) Integer anio) {
+
+        int anioConsulta = anio != null ? anio : java.time.LocalDate.now().getYear();
+        return ResponseEntity.ok(ausenciaService.getPlanificacionVacAp(empleadoId, anioConsulta));
     }
 
     // ------------------------------------------------------------------

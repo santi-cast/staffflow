@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -38,6 +39,34 @@ import java.util.List;
 public class InformeController {
 
     private final InformeService informeService;
+
+    // =========================================================================
+    // E-me — GET /api/v1/informes/me/horas
+    // Informe de horas del empleado autenticado en HTML
+    // NOTA: declarado ANTES de /horas/{empleadoId} por convención /me primero.
+    // =========================================================================
+
+    /**
+     * Informe de horas del empleado autenticado en HTML (E-me).
+     *
+     * Devuelve el mismo HTML que E42 pero filtrado por el empleado del token.
+     * Solo accesible por EMPLEADO. El service resuelve username → empleadoId.
+     *
+     * @param desde          fecha de inicio del periodo (?desde=yyyy-MM-dd)
+     * @param hasta          fecha de fin del periodo (?hasta=yyyy-MM-dd)
+     * @param authentication objeto de seguridad para extraer username
+     * @return HTML del informe de horas del empleado autenticado
+     */
+    @GetMapping("/me/horas")
+    @PreAuthorize("hasRole('EMPLEADO')")
+    public ResponseEntity<Object> informeHorasMe(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+
+        Object resultado = informeService.informeHorasMe(authentication.getName(), desde, hasta);
+        return construirRespuesta(resultado, "html");
+    }
 
     // =========================================================================
     // E42 — GET /api/v1/informes/horas/{empleadoId}
@@ -113,6 +142,34 @@ public class InformeController {
     }
 
     // =========================================================================
+    // E-Semana — GET /api/v1/informes/semana
+    // Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados
+    // =========================================================================
+
+    /**
+     * Tabla HTML semanal de presencia de todos los empleados activos (E-Semana).
+     *
+     * <p>Devuelve un HTML con una tabla empleado × dia (lunes–domingo) donde
+     * cada celda muestra el fichaje, pausas y ausencias del dia. Los datos
+     * son clicables con URLs staffflow:// para editar desde el WebView Android.</p>
+     *
+     * @param desde          primer dia del rango (?desde=yyyy-MM-dd)
+     * @param hasta          ultimo dia del rango (?hasta=yyyy-MM-dd)
+     * @param authentication objeto de seguridad para extraer username y rol
+     * @return HTML de la tabla semanal
+     */
+    @GetMapping("/semana")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<Object> informeSemana(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+
+        String html = informeService.informeSemana(desde, hasta, authentication.getName());
+        return construirRespuesta(html, "html");
+    }
+
+    // =========================================================================
     // E44 — GET /api/v1/informes/saldos
     // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
     // D-029: renombrado desde /vacaciones, anadidos ?empleadoId= y ?campos=
@@ -148,6 +205,34 @@ public class InformeController {
 
         Object resultado = informeService.informeSaldos(anio, formato, empleadoId, campos);
         return construirRespuesta(resultado, formato);
+    }
+
+    // =========================================================================
+    // E-ausencias-global — GET /api/v1/informes/ausencias
+    // Resumen HTML de ausencias de todos los empleados activos en un rango
+    // =========================================================================
+
+    /**
+     * Resumen de ausencias globales de todos los empleados activos (E-ausencias-global).
+     *
+     * <p>Devuelve una tabla HTML empleado × día para el rango solicitado.
+     * Muestra ausencias ejecutadas (fichajes tipo != NORMAL/DIA_LIBRE) y
+     * ausencias planificadas (planificacion_ausencias). Sin columnas de saldo ni totales.</p>
+     *
+     * @param desde          primer día del rango (?desde=yyyy-MM-dd)
+     * @param hasta          último día del rango (?hasta=yyyy-MM-dd)
+     * @param authentication objeto de seguridad para extraer username y rol
+     * @return HTML del resumen de ausencias
+     */
+    @GetMapping("/ausencias")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<Object> informeAusenciasGlobal(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+
+        String html = informeService.informeAusenciasGlobal(desde, hasta, authentication.getName());
+        return construirRespuesta(html, "html");
     }
 
     // =========================================================================

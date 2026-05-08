@@ -88,7 +88,8 @@ public class PresenciaService {
      */
     public ParteDiarioResponse obtenerParteDiario(LocalDate fecha) {
 
-        // --- Carga de datos: 4 queries planas ---
+        // --- Carga de datos: 5 queries planas ---
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
         List<Empleado> activos = empleadoRepository.findByActivo(true);
         Map<Long, Fichaje> fichajesPorEmpleado = fichajeRepository
                 .findByFechaWithEmpleado(fecha)
@@ -101,12 +102,27 @@ public class PresenciaService {
                 .collect(Collectors.toSet());
         List<PlanificacionAusencia> ausencias = ausenciaRepository
                 .findByFechaAndProcesadoFalse(fecha);
+        // Todas las pausas del dia agrupadas por empleado (activas y completadas)
+        Map<Long, List<DetallePresenciaResponse.PausaResumen>> pausasPorEmpleado =
+                pausaRepository.findByFechaWithEmpleado(fecha)
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                p -> p.getEmpleado().getId(),
+                                Collectors.mapping(p -> new DetallePresenciaResponse.PausaResumen(
+                                        p.getId(),
+                                        p.getHoraInicio() != null ? p.getHoraInicio().format(fmt) : null,
+                                        p.getHoraFin()    != null ? p.getHoraFin().format(fmt)    : null,
+                                        p.getTipoPausa()  != null ? p.getTipoPausa().name()        : null,
+                                        p.getDuracionMinutos()),
+                                        Collectors.toList())));
 
-        // Ausencias individuales por empleadoId (empleado != null)
-        Set<Long> ausenciaIndividualIds = ausencias.stream()
+        // Mapa empleadoId -> ausenciaId para ausencias individuales
+        Map<Long, Long> ausenciaIdPorEmpleado = ausencias.stream()
                 .filter(a -> a.getEmpleado() != null)
-                .map(a -> a.getEmpleado().getId())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(
+                        a -> a.getEmpleado().getId(),
+                        PlanificacionAusencia::getId,
+                        (a, b) -> a));  // si hubiera duplicado, mantener el primero
 
         // Festivo global: existe ausencia con empleado = null para esta fecha
         boolean festivoGlobal = ausencias.stream()
@@ -114,25 +130,28 @@ public class PresenciaService {
 
         // --- Clasificación en memoria ---
         List<DetallePresenciaResponse> detalle = new ArrayList<>();
-        int fichados = 0, enPausaCount = 0, ausenciasCount = 0, sinJustificarCount = 0;
+        int trabajandoCount = 0, enPausaCount = 0, ausenciasCount = 0, sinJustificarCount = 0, jornadaCompletadaCount = 0;
 
         for (Empleado emp : activos) {
             DetallePresenciaResponse fila = clasificarEmpleado(
                     emp, fichajesPorEmpleado.get(emp.getId()),
                     enPausaIds.contains(emp.getId()),
-                    ausenciaIndividualIds.contains(emp.getId()),
+                    ausenciaIdPorEmpleado.get(emp.getId()),
                     festivoGlobal);
+            fila.setPausas(pausasPorEmpleado.getOrDefault(emp.getId(), List.of()));
             detalle.add(fila);
 
             // Acumular contadores globales
             switch (fila.getEstado()) {
                 case EN_PAUSA:
                     enPausaCount++;
-                    fichados++;   // EN_PAUSA es subconjunto de fichados
+                    trabajandoCount++;   // EN_PAUSA: entrada sin salida
                     break;
                 case JORNADA_INICIADA:
+                    trabajandoCount++;
+                    break;
                 case JORNADA_COMPLETADA:
-                    fichados++;
+                    jornadaCompletadaCount++;
                     break;
                 case AUSENCIA_REGISTRADA:
                 case AUSENCIA_PLANIFICADA:
@@ -158,10 +177,11 @@ public class PresenciaService {
         return new ParteDiarioResponse(
                 fecha,
                 activos.size(),
-                fichados,
+                trabajandoCount,
                 enPausaCount,
                 ausenciasCount,
                 sinJustificarCount,
+                jornadaCompletadaCount,
                 detalle);
     }
 
@@ -186,45 +206,15 @@ public class PresenciaService {
      * @return lista de empleados sin justificación (puede ser vacía)
      */
     public List<SinJustificarResponse> obtenerSinJustificar(LocalDate fecha) {
-
-        // Reutiliza la misma lógica de carga que obtenerParteDiario
-        List<Empleado> activos = empleadoRepository.findByActivo(true);
-        Set<Long> conFichajeIds = fichajeRepository
-                .findByFechaWithEmpleado(fecha)
-                .stream()
-                .map(f -> f.getEmpleado().getId())
-                .collect(Collectors.toSet());
-        Set<Long> enPausaIds = pausaRepository
-                .findPausasActivasByFecha(fecha)
-                .stream()
-                .map(p -> p.getEmpleado().getId())
-                .collect(Collectors.toSet());
-        List<PlanificacionAusencia> ausencias = ausenciaRepository
-                .findByFechaAndProcesadoFalse(fecha);
-        Set<Long> ausenciaIndividualIds = ausencias.stream()
-                .filter(a -> a.getEmpleado() != null)
-                .map(a -> a.getEmpleado().getId())
-                .collect(Collectors.toSet());
-        boolean festivoGlobal = ausencias.stream()
-                .anyMatch(a -> a.getEmpleado() == null);
-
-        // Si hay festivo global, nadie está sin justificar:
-        // todos tienen AUSENCIA_PLANIFICADA aunque no tengan fichaje todavía.
-        if (festivoGlobal) {
-            return List.of();
-        }
-
-        // Filtra empleados sin ningún registro
-        return activos.stream()
-                .filter(emp -> !conFichajeIds.contains(emp.getId())
-                        && !enPausaIds.contains(emp.getId())
-                        && !ausenciaIndividualIds.contains(emp.getId()))
-                .map(emp -> new SinJustificarResponse(
-                        emp.getId(),
-                        emp.getNombre(),
-                        emp.getApellido1(),
-                        emp.getApellido2()))
-                .sorted((a, b) -> a.getApellido1().compareToIgnoreCase(b.getApellido1()))
+        // Reutiliza la clasificación exacta de obtenerParteDiario para garantizar
+        // que el chip "Sin justificar: N" y esta lista siempre coincidan.
+        return obtenerParteDiario(fecha).getDetalle().stream()
+                .filter(d -> d.getEstado() == EstadoPresencia.SIN_JUSTIFICAR)
+                .map(d -> new SinJustificarResponse(
+                        d.getEmpleadoId(),
+                        d.getNombre(),
+                        d.getApellido1(),
+                        d.getApellido2()))
                 .collect(Collectors.toList());
     }
 
@@ -269,22 +259,24 @@ public class PresenciaService {
         List<PlanificacionAusencia> ausencias = ausenciaRepository
                 .findByFechaAndProcesadoFalse(fecha);
 
-        boolean tieneAusenciaIndividual = ausencias.stream()
-                .filter(a -> a.getEmpleado() != null)
-                .anyMatch(a -> a.getEmpleado().getId().equals(emp.getId()));
+        Long ausenciaId = ausencias.stream()
+                .filter(a -> a.getEmpleado() != null && a.getEmpleado().getId().equals(emp.getId()))
+                .map(PlanificacionAusencia::getId)
+                .findFirst().orElse(null);
 
         boolean festivoGlobal = ausencias.stream()
                 .anyMatch(a -> a.getEmpleado() == null);
 
         DetallePresenciaResponse response = clasificarEmpleado(
-                emp, fichaje, enPausa, tieneAusenciaIndividual, festivoGlobal);
+                emp, fichaje, enPausa, ausenciaId, festivoGlobal);
 
         // Cargar pausas del dia para mostrarlas en P12 (Mi hoy)
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
         List<DetallePresenciaResponse.PausaResumen> pausasHoy = pausaRepository
                 .findByEmpleadoIdAndFecha(emp.getId(), fecha)
                 .stream()
                 .map(p -> new DetallePresenciaResponse.PausaResumen(
+                        p.getId(),
                         p.getHoraInicio() != null ? p.getHoraInicio().format(fmt) : null,
                         p.getHoraFin() != null ? p.getHoraFin().format(fmt) : null,
                         p.getTipoPausa() != null ? p.getTipoPausa().name() : null,
@@ -318,7 +310,7 @@ public class PresenciaService {
      * @param emp                   empleado a clasificar
      * @param fichaje               fichaje del día, null si no existe
      * @param enPausa               true si tiene pausa activa en este momento
-     * @param tieneAusenciaIndividual true si tiene ausencia planificada individual
+     * @param ausenciaId  ID de la ausencia planificada individual, null si no existe
      * @param festivoGlobal         true si hay festivo global para este día
      * @return DetallePresenciaResponse con el estado calculado y los campos del fichaje
      */
@@ -326,7 +318,7 @@ public class PresenciaService {
             Empleado emp,
             Fichaje fichaje,
             boolean enPausa,
-            boolean tieneAusenciaIndividual,
+            Long ausenciaId,
             boolean festivoGlobal) {
 
         EstadoPresencia estado;
@@ -347,7 +339,7 @@ public class PresenciaService {
                 // (VACACIONES, BAJA_MEDICA, etc. generadas por ProcesoCierreDiario)
                 estado = EstadoPresencia.AUSENCIA_REGISTRADA;
             }
-        } else if (tieneAusenciaIndividual || festivoGlobal) {
+        } else if (ausenciaId != null || festivoGlobal) {
             // Prioridad 5: ausencia planificada (proceso nocturno no ha actuado aún)
             estado = EstadoPresencia.AUSENCIA_PLANIFICADA;
         } else {
@@ -365,6 +357,10 @@ public class PresenciaService {
                 fichaje != null ? fichaje.getHoraSalida() : null,
                 pausaActiva,
                 fichaje != null ? fichaje.getTipo() : null,
-                null);   // pausas: solo se rellena en E37 via obtenerMiPresencia()
+                null,                                                        // pausas: solo en E37
+                fichaje != null ? fichaje.getId() : null,                    // fichajeId
+                ausenciaId,                                                  // ausenciaId
+                fichaje != null ? fichaje.getJornadaEfectivaMinutos() : null // jornadaEfectivaMinutos
+        );
     }
 }

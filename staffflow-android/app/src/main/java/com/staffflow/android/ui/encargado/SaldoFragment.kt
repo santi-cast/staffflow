@@ -15,13 +15,15 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.chip.Chip
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.SaldoResponse
-import com.staffflow.android.databinding.FragmentSaldoIndividualBinding
+import com.staffflow.android.databinding.FragmentSaldoBinding
 import com.staffflow.android.databinding.ItemSaldoFilaBinding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -40,12 +42,12 @@ import java.util.Calendar
  * Selector de año en la toolbar.
  * saldoHoras: verde si >= 0, rojo si < 0.
  */
-class SaldoIndividualFragment : Fragment() {
+class SaldoFragment : Fragment() {
 
-    private var _binding: FragmentSaldoIndividualBinding? = null
+    private var _binding: FragmentSaldoBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: SaldoIndividualViewModel by viewModels()
+    private val viewModel: SaldoViewModel by viewModels()
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -56,7 +58,7 @@ class SaldoIndividualFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentSaldoIndividualBinding.inflate(inflater, container, false)
+        _binding = FragmentSaldoBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -83,16 +85,13 @@ class SaldoIndividualFragment : Fragment() {
         val menuHost: MenuHost = requireActivity()
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
-                inflater.inflate(R.menu.menu_saldo_individual, menu)
-                menu.findItem(R.id.action_anio)?.title = viewModel.anio.value.toString()
+                inflater.inflate(R.menu.menu_saldo, menu)
+                val chip = menu.findItem(R.id.action_anio)
+                    ?.actionView?.findViewById<Chip>(R.id.chipAnio)
+                chip?.text = "${viewModel.anio.value} ▾"
+                chip?.setOnClickListener { mostrarSelectorAnio() }
             }
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                if (item.itemId == R.id.action_anio) {
-                    mostrarSelectorAnio()
-                    return true
-                }
-                return false
-            }
+            override fun onMenuItemSelected(item: MenuItem) = false
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -137,14 +136,14 @@ class SaldoIndividualFragment : Fragment() {
             .show()
     }
 
-    private fun procesarRecalcular(estado: SaldoIndividualViewModel.RecalcularState) {
-        binding.btnRecalcular.isEnabled = estado !is SaldoIndividualViewModel.RecalcularState.Loading
+    private fun procesarRecalcular(estado: SaldoViewModel.RecalcularState) {
+        binding.btnRecalcular.isEnabled = estado !is SaldoViewModel.RecalcularState.Loading
         when (estado) {
-            is SaldoIndividualViewModel.RecalcularState.Success -> {
+            is SaldoViewModel.RecalcularState.Success -> {
                 Snackbar.make(binding.root, R.string.saldo_recalcular_exito, Snackbar.LENGTH_SHORT).show()
                 viewModel.resetRecalcularState()
             }
-            is SaldoIndividualViewModel.RecalcularState.Error -> {
+            is SaldoViewModel.RecalcularState.Error -> {
                 Snackbar.make(binding.root, estado.mensaje, Snackbar.LENGTH_LONG).show()
                 viewModel.resetRecalcularState()
             }
@@ -152,14 +151,30 @@ class SaldoIndividualFragment : Fragment() {
         }
     }
 
-    private fun procesarEstado(estado: SaldoIndividualViewModel.UiState) {
-        binding.progressIndicator.isVisible = estado is SaldoIndividualViewModel.UiState.Loading
-        binding.layoutError.isVisible        = estado is SaldoIndividualViewModel.UiState.Error
-        binding.scrollContenido.isVisible    = estado is SaldoIndividualViewModel.UiState.Success
+    private fun procesarEstado(estado: SaldoViewModel.UiState) {
+        binding.progressIndicator.isVisible = estado is SaldoViewModel.UiState.Loading
+        binding.layoutError.isVisible        = estado is SaldoViewModel.UiState.Error
+                                            || estado is SaldoViewModel.UiState.Empty
+        binding.scrollContenido.isVisible    = estado is SaldoViewModel.UiState.Success
 
         when (estado) {
-            is SaldoIndividualViewModel.UiState.Error   -> binding.tvErrorMensaje.text = estado.mensaje
-            is SaldoIndividualViewModel.UiState.Success -> mostrarSaldo(estado.saldo)
+            is SaldoViewModel.UiState.Error -> {
+                binding.tvErrorMensaje.text = estado.mensaje
+                binding.btnReintentar.isVisible = true
+                binding.btnRecalcular.isVisible = true
+            }
+            is SaldoViewModel.UiState.Empty -> {
+                binding.tvErrorMensaje.text = "No hay datos de saldo para el año ${estado.anio}."
+                binding.btnReintentar.isVisible = false
+                binding.btnRecalcular.isVisible = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    delay(2500)
+                    val anioActual = Calendar.getInstance().get(Calendar.YEAR)
+                    viewModel.setAnio(anioActual)
+                    requireActivity().invalidateOptionsMenu()
+                }
+            }
+            is SaldoViewModel.UiState.Success -> mostrarSaldo(estado.saldo)
             else -> Unit
         }
     }
@@ -169,19 +184,26 @@ class SaldoIndividualFragment : Fragment() {
     // ------------------------------------------------------------------
 
     private fun mostrarSaldo(saldo: SaldoResponse) {
+        val anio = saldo.anio
+        binding.tvTituloVacaciones.text = "Vacaciones · $anio"
+        binding.tvTituloAsuntos.text    = "Asuntos propios · $anio"
+        binding.tvTituloHoras.text      = "Horas · $anio"
+
         val vac = saldo.vacaciones
-        setFila(binding.filaVacacionesAnterior,  "Derecho año anterior",    "${vac.pendientesAnterior} días")
-        setFila(binding.filaVacacionesAnual,     "Derecho anual",           "${vac.derechoAnio} días")
-        setFila(binding.filaVacacionesAnoCurso,  "Derecho total año en curso",    "${vac.pendientesAnterior + vac.derechoAnio} días")
-        setFila(binding.filaVacacionesConsumidos,"Consumidos año en curso",      "${vac.consumidos} días")
-        setFila(binding.filaVacacionesDisponibles,"Disponibles año en curso",    "${vac.disponibles} días")
+        setFila(binding.filaVacacionesAnterior,  "Disponibles año anterior",    "${vac.pendientesAnterior} días")
+        setFila(binding.filaVacacionesAnual,     "Derecho anual",               "${vac.derechoAnio} días")
+        setFila(binding.filaVacacionesAnoCurso,  "Derecho total año en curso",  "${vac.pendientesAnterior + vac.derechoAnio} días")
+        setFila(binding.filaVacacionesConsumidos,"Consumidos año en curso",     "${vac.consumidos} días")
+        setFila(binding.filaVacacionesDisponibles,"Disponibles año en curso",   "${vac.disponibles} días")
+        setFila(binding.filaVacacionesPendientesPlanificar, "Pendientes por planificar", "${vac.pendientesPlanificar} días")
 
         val ap = saldo.asuntosPropios
-        setFila(binding.filaAsuntosAnterior,  "Derecho año anterior",           "${ap.pendientesAnterior} días")
-        setFila(binding.filaAsuntosAnual,     "Derecho anual",                  "${ap.derechoAnio} días")
+        setFila(binding.filaAsuntosAnterior,  "Disponibles año anterior",      "${ap.pendientesAnterior} días")
+        setFila(binding.filaAsuntosAnual,     "Derecho anual",                 "${ap.derechoAnio} días")
         setFila(binding.filaAsuntosAnoCurso,  "Derecho total año en curso",     "${ap.pendientesAnterior + ap.derechoAnio} días")
         setFila(binding.filaAsuntosConsumidos,"Consumidos año en curso",        "${ap.consumidos} días")
         setFila(binding.filaAsuntosDisponibles,"Disponibles año en curso",      "${ap.disponibles} días")
+        setFila(binding.filaAsuntosPendientesPlanificar, "Pendientes por planificar", "${ap.pendientesPlanificar} días")
 
         val h = saldo.horas
         setFila(binding.filaHorasEsperadas,  getString(R.string.saldo_esperadas),  formatHoras(h.esperadas))
@@ -205,6 +227,6 @@ class SaldoIndividualFragment : Fragment() {
 
     private fun formatSaldoHoras(horas: Double): String {
         val signo = if (horas >= 0) "+" else ""
-        return "$signo${String.format("%.1f", horas)} h"
+        return "$signo${String.format("%.2f", horas)} h"
     }
 }

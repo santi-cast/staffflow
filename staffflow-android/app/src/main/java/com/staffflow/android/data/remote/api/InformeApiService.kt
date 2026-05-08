@@ -35,6 +35,17 @@ import retrofit2.http.Streaming
 interface InformeApiService {
 
     /**
+     * E-me - Informe de horas del empleado autenticado en HTML.
+     * Solo accesible con rol EMPLEADO. P10 (MisFichajesFragment) lo usa para
+     * mostrar la vista de fichajes en WebView.
+     */
+    @GET("informes/me/horas")
+    suspend fun getMisHorasHtml(
+        @Query("desde") desde: String,
+        @Query("hasta") hasta: String
+    ): Response<ResponseBody>
+
+    /**
      * E42 - Informe de horas de un empleado en HTML (para PrintManager y WebView).
      * El parametro formato=html es obligatorio aqui (el defecto del backend es json).
      */
@@ -103,5 +114,25 @@ interface InformeApiService {
     suspend fun getPdfVacaciones(
         @Query("empleadoId") empleadoId: Long,
         @Query("anio") anio: Int
+    ): Response<ResponseBody>
+
+    /**
+     * E-Semana - Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados.
+     * ResumenSemanalFragment la carga en WebView con intercepciones staffflow://.
+     */
+    @GET("informes/semana")
+    suspend fun getInformeSemana(
+        @Query("desde") desde: String,
+        @Query("hasta") hasta: String
+    ): Response<ResponseBody>
+
+    /**
+     * E-ausencias-global - Tabla HTML de ausencias de todos los empleados en un rango.
+     * AusenciasFragment la carga en WebView con intercepciones staffflow://.
+     */
+    @GET("informes/ausencias")
+    suspend fun getInformeAusenciasGlobal(
+        @Query("desde") desde: String,
+        @Query("hasta") hasta: String
     ): Response<ResponseBody>
 }

@@ -5,7 +5,7 @@ package com.staffflow.domain.enums;
  *
  * Usado en la tabla planificacion_ausencias. Representa ausencias conocidas
  * con antelación que serán convertidas automáticamente en fichajes por el
- * proceso diario (@Scheduled 00:01).
+ * proceso diario (@Scheduled 23:55).
  *
  * Distinción clave (decisión de diseño nº7):
  *   - Ausencia PLANIFICADA → va a planificacion_ausencias con este enum.

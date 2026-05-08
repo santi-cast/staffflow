@@ -12,7 +12,9 @@ import com.staffflow.android.databinding.ItemSinJustificarBinding
  *
  * Lista de solo lectura. Muestra nombre completo de cada empleado.
  */
-class SinJustificarAdapter : ListAdapter<SinJustificarResponse, SinJustificarAdapter.ViewHolder>(DiffCallback()) {
+class SinJustificarAdapter(
+    private val onEmpleadoClick: (empleadoId: Long) -> Unit
+) : ListAdapter<SinJustificarResponse, SinJustificarAdapter.ViewHolder>(DiffCallback()) {
 
     inner class ViewHolder(private val binding: ItemSinJustificarBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -20,6 +22,7 @@ class SinJustificarAdapter : ListAdapter<SinJustificarResponse, SinJustificarAda
         fun bind(item: SinJustificarResponse) {
             val apellido2 = if (!item.apellido2.isNullOrBlank()) " ${item.apellido2}" else ""
             binding.tvNombreCompleto.text = "${item.nombre} ${item.apellido1}$apellido2"
+            binding.root.setOnClickListener { onEmpleadoClick(item.empleadoId) }
         }
     }
 

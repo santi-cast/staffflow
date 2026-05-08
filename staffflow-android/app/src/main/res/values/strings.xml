@@ -34,6 +34,12 @@
     <!-- P17 Parte diario -->
     <string name="parte_diario_selector_fecha_titulo">Selecciona una fecha</string>
     <string name="parte_diario_vacio">No hay empleados registrados hoy</string>
+    <string name="parte_diario_chip_dia_completo">✓ Todos los empleados con día completo</string>
+    <string name="parte_diario_chip_sin_completar">⚠ Quedan empleados por completar el día</string>
+    <string name="parte_diario_banner_bloqueado">⚠ Terminal bloqueado por intentos fallidos de PIN</string>
+    <string name="parte_diario_btn_desbloquear">Desbloquear</string>
+    <string name="parte_diario_dialogo_desbloquear_titulo">Desbloquear terminal</string>
+    <string name="parte_diario_dialogo_desbloquear_mensaje">El terminal está bloqueado por 5 intentos fallidos de PIN. ¿Quieres desbloquearlo?</string>
 
     <!-- Comun -->
     <string name="reintentar">Reintentar</string>
@@ -59,6 +65,16 @@
     <string name="confirmacion_estado_en_pausa">Entrada a las %1$s · Pausa (%2$s) desde las %3$s</string>
     <string name="confirmacion_estado_jornada_cerrada">Entrada: %1$s · Salida: %2$s</string>
     <string name="confirmacion_jornada_completada">Tu jornada de hoy ya está cerrada</string>
+
+    <!-- P02 Login — dialogo cambio de IP -->
+    <string name="dialogo_ip_titulo">No se pudo conectar al servidor</string>
+    <string name="dialogo_ip_mensaje">Introduce la IP del servidor para continuar.</string>
+    <string name="dialogo_ip_hint">IP del servidor</string>
+    <string name="dialogo_ip_btn_probar">Probar conexión</string>
+    <string name="dialogo_ip_btn_guardar">Guardar y continuar</string>
+    <string name="dialogo_ip_resultado_ok">Conexión exitosa</string>
+    <string name="dialogo_ip_resultado_error">No se pudo conectar</string>
+    <string name="dialogo_ip_cancelar">Cancelar</string>
 
     <!-- P02 Login -->
     <string name="login_subtitulo">Acceso para empleados</string>
@@ -98,9 +114,10 @@
 
     <!-- P14 Detalle de empleado -->
     <string name="detalle_empleado_activo">Activo</string>
-    <string name="detalle_empleado_baja">Baja</string>
+    <string name="detalle_empleado_baja">No activo</string>
     <string name="detalle_empleado_ver_saldo">Ver saldo</string>
     <string name="detalle_empleado_ver_fichajes">Ver fichajes</string>
+    <string name="detalle_empleado_ver_ausencias">Ver ausencias</string>
     <string name="detalle_empleado_editar">Editar empleado</string>
     <string name="detalle_empleado_pin">PIN terminal</string>
 
@@ -140,6 +157,13 @@
     <!-- P23 Lista de ausencias -->
     <string name="ausencias_vacio">No hay ausencias en este periodo</string>
     <string name="ausencias_fab_desc">Nueva ausencia</string>
+    <string name="ausencias_anadir">Añadir ausencia</string>
+    <string name="ausencias_anadir_con_seleccion">✓ Añadir ausencia (%d días)</string>
+    <string name="ausencias_anadir_festivo">Añadir festivo</string>
+    <string name="ausencias_anadir_festivo_con_seleccion">✓ Añadir festivo (%d días)</string>
+    <string name="ausencias_seleccion_no_consecutiva">Los días deben ser consecutivos</string>
+    <string name="ausencias_mes_anterior">Mes anterior</string>
+    <string name="ausencias_mes_siguiente">Mes siguiente</string>
     <string name="ausencias_selector_rango_titulo">Selecciona el periodo</string>
     <string name="ausencias_menu_rango_fechas">Periodo</string>
 
@@ -165,9 +189,15 @@
     <!-- P08 Mi perfil (empleado) -->
     <string name="mi_perfil_datos_personales">Datos personales</string>
     <string name="mi_perfil_condiciones">Condiciones laborales</string>
-    <string name="mi_perfil_horas_semanales">%d horas semanales</string>
-    <string name="mi_perfil_dias_anio">%d días al año</string>
-    <string name="mi_perfil_cambiar_password">Cambiar contraseña</string>
+    <string name="mi_perfil_jornada_label">Jornada semanal</string>
+    <string name="mi_perfil_jornada_valor">%d horas</string>
+    <string name="mi_perfil_jornada_caption">Tu carga horaria semanal según contrato</string>
+    <string name="mi_perfil_vacaciones_label">Vacaciones</string>
+    <string name="mi_perfil_vacaciones_valor">%d días</string>
+    <string name="mi_perfil_vacaciones_caption">Días de vacaciones anuales a los que tienes derecho</string>
+    <string name="mi_perfil_asuntos_label">Asuntos propios</string>
+    <string name="mi_perfil_asuntos_valor">%d días</string>
+    <string name="mi_perfil_asuntos_caption">Días de ausencia por asuntos personales anuales</string>
 
     <!-- P34 Configuracion empresa -->
     <string name="empresa_hint_nombre">Nombre de empresa</string>
@@ -200,6 +230,9 @@
     <string name="mis_ausencias_vacio">No hay ausencias en este periodo</string>
     <string name="mis_ausencias_selector_rango_titulo">Selecciona el periodo</string>
     <string name="mis_ausencias_menu_rango_fechas">Periodo</string>
+    <string name="mis_ausencias_chip_filtro_todas">Todas</string>
+    <string name="mis_ausencias_chip_filtro_vac_ap">Vacaciones/Asuntos propios</string>
+    <string name="cargando">Cargando&#8230;</string>
 
     <!-- P10 Mis fichajes (empleado) -->
     <string name="mis_fichajes_vacio">No hay fichajes en este periodo</string>
@@ -218,6 +251,12 @@
     <string name="form_ausencia_dialogo_eliminar_mensaje">¿Estás seguro de que quieres eliminar esta ausencia? Esta acción no se puede deshacer.</string>
     <string name="form_ausencia_dialogo_cancelar">Cancelar</string>
     <string name="form_ausencia_dialogo_confirmar">Eliminar</string>
+    <string name="form_ausencia_hint_fecha_desde">Desde (yyyy-MM-dd)</string>
+    <string name="form_ausencia_hint_fecha_hasta">Hasta (yyyy-MM-dd)</string>
+    <string name="form_ausencia_dialogo_conflicto_titulo">Ausencias ya registradas</string>
+    <string name="form_ausencia_dialogo_conflicto_mensaje">Hay %d día(s) con ausencias existentes. ¿Sobrescribirlas?</string>
+    <string name="form_ausencia_dialogo_conflicto_sobrescribir">Sobrescribir</string>
+    <string name="form_ausencia_eliminada">Ausencia eliminada correctamente</string>
 
     <!-- P28 Informes -->
     <string name="informes_selector_rango_titulo">Selecciona el rango de fechas</string>
@@ -229,6 +268,7 @@
     <string name="recovery_descripcion">Introduce tu email y te enviaremos instrucciones para recuperar tu contraseña.</string>
     <string name="recovery_hint_email">Email</string>
     <string name="recovery_btn_enviar">Enviar instrucciones</string>
+    <string name="recovery_btn_volver_login">Volver al login</string>
     <string name="recovery_error_email_vacio">Introduce tu email</string>
     <string name="recovery_confirmacion_titulo">¡Correo enviado!</string>
     <string name="recovery_confirmacion_mensaje">Si el email está registrado recibirás un correo con instrucciones para recuperar tu contraseña.</string>

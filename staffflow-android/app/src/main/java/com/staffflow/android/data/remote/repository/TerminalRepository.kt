@@ -1,6 +1,7 @@
 package com.staffflow.android.data.remote.repository
 
 import com.staffflow.android.data.remote.api.TerminalApiService
+import com.staffflow.android.data.remote.dto.TerminalBloqueoResponse
 import com.staffflow.android.data.remote.dto.TerminalEntradaResponse
 import com.staffflow.android.data.remote.dto.TerminalEstadoResponse
 import com.staffflow.android.data.remote.dto.TerminalPausaResponse
@@ -60,4 +61,18 @@ class TerminalRepository(private val api: TerminalApiService) {
      */
     suspend fun finalizarPausa(request: TerminalPinRequest): Result<TerminalPausaResponse> =
         safeApiCall { api.finalizarPausa(request) }
+
+    /**
+     * E53 - Consulta si hay algún dispositivo bloqueado por intentos fallidos de PIN.
+     * Requiere JWT (ENCARGADO o ADMIN). Llamado desde ParteDiarioViewModel al cargar.
+     */
+    suspend fun hayTerminalBloqueado(): Result<TerminalBloqueoResponse> =
+        safeApiCall { api.getBloqueo() }
+
+    /**
+     * E54 - Desbloquea el terminal reseteando todos los contadores de intentos fallidos.
+     * Requiere JWT (ENCARGADO o ADMIN). Devuelve { "bloqueado": false } tras el reset.
+     */
+    suspend fun desbloquearTerminal(): Result<TerminalBloqueoResponse> =
+        safeApiCall { api.deleteBloqueo() }
 }

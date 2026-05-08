@@ -18,6 +18,7 @@ import com.staffflow.android.domain.model.TipoFichaje
  * @param onClick Callback llamado al pulsar un item. FichajesFragment navega a P20 edicion.
  */
 class FichajeAdapter(
+    private val mostrarNombre: Boolean = false,
     private val onClick: (FichajeResponse) -> Unit
 ) : ListAdapter<FichajeResponse, FichajeAdapter.ViewHolder>(DiffCallback()) {
 
@@ -33,6 +34,9 @@ class FichajeAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
+        holder.binding.tvNombre.visibility = if (mostrarNombre && item.nombreCompleto != null)
+            android.view.View.VISIBLE else android.view.View.GONE
+        holder.binding.tvNombre.text = item.nombreCompleto ?: ""
         holder.binding.tvFecha.text = formatearFecha(item.fecha)
         holder.binding.tvTipo.text = tipoLegible(item.tipo)
         holder.binding.tvHorario.text = buildString {

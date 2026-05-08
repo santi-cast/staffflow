@@ -43,12 +43,12 @@ sealed class ConfirmacionUiState {
         val nombre: String,
         val horaEntrada: String? = null,
         val horaSalida: String? = null,
-        val totalPausasMinutos: Int? = null,
+        val totalPausasSegundos: Int? = null,
         val numeroPausas: Int? = null,
-        val jornadaEfectivaMinutos: Int? = null,
+        val jornadaEfectivaSegundos: Int? = null,
         val horaInicioPausa: String? = null,
         val horaFinPausa: String? = null,
-        val duracionPausaMinutos: Int? = null,
+        val duracionPausaSegundos: Int? = null,
         val tipoPausa: TipoPausa? = null
     ) : ConfirmacionUiState()
 
@@ -146,9 +146,9 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
                                 nombre = resp.nombre,
                                 horaEntrada = resp.horaEntrada,
                                 horaSalida = resp.horaSalida,
-                                totalPausasMinutos = resp.totalPausasMinutos,
+                                totalPausasSegundos = resp.totalPausasSegundos,
                                 numeroPausas = resp.numeroPausas,
-                                jornadaEfectivaMinutos = resp.jornadaEfectivaMinutos
+                                jornadaEfectivaSegundos = resp.jornadaEfectivaSegundos
                             )
                         },
                         onFailure = { _uiState.value = ConfirmacionUiState.Error(it.message ?: "Error") }
@@ -186,7 +186,7 @@ class ConfirmacionViewModel(application: Application) : AndroidViewModel(applica
                                 nombre = resp.nombre,
                                 horaInicioPausa = resp.horaInicioPausa,
                                 horaFinPausa = resp.horaFinPausa,
-                                duracionPausaMinutos = resp.duracionPausaMinutos
+                                duracionPausaSegundos = resp.duracionPausaSegundos
                             )
                         },
                         onFailure = { _uiState.value = ConfirmacionUiState.Error(it.message ?: "Error") }

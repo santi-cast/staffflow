@@ -26,12 +26,20 @@
         android:gravity="center_vertical"
         android:padding="12dp">
 
-        <!-- Fecha y tipo -->
+        <!-- Fecha, nombre y tipo -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tvFecha"

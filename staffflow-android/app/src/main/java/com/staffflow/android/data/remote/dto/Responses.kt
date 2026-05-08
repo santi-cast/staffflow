@@ -60,7 +60,8 @@ data class EmpleadoResponse(
     val diasAsuntosPropiosAnuales: Int,
     val codigoNfc: String?,
     val activo: Boolean,
-    val pinTerminal: String? = null  // Solo presente en E13 (crear) y E15 (detalle por id)
+    val pinTerminal: String? = null,  // Solo presente en E13 (crear) y E15 (detalle por id)
+    val email: String? = null         // Solo presente en E15 (detalle por id), solo para ADMIN
 )
 
 /**
@@ -97,7 +98,8 @@ data class FichajeResponse(
     val jornadaEfectivaMinutos: Int,
     val usuarioId: Long,
     val observaciones: String?,
-    val fechaCreacion: String
+    val fechaCreacion: String,
+    val nombreCompleto: String? = null
 )
 
 /**
@@ -159,18 +161,24 @@ data class SaldoResponse(
         val derechoAnio: Int,
         val pendientesAnterior: Int,
         val consumidos: Int,
-        val disponibles: Int
+        val disponibles: Int,
+        val pendientesPlanificar: Int
     )
     data class AsuntosPropiosDesglose(
         val derechoAnio: Int,
         val pendientesAnterior: Int,
         val consumidos: Int,
-        val disponibles: Int
+        val disponibles: Int,
+        val pendientesPlanificar: Int
     )
     data class HorasDesglose(
         val esperadas: Double,
         val trabajadas: Double,
-        val saldoHoras: Double
+        val saldoHoras: Double,
+        val diasTrabajados: Int,
+        val diasBajaMedica: Int,
+        val diasPermisoRetribuido: Int,
+        val diasAusenciaInjustificada: Int
     )
 }
 
@@ -184,10 +192,11 @@ data class SaldoResponse(
 data class ParteDiarioResponse(
     val fecha: String,
     val totalEmpleados: Int,
-    val fichados: Int,
+    val trabajando: Int,
     val enPausa: Int,
     val ausencias: Int,
     val sinJustificar: Int,
+    val jornadaCompletada: Int = 0,
     val detalle: List<DetallePresenciaResponse>
 )
 
@@ -209,13 +218,17 @@ data class DetallePresenciaResponse(
     val horaSalida: String?,
     val pausaActiva: Boolean,
     val fichajeTipo: TipoFichaje?,
-    val pausas: List<PausaResumen>? = null
+    val pausas: List<PausaResumen>? = null,
+    val fichajeId: Long? = null,
+    val ausenciaId: Long? = null,
+    val jornadaEfectivaMinutos: Int? = null
 ) {
     /**
      * Resumen de una pausa del dia (solo en E37).
      * horaFin y duracionMinutos son null si la pausa sigue activa.
      */
     data class PausaResumen(
+        val id: Long? = null,
         val horaInicio: String?,
         val horaFin: String?,
         val tipoPausa: String?,
@@ -253,6 +266,33 @@ data class ErrorResponse(
 )
 
 /**
+ * Cuerpo del 409 de POST /ausencias/rango cuando hay conflictos y sobrescribir=false.
+ */
+data class RangoConflictResponse(
+    val error: String?,
+    val fechasConflictivas: List<String>?
+)
+
+/**
+ * Respuesta de GET /ausencias/planificacion-vac-ap.
+ *
+ * Muestra cuántos días de vacaciones y asuntos propios quedan por planificar.
+ * anioFuturoSinCierre=true indica que el saldo fue creado on-demand (sin cierre
+ * anual previo) y los pendientes del año anterior no están incluidos aún.
+ */
+data class PlanificacionVacApResponse(
+    val vacaciones: VacAp,
+    val asuntosPropios: VacAp,
+    val anioFuturoSinCierre: Boolean
+) {
+    data class VacAp(
+        val disponibles: Int,
+        val planificados: Int,
+        val pendientesPlanificar: Int
+    )
+}
+
+/**
  * Respuesta al consultar el estado del dia por PIN (E52 POST /terminal/estado).
  * Devuelta por P06 (ConfirmacionFragment) antes de seleccionar la accion.
  * Las horas vienen formateadas como "HH:mm" desde el backend.
@@ -284,9 +324,9 @@ data class TerminalSalidaResponse(
     val nombre: String,
     val horaEntrada: String,
     val horaSalida: String,
-    val totalPausasMinutos: Int,
+    val totalPausasSegundos: Int,
     val numeroPausas: Int,
-    val jornadaEfectivaMinutos: Int,
+    val jornadaEfectivaSegundos: Int,
     val mensaje: String
 )
 
@@ -301,6 +341,14 @@ data class TerminalPausaResponse(
     val nombre: String,
     val horaInicioPausa: String?,
     val horaFinPausa: String?,
-    val duracionPausaMinutos: Int?,
+    val duracionPausaSegundos: Int?,
     val mensaje: String
+)
+
+/**
+ * Respuesta de E53 GET /terminal/bloqueo y E54 DELETE /terminal/bloqueo.
+ * Requiere JWT (ENCARGADO o ADMIN). Usado desde ParteDiarioFragment.
+ */
+data class TerminalBloqueoResponse(
+    val bloqueado: Boolean
 )

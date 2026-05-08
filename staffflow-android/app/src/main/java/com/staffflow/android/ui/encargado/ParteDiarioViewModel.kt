@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.PresenciaApiService
+import com.staffflow.android.data.remote.api.TerminalApiService
 import com.staffflow.android.data.remote.dto.ParteDiarioResponse
 import com.staffflow.android.data.remote.repository.PresenciaRepository
+import com.staffflow.android.data.remote.repository.TerminalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +29,9 @@ class ParteDiarioViewModel(application: Application) : AndroidViewModel(applicat
     private val repository = PresenciaRepository(
         NetworkModule.retrofit.create(PresenciaApiService::class.java)
     )
+    private val terminalRepository = TerminalRepository(
+        NetworkModule.retrofit.create(TerminalApiService::class.java)
+    )
 
     sealed class UiState {
         object Loading : UiState()
@@ -46,8 +51,13 @@ class ParteDiarioViewModel(application: Application) : AndroidViewModel(applicat
     /** Estado de la UI. ParteDiarioFragment observa este flow. */
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+    private val _terminalBloqueado = MutableStateFlow(false)
+    /** true si hay algún dispositivo de terminal bloqueado por intentos fallidos de PIN. */
+    val terminalBloqueado: StateFlow<Boolean> = _terminalBloqueado.asStateFlow()
+
     init {
         cargarParteDiario()
+        consultarBloqueoTerminal()
     }
 
     /**
@@ -61,7 +71,28 @@ class ParteDiarioViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /** Recarga el parte diario con la fecha actual. Llamado desde el boton Reintentar y pull-to-refresh. */
-    fun reintentar() = cargarParteDiario()
+    fun reintentar() {
+        cargarParteDiario()
+        consultarBloqueoTerminal()
+    }
+
+    /** Consulta al backend si hay algún terminal bloqueado. Fallo silencioso — no bloquea la UI. */
+    private fun consultarBloqueoTerminal() {
+        viewModelScope.launch {
+            terminalRepository.hayTerminalBloqueado().onSuccess {
+                _terminalBloqueado.value = it.bloqueado
+            }
+        }
+    }
+
+    /** Desbloquea el terminal y actualiza el estado del banner. */
+    fun desbloquearTerminal() {
+        viewModelScope.launch {
+            terminalRepository.desbloquearTerminal().onSuccess {
+                _terminalBloqueado.value = it.bloqueado
+            }
+        }
+    }
 
     private fun cargarParteDiario() {
         viewModelScope.launch {
@@ -72,6 +103,7 @@ class ParteDiarioViewModel(application: Application) : AndroidViewModel(applicat
             val fechaParam = if (_fecha.value == hoy()) null else _fecha.value
             repository.getParteDiario(fechaParam).fold(
                 onSuccess = { resp ->
+                    _fecha.value = resp.fecha  // sincronizar con la fecha real del backend
                     _uiState.value = if (resp.detalle.isEmpty()) UiState.Empty
                                      else UiState.Success(resp)
                 },

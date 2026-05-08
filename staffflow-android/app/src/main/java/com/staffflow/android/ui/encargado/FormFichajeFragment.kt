@@ -6,6 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -58,6 +62,10 @@ class FormFichajeFragment : Fragment() {
 
     private val viewModel: FormFichajeViewModel by viewModels()
 
+    // Guarda la fecha en formato yyyy-MM-dd para enviar al backend.
+    // El campo etFecha muestra DD/MM/YYYY (solo visual) y queda bloqueado.
+    private var fechaInternal: String? = null
+
     private val saldoRepository by lazy {
         SaldoRepository(NetworkModule.retrofit.create(SaldoApiService::class.java))
     }
@@ -86,6 +94,13 @@ class FormFichajeFragment : Fragment() {
         val pausaId = args.getLong("pausaId", -1L)
 
         viewModel.init(variante, fichajeId, pausaId)
+
+        requireActivity().title = when {
+            viewModel.modoEdicion && variante == FormFichajeViewModel.Variante.FICHAJE -> "Editar fichaje"
+            viewModel.modoEdicion && variante == FormFichajeViewModel.Variante.PAUSA   -> "Editar pausa"
+            variante == FormFichajeViewModel.Variante.PAUSA                            -> "Nueva pausa"
+            else                                                                       -> "Nuevo fichaje"
+        }
 
         configurarDropdowns()
         configurarVisibilidadVariante(variante)
@@ -124,16 +139,21 @@ class FormFichajeFragment : Fragment() {
     private fun preRellenarCampos(args: Bundle, variante: FormFichajeViewModel.Variante) {
         args.getLong("empleadoId", -1L).takeIf { it > 0L }?.let {
             binding.etEmpleadoId.setText(it.toString())
+            binding.etEmpleadoId.isEnabled = false
         }
-        args.getString("fecha")?.let { binding.etFecha.setText(it) }
+        args.getString("fecha")?.let {
+            fechaInternal = it
+            binding.etFecha.setText(formatearFechaDisplay(it))
+            binding.etFecha.isEnabled = false
+        }
         args.getString("observaciones")?.let { binding.etObservaciones.setText(it) }
 
         if (variante == FormFichajeViewModel.Variante.FICHAJE) {
-            args.getString("tipo")?.let { nombre ->
-                TipoFichaje.values().find { it.name == nombre }?.let {
-                    binding.actvTipoFichaje.setText(tipoFichajeLabel(it), false)
-                }
+            val tipo = args.getString("tipo")?.let { nombre ->
+                TipoFichaje.values().find { it.name == nombre }
             }
+            tipo?.let { binding.actvTipoFichaje.setText(tipoFichajeLabel(it), false) }
+            ajustarCamposHora(tipo)
             args.getString("horaEntrada")?.let { binding.etHoraEntrada.setText(it) }
             args.getString("horaSalida")?.let { binding.etHoraSalida.setText(it) }
         } else {
@@ -147,11 +167,49 @@ class FormFichajeFragment : Fragment() {
         }
     }
 
+    /**
+     * Habilita/deshabilita horaEntrada y horaSalida segun el tipo de fichaje.
+     * Los tipos que no son NORMAL son ausencias: no tienen horas de trabajo.
+     */
+    private fun ajustarCamposHora(tipo: TipoFichaje?) {
+        val esNormal = tipo == TipoFichaje.NORMAL
+        binding.tilHoraEntrada.isEnabled = esNormal
+        binding.tilHoraSalida.isEnabled = esNormal
+        if (!esNormal) {
+            binding.etHoraEntrada.text?.clear()
+            binding.etHoraSalida.text?.clear()
+        }
+    }
+
+    private fun mostrarTimePicker(titulo: String, campo: TextInputEditText) {
+        val picker = MaterialTimePicker.Builder()
+            .setTimeFormat(TimeFormat.CLOCK_24H)
+            .setInputMode(MaterialTimePicker.INPUT_MODE_CLOCK)
+            .setTitleText(titulo)
+            .build()
+        picker.addOnPositiveButtonClickListener {
+            campo.setText(String.format("%02d:%02d", picker.hour, picker.minute))
+        }
+        picker.show(parentFragmentManager, "time_picker_${campo.id}")
+    }
+
     private fun configurarListeners(variante: FormFichajeViewModel.Variante) {
+        if (variante == FormFichajeViewModel.Variante.FICHAJE) {
+            binding.actvTipoFichaje.doAfterTextChanged { text ->
+                val tipo = TipoFichaje.values().find { tipoFichajeLabel(it) == text?.toString() }
+                ajustarCamposHora(tipo)
+            }
+            binding.etHoraEntrada.setOnClickListener { mostrarTimePicker("Hora de entrada", binding.etHoraEntrada) }
+            binding.etHoraSalida.setOnClickListener  { mostrarTimePicker("Hora de salida",  binding.etHoraSalida)  }
+        } else {
+            binding.etHoraInicio.setOnClickListener { mostrarTimePicker("Hora de inicio", binding.etHoraInicio) }
+            binding.etHoraFin.setOnClickListener    { mostrarTimePicker("Hora de fin",    binding.etHoraFin)    }
+        }
+
         binding.btnGuardar.setOnClickListener {
             binding.tilObservaciones.error = null
             val empleadoId = binding.etEmpleadoId.text.toString().toLongOrNull() ?: -1L
-            val fecha = binding.etFecha.text.toString().trim()
+            val fecha = fechaInternal ?: binding.etFecha.text.toString().trim()
             val observaciones = binding.etObservaciones.text.toString().trim()
 
             binding.btnGuardar.isEnabled = false
@@ -229,7 +287,7 @@ class FormFichajeFragment : Fragment() {
     private fun ofrecerRecalcular() {
         viewModel.resetUiState()
         val empleadoId = binding.etEmpleadoId.text.toString().toLongOrNull() ?: -1L
-        val anio = binding.etFecha.text.toString().take(4).toIntOrNull()
+        val anio = (fechaInternal ?: binding.etFecha.text.toString()).take(4).toIntOrNull()
 
         if (empleadoId <= 0L || anio == null) {
             findNavController().popBackStack()
@@ -274,5 +332,13 @@ class FormFichajeFragment : Fragment() {
         TipoPausa.DESCANSO            -> "Descanso"
         TipoPausa.AUSENCIA_RETRIBUIDA -> "Ausencia retribuida"
         TipoPausa.OTROS               -> "Otros"
+    }
+
+    /** Convierte "yyyy-MM-dd" a "dd/MM/yyyy" para mostrar en el campo fecha. */
+    private fun formatearFechaDisplay(fecha: String): String {
+        return try {
+            val (anio, mes, dia) = fecha.split("-")
+            "$dia/$mes/$anio"
+        } catch (e: Exception) { fecha }
     }
 }

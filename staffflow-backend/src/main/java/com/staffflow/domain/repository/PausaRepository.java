@@ -148,6 +148,22 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
     @Query("SELECT p FROM Pausa p JOIN FETCH p.empleado WHERE p.fecha = :fecha AND p.horaFin IS NULL")
     List<Pausa> findPausasActivasByFecha(@Param("fecha") LocalDate fecha);
 
+    /**
+     * Devuelve todas las pausas de una fecha concreta con su empleado cargado.
+     *
+     * Usado por PresenciaService en obtenerParteDiario (E35) para cargar
+     * todas las pausas del dia en una sola query y asignarlas a cada empleado
+     * en el parte diario sin N+1 queries.
+     *
+     * A diferencia de findPausasActivasByFecha, devuelve pausas activas Y
+     * completadas (no filtra por horaFin).
+     *
+     * @param fecha fecha a consultar
+     * @return lista de todas las pausas del dia con empleado cargado
+     */
+    @Query("SELECT p FROM Pausa p JOIN FETCH p.empleado WHERE p.fecha = :fecha")
+    List<Pausa> findByFechaWithEmpleado(@Param("fecha") LocalDate fecha);
+
     // ---------------------------------------------------------------
     // Métodos añadidos en Bloque 7 (sesión 18 — InformeService E42/E43)
     // ---------------------------------------------------------------

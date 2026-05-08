@@ -3,15 +3,16 @@
     Layout de Mi hoy (P12). Destino inicial del rol EMPLEADO.
 
     Patron C - dato unico, empleado autenticado.
-    Endpoint: E37 GET /presencia/parte-diario/me -> DetallePresenciaResponse
+    Endpoint: E37 GET /presencia/parte-diario/me
 
     Tres estados gestionados por visibilidad:
       CARGANDO -> progressIndicator visible, resto GONE
       ERROR    -> layoutError visible, resto GONE
       EXITO    -> scrollContenido visible, resto GONE
 
-    El ticker de 60s en MiHoyViewModel actualiza el contenido automaticamente
-    cuando la jornada esta iniciada o en pausa (sin reiniciar la pantalla).
+    El contenido replica el estilo del parte diario (P17):
+    cabecera de estado + eventos del dia (fichaje, pausas, ausencias)
+    inflados dinamicamente con item_evento_dia. Solo visual, sin edicion.
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -73,141 +74,61 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="8dp">
 
-            <!-- Card estado de jornada -->
+            <!-- Cabecera de estado (misma estructura que item_presencia) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardElevation="1dp">
+                android:layout_marginBottom="8dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/tvEstadoLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceLabelSmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:text="@string/mi_hoy_estado_label"
-                        android:layout_marginBottom="4dp" />
+                    <View
+                        android:id="@+id/viewBordeEstado"
+                        android:layout_width="5dp"
+                        android:layout_height="match_parent"
+                        android:minHeight="56dp"
+                        android:background="#4CAF50" />
 
-                    <TextView
-                        android:id="@+id/tvEstado"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceHeadlineSmall" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Card detalle de horario (visible cuando hay hora de entrada) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHorario"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone"
-                app:cardElevation="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mi_hoy_card_horario"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        android:layout_marginBottom="8dp" />
-
-                    <include
-                        layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaHoraEntrada" />
-
-                    <include
-                        layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaHoraSalida"
-                        android:visibility="gone" />
-
-                    <include
-                        layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaJornadaTotal"
-                        android:visibility="gone" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Card pausa activa (visible cuando pausaActiva = true) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardPausa"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:visibility="gone"
-                app:cardElevation="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mi_hoy_card_pausa"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        android:layout_marginBottom="8dp" />
-
-                    <include
-                        layout="@layout/item_saldo_fila"
-                        android:id="@+id/filaPausaEstado" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Card lista de pausas del dia (visible cuando hay pausas) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardPausas"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:visibility="gone"
-                app:cardElevation="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mi_hoy_card_pausas"
-                        android:textAppearance="?attr/textAppearanceTitleMedium"
-                        android:layout_marginBottom="8dp" />
-
-                    <!-- Filas de pausa se inflan dinamicamente desde MiHoyFragment -->
                     <LinearLayout
-                        android:id="@+id/containerPausas"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical" />
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:id="@+id/tvNombre"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceBodyLarge"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvEstado"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:layout_marginTop="2dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Contenedor de eventos del dia (fichaje, pausas, ausencias) -->
+            <LinearLayout
+                android:id="@+id/containerEventos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
         </LinearLayout>
 

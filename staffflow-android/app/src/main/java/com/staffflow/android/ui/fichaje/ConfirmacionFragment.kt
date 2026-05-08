@@ -235,10 +235,9 @@ class ConfirmacionFragment : Fragment() {
                     append("Entrada: ${soloHora(estado.horaEntrada)} · Salida: ${soloHora(estado.horaSalida)}")
                     val pausas = estado.numeroPausas ?: 0
                     if (pausas > 0) {
-                        val totalPausas = estado.totalPausasMinutos ?: 0
-                        append("\nPausas: $pausas (${totalPausas}min)")
+                        append("\nPausas: $pausas (${formatearPausa(estado.totalPausasSegundos ?: 0)})")
                     }
-                    append("\nTiempo trabajado: ${formatearJornada(estado.jornadaEfectivaMinutos ?: 0)}")
+                    append("\nTiempo trabajado: ${formatearJornada(estado.jornadaEfectivaSegundos ?: 0)}")
                 }
                 "Hasta luego, ${estado.nombre}" to resumen
             }
@@ -248,7 +247,7 @@ class ConfirmacionFragment : Fragment() {
             }
             AccionTerminal.FINALIZAR_PAUSA -> {
                 "Pausa finalizada, ${estado.nombre}" to
-                        "Inicio: ${soloHora(estado.horaInicioPausa)} · Fin: ${soloHora(estado.horaFinPausa)}\nDuración: ${estado.duracionPausaMinutos} minutos"
+                        "Inicio: ${soloHora(estado.horaInicioPausa)} · Fin: ${soloHora(estado.horaFinPausa)}\nDuración: ${formatearPausa(estado.duracionPausaSegundos ?: 0)}"
             }
         }
         binding.tvMensajePrincipal.text = principal
@@ -279,14 +278,26 @@ class ConfirmacionFragment : Fragment() {
      */
     private fun soloHora(valor: String?): String {
         if (valor == null) return "–"
-        return if (valor.contains("T")) valor.substringAfter("T").take(5) else valor
+        return if (valor.contains("T")) valor.substringAfter("T").take(8) else valor
     }
 
-    /** Convierte minutos totales a "Xh YYm". Ejemplo: 485 -> "8h 05m". */
-    private fun formatearJornada(minutos: Int): String {
-        val h = minutos / 60
-        val m = minutos % 60
-        return "${h}h ${m.toString().padStart(2, '0')}m"
+    /** Convierte segundos totales a "Xh YYmin ZZs". Ejemplo: 30645 -> "8h 30min 45s". */
+    private fun formatearJornada(segundos: Int): String {
+        val h = segundos / 3600
+        val m = (segundos % 3600) / 60
+        val s = segundos % 60
+        return buildString {
+            if (h > 0) append("${h}h ")
+            append("${m.toString().padStart(2, '0')}min ")
+            append("${s.toString().padStart(2, '0')}s")
+        }.trim()
+    }
+
+    /** Convierte segundos a "Xmin YYs". Ejemplo: 905 -> "15min 05s". */
+    private fun formatearPausa(segundos: Int): String {
+        val m = segundos / 60
+        val s = segundos % 60
+        return "${m}min ${s.toString().padStart(2, '0')}s"
     }
 
     private fun tipoPausaNombre(tipo: TipoPausa): String = tipoPausaNombre(tipo.name)

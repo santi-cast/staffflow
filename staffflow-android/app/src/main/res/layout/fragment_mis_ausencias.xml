@@ -1,43 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de la lista de ausencias del empleado autenticado (P11).
+    Layout de la vista de ausencias del empleado autenticado (P11) — variante WebView.
 
-    Solo lectura — sin FAB. El empleado no puede crear ni editar ausencias.
-
-    Patron D - lista con 4 estados gestionados por visibilidad:
-      CARGANDO: layoutSkeleton
-      ERROR:    layoutError (nube + mensaje + Reintentar)
-      VACIO:    layoutVacio (icono + mensaje)
-      EXITO:    SwipeRefreshLayout > RecyclerView
-
-    Selector de rango de fechas en toolbar via MenuProvider (menu_mis_ausencias.xml).
+    Estructura:
+      - ChipGroup con dos chips siempre visibles:
+          chipPeriodo: selector de rango de fechas
+          chipFiltro:  toggle Todas / Vac. y AP (checkable)
+      - FrameLayout con estados:
+          CARGANDO: progressIndicator centrado
+          ERROR:    layoutError (nube + mensaje + Reintentar)
+          EXITO:    WebView con el HTML del informe
 -->
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
+    <!-- Chips de periodo y filtro -->
+    <com.google.android.material.chip.ChipGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"
+        app:singleLine="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipPeriodo"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:chipIcon="@drawable/ic_calendar"
+            app:chipIconVisible="true"
+            android:text="@string/cargando" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipFiltro"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true"
+            android:checked="false"
+            android:text="@string/mis_ausencias_chip_filtro_todas" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <!-- Estados -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <!-- ESTADO: CARGANDO -->
-        <LinearLayout
-            android:id="@+id/layoutSkeleton"
-            android:layout_width="match_parent"
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progressIndicator"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:visibility="visible">
-
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-
-        </LinearLayout>
+            android:layout_gravity="center"
+            android:visibility="visible" />
 
         <!-- ESTADO: ERROR -->
         <LinearLayout
@@ -74,50 +96,13 @@
 
         </LinearLayout>
 
-        <!-- ESTADO: VACIO -->
-        <LinearLayout
-            android:id="@+id/layoutVacio"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="32dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="&#x1F4C5;"
-                android:textSize="64sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/mis_ausencias_vacio"
-                android:gravity="center"
-                android:textAppearance="?attr/textAppearanceBodyLarge"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginTop="12dp" />
-
-        </LinearLayout>
-
         <!-- ESTADO: EXITO -->
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefresh"
+        <WebView
+            android:id="@+id/webView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingTop="8dp"
-                android:paddingBottom="16dp"
-                android:clipToPadding="false" />
-
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            android:visibility="gone" />
 
     </FrameLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

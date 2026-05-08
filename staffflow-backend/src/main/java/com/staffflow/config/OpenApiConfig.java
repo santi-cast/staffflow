@@ -40,7 +40,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("StaffFlow API")
                         .description("API REST para control de presencia laboral — TFG DAM 2025/2026")
-                        .version("2.0.0"))
+                        .version("1.0.0"))
                 // Requisito de seguridad global: se aplica a todos los endpoints por defecto
                 // Los endpoints publicos (login, recovery, reset) lo ignoran en la practica
                 // porque SecurityConfig los declara como permitAll()

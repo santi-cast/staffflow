@@ -221,7 +221,7 @@ public class TerminalService {
         LocalDateTime ahora = LocalDateTime.now();
         fichaje.setHoraSalida(ahora);
 
-        // Calcular jornadaEfectivaMinutos
+        // Calcular jornadaEfectivaMinutos → persiste en entidad para SaldoService
         // Math.ceil: redondeo al alza — beneficia al empleado en el cómputo final
         int jornadaEfectiva = 0;
         if (fichaje.getHoraEntrada() != null) {
@@ -234,6 +234,22 @@ public class TerminalService {
         fichajeRepository.save(fichaje);
         reiniciarFallos(request.getDispositivoId());
 
+        // Calcular segundos exactos para display — no afecta a SaldoService
+        // Se suman los segundos de cada pausa cerrada no retribuida del día
+        int totalPausasSegundos = pausaRepository
+                .findByEmpleadoIdAndFecha(empleado.getId(), hoy)
+                .stream()
+                .filter(p -> p.getHoraFin() != null
+                        && p.getTipoPausa() != TipoPausa.AUSENCIA_RETRIBUIDA)
+                .mapToInt(p -> (int) ChronoUnit.SECONDS.between(p.getHoraInicio(), p.getHoraFin()))
+                .sum();
+
+        int jornadaEfectivaSegundos = 0;
+        if (fichaje.getHoraEntrada() != null) {
+            long segundosBrutos = ChronoUnit.SECONDS.between(fichaje.getHoraEntrada(), ahora);
+            jornadaEfectivaSegundos = (int) Math.max(0, segundosBrutos - totalPausasSegundos);
+        }
+
         // Contar pausas del día para el resumen de jornada
         int numeroPausas = pausaRepository.countByEmpleadoIdAndFecha(empleado.getId(), hoy);
 
@@ -241,9 +257,9 @@ public class TerminalService {
                 empleado.getNombre(),
                 fichaje.getHoraEntrada(),
                 ahora,
-                fichaje.getTotalPausasMinutos(),
+                totalPausasSegundos,
                 numeroPausas,
-                jornadaEfectiva,
+                jornadaEfectivaSegundos,
                 "\u2714 Salida registrada"
         );
     }
@@ -358,10 +374,13 @@ public class TerminalService {
         LocalDateTime ahora = LocalDateTime.now();
         pausa.setHoraFin(ahora);
 
-        // Math.floor: redondeo a la baja — beneficia al empleado en pausas
+        // Duración en minutos (Math.floor) → persiste en entidad para SaldoService
         long minutos = ChronoUnit.MINUTES.between(pausa.getHoraInicio(), ahora);
         int duracion = (int) Math.floor((double) minutos);
         pausa.setDuracionMinutos(duracion);
+
+        // Duración en segundos → solo para display en el terminal
+        int duracionSegundos = (int) ChronoUnit.SECONDS.between(pausa.getHoraInicio(), ahora);
 
         pausaRepository.save(pausa);
 
@@ -382,7 +401,7 @@ public class TerminalService {
                 empleado.getNombre(),
                 pausa.getHoraInicio(),
                 ahora,
-                duracion,
+                duracionSegundos,
                 "\u2714 Pausa finalizada"
         );
     }
@@ -420,7 +439,7 @@ public class TerminalService {
         Empleado empleado = buscarEmpleadoPorPin(request.getPin(), request.getDispositivoId());
 
         LocalDate hoy = LocalDate.now();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
 
         // Sin fichaje de entrada hoy
         var fichajeOpt = fichajeRepository.findByEmpleadoIdAndFecha(empleado.getId(), hoy);
@@ -523,6 +542,30 @@ public class TerminalService {
                     throw new EntityNotFoundException(
                             "PIN incorrecto o no registrado");
                 });
+    }
+
+    // ---------------------------------------------------------------
+    // Bloqueo — consulta y desbloqueo manual (para ENCARGADO/ADMIN)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve true si algún dispositivo supero el limite de intentos fallidos.
+     * Llamado desde el endpoint GET /api/v1/terminal/bloqueo (E53).
+     *
+     * @return true si hay al menos un dispositivo bloqueado
+     */
+    public boolean hayTerminalBloqueado() {
+        return intentosFallidos.values().stream()
+                .anyMatch(c -> c.get() >= MAX_INTENTOS);
+    }
+
+    /**
+     * Elimina todos los contadores de intentos fallidos, desbloqueando
+     * cualquier dispositivo que estuviera bloqueado.
+     * Llamado desde el endpoint DELETE /api/v1/terminal/bloqueo (E54).
+     */
+    public void desbloquearTerminal() {
+        intentosFallidos.clear();
     }
 
     /**

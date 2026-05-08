@@ -4,6 +4,7 @@ import android.app.Application
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.staffflow.android.data.local.SessionManager
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.TerminalApiService
 import com.staffflow.android.data.remote.dto.TerminalPinRequest
@@ -27,6 +28,8 @@ sealed class TerminalUiState {
     object EsperandoPin : TerminalUiState()
     object VerificandoPin : TerminalUiState()
     data class Error(val mensaje: String) : TerminalUiState()
+    data class Bloqueado(val mensaje: String) : TerminalUiState()
+    data class ErrorConexion(val pin: String) : TerminalUiState()
     data class PinVerificado(
         val pin: String,
         val nombre: String,
@@ -54,9 +57,7 @@ sealed class TerminalUiState {
  */
 class TerminalViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = TerminalRepository(
-        NetworkModule.retrofit.create(TerminalApiService::class.java)
-    )
+    private val sessionManager = SessionManager.getInstance(application)
 
     private val dispositivoId: String = Settings.Secure.getString(
         application.contentResolver,
@@ -78,7 +79,7 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
      */
     fun appendDigito(digito: Int) {
         val estado = _uiState.value
-        if (estado is TerminalUiState.VerificandoPin || estado is TerminalUiState.PinVerificado) return
+        if (estado is TerminalUiState.VerificandoPin || estado is TerminalUiState.PinVerificado || estado is TerminalUiState.Bloqueado) return
         if (_pin.value.length >= 4) return
         val nuevo = _pin.value + digito.toString()
         _pin.value = nuevo
@@ -94,7 +95,21 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
     fun borrarDigito() {
         if (_uiState.value is TerminalUiState.VerificandoPin) return
         if (_uiState.value is TerminalUiState.PinVerificado) return
+        if (_uiState.value is TerminalUiState.Bloqueado) return
         if (_pin.value.isNotEmpty()) _pin.value = _pin.value.dropLast(1)
+    }
+
+    /**
+     * Persiste la nueva IP en DataStore, reconstruye el cliente Retrofit
+     * y reintenta la verificacion del PIN.
+     */
+    fun guardarIpYReintentarPin(ip: String, pin: String) {
+        viewModelScope.launch {
+            val baseUrl = "http://$ip:8080/api/v1/"
+            sessionManager.saveBaseUrl(baseUrl)
+            NetworkModule.init(baseUrl)
+            verificarPin(pin)
+        }
     }
 
     /**
@@ -115,7 +130,8 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _uiState.value = TerminalUiState.VerificandoPin
             val request = TerminalPinRequest(pin = pin, dispositivoId = dispositivoId)
-            repository.obtenerEstado(request).fold(
+            val repo = TerminalRepository(NetworkModule.retrofit.create(TerminalApiService::class.java))
+            repo.obtenerEstado(request).fold(
                 onSuccess = { resp ->
                     _uiState.value = TerminalUiState.PinVerificado(
                         pin = pin,
@@ -128,14 +144,20 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
                     )
                 },
                 onFailure = { error ->
-                    val mensaje = if (error.message == "Sin conexion con el servidor") {
-                        "Sin conexión con el servidor"
-                    } else {
-                        "PIN incorrecto"
+                    val esBloqueado = error.message?.contains("bloqueado", ignoreCase = true) == true
+                    when {
+                        error.message == "Sin conexion con el servidor" -> {
+                            _uiState.value = TerminalUiState.ErrorConexion(pin)
+                        }
+                        esBloqueado -> {
+                            _uiState.value = TerminalUiState.Bloqueado(error.message!!)
+                        }
+                        else -> {
+                            _uiState.value = TerminalUiState.Error("PIN incorrecto")
+                            delay(2000)
+                            resetEstado()
+                        }
                     }
-                    _uiState.value = TerminalUiState.Error(mensaje)
-                    delay(2000)
-                    resetEstado()
                 }
             )
         }

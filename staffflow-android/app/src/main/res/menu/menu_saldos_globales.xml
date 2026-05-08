@@ -10,6 +10,7 @@
     <item
         android:id="@+id/action_anio"
         android:title=""
-        app:showAsAction="always" />
+        app:showAsAction="always"
+        app:actionLayout="@layout/menu_item_anio_chip" />
 
 </menu>

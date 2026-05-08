@@ -81,6 +81,24 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Fecha hasta (solo visible en modo rango) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilFechaHasta"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="@string/form_ausencia_hint_fecha_hasta"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFechaHasta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Tipo de ausencia (dropdown) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTipoAusencia"
@@ -98,6 +116,26 @@
                 android:focusableInTouchMode="false" />
 
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Banner días pendientes de planificar (solo en modo rango con VACACIONES o ASUNTO_PROPIO) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bannerVacAp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer"
+            app:cardElevation="0dp">
+
+            <TextView
+                android:id="@+id/tvBannerVacAp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSecondaryContainer" />
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Observaciones (opcional) -->
         <com.google.android.material.textfield.TextInputLayout

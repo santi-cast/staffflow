@@ -8,7 +8,8 @@
 
     <item
         android:id="@+id/action_anio"
-        android:title="2026"
-        app:showAsAction="always" />
+        android:title=""
+        app:showAsAction="always"
+        app:actionLayout="@layout/menu_item_anio_chip" />
 
 </menu>

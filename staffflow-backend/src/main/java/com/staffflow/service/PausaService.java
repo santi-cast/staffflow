@@ -115,12 +115,18 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
-        // Restriccion D-026: ENCARGADO solo puede gestionar el dia actual.
+        // Pausas en fechas futuras no permitidas para ningún rol.
+        if (request.getFecha().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "No se pueden registrar pausas en fechas futuras");
+        }
+
+        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear pausas para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && !request.getFecha().isEqual(LocalDate.now())) {
+                && request.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // Verificar que no hay pausa activa ese día para ese empleado
@@ -206,13 +212,19 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
-        // Restriccion D-026: ENCARGADO solo puede modificar el dia actual.
+        // Pausas en fechas futuras no modificables para ningún rol.
+        if (pausa.getFecha().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "No se pueden modificar pausas en fechas futuras");
+        }
+
+        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la de la pausa cargada de BD.
         // ADMIN puede modificar pausas de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && !pausa.getFecha().isEqual(LocalDate.now())) {
+                && pausa.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // Actualizar observaciones (ya validadas)
@@ -268,6 +280,43 @@ public class PausaService {
 
         return pausaRepository
                 .findByFiltros(empleadoId, desde, hasta, tipoPausa)
+                .stream()
+                .map(p -> toPausaResponse(p, p.getEmpleado()))
+                .collect(Collectors.toList());
+    }
+
+    // ---------------------------------------------------------------
+    // E35 — GET /api/v1/pausas/me
+    // ---------------------------------------------------------------
+
+    /**
+     * Lista las pausas del empleado autenticado en un rango de fechas (E35).
+     *
+     * Mismo patrón que FichajeService.listarPropios() (D-017, Opción B):
+     * recibe el username del controller, resuelve usuario → empleado,
+     * y filtra las pausas por empleadoId + rango de fechas.
+     *
+     * Spring Security garantiza que el rol EMPLEADO solo puede llegar
+     * aquí con su propio token — no puede ver pausas ajenas.
+     *
+     * @param username username del empleado autenticado (de authentication.getName())
+     * @param desde    filtro opcional fecha inicio
+     * @param hasta    filtro opcional fecha fin
+     * @return lista de PausaResponse del empleado autenticado
+     */
+    @Transactional(readOnly = true)
+    public List<PausaResponse> listarPropios(String username, LocalDate desde, LocalDate hasta) {
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "El usuario autenticado no tiene perfil de empleado"));
+
+        return pausaRepository
+                .findByFiltros(empleado.getId(), desde, hasta, null)
                 .stream()
                 .map(p -> toPausaResponse(p, p.getEmpleado()))
                 .collect(Collectors.toList());

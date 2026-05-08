@@ -18,6 +18,13 @@ import okhttp3.ResponseBody
 class InformeRepository(private val api: InformeApiService) {
 
     /**
+     * E-me - Informe de horas del empleado autenticado en HTML.
+     * P10 (MisFichajesFragment) lo carga en WebView.
+     */
+    suspend fun getMisHorasHtml(desde: String, hasta: String): Result<ResponseBody> =
+        safeApiCall { api.getMisHorasHtml(desde, hasta) }
+
+    /**
      * E42 - Informe de horas de un empleado en HTML (formato=html).
      * P28 tab Horas individual -> boton Imprimir y boton Ver informe.
      */
@@ -73,4 +80,18 @@ class InformeRepository(private val api: InformeApiService) {
      */
     suspend fun getPdfVacaciones(empleadoId: Long, anio: Int): Result<ResponseBody> =
         safeApiCall { api.getPdfVacaciones(empleadoId, anio) }
+
+    /**
+     * E-Semana - Tabla HTML semanal de todos los empleados activos.
+     * ResumenSemanalFragment la carga en WebView.
+     */
+    suspend fun getInformeSemana(desde: String, hasta: String): Result<ResponseBody> =
+        safeApiCall { api.getInformeSemana(desde, hasta) }
+
+    /**
+     * E-ausencias-global - Tabla HTML de ausencias de todos los empleados activos.
+     * AusenciasFragment la carga en WebView.
+     */
+    suspend fun getInformeAusenciasGlobal(desde: String, hasta: String): Result<ResponseBody> =
+        safeApiCall { api.getInformeAusenciasGlobal(desde, hasta) }
 }

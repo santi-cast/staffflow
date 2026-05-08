@@ -30,11 +30,12 @@ public class TerminalPausaResponse {
     private LocalDateTime horaFinPausa;
 
     /**
-     * Duración de la pausa en minutos. Solo se rellena en E51 (finalizar).
-     * Calculado con Math.floor (beneficia al empleado).
+     * Duración de la pausa en segundos. Solo se rellena en E51 (finalizar).
+     * Calculado con ChronoUnit.SECONDS para máxima precisión en display.
+     * La entidad Pausa sigue almacenando duracionMinutos para SaldoService.
      * Null en E50 (iniciar).
      */
-    private Integer duracionPausaMinutos;
+    private Integer duracionPausaSegundos;
 
     /** Mensaje de confirmación para mostrar en pantalla del terminal. */
     private String mensaje;

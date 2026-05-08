@@ -18,7 +18,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurfaceVariant">
+    android:background="@color/surface_variant_light">
 
     <!-- Tarjeta: centrada verticalmente, misma estetica que el terminal -->
     <com.google.android.material.card.MaterialCardView
@@ -170,13 +170,18 @@
                 </LinearLayout>
 
                 <!-- Cancelar: vuelve al terminal sin registrar nada -->
-                <com.google.android.material.button.MaterialButton
+                <TextView
                     android:id="@+id/btnCancelar"
-                    style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="@string/terminal_btn_cancelar" />
+                    android:text="@string/terminal_btn_cancelar"
+                    android:textColor="?attr/colorPrimary"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="10dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground" />
 
             </LinearLayout>
 

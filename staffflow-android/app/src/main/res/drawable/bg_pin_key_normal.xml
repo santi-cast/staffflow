@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fondo normal de tecla PIN (keycap effect).
+    Dos capas: borde inferior oscuro (profundidad) + cara del botón elevada.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Capa base: borde inferior oscuro — simula el canto de la tecla -->
+    <item>
+        <shape>
+            <solid android:color="#9E9E9E" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+    <!-- Cara del botón: elevada 3dp sobre la base -->
+    <item android:bottom="3dp">
+        <shape>
+            <solid android:color="#F0F0F0" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+</layer-list>

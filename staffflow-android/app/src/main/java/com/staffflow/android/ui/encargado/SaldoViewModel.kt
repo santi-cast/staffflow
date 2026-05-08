@@ -29,7 +29,7 @@ import java.util.Calendar
  *   Success -> 3 cards (vacaciones, asuntos propios, horas)
  *   Error   -> icono nube + mensaje + Reintentar
  */
-class SaldoIndividualViewModel(application: Application) : AndroidViewModel(application) {
+class SaldoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = SaldoRepository(
         NetworkModule.retrofit.create(SaldoApiService::class.java)
@@ -38,6 +38,7 @@ class SaldoIndividualViewModel(application: Application) : AndroidViewModel(appl
     sealed class UiState {
         object Loading : UiState()
         data class Success(val saldo: SaldoResponse) : UiState()
+        data class Empty(val anio: Int) : UiState()
         data class Error(val mensaje: String) : UiState()
     }
 
@@ -104,7 +105,13 @@ class SaldoIndividualViewModel(application: Application) : AndroidViewModel(appl
             _uiState.value = UiState.Loading
             repository.getSaldoEmpleado(empleadoId, _anio.value).fold(
                 onSuccess = { _uiState.value = UiState.Success(it) },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cargar el saldo") }
+                onFailure = {
+                    if (it.message?.startsWith("No hay datos de saldo") == true) {
+                        _uiState.value = UiState.Empty(_anio.value)
+                    } else {
+                        _uiState.value = UiState.Error(it.message ?: "Error al cargar el saldo")
+                    }
+                }
             )
         }
     }

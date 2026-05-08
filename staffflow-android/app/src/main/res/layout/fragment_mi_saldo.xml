@@ -92,6 +92,7 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/tvTituloVacaciones"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/saldo_vacaciones_titulo"
@@ -108,6 +109,8 @@
                         android:id="@+id/filaVacacionesConsumidos" />
                     <include layout="@layout/item_saldo_fila"
                         android:id="@+id/filaVacacionesDisponibles" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaVacacionesPendientesPlanificar" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -126,6 +129,7 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/tvTituloAsuntos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/saldo_asuntos_titulo"
@@ -142,6 +146,8 @@
                         android:id="@+id/filaAsuntosConsumidos" />
                     <include layout="@layout/item_saldo_fila"
                         android:id="@+id/filaAsuntosDisponibles" />
+                    <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaAsuntosPendientesPlanificar" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -159,6 +165,7 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:id="@+id/tvTituloHoras"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/saldo_horas_titulo"

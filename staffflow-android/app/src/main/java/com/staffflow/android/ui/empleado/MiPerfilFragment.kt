@@ -10,7 +10,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.FragmentMiPerfilBinding
@@ -67,9 +66,6 @@ class MiPerfilFragment : Fragment() {
 
     private fun configurarListeners() {
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
-        binding.btnCambiarPassword.setOnClickListener {
-            findNavController().navigate(R.id.cambiarPasswordFragment)
-        }
     }
 
     // ------------------------------------------------------------------
@@ -108,11 +104,10 @@ class MiPerfilFragment : Fragment() {
             e.apellido2?.let { append(" $it") }
         }
         binding.tvNumeroEmpleado.text = e.numeroEmpleado
-        binding.tvDni.text            = e.dni
         binding.tvCategoria.text      = categoriaLabel(e.categoria)
-        binding.tvJornada.text        = getString(R.string.mi_perfil_horas_semanales, e.jornadaSemanalHoras)
-        binding.tvVacaciones.text     = getString(R.string.mi_perfil_dias_anio, e.diasVacacionesAnuales)
-        binding.tvAsuntos.text        = getString(R.string.mi_perfil_dias_anio, e.diasAsuntosPropiosAnuales)
+        binding.tvJornada.text        = getString(R.string.mi_perfil_jornada_valor, e.jornadaSemanalHoras)
+        binding.tvVacaciones.text     = getString(R.string.mi_perfil_vacaciones_valor, e.diasVacacionesAnuales)
+        binding.tvAsuntos.text        = getString(R.string.mi_perfil_asuntos_valor, e.diasAsuntosPropiosAnuales)
     }
 
     private fun categoriaLabel(categoria: CategoriaEmpleado): String = when (categoria) {

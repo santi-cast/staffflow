@@ -17,16 +17,18 @@ import kotlinx.coroutines.launch
 /**
  * Estado de la UI del login.
  *
- *   Idle    -> formulario en espera
- *   Loading -> llamada E01 en curso (boton deshabilitado, spinner visible)
- *   Exito   -> sesion iniciada; LoginFragment ejecuta la secuencia post-login en MainActivity
- *   Error   -> mensaje de error mostrado en tilPassword.error
+ *   Idle          -> formulario en espera
+ *   Loading       -> llamada E01 en curso (boton deshabilitado, spinner visible)
+ *   Exito         -> sesion iniciada; LoginFragment ejecuta la secuencia post-login en MainActivity
+ *   Error         -> mensaje de error mostrado en tilPassword.error
+ *   ErrorConexion -> no se pudo conectar al servidor; LoginFragment muestra el dialogo de cambio de IP
  */
 sealed class LoginUiState {
     object Idle : LoginUiState()
     object Loading : LoginUiState()
     data class Exito(val rol: Rol) : LoginUiState()
     data class Error(val mensaje: String) : LoginUiState()
+    data class ErrorConexion(val username: String, val password: String) : LoginUiState()
 }
 
 /**
@@ -44,7 +46,7 @@ sealed class LoginUiState {
  */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = AuthRepository(
+    private var repository = AuthRepository(
         NetworkModule.retrofit.create(AuthApiService::class.java)
     )
     private val sessionManager = SessionManager.getInstance(application)
@@ -79,8 +81,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     // 3. Notificar a LoginFragment para que coordine la navegacion
                     _uiState.value = LoginUiState.Exito(resp.rol)
                 },
-                onFailure = {
-                    _uiState.value = LoginUiState.Error(it.message ?: "Error de autenticacion")
+                onFailure = { e ->
+                    if (e.message == "Sin conexion con el servidor") {
+                        _uiState.value = LoginUiState.ErrorConexion(username, password)
+                    } else {
+                        _uiState.value = LoginUiState.Error(e.message ?: "Error de autenticacion")
+                    }
                 }
             )
         }
@@ -89,5 +95,23 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     /** Limpia el estado de error para que el usuario pueda reintentar. */
     fun resetEstado() {
         _uiState.value = LoginUiState.Idle
+    }
+
+    /**
+     * Persiste la nueva IP en DataStore, reconstruye el cliente Retrofit
+     * y reintenta el login con las mismas credenciales.
+     *
+     * @param ip   Solo la parte de host, ej: "192.168.1.107"
+     * @param username Credencial original del intento fallido.
+     * @param password Credencial original del intento fallido.
+     */
+    fun guardarIpYReintentarLogin(ip: String, username: String, password: String) {
+        viewModelScope.launch {
+            val baseUrl = "http://$ip:8080/api/v1/"
+            sessionManager.saveBaseUrl(baseUrl)
+            NetworkModule.init(baseUrl)
+            repository = AuthRepository(NetworkModule.retrofit.create(AuthApiService::class.java))
+            login(username, password)
+        }
     }
 }

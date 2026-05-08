@@ -14,6 +14,7 @@ import com.staffflow.dto.response.TerminalSalidaResponse;
 import com.staffflow.exception.ConflictException;
 import com.staffflow.exception.PinBloqueadoException;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.web.server.ResponseStatusException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -267,9 +269,15 @@ class TerminalServiceTest {
     }
 
     @Test
-    @DisplayName("registrarSalida — jornada completa — calcula jornadaEfectivaMinutos correctamente")
+    @DisplayName("registrarSalida — jornada completa — calcula jornadaEfectivaSegundos correctamente")
     void registrarSalida_jornadaCompleta_calculaJornadaEfectiva() {
-        // Entrada hace 8 horas, 30 min de pausa → jornada efectiva = 450 min
+        // Entrada hace 480 min, pausa COMIDA de 30 min → jornada efectiva ≈ 450 min = 27000 s
+        LocalDateTime inicioPausa = LocalDateTime.now().minusMinutes(240);
+        Pausa pausaCompletada = new Pausa();
+        pausaCompletada.setHoraInicio(inicioPausa);
+        pausaCompletada.setHoraFin(inicioPausa.plusMinutes(30));
+        pausaCompletada.setTipoPausa(TipoPausa.COMIDA);
+
         Fichaje fichajeAbierto = new Fichaje();
         fichajeAbierto.setHoraEntrada(LocalDateTime.now().minusMinutes(480));
         fichajeAbierto.setHoraSalida(null);
@@ -280,14 +288,17 @@ class TerminalServiceTest {
                 .thenReturn(Optional.of(fichajeAbierto));
         when(pausaRepository.findByEmpleadoIdAndFechaAndHoraFinIsNull(anyLong(), any(LocalDate.class)))
                 .thenReturn(Optional.empty());
+        when(pausaRepository.findByEmpleadoIdAndFecha(anyLong(), any(LocalDate.class)))
+                .thenReturn(List.of(pausaCompletada));
         when(fichajeRepository.save(any(Fichaje.class))).thenAnswer(inv -> inv.getArgument(0));
         when(pausaRepository.countByEmpleadoIdAndFecha(anyLong(), any(LocalDate.class))).thenReturn(1);
 
         TerminalPinRequest request = req(PIN_VALIDO, DISPOSITIVO);
         TerminalSalidaResponse response = terminalService.registrarSalida(request);
 
-        // 480 min brutos - 30 min pausa = 450 min efectivos
-        assertThat(response.getJornadaEfectivaMinutos()).isEqualTo(450);
-        assertThat(response.getTotalPausasMinutos()).isEqualTo(30);
+        // totalPausasSegundos = 30 min * 60 = 1800 s exactos
+        // jornadaEfectivaSegundos ≈ 480 min * 60 - 1800 = 27000 s (tolerancia ±2s por ejecucion)
+        assertThat(response.getTotalPausasSegundos()).isEqualTo(1800);
+        assertThat(response.getJornadaEfectivaSegundos()).isCloseTo(27000, within(2));
     }
 }

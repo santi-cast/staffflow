@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * Controller del terminal de fichaje por PIN.
  *
@@ -43,6 +45,55 @@ import org.springframework.web.bind.annotation.*;
 public class TerminalController {
 
     private final TerminalService terminalService;
+
+    // ---------------------------------------------------------------
+    // E53 — GET /api/v1/terminal/bloqueo
+    // Consultar si hay terminal bloqueado (ENCARGADO/ADMIN, con JWT)
+    // ---------------------------------------------------------------
+
+    /**
+     * Devuelve si hay algún dispositivo de terminal bloqueado por exceso
+     * de intentos fallidos de PIN (E53).
+     *
+     * Requiere JWT con rol ENCARGADO o ADMIN. Llamado desde ParteDiarioFragment
+     * al cargar la pantalla para mostrar el banner de alerta si procede.
+     *
+     * Códigos HTTP:
+     *   200 OK → { "bloqueado": true/false }
+     *   401    → sin JWT o token inválido
+     *   403    → rol insuficiente
+     */
+    @Operation(summary = "Consultar si el terminal está bloqueado",
+               description = "Requiere JWT (ENCARGADO o ADMIN). Devuelve true si hay intentos fallidos superados.")
+    @GetMapping("/bloqueo")
+    public ResponseEntity<Map<String, Boolean>> consultarBloqueo() {
+        return ResponseEntity.ok(Map.of("bloqueado", terminalService.hayTerminalBloqueado()));
+    }
+
+    // ---------------------------------------------------------------
+    // E54 — DELETE /api/v1/terminal/bloqueo
+    // Desbloquear terminal (ENCARGADO/ADMIN, con JWT)
+    // ---------------------------------------------------------------
+
+    /**
+     * Desbloquea el terminal reseteando todos los contadores de intentos
+     * fallidos de PIN (E54).
+     *
+     * Requiere JWT con rol ENCARGADO o ADMIN. Llamado desde ParteDiarioFragment
+     * cuando el encargado confirma el desbloqueo manual en el diálogo.
+     *
+     * Códigos HTTP:
+     *   200 OK → { "bloqueado": false } confirmando el estado tras el reset
+     *   401    → sin JWT o token inválido
+     *   403    → rol insuficiente
+     */
+    @Operation(summary = "Desbloquear terminal",
+               description = "Requiere JWT (ENCARGADO o ADMIN). Resetea todos los contadores de intentos fallidos.")
+    @DeleteMapping("/bloqueo")
+    public ResponseEntity<Map<String, Boolean>> desbloquearTerminal() {
+        terminalService.desbloquearTerminal();
+        return ResponseEntity.ok(Map.of("bloqueado", false));
+    }
 
     // ---------------------------------------------------------------
     // E52 — POST /api/v1/terminal/estado

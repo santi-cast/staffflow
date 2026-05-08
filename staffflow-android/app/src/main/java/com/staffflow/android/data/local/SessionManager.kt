@@ -39,6 +39,7 @@ class SessionManager private constructor(context: Context) {
         val USERNAME    = stringPreferencesKey("username")
         val EMPLEADO_ID = longPreferencesKey("empleado_id")
         val NOMBRE      = stringPreferencesKey("nombre")
+        val BASE_URL    = stringPreferencesKey("base_url")
     }
 
     // ------------------------------------------------------------------
@@ -53,6 +54,10 @@ class SessionManager private constructor(context: Context) {
             if (empleadoId != null) prefs[Keys.EMPLEADO_ID] = empleadoId
             if (nombre != null) prefs[Keys.NOMBRE] = nombre
         }
+    }
+
+    suspend fun saveBaseUrl(baseUrl: String) {
+        dataStore.edit { prefs -> prefs[Keys.BASE_URL] = baseUrl }
     }
 
     /** Elimina todos los datos de sesion. Llamar al cerrar sesion o en 401. */
@@ -80,6 +85,9 @@ class SessionManager private constructor(context: Context) {
 
     suspend fun getNombre(): String? =
         dataStore.data.map { it[Keys.NOMBRE] }.first()
+
+    suspend fun getBaseUrl(): String? =
+        dataStore.data.map { it[Keys.BASE_URL] }.first()
 
     // ------------------------------------------------------------------
     // Singleton

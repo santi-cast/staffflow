@@ -10,7 +10,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentSinJustificarBinding
 import kotlinx.coroutines.launch
 
@@ -29,7 +31,8 @@ class SinJustificarFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SinJustificarViewModel by viewModels()
-    private val adapter = SinJustificarAdapter()
+    private var fecha: String? = null
+    private lateinit var adapter: SinJustificarAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,15 +46,31 @@ class SinJustificarFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        fecha = arguments?.getString("fecha")
+
+        adapter = SinJustificarAdapter { empleadoId ->
+            val args = android.os.Bundle().apply {
+                putString("variante", "FICHAJE")
+                putLong("fichajeId", -1L)
+                putLong("empleadoId", empleadoId)
+                fecha?.let { putString("fecha", it) }
+            }
+            findNavController().navigate(R.id.action_sin_justificar_to_form_fichaje, args)
+        }
+
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
 
-        val fecha = arguments?.getString("fecha")
         viewModel.init(fecha)
 
         observarViewModel()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.reintentar()
     }
 
     override fun onDestroyView() {

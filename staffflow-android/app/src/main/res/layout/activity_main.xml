@@ -90,6 +90,17 @@
 
                 </LinearLayout>
 
+                <!-- Reloj del sistema — visible solo en pantallas autenticadas -->
+                <TextView
+                    android:id="@+id/tvReloj"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="16dp"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone" />
+
             </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.AppBarLayout>

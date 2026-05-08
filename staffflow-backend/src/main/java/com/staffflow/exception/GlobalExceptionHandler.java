@@ -209,6 +209,29 @@ public class GlobalExceptionHandler {
     // ─── 409 CONFLICT ────────────────────────────────────────────────────────
 
     /**
+     * Maneja conflictos de rango de ausencias (409).
+     *
+     * <p>RangoConflictException la lanza AusenciaService.crearRango() cuando
+     * hay ausencias ya planificadas (procesado=false) en algún día del rango
+     * y sobrescribir=false. Devuelve la lista de fechas conflictivas para
+     * que Android muestre un AlertDialog de confirmación.</p>
+     *
+     * @param ex excepción con la lista de fechas conflictivas
+     * @param request información de la petición HTTP
+     * @return 409 con { error, fechasConflictivas, timestamp, path }
+     */
+    @ExceptionHandler(RangoConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleRangoConflict(
+            RangoConflictException ex, WebRequest request) {
+
+        log.warn("Conflicto de rango ausencias: {}", ex.getFechasConflictivas());
+
+        Map<String, Object> body = buildError(ex.getMessage(), null, request);
+        body.put("fechasConflictivas", ex.getFechasConflictivas());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    /**
      * Maneja conflictos de unicidad en datos del dominio (409).
      *
      * <p>ConflictException la lanzan los servicios cuando detectan

@@ -1,6 +1,7 @@
 package com.staffflow.domain.repository;
 
 import com.staffflow.domain.entity.PlanificacionAusencia;
+import com.staffflow.domain.enums.TipoAusencia;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +43,22 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
      * @return true si ya existe un registro con ese empleado y fecha
      */
     boolean existsByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha);
+
+    // ------------------------------------------------------------------
+    // E30b — crearRango: detectar conflictos en el rango solicitado
+    // ------------------------------------------------------------------
+
+    /**
+     * Devuelve las ausencias de un empleado en un rango de fechas.
+     * Usado en crearRango() para detectar conflictos antes de insertar.
+     *
+     * @param empleadoId id del empleado
+     * @param desde      fecha inicio del rango (inclusive)
+     * @param hasta      fecha fin del rango (inclusive)
+     * @return ausencias del empleado en el rango
+     */
+    List<PlanificacionAusencia> findByEmpleadoIdAndFechaBetween(
+            Long empleadoId, LocalDate desde, LocalDate hasta);
 
     // ------------------------------------------------------------------
     // E33 — listar con 4 filtros opcionales
@@ -158,5 +175,36 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
     @Query("SELECT a FROM PlanificacionAusencia a LEFT JOIN FETCH a.empleado " +
            "WHERE a.fecha = :fecha AND a.procesado = false")
     List<PlanificacionAusencia> findByFechaAndProcesadoFalse(@Param("fecha") LocalDate fecha);
+
+    // ------------------------------------------------------------------
+    // E-planificacion-vac-ap — conteo de planificadas por tipo y rango
+    // ------------------------------------------------------------------
+
+    /**
+     * Cuenta ausencias planificadas (procesado=false) de un empleado
+     * para un tipo concreto en un rango de fechas.
+     *
+     * Usado por AusenciaService.getPlanificacionVacAp() para calcular
+     * cuántas vacaciones o asuntos propios ya están planificados ese año.
+     *
+     * @param empleadoId id del empleado
+     * @param tipo       TipoAusencia.VACACIONES o TipoAusencia.ASUNTO_PROPIO
+     * @param desde      primer día del año (1 enero)
+     * @param hasta      último día del año (31 diciembre)
+     * @return número de ausencias planificadas del tipo indicado ese año
+     */
+    @Query("""
+            SELECT COUNT(a) FROM PlanificacionAusencia a
+            WHERE a.empleado.id = :empleadoId
+              AND a.procesado = false
+              AND a.tipoAusencia = :tipo
+              AND a.fecha >= :desde
+              AND a.fecha <= :hasta
+            """)
+    int countPlanificadasByEmpleadoAndTipoAndRango(
+            @Param("empleadoId") Long empleadoId,
+            @Param("tipo")       TipoAusencia tipo,
+            @Param("desde")      LocalDate desde,
+            @Param("hasta")      LocalDate hasta);
 
 }

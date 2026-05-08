@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Item del RecyclerView del parte diario (P17).
+    Item del RecyclerView del parte diario (P17). Diseño por secciones.
 
     Estructura:
-      - Borde izquierdo coloreado (4dp) segun EstadoPresencia
-      - Nombre + apellido1 del empleado (bold)
-      - Estado en texto (bodySmall, mismo color que el borde)
-      - Hora de entrada alineada a la derecha
+      - Cabecera: borde de color (estado) + nombre del empleado + estado en texto
+      - Divisor
+      - Contenedor de eventos: fichaje, pausas y ausencias añadidos dinámicamente
+        desde PresenciaAdapter usando item_evento_dia como plantilla por evento.
 
-    El color del borde y del texto de estado se establece desde PresenciaAdapter
-    segun EstadoPresencia del empleado.
+    Cada evento es clicable → navega a FormFichajeFragment o FormAusenciaFragment.
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -17,55 +16,69 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
-    android:layout_marginBottom="6dp"
-    app:cardElevation="1dp">
+    android:layout_marginBottom="8dp"
+    app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical">
 
-        <!-- Borde de estado (coloreado desde el adapter) -->
-        <View
-            android:id="@+id/viewBordeEstado"
-            android:layout_width="5dp"
-            android:layout_height="match_parent"
-            android:minHeight="56dp"
-            android:background="#4CAF50" />
-
-        <!-- Nombre y estado -->
+        <!-- Cabecera del empleado -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="12dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvNombre"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceBodyLarge"
-                android:textStyle="bold" />
+            <!-- Borde de estado (coloreado desde el adapter) -->
+            <View
+                android:id="@+id/viewBordeEstado"
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:minHeight="56dp"
+                android:background="#4CAF50" />
 
-            <TextView
-                android:id="@+id/tvEstado"
-                android:layout_width="wrap_content"
+            <!-- Nombre y estado -->
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:layout_marginTop="2dp" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvNombre"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvEstado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Hora de entrada -->
-        <TextView
-            android:id="@+id/tvHoraEntrada"
-            android:layout_width="wrap_content"
+        <!-- Divisor -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorOutlineVariant"
+            android:layout_marginHorizontal="8dp" />
+
+        <!-- Contenedor de eventos: fichaje, pausas, ausencias -->
+        <LinearLayout
+            android:id="@+id/containerEventos"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:paddingEnd="12dp" />
+            android:orientation="vertical"
+            android:padding="8dp" />
 
     </LinearLayout>
 

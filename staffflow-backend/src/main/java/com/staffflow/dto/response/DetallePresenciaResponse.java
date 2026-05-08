@@ -79,6 +79,19 @@ public class DetallePresenciaResponse {
      */
     private List<PausaResumen> pausas;
 
+    // ID del fichaje del dia. Null si no existe fichaje (AUSENCIA_PLANIFICADA, SIN_JUSTIFICAR).
+    // Usado en Android para navegar directamente al formulario de edicion.
+    private Long fichajeId;
+
+    // ID de la ausencia planificada individual del dia. Null si no existe o es festivo global.
+    // Usado en Android para navegar directamente al formulario de edicion de ausencia.
+    private Long ausenciaId;
+
+    // Tiempo efectivo de jornada en minutos (horaSalida - horaEntrada - totalPausasMinutos).
+    // Solo presente cuando la jornada esta completada (horaSalida != null).
+    // Usado en el parte diario para mostrar la duracion neta al encargado.
+    private Integer jornadaEfectivaMinutos;
+
     /**
      * Resumen de una pausa del dia para mostrar en P12 (Mi hoy).
      *
@@ -90,6 +103,7 @@ public class DetallePresenciaResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PausaResumen {
+        private Long id;                 // ID de la pausa, para navegacion a edicion en Android
         private String horaInicio;
         private String horaFin;          // null si pausa activa
         private String tipoPausa;        // TipoPausa.name()

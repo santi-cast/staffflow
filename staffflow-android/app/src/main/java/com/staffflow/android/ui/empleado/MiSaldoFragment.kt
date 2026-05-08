@@ -16,12 +16,14 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.chip.Chip
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentMiSaldoBinding
 import com.staffflow.android.databinding.ItemSaldoFilaBinding
 import com.staffflow.android.data.remote.dto.SaldoResponse
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -85,15 +87,12 @@ class MiSaldoFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
                 inflater.inflate(R.menu.menu_mi_saldo, menu)
-                menu.findItem(R.id.action_anio)?.title = viewModel.anio.value.toString()
+                val chip = menu.findItem(R.id.action_anio)
+                    ?.actionView?.findViewById<Chip>(R.id.chipAnio)
+                chip?.text = "${viewModel.anio.value} ▾"
+                chip?.setOnClickListener { mostrarSelectorAnio() }
             }
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                if (item.itemId == R.id.action_anio) {
-                    mostrarSelectorAnio()
-                    return true
-                }
-                return false
-            }
+            override fun onMenuItemSelected(item: MenuItem) = false
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -105,7 +104,8 @@ class MiSaldoFragment : Fragment() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.saldo_selector_anio_titulo)
             .setSingleChoiceItems(anios, seleccionado) { dialogo, indice ->
-                viewModel.setAnio(anios[indice].toInt())
+                val anioSeleccionado = anios[indice].toInt()
+                viewModel.setAnio(anioSeleccionado)
                 requireActivity().invalidateOptionsMenu()
                 dialogo.dismiss()
             }
@@ -127,11 +127,23 @@ class MiSaldoFragment : Fragment() {
     private fun procesarEstado(estado: MiSaldoViewModel.UiState) {
         binding.progressIndicator.isVisible = estado is MiSaldoViewModel.UiState.Loading
         binding.layoutError.isVisible = estado is MiSaldoViewModel.UiState.Error
+                                     || estado is MiSaldoViewModel.UiState.Empty
         binding.scrollContenido.isVisible = estado is MiSaldoViewModel.UiState.Success
 
         when (estado) {
             is MiSaldoViewModel.UiState.Error -> {
                 binding.tvErrorMensaje.text = estado.mensaje
+                binding.btnReintentar.isVisible = true
+            }
+            is MiSaldoViewModel.UiState.Empty -> {
+                binding.tvErrorMensaje.text = "No hay datos de saldo para el año ${estado.anio}."
+                binding.btnReintentar.isVisible = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    delay(2500)
+                    val anioActual = Calendar.getInstance().get(Calendar.YEAR)
+                    viewModel.setAnio(anioActual)
+                    requireActivity().invalidateOptionsMenu()
+                }
             }
             is MiSaldoViewModel.UiState.Success -> {
                 mostrarSaldo(estado.saldo)
@@ -145,19 +157,26 @@ class MiSaldoFragment : Fragment() {
     // ------------------------------------------------------------------
 
     private fun mostrarSaldo(saldo: SaldoResponse) {
+        val anio = saldo.anio
+        binding.tvTituloVacaciones.text = "Vacaciones · $anio"
+        binding.tvTituloAsuntos.text    = "Asuntos propios · $anio"
+        binding.tvTituloHoras.text      = "Horas · $anio"
+
         val vac = saldo.vacaciones
-        setFila(binding.filaVacacionesAnterior,   "Derecho año anterior",    "${vac.pendientesAnterior} días")
-        setFila(binding.filaVacacionesAnual,      "Derecho anual",           "${vac.derechoAnio} días")
+        setFila(binding.filaVacacionesAnterior,   "Disponibles año anterior",    "${vac.pendientesAnterior} días")
+        setFila(binding.filaVacacionesAnual,      "Derecho anual",               "${vac.derechoAnio} días")
         setFila(binding.filaVacacionesAnoCurso,   "Derecho total año en curso",  "${vac.pendientesAnterior + vac.derechoAnio} días")
-        setFila(binding.filaVacacionesConsumidos, "Consumidos año en curso",    "${vac.consumidos} días")
-        setFila(binding.filaVacacionesDisponibles,"Disponibles año en curso",   "${vac.disponibles} días")
+        setFila(binding.filaVacacionesConsumidos, "Consumidos año en curso",     "${vac.consumidos} días")
+        setFila(binding.filaVacacionesDisponibles,"Disponibles año en curso",    "${vac.disponibles} días")
+        setFila(binding.filaVacacionesPendientesPlanificar, "Pendientes por planificar", "${vac.pendientesPlanificar} días")
 
         val ap = saldo.asuntosPropios
-        setFila(binding.filaAsuntosAnterior,   "Derecho año anterior",          "${ap.pendientesAnterior} días")
+        setFila(binding.filaAsuntosAnterior,   "Disponibles año anterior",      "${ap.pendientesAnterior} días")
         setFila(binding.filaAsuntosAnual,      "Derecho anual",                 "${ap.derechoAnio} días")
         setFila(binding.filaAsuntosAnoCurso,   "Derecho total año en curso",    "${ap.pendientesAnterior + ap.derechoAnio} días")
         setFila(binding.filaAsuntosConsumidos, "Consumidos año en curso",       "${ap.consumidos} días")
-        setFila(binding.filaAsuntosDisponibles,"Disponibles año en curso",      "${ap.disponibles} días")
+        setFila(binding.filaAsuntosDisponibles,"Disponibles año en curso",       "${ap.disponibles} días")
+        setFila(binding.filaAsuntosPendientesPlanificar, "Pendientes por planificar", "${ap.pendientesPlanificar} días")
 
         val h = saldo.horas
         setFila(binding.filaHorasEsperadas,  getString(R.string.saldo_esperadas),  formatHoras(h.esperadas))
@@ -185,6 +204,6 @@ class MiSaldoFragment : Fragment() {
 
     private fun formatSaldoHoras(horas: Double): String {
         val signo = if (horas >= 0) "+" else ""
-        return "$signo${String.format("%.1f", horas)} h"
+        return "$signo${String.format("%.2f", horas)} h"
     }
 }

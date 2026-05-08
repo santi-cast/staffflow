@@ -103,8 +103,8 @@ class FormFichajeViewModel(application: Application) : AndroidViewModel(applicat
             if (modoEdicion) {
                 val request = FichajePatchRequest(
                     tipo = tipo,
-                    horaEntrada = horaEntrada?.ifBlank { null },
-                    horaSalida = horaSalida?.ifBlank { null },
+                    horaEntrada = horaEntrada?.ifBlank { null }?.let { "${fecha}T${it}:00" },
+                    horaSalida = horaSalida?.ifBlank { null }?.let { "${fecha}T${it}:00" },
                     observaciones = observaciones
                 )
                 fichajeRepository.actualizarFichaje(fichajeId, request).fold(
@@ -116,8 +116,8 @@ class FormFichajeViewModel(application: Application) : AndroidViewModel(applicat
                     empleadoId = empleadoId,
                     fecha = fecha,
                     tipo = tipo,
-                    horaEntrada = horaEntrada?.ifBlank { null },
-                    horaSalida = horaSalida?.ifBlank { null },
+                    horaEntrada = horaEntrada?.ifBlank { null }?.let { "${fecha}T${it}:00" },
+                    horaSalida = horaSalida?.ifBlank { null }?.let { "${fecha}T${it}:00" },
                     observaciones = observaciones
                 )
                 fichajeRepository.crearFichaje(request).fold(

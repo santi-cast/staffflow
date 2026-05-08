@@ -69,7 +69,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/password/recovery")
                 || path.equals("/api/v1/auth/password/reset")
                 || path.equals("/api/health")
-                || path.startsWith("/api/v1/terminal/")
+                || path.equals("/api/v1/terminal/entrada")
+                || path.equals("/api/v1/terminal/salida")
+                || path.equals("/api/v1/terminal/pausa/iniciar")
+                || path.equals("/api/v1/terminal/pausa/finalizar")
+                || path.equals("/api/v1/terminal/estado")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
                 || path.startsWith("/h2-console");

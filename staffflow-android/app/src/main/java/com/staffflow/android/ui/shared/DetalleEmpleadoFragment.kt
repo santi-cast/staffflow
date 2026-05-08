@@ -1,5 +1,6 @@
 package com.staffflow.android.ui.shared
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -22,6 +23,8 @@ import com.staffflow.android.databinding.FragmentDetalleEmpleadoBinding
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import com.staffflow.android.domain.model.Rol
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * Detalle de un empleado (P14).
@@ -116,6 +119,12 @@ class DetalleEmpleadoFragment : Fragment() {
             }
             findNavController().navigate(R.id.action_detalle_to_fichajes, args)
         }
+        binding.chipVerAusencias.setOnClickListener {
+            val args = Bundle().apply {
+                putLong("empleadoId", arguments?.getLong("empleadoId") ?: -1L)
+            }
+            findNavController().navigate(R.id.action_detalle_to_ausencias, args)
+        }
     }
 
     // ------------------------------------------------------------------
@@ -156,21 +165,36 @@ class DetalleEmpleadoFragment : Fragment() {
             e.apellido2?.let { append(" $it") }
         }
         binding.tvNumeroEmpleado.text = e.numeroEmpleado
-        binding.chipEstado.text = if (e.activo) getString(R.string.detalle_empleado_activo)
-                                  else getString(R.string.detalle_empleado_baja)
+        if (e.activo) {
+            binding.tvEstado.text = getString(R.string.detalle_empleado_activo)
+            binding.tvEstado.setTextColor(Color.parseColor("#2E7D32"))
+        } else {
+            binding.tvEstado.text = getString(R.string.detalle_empleado_baja)
+            binding.tvEstado.setTextColor(Color.parseColor("#C62828"))
+        }
 
         // Datos personales
         binding.filaDni.tvLabel.text  = "DNI"
         binding.filaDni.tvValor.text  = e.dni
         binding.filaFechaAlta.tvLabel.text = "Fecha de alta"
-        binding.filaFechaAlta.tvValor.text = e.fechaAlta.toString()
+        binding.filaFechaAlta.tvValor.text = LocalDate.parse(e.fechaAlta)
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         binding.filaCategoria.tvLabel.text = "Categoría"
         binding.filaCategoria.tvValor.text = nombreCategoria(e.categoria)
 
-        // PIN del terminal: visible solo cuando el backend lo devuelve (E13 y E15)
+        // Email y PIN: visibles solo para ADMIN
+        val esAdmin = viewModel.rol.value == Rol.ADMIN
+
+        val email = e.email
+        binding.filaEmail.root.isVisible = email != null && esAdmin
+        if (email != null && esAdmin) {
+            binding.filaEmail.tvLabel.text = "Email"
+            binding.filaEmail.tvValor.text = email
+        }
+
         val pin = e.pinTerminal
-        binding.filaPinTerminal.root.isVisible = pin != null
-        if (pin != null) {
+        binding.filaPinTerminal.root.isVisible = pin != null && esAdmin
+        if (pin != null && esAdmin) {
             binding.filaPinTerminal.tvLabel.text = getString(R.string.detalle_empleado_pin)
             binding.filaPinTerminal.tvValor.text = pin
         }
@@ -178,6 +202,8 @@ class DetalleEmpleadoFragment : Fragment() {
         // Jornada
         binding.filaJornadaSemanal.tvLabel.text = "Jornada semanal"
         binding.filaJornadaSemanal.tvValor.text = "${e.jornadaSemanalHoras} h/semana"
+        binding.filaJornadaDiaria.tvLabel.text  = "Jornada diaria"
+        binding.filaJornadaDiaria.tvValor.text  = "${"%.2f".format(e.jornadaDiariaMinutos / 60.0)} h/día"
         binding.filaVacaciones.tvLabel.text     = "Vacaciones"
         binding.filaVacaciones.tvValor.text     = "${e.diasVacacionesAnuales} días/año"
         binding.filaAsuntosPropios.tvLabel.text = "Asuntos propios"

@@ -42,6 +42,18 @@ interface PausaApiService {
     ): Response<PausaResponse>
 
     /**
+     * E35 - Devuelve las pausas del empleado autenticado.
+     * Solo accesible con rol EMPLEADO.
+     * @param desde Fecha inicio "yyyy-MM-dd"
+     * @param hasta Fecha fin "yyyy-MM-dd"
+     */
+    @GET("pausas/me")
+    suspend fun getMisPausas(
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null
+    ): Response<List<PausaResponse>>
+
+    /**
      * E29 - Lista pausas con filtros opcionales.
      * @param empleadoId Filtra por empleado concreto
      * @param desde      Fecha inicio "yyyy-MM-dd"

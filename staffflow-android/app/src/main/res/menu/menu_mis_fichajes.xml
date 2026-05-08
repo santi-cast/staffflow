@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Menu de la toolbar para MisFichajesFragment (P10).
-    action_rango_fechas_mis_fichajes: abre MaterialDatePicker de rango.
+    Menu de MisFichajesFragment (P10).
+    El selector de periodo se gestiona desde el chipPeriodo del layout,
+    no desde el toolbar.
 -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-    <item
-        android:id="@+id/action_rango_fechas_mis_fichajes"
-        android:title="@string/mis_fichajes_menu_rango_fechas"
-        android:icon="@android:drawable/ic_menu_today"
-        app:showAsAction="ifRoom" />
-
-</menu>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -4,93 +4,158 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.AusenciaApiService
+import com.staffflow.android.data.remote.api.InformeApiService
 import com.staffflow.android.data.remote.api.NetworkModule
-import com.staffflow.android.data.remote.dto.AusenciaResponse
 import com.staffflow.android.data.remote.repository.AusenciaRepository
+import com.staffflow.android.data.remote.repository.InformeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 
 /**
- * ViewModel de la lista de ausencias planificadas (P23).
+ * ViewModel del resumen de ausencias globales (P23).
  *
- * Llama a E33 GET /ausencias?empleadoId=&desde=&hasta=&procesado= via AusenciaRepository.
- * Si se recibe empleadoId como argumento de navegacion (desde P14), filtra por ese empleado.
- * Por defecto muestra todas las ausencias del mes actual sin filtro de procesado.
+ * Endpoint: E-ausencias-global GET /api/v1/informes/ausencias?desde=&hasta=
+ * Accesible por ADMIN y ENCARGADO.
  *
- * UiState:
- *   Loading -> skeleton list
- *   Success -> RecyclerView con ausencias
- *   Empty   -> icono + mensaje sin datos
- *   Error   -> icono nube + mensaje + Reintentar
+ * Rango por defecto: semana actual de lunes a domingo.
+ * El usuario puede navegar con los botones < semana anterior / semana siguiente >.
  */
 class AusenciasViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = AusenciaRepository(
+    private val repository = InformeRepository(
+        NetworkModule.retrofit.create(InformeApiService::class.java)
+    )
+    private val ausenciaRepository = AusenciaRepository(
         NetworkModule.retrofit.create(AusenciaApiService::class.java)
     )
 
     sealed class UiState {
         object Loading : UiState()
-        data class Success(val ausencias: List<AusenciaResponse>) : UiState()
-        object Empty : UiState()
+        data class Success(val html: String) : UiState()
         data class Error(val mensaje: String) : UiState()
     }
+
+    sealed class InfoSeleccionState {
+        object Oculta : InfoSeleccionState()
+        object Cargando : InfoSeleccionState()
+        data class Visible(val vacaciones: Int, val asuntosPropios: Int, val anio: Int) : InfoSeleccionState()
+    }
+
+    private val _infoSeleccion = MutableStateFlow<InfoSeleccionState>(InfoSeleccionState.Oculta)
+    val infoSeleccion: StateFlow<InfoSeleccionState> = _infoSeleccion.asStateFlow()
+
+    private val apiFmt   = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    private val labelFmt = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale("es"))
+
+    private var desde: LocalDate = LocalDate.now().with(DayOfWeek.MONDAY)
+    private var hasta: LocalDate = desde.plusDays(6)
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    /** Empleado filtrado. -1 = todos. Se establece una sola vez desde el Fragment. */
-    private var empleadoId: Long = -1L
-    private var desde: String = primeroDeMesActual()
-    private var hasta: String = ultimoDeMesActual()
+    private val _semanaLabel = MutableStateFlow(calcularLabel())
+    val semanaLabel: StateFlow<String> = _semanaLabel.asStateFlow()
+
+    /** true mientras no ha ocurrido ningún onResume posterior al init. */
+    private var primeraVez = true
+
+    init {
+        cargar()
+    }
 
     /**
-     * Inicializa el filtro de empleado.
-     * El guard evita reinicializar en rotaciones de pantalla.
+     * Llamado desde onResume del Fragment. Recarga los datos si es un retorno
+     * desde una pantalla hija (formulario de ausencia), ignorando el primer
+     * onResume que ocurre al crear el Fragment.
      */
-    fun init(empleadoId: Long) {
-        if (this.empleadoId != -1L) return
-        this.empleadoId = empleadoId
-        cargarAusencias()
+    fun onResumed() {
+        if (primeraVez) { primeraVez = false; return }
+        cargar()
     }
 
-    fun reintentar() = cargarAusencias()
-
-    fun setRangoFechas(desde: String, hasta: String) {
-        this.desde = desde
-        this.hasta = hasta
-        cargarAusencias()
+    fun semanaSiguiente() {
+        desde = desde.plusWeeks(1)
+        hasta = hasta.plusWeeks(1)
+        _semanaLabel.value = calcularLabel()
+        ocultarInfoSeleccion()
+        cargar()
     }
 
-    private fun cargarAusencias() {
+    fun semanaAnterior() {
+        desde = desde.minusWeeks(1)
+        hasta = hasta.minusWeeks(1)
+        _semanaLabel.value = calcularLabel()
+        ocultarInfoSeleccion()
+        cargar()
+    }
+
+    fun mesSiguiente() {
+        val primerDiaMesSiguiente = desde.withDayOfMonth(1).plusMonths(1)
+        desde = primerDiaMesSiguiente.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
+        hasta = desde.plusDays(6)
+        _semanaLabel.value = calcularLabel()
+        ocultarInfoSeleccion()
+        cargar()
+    }
+
+    fun mesAnterior() {
+        val primerDiaMesAnterior = desde.withDayOfMonth(1).minusMonths(1)
+        desde = primerDiaMesAnterior.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
+        hasta = desde.plusDays(6)
+        _semanaLabel.value = calcularLabel()
+        ocultarInfoSeleccion()
+        cargar()
+    }
+
+    fun cargarInfoSeleccion(empleadoId: Long, fechaDesde: String) {
+        val anio = fechaDesde.take(4).toIntOrNull() ?: return
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
-            val idFiltro = empleadoId.takeIf { it > 0L }
-            repository.listarAusencias(
-                empleadoId = idFiltro,
-                desde = desde,
-                hasta = hasta
-            ).fold(
-                onSuccess = { lista ->
-                    _uiState.value = if (lista.isEmpty()) UiState.Empty
-                                     else UiState.Success(lista)
+            _infoSeleccion.value = InfoSeleccionState.Cargando
+            ausenciaRepository.getPlanificacionVacAp(empleadoId, anio).fold(
+                onSuccess = { data ->
+                    _infoSeleccion.value = InfoSeleccionState.Visible(
+                        vacaciones     = data.vacaciones.pendientesPlanificar,
+                        asuntosPropios = data.asuntosPropios.pendientesPlanificar,
+                        anio           = anio
+                    )
                 },
-                onFailure = {
-                    _uiState.value = UiState.Error(it.message ?: "Error al cargar las ausencias")
-                }
+                onFailure = { _infoSeleccion.value = InfoSeleccionState.Oculta }
             )
         }
     }
 
-    companion object {
-        private val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        fun primeroDeMesActual(): String =
-            LocalDate.now().withDayOfMonth(1).format(fmt)
-        fun ultimoDeMesActual(): String =
-            LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()).format(fmt)
+    fun ocultarInfoSeleccion() {
+        _infoSeleccion.value = InfoSeleccionState.Oculta
+    }
+
+    fun reintentar() = cargar()
+
+    private fun cargar() {
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.getInformeAusenciasGlobal(
+                desde.format(apiFmt),
+                hasta.format(apiFmt)
+            ).fold(
+                onSuccess = { body -> _uiState.value = UiState.Success(body.string()) },
+                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cargar las ausencias") }
+            )
+        }
+    }
+
+    private fun calcularLabel(): String {
+        val desdeStr = "${desde.format(labelFmt)} (${desde.year})"
+        val hastaStr = "${hasta.format(labelFmt)} (${hasta.year})"
+        return if (desde.year == hasta.year)
+            "${desde.format(labelFmt)} – ${hasta.format(labelFmt)} (${hasta.year})"
+        else
+            "$desdeStr – $hastaStr"
     }
 }

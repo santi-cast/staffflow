@@ -62,4 +62,8 @@ public class FichajeResponse {
     private String observaciones;
 
     private LocalDateTime fechaCreacion;
+
+    // Nombre completo del empleado. Incluido para evitar una segunda peticion
+    // en pantallas que listan fichajes de multiples empleados (E24).
+    private String nombreCompleto;
 }

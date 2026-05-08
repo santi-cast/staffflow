@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Selector de estado para teclas PIN: normal / pulsado -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true" android:drawable="@drawable/bg_pin_key_pressed" />
+    <item android:drawable="@drawable/bg_pin_key_normal" />
+</selector>

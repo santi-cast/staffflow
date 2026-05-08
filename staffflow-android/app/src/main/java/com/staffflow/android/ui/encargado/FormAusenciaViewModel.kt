@@ -6,8 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.AusenciaApiService
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.dto.AusenciaPatchRequest
+import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
+import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
 import com.staffflow.android.data.remote.repository.AusenciaRepository
+import com.staffflow.android.data.remote.repository.RangoConflictException
 import com.staffflow.android.domain.model.TipoAusencia
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,10 +50,20 @@ class FormAusenciaViewModel(application: Application) : AndroidViewModel(applica
         object Success : UiState()
         object Deleted : UiState()
         data class Error(val mensaje: String) : UiState()
+        data class Conflicto(val fechas: List<String>) : UiState()
+    }
+
+    sealed class PlanificacionVacApResult {
+        object Idle : PlanificacionVacApResult()
+        object Loading : PlanificacionVacApResult()
+        data class Success(val data: PlanificacionVacApResponse) : PlanificacionVacApResult()
     }
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    private val _planificacionVacAp = MutableStateFlow<PlanificacionVacApResult>(PlanificacionVacApResult.Idle)
+    val planificacionVacAp: StateFlow<PlanificacionVacApResult> = _planificacionVacAp.asStateFlow()
 
     var modoEdicion: Boolean = false
         private set
@@ -136,13 +149,60 @@ class FormAusenciaViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    /**
+     * Crea ausencias en rango via POST /ausencias/rango.
+     * Si el backend devuelve 409, emite UiState.Conflicto con las fechas conflictivas.
+     * El Fragment muestra un dialogo y puede rellamar con sobrescribir=true.
+     */
+    fun guardarRango(
+        empleadoId: Long?,
+        fechaDesde: String,
+        fechaHasta: String,
+        tipoAusencia: TipoAusencia,
+        observaciones: String?,
+        sobrescribir: Boolean = false
+    ) {
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            val request = AusenciaRangoRequest(empleadoId, fechaDesde, fechaHasta, tipoAusencia, observaciones, sobrescribir)
+            repository.crearAusenciaRango(request).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = {
+                    if (it is RangoConflictException) _uiState.value = UiState.Conflicto(it.fechas)
+                    else _uiState.value = UiState.Error(it.message ?: "Error al crear rango")
+                }
+            )
+        }
+    }
+
+    /**
+     * Carga los días pendientes de planificar para vacaciones y asuntos propios.
+     * Solo aplica en modo rango con tipo VACACIONES o ASUNTO_PROPIO.
+     * El anio se extrae de los primeros 4 caracteres de fechaDesde.
+     */
+    fun cargarPlanificacionVacAp(empleadoId: Long, fechaDesde: String) {
+        val anio = fechaDesde.take(4).toIntOrNull() ?: return
+        viewModelScope.launch {
+            _planificacionVacAp.value = PlanificacionVacApResult.Loading
+            repository.getPlanificacionVacAp(empleadoId, anio).fold(
+                onSuccess = { _planificacionVacAp.value = PlanificacionVacApResult.Success(it) },
+                onFailure = { _planificacionVacAp.value = PlanificacionVacApResult.Idle }
+            )
+        }
+    }
+
+    fun ocultarBannerVacAp() {
+        _planificacionVacAp.value = PlanificacionVacApResult.Idle
+    }
+
     fun limpiarError() {
         if (_uiState.value is UiState.Error) _uiState.value = UiState.Idle
     }
 
-    /** Resetea Success/Deleted a Idle tras mostrar el dialogo de recalcular saldo. */
+    /** Resetea Success/Deleted/Conflicto a Idle. */
     fun resetUiState() {
-        if (_uiState.value is UiState.Success || _uiState.value is UiState.Deleted)
+        if (_uiState.value is UiState.Success || _uiState.value is UiState.Deleted
+            || _uiState.value is UiState.Conflicto)
             _uiState.value = UiState.Idle
     }
 }

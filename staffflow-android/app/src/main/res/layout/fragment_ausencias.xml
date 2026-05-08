@@ -1,47 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de la lista de ausencias planificadas (P23).
+    Layout del resumen de ausencias globales (P23). Patron WebView.
 
-    Patron D - lista paginada. Endpoint: E33 GET /ausencias
+    Endpoint: E-ausencias-global GET /api/v1/informes/ausencias?desde=&hasta=
+    Roles: ENCARGADO y ADMIN.
 
     Estructura:
-      - CoordinatorLayout raiz
-      - FrameLayout con 4 estados gestionados por visibilidad:
-          CARGANDO: layoutSkeleton
-          ERROR:    layoutError (nube + mensaje + Reintentar)
-          VACIO:    layoutVacio (icono + mensaje)
-          EXITO:    SwipeRefreshLayout > RecyclerView
-      - FAB (+): navega a P24 (FormAusenciaFragment) en modo alta.
-
-    Selector de rango de fechas en toolbar via MenuProvider (menu_ausencias.xml).
-    Tap en fila -> P24 en modo edicion con los datos de la ausencia.
+      - LinearLayout vertical raiz
+          Barra superior: navegacion semanal centrada + boton Añadir ausencia a la derecha
+          FrameLayout con tres estados:
+              CARGANDO: CircularProgressIndicator centrado
+              ERROR:    nube + mensaje + boton Reintentar
+              EXITO:    WebView con la tabla HTML de ausencias
 -->
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <FrameLayout
+    <!-- Barra superior: añadir ausencia | nav semanal centrada | añadir festivo -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
 
-        <!-- ESTADO: CARGANDO -->
-        <LinearLayout
-            android:id="@+id/layoutSkeleton"
-            android:layout_width="match_parent"
+        <!-- Boton añadir ausencia: fijado a la izquierda -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAnadirAusencia"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="8dp"
-            android:visibility="visible">
+            android:text="@string/ausencias_anadir"
+            app:icon="@android:drawable/ic_input_add"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
-            <include layout="@layout/item_presencia_skeleton" />
+        <!-- Grupo de navegacion semanal: centrado horizontalmente -->
+        <LinearLayout
+            android:id="@+id/layoutNavSemana"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toEndOf="@id/btnAnadirAusencia"
+            app:layout_constraintEnd_toStartOf="@id/btnAnadirFestivo"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMesAnterior"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="0dp"
+                android:layout_marginEnd="12dp"
+                android:text="&#171;"
+                android:textSize="32sp"
+                android:contentDescription="@string/ausencias_mes_anterior" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSemanaAnterior"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="4dp"
+                android:text="&#8249;"
+                android:textSize="32sp"
+                android:contentDescription="Semana anterior" />
+
+            <TextView
+                android:id="@+id/tvSemanaLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSemanaSiguiente"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="2dp"
+                android:text="&#8250;"
+                android:textSize="32sp"
+                android:contentDescription="Semana siguiente" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMesSiguiente"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="4dp"
+                android:layout_marginStart="12dp"
+                android:text="&#187;"
+                android:textSize="32sp"
+                android:contentDescription="@string/ausencias_mes_siguiente" />
 
         </LinearLayout>
+
+        <!-- Boton añadir festivo: fijado a la derecha -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAnadirFestivo"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ausencias_anadir_festivo"
+            app:icon="@android:drawable/ic_input_add"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Franja info selección: empleado + días por planificar (visible solo con selección activa) -->
+    <TextView
+        android:id="@+id/tvInfoSeleccion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:background="?attr/colorSurfaceVariant"
+        android:gravity="center"
+        android:visibility="gone" />
+
+    <!-- Contenedor de estados -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ESTADO: CARGANDO -->
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progressIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="visible" />
 
         <!-- ESTADO: ERROR -->
         <LinearLayout
@@ -78,60 +191,13 @@
 
         </LinearLayout>
 
-        <!-- ESTADO: VACIO -->
-        <LinearLayout
-            android:id="@+id/layoutVacio"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="32dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="&#x1F4C5;"
-                android:textSize="64sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ausencias_vacio"
-                android:gravity="center"
-                android:textAppearance="?attr/textAppearanceBodyLarge"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginTop="12dp" />
-
-        </LinearLayout>
-
         <!-- ESTADO: EXITO -->
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefresh"
+        <WebView
+            android:id="@+id/webView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingTop="8dp"
-                android:paddingBottom="88dp"
-                android:clipToPadding="false" />
-
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+            android:visibility="gone" />
 
     </FrameLayout>
 
-    <!-- FAB: navega a P24 modo alta -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="@string/ausencias_fab_desc"
-        android:src="@android:drawable/ic_input_add" />
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</LinearLayout>

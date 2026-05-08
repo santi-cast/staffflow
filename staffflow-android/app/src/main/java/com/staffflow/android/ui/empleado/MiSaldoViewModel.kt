@@ -29,6 +29,7 @@ class MiSaldoViewModel(application: Application) : AndroidViewModel(application)
     sealed class UiState {
         object Loading : UiState()
         data class Success(val saldo: SaldoResponse) : UiState()
+        data class Empty(val anio: Int) : UiState()
         data class Error(val mensaje: String) : UiState()
     }
 
@@ -61,7 +62,13 @@ class MiSaldoViewModel(application: Application) : AndroidViewModel(application)
             _uiState.value = UiState.Loading
             repository.getMiSaldo(_anio.value).fold(
                 onSuccess = { _uiState.value = UiState.Success(it) },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cargar el saldo") }
+                onFailure = {
+                    if (it.message?.startsWith("No hay datos de saldo") == true) {
+                        _uiState.value = UiState.Empty(_anio.value)
+                    } else {
+                        _uiState.value = UiState.Error(it.message ?: "Error al cargar el saldo")
+                    }
+                }
             )
         }
     }

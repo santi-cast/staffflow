@@ -22,12 +22,18 @@ import java.util.concurrent.TimeUnit
  * arrancar la app y desde LoginFragment tras un login exitoso (E01).
  * Se pone a null al cerrar sesion o procesar un 401.
  *
- * BASE_URL apunta al emulador Android (10.0.2.2 = localhost del PC).
+ * BASE_URL apunta al servidor backend de StaffFlow.
  * Para produccion configurar via BuildConfig.
  */
 object NetworkModule {
 
-    private const val BASE_URL = "http://10.0.2.2:8080/api/v1/"
+    // EMULADOR Android Studio: usar 10.0.2.2 (alias del host desde el emulador)
+    // TABLET REAL (red local): cambiar a la IP del PC en la red, ej: "http://192.168.1.15:8080/api/v1/"
+    private const val DEFAULT_BASE_URL = "http://10.0.2.2:8080/api/v1/"
+
+    /** IP extraida de la base URL actual, sin esquema ni puerto. Solo la parte de host. */
+    var currentIp: String = "10.0.2.2"
+        private set
 
     /**
      * Token JWT activo. Lo escribe MainActivity o LoginFragment.
@@ -73,7 +79,7 @@ object NetworkModule {
     // Cliente HTTP y Retrofit
     // ------------------------------------------------------------------
 
-    private val okHttpClient = OkHttpClient.Builder()
+    private fun buildClient() = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -81,9 +87,27 @@ object NetworkModule {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
+    @Volatile
+    var retrofit: Retrofit = buildRetrofit(DEFAULT_BASE_URL)
+        private set
+
+    private fun buildRetrofit(baseUrl: String) = Retrofit.Builder()
+        .baseUrl(baseUrl)
+        .client(buildClient())
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+
+    /**
+     * Reconstruye el cliente Retrofit con una nueva URL base.
+     * Llamar desde MainActivity al arrancar (si hay URL guardada en DataStore)
+     * o desde LoginViewModel al guardar una nueva IP.
+     *
+     * @param baseUrl URL completa, ej: "http://192.168.1.107:8080/api/v1/"
+     */
+    fun init(baseUrl: String) {
+        currentIp = baseUrl
+            .removePrefix("http://")
+            .substringBefore(":")
+        retrofit = buildRetrofit(baseUrl)
+    }
 }

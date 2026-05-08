@@ -15,25 +15,22 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentSaldosGlobalesBinding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
  * Saldos globales de todos los empleados (P27).
  *
- * Patron D - lista solo lectura. Endpoint: E39 GET /saldos?anio=
+ * Patron WebView. Endpoint: E44 GET /informes/saldos?anio=&formato=html
  * Roles: ENCARGADO y ADMIN.
  *
- * Cuatro estados: Loading (skeleton) | Error | Empty | Success.
- * Selector de año en la toolbar: muestra el año actual y permite cambiar.
- * Tap en fila navega a P26 (SaldoIndividualFragment) con el empleadoId.
- *
- * SaldoResponse incluye nombreCompleto para mostrar directamente en cada fila.
+ * Tres estados: Loading | Error | Success (WebView con HTML del informe).
+ * El selector de año en la toolbar recarga el informe al cambiar el año.
  */
 class SaldosGlobalesFragment : Fragment() {
 
@@ -41,7 +38,6 @@ class SaldosGlobalesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SaldosGlobalesViewModel by viewModels()
-    private lateinit var adapter: SaldoGlobalAdapter
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -58,7 +54,7 @@ class SaldosGlobalesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        configurarRecyclerView()
+        configurarWebView()
         configurarMenu()
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
         observarViewModel()
@@ -73,15 +69,9 @@ class SaldosGlobalesFragment : Fragment() {
     // Configuracion
     // ------------------------------------------------------------------
 
-    private fun configurarRecyclerView() {
-        adapter = SaldoGlobalAdapter(
-            onItemClick = { empleadoId ->
-                val bundle = Bundle().apply { putLong("empleadoId", empleadoId) }
-                findNavController().navigate(R.id.action_saldos_globales_to_saldo_individual, bundle)
-            }
-        )
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
+    private fun configurarWebView() {
+        binding.webView.settings.useWideViewPort      = true
+        binding.webView.settings.loadWithOverviewMode = true
     }
 
     private fun configurarMenu() {
@@ -89,15 +79,12 @@ class SaldosGlobalesFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
                 inflater.inflate(R.menu.menu_saldos_globales, menu)
-                menu.findItem(R.id.action_anio)?.title = viewModel.anio.value.toString()
+                val chip = menu.findItem(R.id.action_anio)
+                    ?.actionView?.findViewById<Chip>(R.id.chipAnio)
+                chip?.text = "${viewModel.anio.value} ▾"
+                chip?.setOnClickListener { mostrarSelectorAnio() }
             }
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                if (item.itemId == R.id.action_anio) {
-                    mostrarSelectorAnio()
-                    return true
-                }
-                return false
-            }
+            override fun onMenuItemSelected(item: MenuItem) = false
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -129,16 +116,28 @@ class SaldosGlobalesFragment : Fragment() {
     }
 
     private fun procesarEstado(estado: SaldosGlobalesViewModel.UiState) {
-        val exito = estado is SaldosGlobalesViewModel.UiState.Success
-        binding.layoutHeader.isVisible   = exito
-        binding.layoutSkeleton.isVisible = estado is SaldosGlobalesViewModel.UiState.Loading
-        binding.layoutError.isVisible    = estado is SaldosGlobalesViewModel.UiState.Error
-        binding.layoutVacio.isVisible    = estado is SaldosGlobalesViewModel.UiState.Empty
-        binding.recyclerView.isVisible   = exito
+        binding.progressIndicator.isVisible = estado is SaldosGlobalesViewModel.UiState.Loading
+        binding.layoutError.isVisible       = estado is SaldosGlobalesViewModel.UiState.Error
+                                           || estado is SaldosGlobalesViewModel.UiState.Empty
+        binding.webView.isVisible           = estado is SaldosGlobalesViewModel.UiState.Success
 
         when (estado) {
-            is SaldosGlobalesViewModel.UiState.Error   -> binding.tvErrorMensaje.text = estado.mensaje
-            is SaldosGlobalesViewModel.UiState.Success -> adapter.submitList(estado.saldos)
+            is SaldosGlobalesViewModel.UiState.Error -> {
+                binding.tvErrorMensaje.text = estado.mensaje
+                binding.btnReintentar.isVisible = true
+            }
+            is SaldosGlobalesViewModel.UiState.Empty -> {
+                binding.tvErrorMensaje.text = "No hay datos de saldo para el año ${estado.anio}."
+                binding.btnReintentar.isVisible = false
+                viewLifecycleOwner.lifecycleScope.launch {
+                    delay(2500)
+                    val anioActual = Calendar.getInstance().get(Calendar.YEAR)
+                    viewModel.setAnio(anioActual)
+                    requireActivity().invalidateOptionsMenu()
+                }
+            }
+            is SaldosGlobalesViewModel.UiState.Success ->
+                binding.webView.loadDataWithBaseURL(null, estado.html, "text/html", "UTF-8", null)
             else -> Unit
         }
     }

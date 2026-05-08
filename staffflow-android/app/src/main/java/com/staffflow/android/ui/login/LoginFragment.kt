@@ -1,10 +1,14 @@
 package com.staffflow.android.ui.login
 
+import android.content.Context
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -12,11 +16,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.core.content.ContextCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.staffflow.android.MainActivity
 import com.staffflow.android.R
+import com.staffflow.android.data.remote.api.NetworkModule
+import com.staffflow.android.databinding.DialogCambiarIpBinding
 import com.staffflow.android.databinding.FragmentLoginBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.InetSocketAddress
+import java.net.Socket
 
 /**
  * Pantalla de login JWT (P02).
@@ -152,13 +164,87 @@ class LoginFragment : Fragment() {
             }
             is LoginUiState.Exito -> {
                 viewModel.resetEstado()
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(binding.root.windowToken, 0)
                 // Coordinar la transicion con MainActivity
                 (requireActivity() as? MainActivity)?.let { main ->
                     main.refreshDrawerMenu()
                     main.navigateToInitialDestination(estado.rol)
                 }
             }
+            is LoginUiState.ErrorConexion -> {
+                viewModel.resetEstado()
+                mostrarDialogoCambiarIp(estado.username, estado.password)
+            }
         }
+    }
+
+    private fun mostrarDialogoCambiarIp(username: String, password: String) {
+        val dialogBinding = DialogCambiarIpBinding.inflate(layoutInflater)
+
+        dialogBinding.etIp.setText(NetworkModule.currentIp)
+        dialogBinding.etIp.setSelection(dialogBinding.etIp.text?.length ?: 0)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialogo_ip_titulo)
+            .setMessage(R.string.dialogo_ip_mensaje)
+            .setView(dialogBinding.root)
+            .setNegativeButton(R.string.dialogo_ip_cancelar, null)
+            .setPositiveButton(R.string.dialogo_ip_btn_guardar, null)
+            .create()
+
+        dialog.setOnShowListener {
+            val btnGuardar = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+            btnGuardar.isEnabled = false
+
+            // Al editar la IP, resetear el resultado y deshabilitar guardar
+            dialogBinding.etIp.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable?) {
+                    dialogBinding.tvResultadoConexion.visibility = View.GONE
+                    btnGuardar.isEnabled = false
+                }
+            })
+
+            dialogBinding.btnProbarConexion.setOnClickListener {
+                val ip = dialogBinding.etIp.text?.toString()?.trim() ?: return@setOnClickListener
+                dialogBinding.btnProbarConexion.isEnabled = false
+                dialogBinding.tvResultadoConexion.isVisible = true
+                dialogBinding.tvResultadoConexion.text = getString(R.string.cargando)
+
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val ok = withContext(Dispatchers.IO) {
+                        try {
+                            Socket().use { socket ->
+                                socket.connect(InetSocketAddress(ip, 8080), 5000)
+                                true
+                            }
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                    dialogBinding.btnProbarConexion.isEnabled = true
+                    if (ok) {
+                        dialogBinding.tvResultadoConexion.text = getString(R.string.dialogo_ip_resultado_ok)
+                        dialogBinding.tvResultadoConexion.setTextColor(ContextCompat.getColor(requireContext(), R.color.color_exito))
+                        btnGuardar.isEnabled = true
+                    } else {
+                        dialogBinding.tvResultadoConexion.text = getString(R.string.dialogo_ip_resultado_error)
+                        dialogBinding.tvResultadoConexion.setTextColor(ContextCompat.getColor(requireContext(), R.color.color_error))
+                        btnGuardar.isEnabled = false
+                    }
+                }
+            }
+
+            btnGuardar.setOnClickListener {
+                val ip = dialogBinding.etIp.text?.toString()?.trim() ?: return@setOnClickListener
+                dialog.dismiss()
+                viewModel.guardarIpYReintentarLogin(ip, username, password)
+            }
+        }
+
+        dialog.show()
     }
 
     private fun limpiarError() {

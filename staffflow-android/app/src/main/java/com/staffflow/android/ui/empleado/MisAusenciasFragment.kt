@@ -2,40 +2,33 @@ package com.staffflow.android.ui.empleado
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.MenuHost
-import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentMisAusenciasBinding
-import com.staffflow.android.ui.encargado.AusenciaAdapter
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 /**
- * Lista de ausencias planificadas del empleado autenticado (P11). Solo lectura.
+ * Vista de ausencias del empleado autenticado (P11) — variante WebView.
  *
- * Endpoint: E34 GET /ausencias/me
+ * Endpoint: GET /api/v1/ausencias/me/informe?desde=&hasta=&filtro=
  *
- * Cuatro estados:
- *   Loading -> skeleton list
- *   Error   -> icono nube + mensaje + boton Reintentar
- *   Empty   -> icono + mensaje sin datos
- *   Success -> RecyclerView con pull-to-refresh
- *
- * Selector de rango de fechas en toolbar (MaterialDatePicker rango).
- * No tiene FAB — el empleado no puede crear ni editar ausencias directamente.
+ * Muestra el informe HTML del backend (planificadas + ejecutadas) en un WebView.
+ * Rango por defecto: año en curso completo.
+ * chipPeriodo abre MaterialDatePicker para seleccionar cualquier rango.
+ * chipFiltro alterna entre TODAS y VACACIONES_AP (excluye festivos siempre).
  */
 class MisAusenciasFragment : Fragment() {
 
@@ -43,11 +36,6 @@ class MisAusenciasFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: MisAusenciasViewModel by viewModels()
-    private lateinit var adapter: AusenciaAdapter
-
-    // ------------------------------------------------------------------
-    // Ciclo de vida
-    // ------------------------------------------------------------------
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,8 +48,7 @@ class MisAusenciasFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        configurarRecyclerView()
-        configurarMenu()
+        configurarWebView()
         configurarListeners()
         observarViewModel()
     }
@@ -71,91 +58,67 @@ class MisAusenciasFragment : Fragment() {
         _binding = null
     }
 
-    // ------------------------------------------------------------------
-    // Configuracion
-    // ------------------------------------------------------------------
-
-    private fun configurarRecyclerView() {
-        // Solo lectura: el tap no navega a ningún lado
-        adapter = AusenciaAdapter { /* no-op */ }
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-    }
-
-    private fun configurarMenu() {
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
-                inflater.inflate(R.menu.menu_mis_ausencias, menu)
-            }
-
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                if (item.itemId == R.id.action_rango_fechas_mis_ausencias) {
-                    mostrarSelectorRango()
-                    return true
-                }
-                return false
-            }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    private fun configurarWebView() {
+        binding.webView.settings.useWideViewPort = true
+        binding.webView.settings.loadWithOverviewMode = true
     }
 
     private fun configurarListeners() {
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
-        binding.swipeRefresh.setOnRefreshListener { viewModel.reintentar() }
+        binding.chipPeriodo.setOnClickListener { mostrarSelectorRango() }
+        binding.chipFiltro.setOnClickListener { viewModel.toggleFiltro() }
     }
 
-    // ------------------------------------------------------------------
-    // Selector de rango de fechas
-    // ------------------------------------------------------------------
-
     private fun mostrarSelectorRango() {
-        val picker = com.google.android.material.datepicker.MaterialDatePicker.Builder
+        val picker = MaterialDatePicker.Builder
             .dateRangePicker()
             .setTitleText(getString(R.string.mis_ausencias_selector_rango_titulo))
-            .setCalendarConstraints(CalendarConstraints.Builder().setFirstDayOfWeek(Calendar.MONDAY).build())
+            .setCalendarConstraints(
+                CalendarConstraints.Builder()
+                    .setFirstDayOfWeek(Calendar.MONDAY)
+                    .build()
+            )
             .build()
 
         picker.addOnPositiveButtonClickListener { rango ->
-            val fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val desde = java.time.Instant.ofEpochMilli(rango.first)
-                .atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(fmt)
-            val hasta = java.time.Instant.ofEpochMilli(rango.second)
-                .atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(fmt)
+            val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val zone = ZoneId.systemDefault()
+            val desde = Instant.ofEpochMilli(rango.first).atZone(zone).toLocalDate().format(fmt)
+            val hasta = Instant.ofEpochMilli(rango.second).atZone(zone).toLocalDate().format(fmt)
             viewModel.setRangoFechas(desde, hasta)
         }
 
         picker.show(parentFragmentManager, "rango_mis_ausencias")
     }
 
-    // ------------------------------------------------------------------
-    // Observacion del ViewModel
-    // ------------------------------------------------------------------
-
     private fun observarViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { procesarEstado(it) }
+                launch { viewModel.uiState.collect { procesarEstado(it) } }
+                launch { viewModel.rangoLabel.collect { binding.chipPeriodo.text = "$it ▾" } }
+                launch {
+                    viewModel.filtroActivo.collect { filtro ->
+                        binding.chipFiltro.isChecked = filtro == MisAusenciasViewModel.Filtro.VACACIONES_AP
+                        binding.chipFiltro.text = if (filtro == MisAusenciasViewModel.Filtro.VACACIONES_AP)
+                            "${getString(R.string.mis_ausencias_chip_filtro_vac_ap)} ▾"
+                        else
+                            "${getString(R.string.mis_ausencias_chip_filtro_todas)} ▾"
+                    }
+                }
             }
         }
     }
 
-    // ------------------------------------------------------------------
-    // Actualizacion de la UI
-    // ------------------------------------------------------------------
-
     private fun procesarEstado(estado: MisAusenciasViewModel.UiState) {
-        if (estado !is MisAusenciasViewModel.UiState.Loading) {
-            binding.swipeRefresh.isRefreshing = false
-        }
-
-        binding.layoutSkeleton.isVisible = estado is MisAusenciasViewModel.UiState.Loading
-        binding.layoutError.isVisible    = estado is MisAusenciasViewModel.UiState.Error
-        binding.layoutVacio.isVisible    = estado is MisAusenciasViewModel.UiState.Empty
-        binding.swipeRefresh.isVisible   = estado is MisAusenciasViewModel.UiState.Success
+        binding.progressIndicator.isVisible = estado is MisAusenciasViewModel.UiState.Loading
+        binding.layoutError.isVisible       = estado is MisAusenciasViewModel.UiState.Error
+        binding.webView.isVisible           = estado is MisAusenciasViewModel.UiState.Success
 
         when (estado) {
-            is MisAusenciasViewModel.UiState.Error   -> binding.tvErrorMensaje.text = estado.mensaje
-            is MisAusenciasViewModel.UiState.Success -> adapter.submitList(estado.ausencias)
+            is MisAusenciasViewModel.UiState.Error ->
+                binding.tvErrorMensaje.text = estado.mensaje
+            is MisAusenciasViewModel.UiState.Success ->
+                binding.webView.loadDataWithBaseURL(null, estado.html, "text/html", "UTF-8", null)
             else -> Unit
         }
     }

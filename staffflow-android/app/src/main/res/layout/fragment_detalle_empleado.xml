@@ -115,12 +115,12 @@
                             android:textAppearance="?attr/textAppearanceTitleMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipEstado"
-                            style="@style/Widget.Material3.Chip.Assist"
+                        <TextView
+                            android:id="@+id/tvEstado"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:clickable="false" />
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
 
                     </LinearLayout>
 
@@ -151,6 +151,9 @@
                     <include layout="@layout/item_saldo_fila" android:id="@+id/filaFechaAlta" />
                     <include layout="@layout/item_saldo_fila" android:id="@+id/filaCategoria" />
                     <include layout="@layout/item_saldo_fila"
+                        android:id="@+id/filaEmail"
+                        android:visibility="gone" />
+                    <include layout="@layout/item_saldo_fila"
                         android:id="@+id/filaPinTerminal"
                         android:visibility="gone" />
 
@@ -178,6 +181,7 @@
                         android:layout_marginBottom="8dp" />
 
                     <include layout="@layout/item_saldo_fila" android:id="@+id/filaJornadaSemanal" />
+                    <include layout="@layout/item_saldo_fila" android:id="@+id/filaJornadaDiaria" />
                     <include layout="@layout/item_saldo_fila" android:id="@+id/filaVacaciones" />
                     <include layout="@layout/item_saldo_fila" android:id="@+id/filaAsuntosPropios" />
 
@@ -209,17 +213,24 @@
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipVerSaldo"
-                            style="@style/Widget.Material3.Chip.Suggestion"
+                            style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/detalle_empleado_ver_saldo" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipVerFichajes"
-                            style="@style/Widget.Material3.Chip.Suggestion"
+                            style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/detalle_empleado_ver_fichajes" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipVerAusencias"
+                            style="@style/Widget.Material3.Chip.Assist"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detalle_empleado_ver_ausencias" />
 
                     </com.google.android.material.chip.ChipGroup>
 

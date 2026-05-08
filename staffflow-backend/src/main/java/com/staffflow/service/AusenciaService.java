@@ -2,21 +2,31 @@ package com.staffflow.service;
 
 import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.PlanificacionAusencia;
+import com.staffflow.domain.entity.SaldoAnual;
 import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.enums.Rol;
+import com.staffflow.domain.enums.TipoAusencia;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
+import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
 import com.staffflow.dto.request.AusenciaPatchRequest;
+import com.staffflow.dto.request.AusenciaRangoRequest;
 import com.staffflow.dto.request.AusenciaRequest;
 import com.staffflow.dto.response.AusenciaResponse;
+import com.staffflow.dto.response.PlanificacionVacApResponse;
 import com.staffflow.exception.ConflictException;
+import com.staffflow.exception.RangoConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Servicio de planificación de ausencias.
@@ -47,6 +57,7 @@ public class AusenciaService {
     private final PlanificacionAusenciaRepository ausenciaRepository;
     private final EmpleadoRepository              empleadoRepository;
     private final UsuarioRepository               usuarioRepository;
+    private final SaldoAnualRepository            saldoAnualRepository;
 
     // ------------------------------------------------------------------
     // E30 — POST /api/v1/ausencias
@@ -77,12 +88,13 @@ public class AusenciaService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Usuario no encontrado: " + username));
 
-        // --- Restriccion D-026: ENCARGADO solo puede gestionar el dia actual ---
+        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede planificar ausencias para cualquier fecha sin restriccion.
+        // Ausencias futuras están permitidas para ambos roles (a diferencia de fichajes/pausas).
         if (usuario.getRol() == Rol.ENCARGADO
-                && !request.getFecha().isEqual(LocalDate.now())) {
+                && request.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // --- Validación UNIQUE(empleado_id, fecha) ---
@@ -112,6 +124,116 @@ public class AusenciaService {
 
         PlanificacionAusencia guardada = ausenciaRepository.save(ausencia);
         return toAusenciaResponse(guardada);
+    }
+
+    // ------------------------------------------------------------------
+    // E30b — POST /api/v1/ausencias/rango
+    // Conveniencia: crea un registro por cada día del rango [desde, hasta]
+    // ------------------------------------------------------------------
+
+    /**
+     * Planifica un rango de ausencias consecutivas para un empleado (E30b).
+     *
+     * <p>Crea un registro de PlanificacionAusencia por cada día del rango
+     * [fechaDesde, fechaHasta] inclusive. El modelo de datos no cambia
+     * respecto a E30 — sigue siendo un registro por día.</p>
+     *
+     * <p>Detección de conflictos: si algún día del rango ya tiene una
+     * ausencia con procesado=false y sobrescribir=false, lanza
+     * RangoConflictException (HTTP 409) con la lista de fechas. Si
+     * sobrescribir=true, elimina los registros conflictivos primero.</p>
+     *
+     * <p>Si algún día tiene procesado=true (ya materializado en fichaje),
+     * devuelve HTTP 400 — no se puede sobrescribir un fichaje generado.</p>
+     *
+     * <p>Restriccion D-026: ENCARGADO solo puede planificar desde hoy
+     * en adelante. ADMIN sin restricción de fecha.</p>
+     *
+     * @param request   datos del rango a planificar
+     * @param username  username del usuario autenticado
+     * @return lista de ausencias creadas
+     */
+    @Transactional
+    public List<AusenciaResponse> crearRango(AusenciaRangoRequest request, String username) {
+
+        // --- Resolver usuario autenticado para D-026 y auditoría ---
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Usuario no encontrado: " + username));
+
+        // --- Validar que fechaDesde <= fechaHasta ---
+        if (request.getFechaDesde().isAfter(request.getFechaHasta())) {
+            throw new IllegalArgumentException(
+                    "fechaDesde no puede ser posterior a fechaHasta");
+        }
+
+        // D-026: ENCARGADO solo puede gestionar hoy y fechas futuras
+        if (usuario.getRol() == Rol.ENCARGADO
+                && request.getFechaDesde().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
+        }
+
+        // --- Detectar conflictos en el rango ---
+        List<PlanificacionAusencia> existentes = ausenciaRepository
+                .findByEmpleadoIdAndFechaBetween(
+                        request.getEmpleadoId(),
+                        request.getFechaDesde(),
+                        request.getFechaHasta());
+
+        // procesado=true: ya materializado en fichaje — no se puede sobrescribir
+        List<LocalDate> procesadas = existentes.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getProcesado()))
+                .map(PlanificacionAusencia::getFecha)
+                .collect(Collectors.toList());
+        if (!procesadas.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Las siguientes fechas ya tienen un fichaje generado y no pueden modificarse: "
+                    + procesadas);
+        }
+
+        // procesado=false: conflicto sobrescribible
+        List<PlanificacionAusencia> conflictos = existentes.stream()
+                .filter(a -> Boolean.FALSE.equals(a.getProcesado()))
+                .collect(Collectors.toList());
+
+        if (!conflictos.isEmpty() && !request.isSobrescribir()) {
+            List<LocalDate> fechas = conflictos.stream()
+                    .map(PlanificacionAusencia::getFecha)
+                    .collect(Collectors.toList());
+            throw new RangoConflictException(fechas);
+        }
+
+        // Sobrescribir: eliminar conflictos procesado=false antes de crear
+        if (!conflictos.isEmpty()) {
+            ausenciaRepository.deleteAll(conflictos);
+        }
+
+        // --- Resolver empleado (null = festivo global RF-26) ---
+        Empleado empleado = null;
+        if (request.getEmpleadoId() != null) {
+            empleado = empleadoRepository.findById(request.getEmpleadoId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Empleado no encontrado con id " + request.getEmpleadoId()));
+        }
+
+        // --- Crear un registro por cada día del rango ---
+        final Empleado empleadoFinal = empleado;
+        List<AusenciaResponse> creadas = new ArrayList<>();
+        LocalDate fecha = request.getFechaDesde();
+        while (!fecha.isAfter(request.getFechaHasta())) {
+            PlanificacionAusencia ausencia = new PlanificacionAusencia();
+            ausencia.setEmpleado(empleadoFinal);
+            ausencia.setFecha(fecha);
+            ausencia.setTipoAusencia(request.getTipoAusencia());
+            ausencia.setProcesado(false);
+            ausencia.setUsuario(usuario);
+            ausencia.setObservaciones(request.getObservaciones());
+            creadas.add(toAusenciaResponse(ausenciaRepository.save(ausencia)));
+            fecha = fecha.plusDays(1);
+        }
+
+        return creadas;
     }
 
     // ------------------------------------------------------------------
@@ -146,13 +268,13 @@ public class AusenciaService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Usuario no encontrado: " + username));
 
-        // Restriccion D-026: ENCARGADO solo puede modificar el dia actual.
+        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la de la ausencia cargada de BD, no del request.
         // ADMIN puede modificar ausencias de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && !ausencia.getFecha().isEqual(LocalDate.now())) {
+                && ausencia.getFecha().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
-                    "El ENCARGADO solo puede gestionar registros del dia actual");
+                    "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
 
         // procesado=true → ya materializada en fichaje → no se puede modificar
@@ -262,6 +384,74 @@ public class AusenciaService {
                 .stream()
                 .map(this::toAusenciaResponse)
                 .toList();
+    }
+
+    // ------------------------------------------------------------------
+    // E-planificacion-vac-ap — GET /api/v1/ausencias/planificacion-vac-ap
+    // Días pendientes de planificar para vacaciones y asuntos propios
+    // ------------------------------------------------------------------
+
+    /**
+     * Calcula los días pendientes de planificar para vacaciones y asuntos
+     * propios de un empleado en un año concreto.
+     *
+     * <p>Si no existe SaldoAnual para ese año, lo crea on-demand con
+     * derechoAnio del empleado y pendientesAnterior=0. Esto permite
+     * planificar el año siguiente antes del cierre anual. El flag
+     * anioFuturoSinCierre=true avisa al cliente de que los pendientes
+     * del año actual aún no están incluidos.</p>
+     *
+     * @param empleadoId id del empleado
+     * @param anio       año a consultar
+     * @return desglose de disponibles, planificados y pendientes para vac y AP
+     */
+    @Transactional
+    public PlanificacionVacApResponse getPlanificacionVacAp(Long empleadoId, int anio) {
+
+        Empleado empleado = empleadoRepository.findById(empleadoId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Empleado no encontrado con id: " + empleadoId));
+
+        Optional<SaldoAnual> existente = saldoAnualRepository
+                .findByEmpleadoIdAndAnio(empleadoId, anio);
+        boolean anioFuturoSinCierre = anio > LocalDate.now().getYear();
+
+        SaldoAnual saldo = existente.orElseGet(() -> {
+            SaldoAnual nuevo = new SaldoAnual();
+            nuevo.setEmpleado(empleado);
+            nuevo.setAnio(anio);
+            nuevo.setDiasVacacionesDerechoAnio(empleado.getDiasVacacionesAnuales());
+            nuevo.setDiasVacacionesPendientesAnioAnterior(0);
+            nuevo.setDiasVacacionesConsumidos(0);
+            nuevo.setDiasVacacionesDisponibles(empleado.getDiasVacacionesAnuales());
+            nuevo.setDiasAsuntosPropiosDerechoAnio(empleado.getDiasAsuntosPropiosAnuales());
+            nuevo.setDiasAsuntosPropiosPendientesAnterior(0);
+            nuevo.setDiasAsuntosPropiosConsumidos(0);
+            nuevo.setDiasAsuntosPropiosDisponibles(empleado.getDiasAsuntosPropiosAnuales());
+            nuevo.setHorasAusenciaRetribuida(BigDecimal.ZERO);
+            nuevo.setSaldoHoras(BigDecimal.ZERO);
+            nuevo.setCalculadoHastaFecha(null);
+            return saldoAnualRepository.save(nuevo);
+        });
+
+        LocalDate desde = LocalDate.of(anio, 1, 1);
+        LocalDate hasta  = LocalDate.of(anio, 12, 31);
+
+        int planVac = ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                empleadoId, TipoAusencia.VACACIONES, desde, hasta);
+        int planAP  = ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                empleadoId, TipoAusencia.ASUNTO_PROPIO, desde, hasta);
+
+        int pendVac = Math.max(0, saldo.getDiasVacacionesDisponibles() - planVac);
+        int pendAP  = Math.max(0, saldo.getDiasAsuntosPropiosDisponibles() - planAP);
+
+        return new PlanificacionVacApResponse(
+                new PlanificacionVacApResponse.VacAp(
+                        saldo.getDiasVacacionesDisponibles(), planVac, pendVac),
+                new PlanificacionVacApResponse.VacAp(
+                        saldo.getDiasAsuntosPropiosDisponibles(), planAP, pendAP),
+                anioFuturoSinCierre
+        );
     }
 
     // ------------------------------------------------------------------

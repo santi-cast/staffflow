@@ -3,7 +3,9 @@ package com.staffflow.service;
 import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.Fichaje;
 import com.staffflow.domain.entity.Pausa;
+import com.staffflow.domain.entity.PlanificacionAusencia;
 import com.staffflow.domain.entity.SaldoAnual;
+import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.enums.Rol;
 import com.staffflow.domain.enums.TipoFichaje;
 import com.staffflow.domain.repository.EmpleadoRepository;
@@ -11,9 +13,13 @@ import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.PausaRepository;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
+import com.staffflow.domain.repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,13 +72,24 @@ public class InformeService {
     private final PausaRepository      pausaRepository;
     private final EmpleadoRepository   empleadoRepository;
     private final SaldoAnualRepository saldoRepository;
+    private final SaldoService         saldoService;
     private final EmpresaService       empresaService;
     private final PlanificacionAusenciaRepository planificacionRepository;
+    private final UsuarioRepository    usuarioRepository;
+
+    // Tipos excluidos siempre del informe de ausencias (NORMAL y festivos)
+    private static final Set<String> TIPOS_EXCLUIDOS_AUSENCIAS = Set.of(
+            "NORMAL", "FESTIVO_NACIONAL", "FESTIVO_LOCAL", "DIA_LIBRE", "SIN_REGISTRO"
+    );
+
+    // Tipos incluidos en el filtro VACACIONES_AP
+    private static final Set<String> TIPOS_VACACIONES_AP = Set.of("VACACIONES", "ASUNTO_PROPIO");
 
     // Formateadores reutilizables
-    private static final DateTimeFormatter FMT_FECHA  = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final DateTimeFormatter FMT_HORA   = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter FMT_GENERA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
+    private static final DateTimeFormatter FMT_FECHA    = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FMT_HORA     = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter FMT_HORA_SEG = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter FMT_GENERA   = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
 
     // Abreviaturas de día de semana en español
     private static final Map<DayOfWeek, String> DIAS_ES = Map.of(
@@ -155,6 +172,30 @@ public class InformeService {
      * @param tipos      lista de tipos a incluir (null = todos)
      * @return informe de horas del empleado en el formato solicitado
      */
+    /**
+     * Informe de horas del empleado autenticado (E-me).
+     *
+     * Resuelve username → usuario → empleado y delega en informeHorasEmpleado()
+     * con formato=html fijo. Mismo patrón D-017 que FichajeService.listarPropios().
+     *
+     * @param username username del empleado autenticado (de authentication.getName())
+     * @param desde    fecha de inicio del periodo
+     * @param hasta    fecha de fin del periodo
+     * @return HTML del informe de horas del empleado autenticado
+     */
+    public Object informeHorasMe(String username, LocalDate desde, LocalDate hasta) {
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+
+        Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "El usuario autenticado no tiene perfil de empleado"));
+
+        return informeHorasEmpleado(empleado.getId(), desde, hasta, "html", null);
+    }
+
     public Object informeHorasEmpleado(Long empleadoId, LocalDate desde,
                                         LocalDate hasta, String formato,
                                         List<String> tipos) {
@@ -251,6 +292,22 @@ public class InformeService {
 
         // Resolver campos seleccionados (bloques → campos individuales)
         Set<String> camposActivos = resolverCampos(campos);
+
+        // Comprobar si existe algún saldo en BD para ese año antes de crear on-demand.
+        // Si no hay ningún registro previo → el año no tiene datos reales → Empty state.
+        List<SaldoAnual> existentes = saldoRepository.findByAnio(anio).stream()
+                .filter(s -> Boolean.TRUE.equals(s.getEmpleado().getActivo()))
+                .collect(Collectors.toList());
+
+        if (existentes.isEmpty()) {
+            throw new IllegalStateException("No hay datos de saldo para el año " + anio);
+        }
+
+        // El año tiene datos: completar on-demand los empleados activos que aún no tengan registro.
+        empleadoRepository.findAll().stream()
+                .filter(e -> Boolean.TRUE.equals(e.getActivo()))
+                .filter(e -> saldoRepository.findByEmpleadoIdAndAnio(e.getId(), anio).isEmpty())
+                .forEach(e -> saldoService.recalcularParaProceso(e.getId(), anio));
 
         // Obtener saldos según filtro de empleados
         List<SaldoAnual> saldos;
@@ -441,56 +498,58 @@ public class InformeService {
 
             // Bloque vacaciones
             if (camposActivos.contains("VAC_PENDIENTE_ANT"))
-                sb.append("  <td>").append(s.getDiasVacacionesPendientesAnioAnterior()).append("</td>\n");
+                sb.append("  <td class=\"col-vac\">").append(s.getDiasVacacionesPendientesAnioAnterior()).append("</td>\n");
             if (camposActivos.contains("VAC_DERECHO"))
-                sb.append("  <td>").append(s.getDiasVacacionesDerechoAnio()).append("</td>\n");
+                sb.append("  <td class=\"col-vac\">").append(s.getDiasVacacionesDerechoAnio()).append("</td>\n");
             if (camposActivos.contains("VAC_CONSUMIDOS"))
-                sb.append("  <td>").append(s.getDiasVacacionesConsumidos()).append("</td>\n");
+                sb.append("  <td class=\"col-vac\">").append(s.getDiasVacacionesConsumidos()).append("</td>\n");
             if (camposActivos.contains("VAC_DISPONIBLES")) {
                 int disp = s.getDiasVacacionesDisponibles();
-                sb.append("  <td class=\"").append(claseCelda(disp)).append("\">").append(disp).append("</td>\n");
+                String extra = claseCelda(disp);
+                sb.append("  <td class=\"col-vac").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(disp).append("</td>\n");
             }
 
             // Bloque asuntos propios
             if (camposActivos.contains("AP_PENDIENTE_ANT"))
-                sb.append("  <td>").append(s.getDiasAsuntosPropiosPendientesAnterior()).append("</td>\n");
+                sb.append("  <td class=\"col-ap\">").append(s.getDiasAsuntosPropiosPendientesAnterior()).append("</td>\n");
             if (camposActivos.contains("AP_DERECHO"))
-                sb.append("  <td>").append(s.getDiasAsuntosPropiosDerechoAnio()).append("</td>\n");
+                sb.append("  <td class=\"col-ap\">").append(s.getDiasAsuntosPropiosDerechoAnio()).append("</td>\n");
             if (camposActivos.contains("AP_CONSUMIDOS"))
-                sb.append("  <td>").append(s.getDiasAsuntosPropiosConsumidos()).append("</td>\n");
+                sb.append("  <td class=\"col-ap\">").append(s.getDiasAsuntosPropiosConsumidos()).append("</td>\n");
             if (camposActivos.contains("AP_DISPONIBLES")) {
                 int disp = s.getDiasAsuntosPropiosDisponibles();
-                sb.append("  <td class=\"").append(claseCelda(disp)).append("\">").append(disp).append("</td>\n");
+                String extra = claseCelda(disp);
+                sb.append("  <td class=\"col-ap").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(disp).append("</td>\n");
             }
 
             // Bloque resto días
             if (camposActivos.contains("DIAS_TRABAJADOS"))
-                sb.append("  <td>").append(s.getDiasTrabajados()).append("</td>\n");
+                sb.append("  <td class=\"col-dias\">").append(s.getDiasTrabajados()).append("</td>\n");
             if (camposActivos.contains("DIAS_BAJA_MEDICA"))
-                sb.append("  <td>").append(s.getDiasBajaMedica()).append("</td>\n");
+                sb.append("  <td class=\"col-dias\">").append(s.getDiasBajaMedica()).append("</td>\n");
             if (camposActivos.contains("DIAS_PERMISO_RETRIBUIDO"))
-                sb.append("  <td>").append(s.getDiasPermisoRetribuido()).append("</td>\n");
+                sb.append("  <td class=\"col-dias\">").append(s.getDiasPermisoRetribuido()).append("</td>\n");
             if (camposActivos.contains("DIAS_AUSENCIA_INJUSTIFICADA"))
-                sb.append("  <td>").append(s.getDiasAusenciaInjustificada()).append("</td>\n");
+                sb.append("  <td class=\"col-dias\">").append(s.getDiasAusenciaInjustificada()).append("</td>\n");
 
             // Bloque horas
             if (camposActivos.contains("HORAS_AUSENCIA_RETRIBUIDA"))
-                sb.append("  <td>").append(formatearDecimal(s.getHorasAusenciaRetribuida())).append("</td>\n");
+                sb.append("  <td class=\"col-horas\">").append(formatearDecimal(s.getHorasAusenciaRetribuida())).append("</td>\n");
             if (camposActivos.contains("SALDO_HORAS")) {
                 double saldoHoras = s.getSaldoHoras() != null ? s.getSaldoHoras().doubleValue() : 0.0;
                 String claseHoras = saldoHoras > 0 ? "valor-pos" : (saldoHoras < 0 ? "valor-neg" : "");
                 String prefijo = saldoHoras > 0 ? "+" : "";
-                sb.append("  <td class=\"").append(claseHoras).append("\">")
+                sb.append("  <td class=\"col-horas").append(claseHoras.isEmpty() ? "" : " " + claseHoras).append("\">")
                   .append(prefijo).append(formatearDecimal(s.getSaldoHoras()))
                   .append("</td>\n");
             }
 
             // Bloque control
             if (camposActivos.contains("CALCULADO_HASTA"))
-                sb.append("  <td>").append(s.getCalculadoHastaFecha() != null
+                sb.append("  <td class=\"col-ctrl\">").append(s.getCalculadoHastaFecha() != null
                         ? s.getCalculadoHastaFecha().format(FMT_FECHA) : "&mdash;").append("</td>\n");
             if (camposActivos.contains("ULTIMA_MODIFICACION"))
-                sb.append("  <td>").append(s.getFechaUltimaModificacion() != null
+                sb.append("  <td class=\"col-ctrl\">").append(s.getFechaUltimaModificacion() != null
                         ? s.getFechaUltimaModificacion().format(FMT_FECHA) : "&mdash;").append("</td>\n");
 
             sb.append("</tr>\n");
@@ -504,7 +563,8 @@ public class InformeService {
         sb.append("</tbody>\n</table>\n</div>\n");
         sb.append("<div class=\"pie\">StaffFlow &mdash; Informe generado el ")
           .append(fechaGen).append("</div>\n");
-        sb.append("</div>\n</body>\n</html>");
+        sb.append("</div>\n");
+        sb.append("</body>\n</html>");
 
         return sb.toString();
     }
@@ -889,7 +949,7 @@ public class InformeService {
             for (PausaInforme p : dia.pausas) {
                 if (p.esManual) {
                     pausasManuales.add(dia.fecha.format(FMT_FECHA) + " "
-                            + (p.horaInicio != null ? p.horaInicio.format(FMT_HORA) : "")
+                            + (p.horaInicio != null ? p.horaInicio.format(FMT_HORA_SEG) : "")
                             + (p.observaciones != null && !p.observaciones.isBlank()
                                ? " – " + p.observaciones : ""));
                 }
@@ -948,8 +1008,8 @@ public class InformeService {
         sb.append("  <td>").append(DIAS_ES.getOrDefault(dia.fecha.getDayOfWeek(), "")).append("</td>\n");
         sb.append("  <td>").append(TIPO_LEGIBLE.getOrDefault(dia.tipo, dia.tipo)).append("</td>\n");
         if (dia.tieneDatos) {
-            String entrada = dia.horaEntrada != null ? dia.horaEntrada.format(FMT_HORA) : "&mdash;";
-            String salida  = dia.horaSalida  != null ? dia.horaSalida.format(FMT_HORA)  : "&mdash;";
+            String entrada = dia.horaEntrada != null ? dia.horaEntrada.format(FMT_HORA_SEG) : "&mdash;";
+            String salida  = dia.horaSalida  != null ? dia.horaSalida.format(FMT_HORA_SEG)  : "&mdash;";
             if (dia.esManual) { entrada += "*"; salida += "*"; }
             sb.append("  <td>").append(entrada).append("</td>\n");
             sb.append("  <td>").append(salida).append("</td>\n");
@@ -1003,6 +1063,741 @@ public class InformeService {
           .append(" &mdash; Generado el ").append(LocalDateTime.now().format(FMT_GENERA))
           .append("</div>\n</div>\n</body>\n</html>");
 
+        return sb.toString();
+    }
+
+    // =========================================================================
+    // E-ausencias — GET /api/v1/ausencias/me/informe
+    // Informe HTML de ausencias del empleado autenticado (ejecutadas + planificadas)
+    // =========================================================================
+
+    /**
+     * Genera el informe HTML de ausencias del empleado autenticado.
+     *
+     * Combina dos fuentes:
+     *   - planificacion_ausencias: ausencias planificadas (procesado=false) y ejecutadas vía flujo normal (procesado=true)
+     *   - fichajes tipo != NORMAL: ausencias registradas directamente sin planificación
+     * Para una misma fecha, el fichaje tiene prioridad (es el dato ejecutado real).
+     *
+     * Excluye siempre NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL, DIA_LIBRE.
+     * filtro=VACACIONES_AP muestra solo VACACIONES y ASUNTO_PROPIO.
+     *
+     * @param username username del empleado autenticado
+     * @param desde    fecha de inicio del periodo
+     * @param hasta    fecha de fin del periodo
+     * @param filtro   "TODAS" o "VACACIONES_AP"
+     * @return HTML del informe de ausencias
+     */
+    /**
+     * Informe HTML de ausencias de un empleado por id (ADMIN/ENCARGADO).
+     * Misma lógica que informeAusenciasMe pero resolviendo por empleadoId.
+     *
+     * @param empleadoId id del empleado
+     * @param desde      fecha de inicio del periodo
+     * @param hasta      fecha de fin del periodo
+     * @param filtro     "TODAS" o "VACACIONES_AP"
+     * @return HTML del informe de ausencias
+     */
+    public String informeAusenciasEmpleado(Long empleadoId, LocalDate desde, LocalDate hasta, String filtro) {
+
+        Empleado empleado = empleadoRepository.findById(empleadoId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Empleado con id " + empleadoId + " no encontrado"));
+
+        String nombreEmpresa = obtenerNombreEmpresa();
+        boolean soloVacAp = "VACACIONES_AP".equalsIgnoreCase(filtro);
+
+        List<Fichaje> fichajes = fichajeRepository
+                .findByEmpleadoIdAndFechaBetween(empleado.getId(), desde, hasta)
+                .stream()
+                .filter(f -> !TIPOS_EXCLUIDOS_AUSENCIAS.contains(f.getTipo().name()))
+                .collect(Collectors.toList());
+
+        List<PlanificacionAusencia> planificaciones = planificacionRepository
+                .findByEmpleadoIdAndRango(empleado.getId(), desde, hasta)
+                .stream()
+                .filter(p -> !TIPOS_EXCLUIDOS_AUSENCIAS.contains(p.getTipoAusencia().name()))
+                .collect(Collectors.toList());
+
+        Map<LocalDate, AusenciaInformeRow> porFecha = new LinkedHashMap<>();
+        for (PlanificacionAusencia p : planificaciones) {
+            String estado = Boolean.TRUE.equals(p.getProcesado()) ? "Ejecutada" : "Planificada";
+            porFecha.put(p.getFecha(), new AusenciaInformeRow(
+                    p.getFecha(), p.getTipoAusencia().name(), estado, p.getObservaciones()));
+        }
+        for (Fichaje f : fichajes) {
+            porFecha.put(f.getFecha(), new AusenciaInformeRow(
+                    f.getFecha(), f.getTipo().name(), "Ejecutada", f.getObservaciones()));
+        }
+
+        List<AusenciaInformeRow> filas = porFecha.values().stream()
+                .filter(r -> !soloVacAp || TIPOS_VACACIONES_AP.contains(r.tipo))
+                .sorted(Comparator.comparing(r -> r.fecha))
+                .collect(Collectors.toList());
+
+        return generarHtmlAusencias(empleado, desde, hasta, filas, nombreEmpresa, soloVacAp);
+    }
+
+    public String informeAusenciasMe(String username, LocalDate desde, LocalDate hasta, String filtro) {
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario autenticado no encontrado: " + username));
+        Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "El usuario autenticado no tiene perfil de empleado"));
+
+        String nombreEmpresa = obtenerNombreEmpresa();
+        boolean soloVacAp = "VACACIONES_AP".equalsIgnoreCase(filtro);
+
+        // 1. Fichajes con tipo ausencia (excluir NORMAL y festivos)
+        List<Fichaje> fichajes = fichajeRepository
+                .findByEmpleadoIdAndFechaBetween(empleado.getId(), desde, hasta)
+                .stream()
+                .filter(f -> !TIPOS_EXCLUIDOS_AUSENCIAS.contains(f.getTipo().name()))
+                .collect(Collectors.toList());
+
+        // 2. Planificaciones (excluir festivos)
+        List<PlanificacionAusencia> planificaciones = planificacionRepository
+                .findByEmpleadoIdAndRango(empleado.getId(), desde, hasta)
+                .stream()
+                .filter(p -> !TIPOS_EXCLUIDOS_AUSENCIAS.contains(p.getTipoAusencia().name()))
+                .collect(Collectors.toList());
+
+        // 3. Merge: planificaciones primero, fichajes sobreescriben (son la fuente autoritativa)
+        Map<LocalDate, AusenciaInformeRow> porFecha = new LinkedHashMap<>();
+        for (PlanificacionAusencia p : planificaciones) {
+            String estado = Boolean.TRUE.equals(p.getProcesado()) ? "Ejecutada" : "Planificada";
+            porFecha.put(p.getFecha(), new AusenciaInformeRow(
+                    p.getFecha(), p.getTipoAusencia().name(), estado, p.getObservaciones()));
+        }
+        for (Fichaje f : fichajes) {
+            porFecha.put(f.getFecha(), new AusenciaInformeRow(
+                    f.getFecha(), f.getTipo().name(), "Ejecutada", f.getObservaciones()));
+        }
+
+        // 4. Aplicar filtro y ordenar por fecha
+        List<AusenciaInformeRow> filas = porFecha.values().stream()
+                .filter(r -> !soloVacAp || TIPOS_VACACIONES_AP.contains(r.tipo))
+                .sorted(Comparator.comparing(r -> r.fecha))
+                .collect(Collectors.toList());
+
+        return generarHtmlAusencias(empleado, desde, hasta, filas, nombreEmpresa, soloVacAp);
+    }
+
+    private String generarHtmlAusencias(Empleado empleado, LocalDate desde, LocalDate hasta,
+                                         List<AusenciaInformeRow> filas,
+                                         String nombreEmpresa, boolean soloVacAp) {
+
+        // Resumen por tipo
+        Map<String, Integer> conteoTipos = new LinkedHashMap<>();
+        for (AusenciaInformeRow fila : filas) {
+            conteoTipos.merge(fila.tipo, 1, Integer::sum);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(htmlCabeceraInforme());
+        sb.append("<body>\n<div class=\"page\">\n");
+
+        sb.append("<div class=\"header\">\n");
+        sb.append("  <div class=\"titulo\">").append(esc(nombreEmpresa)).append("</div>\n");
+        sb.append("  <div class=\"meta\">\n");
+        sb.append("    <span>Informe de ausencias</span>\n");
+        sb.append("    <span>").append(esc(nombreCompleto(empleado))).append("</span>\n");
+        sb.append("    <span>").append(desde.format(FMT_FECHA)).append(" – ")
+          .append(hasta.format(FMT_FECHA)).append("</span>\n");
+        if (soloVacAp) {
+            sb.append("    <span>Filtro: Vacaciones y asuntos propios</span>\n");
+        }
+        sb.append("    <span>Generado: ").append(LocalDateTime.now().format(FMT_GENERA)).append("</span>\n");
+        sb.append("  </div>\n</div>\n");
+
+        // Tabla resumen
+        sb.append("<table class=\"resumen\">\n");
+        sb.append(filaResumen("Total ausencias", String.valueOf(filas.size())));
+        for (Map.Entry<String, Integer> entry : conteoTipos.entrySet()) {
+            sb.append(filaResumen(
+                    TIPO_LEGIBLE.getOrDefault(entry.getKey(), entry.getKey()),
+                    String.valueOf(entry.getValue())));
+        }
+        sb.append("</table>\n");
+
+        // Tabla detalle
+        sb.append("<div class=\"tabla-scroll\">\n");
+        sb.append("<table class=\"detalle\">\n<thead>\n<tr>\n");
+        sb.append("  <th>Fecha</th><th>Dia</th><th>Tipo</th><th>Estado</th><th>Observaciones</th>\n");
+        sb.append("</tr>\n</thead>\n<tbody>\n");
+
+        for (AusenciaInformeRow fila : filas) {
+            String claseFilaEstado = "Planificada".equals(fila.estado) ? "fila-ausencia" : "";
+            sb.append("<tr class=\"").append(claseFilaEstado).append("\">\n");
+            sb.append("  <td>").append(fila.fecha.format(FMT_FECHA)).append("</td>\n");
+            sb.append("  <td>").append(DIAS_ES.getOrDefault(fila.fecha.getDayOfWeek(), "")).append("</td>\n");
+            sb.append("  <td>").append(TIPO_LEGIBLE.getOrDefault(fila.tipo, fila.tipo)).append("</td>\n");
+            String claseEstado = "Planificada".equals(fila.estado) ? "estado-planificada" : "estado-ejecutada";
+            sb.append("  <td class=\"").append(claseEstado).append("\">").append(fila.estado).append("</td>\n");
+            sb.append("  <td>").append(
+                    fila.observaciones != null && !fila.observaciones.isBlank()
+                            ? esc(fila.observaciones) : "&mdash;").append("</td>\n");
+            sb.append("</tr>\n");
+        }
+
+        if (filas.isEmpty()) {
+            sb.append("<tr><td colspan=\"5\" style=\"text-align:center;color:#9aa5be;font-style:italic;\">")
+              .append("No hay ausencias en el periodo seleccionado").append("</td></tr>\n");
+        }
+
+        sb.append("</tbody>\n</table>\n</div>\n");
+        sb.append("<div class=\"pie\">").append(esc(nombreEmpresa))
+          .append(" &mdash; Generado el ").append(LocalDateTime.now().format(FMT_GENERA))
+          .append("</div>\n</div>\n</body>\n</html>");
+
+        return sb.toString();
+    }
+
+    // =========================================================================
+    // E-semana — GET /api/v1/informes/semana
+    // Resumen semanal de todos los empleados activos (fichajes + pausas + ausencias)
+    // =========================================================================
+
+    /**
+     * Genera el HTML del resumen semanal de todos los empleados activos.
+     *
+     * <p>Tabla: filas = empleados activos, columnas = días (desde–hasta).
+     * Cada celda muestra el fichaje, pausas y/o ausencia planificada del día.
+     * Los enlaces de edición se muestran condicionalmente según rol y fecha:</p>
+     * <ul>
+     *   <li>Fichajes/pausas: ADMIN en cualquier fecha no futura; ENCARGADO solo hoy.</li>
+     *   <li>Ausencias: ADMIN en cualquier fecha; ENCARGADO en hoy y futuro.</li>
+     *   <li>Futuro: solo ausencias planificadas son visibles y editables.</li>
+     * </ul>
+     *
+     * @param desde    primer día de la semana (lunes)
+     * @param hasta    último día de la semana (domingo)
+     * @param username username del usuario autenticado
+     * @return HTML del resumen semanal
+     */
+    public String informeSemana(LocalDate desde, LocalDate hasta, String username) {
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario no encontrado: " + username));
+        Rol rol = usuario.getRol();
+        LocalDate hoy = LocalDate.now();
+
+        // Empleados activos ordenados por nombre
+        List<Empleado> empleados = empleadoRepository.findByActivo(true).stream()
+                .sorted(Comparator.comparing(this::nombreCompleto))
+                .collect(Collectors.toList());
+
+        // Días del rango
+        List<LocalDate> dias = new ArrayList<>();
+        LocalDate cursor = desde;
+        while (!cursor.isAfter(hasta)) { dias.add(cursor); cursor = cursor.plusDays(1); }
+
+        // Fichajes: empleadoId -> fecha -> Fichaje
+        Map<Long, Map<LocalDate, Fichaje>> fichajesMap = fichajeRepository
+                .findByFiltros(null, desde, hasta, null).stream()
+                .collect(Collectors.groupingBy(
+                        f -> f.getEmpleado().getId(),
+                        Collectors.toMap(Fichaje::getFecha, f -> f)));
+
+        // Pausas: empleadoId -> fecha -> List<Pausa>
+        Map<Long, Map<LocalDate, List<Pausa>>> pausasMap = pausaRepository
+                .findByFiltros(null, desde, hasta, null).stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getEmpleado().getId(),
+                        Collectors.groupingBy(Pausa::getFecha)));
+
+        // Ausencias planificadas: empleadoId -> fecha -> PlanificacionAusencia
+        // Se excluyen festivos globales (empleado null)
+        Map<Long, Map<LocalDate, PlanificacionAusencia>> ausenciasMap = planificacionRepository
+                .findByFiltros(null, desde, hasta, null).stream()
+                .filter(a -> a.getEmpleado() != null)
+                .collect(Collectors.groupingBy(
+                        a -> a.getEmpleado().getId(),
+                        Collectors.toMap(PlanificacionAusencia::getFecha, a -> a,
+                                (a1, a2) -> a1)));
+
+        // Saldo inicial por empleado: suma de contribuciones de fichajes del año
+        // ANTES de 'desde'. Calculado desde fichajes reales, no desde SaldoAnual,
+        // para que sea correcto al navegar a semanas pasadas o futuras.
+        int anio = desde.getYear();
+        Map<Long, BigDecimal> saldoInicialMap = calcularSaldoHastaFecha(
+                empleados, LocalDate.of(anio, 1, 1), desde.minusDays(1));
+
+        return generarHtmlSemana(empleados, dias, fichajesMap, pausasMap, ausenciasMap,
+                saldoInicialMap, rol, hoy, desde, hasta);
+    }
+
+    private String generarHtmlSemana(
+            List<Empleado> empleados, List<LocalDate> dias,
+            Map<Long, Map<LocalDate, Fichaje>> fichajesMap,
+            Map<Long, Map<LocalDate, List<Pausa>>> pausasMap,
+            Map<Long, Map<LocalDate, PlanificacionAusencia>> ausenciasMap,
+            Map<Long, BigDecimal> saldoInicialMap,
+            Rol rol, LocalDate hoy, LocalDate desde, LocalDate hasta) {
+
+        DateTimeFormatter fmtDia = DateTimeFormatter.ofPattern("dd/MM");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(htmlCabeceraInforme());
+        // Estilos adicionales para la tabla semanal (dentro del body para no tocar el head)
+        sb.append("<body>\n<style>\n");
+        sb.append(".tabla-semana{border-collapse:collapse;min-width:100%;font-size:12px;}\n");
+        sb.append(".tabla-semana th{background:#2c3e6b;color:#fff;padding:7px 8px;text-align:center;white-space:nowrap;border:1px solid #1a2d56;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}\n");
+        sb.append(".tabla-semana td{padding:6px 8px;border:1px solid #e8eaf0;vertical-align:top;min-width:90px;}\n");
+        sb.append(".tabla-semana tbody tr:nth-child(even) td{background:#f7f8fc;}\n");
+        sb.append("@media(hover:hover){.tabla-semana tbody tr:hover td{background:#f0f2f8;}}\n");
+        sb.append(".th-hoy{background:#1a6b3c!important;border-color:#0e4727!important;}\n");
+        sb.append(".td-hoy{background:#f0faf4!important;}\n");
+        sb.append(".td-futuro{color:#777;}\n");
+        sb.append(".col-empleado{min-width:140px;font-weight:500;text-align:left!important;white-space:nowrap;}\n");
+        sb.append(".num-empleado{font-size:10px;color:#9aa5be;font-weight:400;}\n");
+        sb.append(".jornada-contrato{font-size:10px;color:#9aa5be;font-weight:400;}\n");
+        sb.append(".link-celda{color:#2c3e6b;text-decoration:none;font-weight:500;}\n");
+        sb.append(".link-pausa{color:#534AB7;text-decoration:none;font-size:11px;}\n");
+        sb.append(".link-ausencia{color:#534AB7;text-decoration:none;}\n");
+        sb.append(".link-planif{color:#BA7517;text-decoration:none;}\n");
+        sb.append(".link-celda:hover,.link-pausa:hover,.link-ausencia:hover,.link-planif:hover{text-decoration:underline;}\n");
+        sb.append(".horas{color:#555;font-size:11px;}\n");
+        sb.append(".pausa-info{color:#534AB7;font-size:11px;}\n");
+        sb.append(".ausencia-label{color:#534AB7;}\n");
+        sb.append(".planif-label{color:#BA7517;}\n");
+        sb.append(".vacio{color:#ccc;}\n");
+        sb.append(".libre{color:#aaa;font-size:11px;font-style:italic;}\n");
+        sb.append(".td-finde{background:#f4f4f6!important;}\n");
+        sb.append(".col-saldo{background:#1a2d56!important;color:#fff;text-align:center;white-space:nowrap;min-width:48px;width:52px;}\n");
+        sb.append(".col-saldo-val{text-align:center;font-weight:600;white-space:nowrap;font-size:11px;}\n");
+        sb.append(".saldo-pos{color:#1a6b3c;}\n");
+        sb.append(".saldo-neg{color:#b71c1c;}\n");
+        sb.append(".saldo-cero{color:#777;}\n");
+        sb.append(".col-total{background:#1a2d56!important;color:#fff;text-align:center;white-space:nowrap;min-width:70px;}\n");
+        sb.append(".col-total-val{text-align:center;font-weight:600;color:#2c3e6b;white-space:nowrap;}\n");
+        sb.append(".dif-inline{font-size:11px;font-weight:600;}\n");
+        sb.append(".col-saldo-fin{background:#1a2d56!important;color:#fff;text-align:center;white-space:nowrap;min-width:48px;width:52px;}\n");
+        sb.append(".col-saldo-fin-val{text-align:center;font-weight:700;white-space:nowrap;font-size:11px;}\n");
+        sb.append(".sin-datos{text-align:center;color:#9aa5be;font-style:italic;padding:20px;}\n");
+        sb.append("</style>\n");
+        sb.append("<div class=\"page\">\n");
+        sb.append("<div class=\"header\">\n  <div class=\"titulo\">Resumen semanal &mdash; ")
+          .append(desde.format(FMT_FECHA)).append(" &ndash; ").append(hasta.format(FMT_FECHA))
+          .append("</div>\n</div>\n");
+
+        sb.append("<div class=\"tabla-scroll\">\n<table class=\"tabla-semana\">\n<thead>\n<tr>\n");
+        sb.append("  <th class=\"col-empleado\">Empleado</th>\n");
+        sb.append("  <th class=\"col-saldo\">Saldo<br>horas</th>\n");
+        for (LocalDate dia : dias) {
+            String clsTh = dia.isEqual(hoy) ? " th-hoy" : "";
+            sb.append("  <th class=\"th-dia").append(clsTh).append("\">")
+              .append(DIAS_ES.getOrDefault(dia.getDayOfWeek(), ""))
+              .append("<br>").append(dia.format(fmtDia)).append("</th>\n");
+        }
+        sb.append("  <th class=\"col-total\">Total<br>semana</th>\n");
+        sb.append("  <th class=\"col-saldo-fin\">Saldo<br>al cierre</th>\n");
+        sb.append("</tr>\n</thead>\n<tbody>\n");
+
+        for (Empleado emp : empleados) {
+            sb.append("<tr>\n  <td class=\"col-empleado\">")
+              .append(esc(nombreCompleto(emp)))
+              .append("<br><span class=\"num-empleado\">").append(esc(emp.getNumeroEmpleado())).append("</span>")
+              .append("<br><span class=\"jornada-contrato\">").append(String.format("%.0f", emp.getJornadaSemanalHoras())).append("h/sem</span>")
+              .append("</td>\n");
+
+            // Celda de saldo inicial (acumulado antes de esta semana)
+            BigDecimal saldoInicial = saldoInicialMap.getOrDefault(emp.getId(), BigDecimal.ZERO);
+            {
+                double saldoD = saldoInicial.doubleValue();
+                String clsSaldo = saldoD > 0 ? "saldo-pos" : (saldoD < 0 ? "saldo-neg" : "saldo-cero");
+                String prefijo  = saldoD > 0 ? "+" : "";
+                String saldoStr = prefijo + String.format("%.2f", saldoD) + "h";
+                sb.append("  <td class=\"col-saldo-val ").append(clsSaldo).append("\">")
+                  .append(saldoStr).append("</td>\n");
+            }
+
+            Map<LocalDate, Fichaje> fichajes = fichajesMap.getOrDefault(emp.getId(), Map.of());
+            Map<LocalDate, List<Pausa>> pausas  = pausasMap.getOrDefault(emp.getId(), Map.of());
+            Map<LocalDate, PlanificacionAusencia> ausencias = ausenciasMap.getOrDefault(emp.getId(), Map.of());
+
+            int totalMinutosSemana = 0;
+            int weekSaldoMinutos   = 0;  // contribución real al saldo de esta semana
+
+            for (LocalDate dia : dias) {
+                boolean esPasado = dia.isBefore(hoy);
+                boolean esFuturo = dia.isAfter(hoy);
+                boolean puedeEditarFichajePausa = !esFuturo && (rol == Rol.ADMIN || !esPasado);
+                boolean puedeEditarAusencia     = rol == Rol.ADMIN || !esPasado;
+                boolean esFinde = dia.getDayOfWeek() == DayOfWeek.SATURDAY
+                        || dia.getDayOfWeek() == DayOfWeek.SUNDAY;
+                String clsTd = dia.isEqual(hoy) ? " td-hoy"
+                        : (esFuturo ? " td-futuro" : (esFinde ? " td-finde" : ""));
+
+                sb.append("  <td class=\"celda").append(clsTd).append("\">\n");
+
+                Fichaje fichaje = fichajes.get(dia);
+                List<Pausa> pausasDia = pausas.getOrDefault(dia, List.of());
+                PlanificacionAusencia ausencia = ausencias.get(dia);
+
+                if (fichaje != null) {
+                    sb.append(celdaConFichaje(fichaje, pausasDia, emp.getId(), dia, puedeEditarFichajePausa));
+                    int minFichaje = fichaje.getJornadaEfectivaMinutos() != null
+                            ? fichaje.getJornadaEfectivaMinutos() : 0;
+                    // BAJA y PERMISO: crédito de jornada teórica para total y saldo
+                    if (fichaje.getTipo() == TipoFichaje.BAJA_MEDICA
+                            || fichaje.getTipo() == TipoFichaje.PERMISO_RETRIBUIDO) {
+                        minFichaje = emp.getJornadaDiariaMinutos();
+                    }
+                    totalMinutosSemana += minFichaje;
+                    // Contribución al saldo: NORMAL=(efectiva-diaria), BAJA/PERMISO=+diaria, resto=0
+                    weekSaldoMinutos += saldoContribMinutos(fichaje.getTipo(), minFichaje, emp.getJornadaDiariaMinutos());
+                } else if (ausencia != null) {
+                    sb.append(celdaAusenciaPlanificada(ausencia, emp.getId(), dia, puedeEditarAusencia));
+                } else {
+                    if (esFinde) {
+                        sb.append("    <span class=\"libre\">D&iacute;a libre</span>\n");
+                    } else {
+                        sb.append("    <span class=\"vacio\">&mdash;</span>\n");
+                    }
+                }
+                sb.append("  </td>\n");
+            }
+
+            // Contribución al saldo de esta semana (día a día, no vs jornada semanal)
+            double weekSaldoHoras = weekSaldoMinutos / 60.0;
+            String clsDif = weekSaldoMinutos > 0 ? "saldo-pos" : (weekSaldoMinutos < 0 ? "saldo-neg" : "saldo-cero");
+            String prefDif = weekSaldoMinutos >= 0 ? "+" : "";
+            String difStr  = prefDif + String.format("%.2f", weekSaldoHoras) + "h";
+
+            // Celda total semana: horas totales + contribución al saldo debajo
+            String totalStr = totalMinutosSemana > 0 ? formatearMinutos(totalMinutosSemana) : "&mdash;";
+            sb.append("  <td class=\"col-total-val\">");
+            sb.append(totalStr);
+            sb.append("<br><span class=\"dif-inline ").append(clsDif).append("\">")
+              .append(difStr).append("</span>");
+            sb.append("</td>\n");
+
+            // Saldo al cierre: saldo inicial + contribución de la semana
+            double saldoCierre = saldoInicial.doubleValue() + weekSaldoHoras;
+            String clsFin = saldoCierre > 0 ? "saldo-pos" : (saldoCierre < 0 ? "saldo-neg" : "saldo-cero");
+            String prefFin = saldoCierre > 0 ? "+" : "";
+            String finStr  = prefFin + String.format("%.2f", saldoCierre) + "h";
+            sb.append("  <td class=\"col-saldo-fin-val ").append(clsFin).append("\">")
+              .append(finStr).append("</td>\n");
+
+            sb.append("</tr>\n");
+        }
+
+        if (empleados.isEmpty()) {
+            sb.append("<tr><td colspan=\"11\" class=\"sin-datos\">No hay empleados activos</td></tr>\n");
+        }
+
+        sb.append("</tbody>\n</table>\n</div>\n");
+        sb.append("<div class=\"pie\">StaffFlow &mdash; Generado el ")
+          .append(LocalDate.now().format(FMT_FECHA)).append("</div>\n");
+        sb.append("</div>\n");
+        sb.append("</body>\n</html>");
+        return sb.toString();
+    }
+
+    private String celdaConFichaje(Fichaje f, List<Pausa> pausas, Long empleadoId,
+                                    LocalDate dia, boolean puedeEditar) {
+        StringBuilder sb = new StringBuilder();
+        boolean esNormal = f.getTipo() == TipoFichaje.NORMAL;
+        String urlF = urlFichaje(f.getId(), empleadoId, dia, f);
+
+        if (esNormal) {
+            String entrada = f.getHoraEntrada() != null ? f.getHoraEntrada().format(FMT_HORA) : "&mdash;";
+            String salida  = f.getHoraSalida()  != null ? f.getHoraSalida().format(FMT_HORA)  : "&mdash;";
+            String horas   = (f.getJornadaEfectivaMinutos() != null
+                    && f.getJornadaEfectivaMinutos() > 0)
+                    ? formatearMinutos(f.getJornadaEfectivaMinutos()) : "";
+            if (puedeEditar) {
+                sb.append("    <a href=\"").append(urlF).append("\" class=\"link-celda\">")
+                  .append(entrada).append("&ndash;").append(salida).append(" &#9998;</a>");
+            } else {
+                sb.append("    <span>").append(entrada).append("&ndash;").append(salida).append("</span>");
+            }
+            for (Pausa p : pausas) {
+                String dur    = p.getDuracionMinutos() != null ? p.getDuracionMinutos() + "min" : "activa";
+                String motivo = p.getTipoPausa() != null ? formatearTipoPausa(p.getTipoPausa().name()) : "";
+                sb.append("<br>");
+                if (puedeEditar) {
+                    sb.append("<a href=\"").append(urlPausa(p.getId(), empleadoId, dia, p))
+                      .append("\" class=\"link-pausa\">").append(esc(motivo)).append(" ").append(dur)
+                      .append(" &#9998;</a>");
+                } else {
+                    sb.append("<span class=\"pausa-info\">").append(esc(motivo)).append(" ").append(dur)
+                      .append("</span>");
+                }
+            }
+            if (!horas.isEmpty()) {
+                sb.append("<br><span class=\"horas\">").append(horas).append("</span>");
+            }
+        } else {
+            String label = TIPO_LEGIBLE.getOrDefault(f.getTipo().name(), f.getTipo().name());
+            if (puedeEditar) {
+                sb.append("    <a href=\"").append(urlF).append("\" class=\"link-ausencia\">")
+                  .append(esc(label)).append(" &#9998;</a>");
+            } else {
+                sb.append("    <span class=\"ausencia-label\">").append(esc(label)).append("</span>");
+            }
+        }
+        return sb.toString();
+    }
+
+    private String celdaAusenciaPlanificada(PlanificacionAusencia a, Long empleadoId,
+                                             LocalDate dia, boolean puedeEditar) {
+        String label    = TIPO_LEGIBLE.getOrDefault(a.getTipoAusencia().name(), a.getTipoAusencia().name());
+        boolean procesada = Boolean.TRUE.equals(a.getProcesado());
+        String sufijo   = procesada ? "" : " (plan.)";
+        if (puedeEditar && !procesada) {
+            return "    <a href=\"" + urlAusencia(a.getId(), empleadoId, dia, a)
+                    + "\" class=\"link-planif\" onclick=\"event.stopPropagation();\">" + esc(label) + sufijo + " &#9998;</a>\n";
+        }
+        return "    <span class=\"" + (procesada ? "ausencia-label" : "planif-label") + "\">"
+                + esc(label) + sufijo + "</span>\n";
+    }
+
+    private String urlFichaje(Long fichajeId, Long empleadoId, LocalDate dia, Fichaje f) {
+        StringBuilder url = new StringBuilder("staffflow://fichaje/").append(fichajeId);
+        url.append("?variante=FICHAJE&empleadoId=").append(empleadoId)
+           .append("&fecha=").append(dia)
+           .append("&tipo=").append(f.getTipo().name());
+        if (f.getHoraEntrada() != null) url.append("&horaEntrada=").append(f.getHoraEntrada().format(FMT_HORA));
+        if (f.getHoraSalida()  != null) url.append("&horaSalida=").append(f.getHoraSalida().format(FMT_HORA));
+        return url.toString();
+    }
+
+    private String urlPausa(Long pausaId, Long empleadoId, LocalDate dia, Pausa p) {
+        StringBuilder url = new StringBuilder("staffflow://pausa/").append(pausaId);
+        url.append("?variante=PAUSA&empleadoId=").append(empleadoId)
+           .append("&fecha=").append(dia);
+        if (p.getTipoPausa()  != null) url.append("&tipoPausa=").append(p.getTipoPausa().name());
+        if (p.getHoraInicio() != null) url.append("&horaInicio=").append(p.getHoraInicio().format(FMT_HORA));
+        if (p.getHoraFin()    != null) url.append("&horaFin=").append(p.getHoraFin().format(FMT_HORA));
+        return url.toString();
+    }
+
+    private String urlAusencia(Long ausenciaId, Long empleadoId, LocalDate dia, PlanificacionAusencia a) {
+        return "staffflow://ausencia/" + ausenciaId
+                + "?empleadoId=" + empleadoId
+                + "&fecha=" + dia
+                + "&tipoAusencia=" + a.getTipoAusencia().name()
+                + "&procesado=" + Boolean.TRUE.equals(a.getProcesado())
+                + (empleadoId == null ? "&esFestivo=true" : "");
+    }
+
+    // =========================================================================
+    // E-ausencias-global — GET /api/v1/informes/ausencias
+    // Resumen de ausencias globales de todos los empleados activos
+    // =========================================================================
+
+    /**
+     * Genera el HTML del resumen de ausencias de todos los empleados activos.
+     *
+     * <p>Tabla: filas = empleados activos, columnas = días (desde–hasta).
+     * Cada celda muestra la ausencia del día (ejecutada o planificada).
+     * No incluye jornadas NORMAL ni DIA_LIBRE.</p>
+     *
+     * @param desde    primer día del rango
+     * @param hasta    último día del rango
+     * @param username username del usuario autenticado
+     * @return HTML del resumen de ausencias
+     */
+    public String informeAusenciasGlobal(LocalDate desde, LocalDate hasta, String username) {
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Usuario no encontrado: " + username));
+        Rol rol = usuario.getRol();
+        LocalDate hoy = LocalDate.now();
+
+        List<Empleado> empleados = empleadoRepository.findByActivo(true).stream()
+                .sorted(Comparator.comparing(this::nombreCompleto))
+                .collect(Collectors.toList());
+
+        List<LocalDate> dias = new ArrayList<>();
+        LocalDate cursor = desde;
+        while (!cursor.isAfter(hasta)) { dias.add(cursor); cursor = cursor.plusDays(1); }
+
+        // Fichajes de tipo ausencia: excluye NORMAL y DIA_LIBRE
+        Map<Long, Map<LocalDate, Fichaje>> fichajesAusenciaMap = fichajeRepository
+                .findByFiltros(null, desde, hasta, null).stream()
+                .filter(f -> f.getTipo() != TipoFichaje.NORMAL
+                          && f.getTipo() != TipoFichaje.DIA_LIBRE)
+                .collect(Collectors.groupingBy(
+                        f -> f.getEmpleado().getId(),
+                        Collectors.toMap(Fichaje::getFecha, f -> f)));
+
+        // Planificación de ausencias: individuales por empleado + festivos globales (empleado=null)
+        List<PlanificacionAusencia> todasAusencias = planificacionRepository
+                .findByFiltros(null, desde, hasta, null);
+
+        Map<Long, Map<LocalDate, PlanificacionAusencia>> ausenciasMap = todasAusencias.stream()
+                .filter(a -> a.getEmpleado() != null)
+                .collect(Collectors.groupingBy(
+                        a -> a.getEmpleado().getId(),
+                        Collectors.toMap(PlanificacionAusencia::getFecha, a -> a,
+                                (a1, a2) -> a1)));
+
+        Map<LocalDate, PlanificacionAusencia> festivosGlobales = todasAusencias.stream()
+                .filter(a -> a.getEmpleado() == null)
+                .collect(Collectors.toMap(PlanificacionAusencia::getFecha, a -> a,
+                        (a1, a2) -> a1));
+
+        return generarHtmlAusenciasGlobal(empleados, dias, fichajesAusenciaMap, ausenciasMap,
+                festivosGlobales, rol, hoy, desde, hasta);
+    }
+
+    private String generarHtmlAusenciasGlobal(
+            List<Empleado> empleados, List<LocalDate> dias,
+            Map<Long, Map<LocalDate, Fichaje>> fichajesMap,
+            Map<Long, Map<LocalDate, PlanificacionAusencia>> ausenciasMap,
+            Map<LocalDate, PlanificacionAusencia> festivosGlobales,
+            Rol rol, LocalDate hoy, LocalDate desde, LocalDate hasta) {
+
+        DateTimeFormatter fmtDia = DateTimeFormatter.ofPattern("dd/MM");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(htmlCabeceraInforme());
+        sb.append("<body>\n<style>\n");
+        sb.append(".tabla-semana{border-collapse:collapse;min-width:100%;font-size:12px;}\n");
+        sb.append(".tabla-semana th{background:#2c3e6b;color:#fff;padding:7px 8px;text-align:center;white-space:nowrap;border:1px solid #1a2d56;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}\n");
+        sb.append(".tabla-semana td{padding:6px 8px;border:1px solid #e8eaf0;vertical-align:top;min-width:90px;}\n");
+        sb.append(".tabla-semana tbody tr:nth-child(even) td{background:#f7f8fc;}\n");
+        sb.append("@media(hover:hover){.tabla-semana tbody tr:hover td{background:#f0f2f8;}}\n");
+        sb.append(".th-hoy{background:#1a6b3c!important;border-color:#0e4727!important;}\n");
+        sb.append(".td-hoy{background:#f0faf4!important;}\n");
+        sb.append(".td-futuro{color:#777;}\n");
+        sb.append(".col-empleado{min-width:140px;font-weight:500;text-align:left!important;white-space:nowrap;cursor:pointer;}\n");
+        sb.append(".col-empleado-sel{background:#dbeafe!important;border-left:3px solid #4285f4!important;}\n");
+        sb.append(".link-ausencia{color:#534AB7;text-decoration:none;}\n");
+        sb.append(".link-planif{color:#BA7517;text-decoration:none;}\n");
+        sb.append(".link-ausencia:hover,.link-planif:hover{text-decoration:underline;}\n");
+        sb.append(".ausencia-label{color:#534AB7;}\n");
+        sb.append(".planif-label{color:#BA7517;}\n");
+        sb.append(".vacio{color:#ccc;}\n");
+        sb.append(".libre{color:#aaa;font-size:11px;font-style:italic;}\n");
+        sb.append(".td-finde{background:#f4f4f6!important;}\n");
+        sb.append(".sin-datos{text-align:center;color:#9aa5be;font-style:italic;padding:20px;}\n");
+        sb.append(".tabla-semana td,.tabla-semana tr{user-select:none;-webkit-user-select:none;}\n");
+        sb.append(".seleccionable{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}\n");
+        sb.append(".td-seleccionada{background:#c5d8fd!important;outline:2px solid #4285f4;outline-offset:-2px;}\n");
+        sb.append("</style>\n");
+        sb.append("<div class=\"page\">\n");
+        sb.append("<div class=\"header\">\n  <div class=\"titulo\">Ausencias &mdash; ")
+          .append(desde.format(FMT_FECHA)).append(" &ndash; ").append(hasta.format(FMT_FECHA))
+          .append("</div>\n</div>\n");
+
+        sb.append("<div class=\"tabla-scroll\">\n<table class=\"tabla-semana\">\n<thead>\n<tr>\n");
+        sb.append("  <th class=\"col-empleado\">Empleado</th>\n");
+        for (LocalDate dia : dias) {
+            String clsTh = dia.isEqual(hoy) ? " th-hoy" : "";
+            sb.append("  <th class=\"th-dia").append(clsTh).append("\">")
+              .append(DIAS_ES.getOrDefault(dia.getDayOfWeek(), ""))
+              .append("<br>").append(dia.format(fmtDia)).append("</th>\n");
+        }
+        sb.append("</tr>\n</thead>\n<tbody>\n");
+
+        for (Empleado emp : empleados) {
+            sb.append("<tr>\n  <td class=\"col-empleado\" data-emp-id=\"").append(emp.getId()).append("\">")
+              .append(esc(nombreCompleto(emp)))
+              .append("</td>\n");
+
+            Map<LocalDate, Fichaje> fichajes = fichajesMap.getOrDefault(emp.getId(), Map.of());
+            Map<LocalDate, PlanificacionAusencia> ausencias = ausenciasMap.getOrDefault(emp.getId(), Map.of());
+
+            for (LocalDate dia : dias) {
+                boolean esPasado = dia.isBefore(hoy);
+                boolean esFuturo = dia.isAfter(hoy);
+                boolean esFinde  = dia.getDayOfWeek() == DayOfWeek.SATURDAY
+                                || dia.getDayOfWeek() == DayOfWeek.SUNDAY;
+                String clsTd = dia.isEqual(hoy) ? " td-hoy"
+                        : (esFuturo ? " td-futuro" : (esFinde ? " td-finde" : ""));
+                boolean puedeEditarFichaje  = !esFuturo && rol == Rol.ADMIN;
+                boolean puedeEditarAusencia = rol == Rol.ADMIN || !esPasado;
+
+                boolean esSeleccionable = !esPasado;
+                sb.append("  <td class=\"celda").append(clsTd);
+                if (esSeleccionable) sb.append(" seleccionable");
+                sb.append("\"");
+                if (esSeleccionable) {
+                    sb.append(" data-emp=\"").append(emp.getId()).append("\"");
+                    sb.append(" data-fecha=\"").append(dia).append("\"");
+                }
+                sb.append(">\n");
+
+                Fichaje fichaje = fichajes.get(dia);
+                PlanificacionAusencia ausencia = ausencias.get(dia);
+                PlanificacionAusencia festivoGlobal = festivosGlobales.get(dia);
+
+                if (fichaje != null) {
+                    String label = TIPO_LEGIBLE.getOrDefault(fichaje.getTipo().name(), fichaje.getTipo().name());
+                    if (puedeEditarFichaje) {
+                        sb.append("    <a href=\"")
+                          .append(urlFichaje(fichaje.getId(), emp.getId(), dia, fichaje))
+                          .append("\" class=\"link-ausencia\" onclick=\"event.stopPropagation();\">").append(esc(label)).append(" &#9998;</a>\n");
+                    } else {
+                        sb.append("    <span class=\"ausencia-label\">").append(esc(label)).append("</span>\n");
+                    }
+                } else if (ausencia != null) {
+                    sb.append(celdaAusenciaPlanificada(ausencia, emp.getId(), dia, puedeEditarAusencia));
+                } else if (festivoGlobal != null) {
+                    sb.append(celdaAusenciaPlanificada(festivoGlobal, null, dia, puedeEditarAusencia));
+                } else if (esFinde) {
+                    sb.append("    <span class=\"libre\">D&iacute;a libre</span>\n");
+                } else {
+                    sb.append("    <span class=\"vacio\">&mdash;</span>\n");
+                }
+                sb.append("  </td>\n");
+            }
+            sb.append("</tr>\n");
+        }
+
+        if (empleados.isEmpty()) {
+            sb.append("<tr><td colspan=\"").append(dias.size() + 1)
+              .append("\" class=\"sin-datos\">No hay empleados activos</td></tr>\n");
+        }
+
+        sb.append("</tbody>\n</table>\n</div>\n");
+        sb.append("<div class=\"pie\">StaffFlow &mdash; Generado el ")
+          .append(LocalDate.now().format(FMT_FECHA)).append("</div>\n");
+        sb.append("</div>\n");
+        sb.append("<script>\n");
+        sb.append("var _sel={empId:null,fechas:[]};\n");
+        sb.append("function toggleCelda(td,ev){\n");
+        sb.append("  if(ev){ev.preventDefault();}\n");
+        sb.append("  var e=td.dataset.emp,f=td.dataset.fecha;\n");
+        sb.append("  if(!e||!f) return;\n");
+        sb.append("  if(_sel.empId&&_sel.empId!==e){\n");
+        sb.append("    document.querySelectorAll('.td-seleccionada').forEach(function(el){el.classList.remove('td-seleccionada');});\n");
+        sb.append("    _sel={empId:null,fechas:[]};\n");
+        sb.append("  }\n");
+        sb.append("  _sel.empId=e;\n");
+        sb.append("  var i=_sel.fechas.indexOf(f);\n");
+        sb.append("  if(i>=0){_sel.fechas.splice(i,1);td.classList.remove('td-seleccionada');}\n");
+        sb.append("  else{_sel.fechas.push(f);td.classList.add('td-seleccionada');}\n");
+        sb.append("  if(_sel.fechas.length===0) _sel.empId=null;\n");
+        sb.append("  var s=_sel.fechas.slice().sort();\n");
+        sb.append("  if(s.length===0){location.href='staffflow://seleccion/vacia';return;}\n");
+        sb.append("  var cons=true;\n");
+        sb.append("  for(var j=1;j<s.length;j++){if((new Date(s[j])-new Date(s[j-1]))/86400000!==1){cons=false;break;}}\n");
+        sb.append("  location.href='staffflow://seleccion/'+_sel.empId+'/'+s[0]+'/'+s[s.length-1]+'/'+cons;\n");
+        sb.append("}\n");
+        sb.append("document.querySelectorAll('.seleccionable').forEach(function(td){\n");
+        sb.append("  td.addEventListener('touchstart',function(e){if(e.target.closest('a'))return;e.preventDefault();},{passive:false});\n");
+        sb.append("  td.addEventListener('touchend',function(e){if(e.target.closest('a'))return;e.preventDefault();toggleCelda(td,e);});\n");
+        sb.append("});\n");
+        sb.append("document.querySelectorAll('td.col-empleado[data-emp-id]').forEach(function(td){\n");
+        sb.append("  td.addEventListener('click',function(e){\n");
+        sb.append("    if(e.target.closest('a')) return;\n");
+        sb.append("    document.querySelectorAll('td.col-empleado-sel').forEach(function(el){el.classList.remove('col-empleado-sel');});\n");
+        sb.append("    td.classList.add('col-empleado-sel');\n");
+        sb.append("    location.href='staffflow://empleado/'+td.dataset.empId+'/").append(desde).append("';\n");
+        sb.append("  });\n");
+        sb.append("});\n");
+        sb.append("</script>\n");
+        sb.append("</body>\n</html>");
         return sb.toString();
     }
 
@@ -1102,17 +1897,42 @@ public class InformeService {
                       text-transform: uppercase;
                       padding: 7px 10px;
                     }
-                    table.detalle.saldos th.bloque-vac  { background: #185FA5; border: 1px solid #0C447C; }
-                    table.detalle.saldos th.bloque-ap   { background: #0F6E56; border: 1px solid #085041; }
-                    table.detalle.saldos th.bloque-dias { background: #BA7517; border: 1px solid #854F0B; }
-                    table.detalle.saldos th.bloque-horas{ background: #534AB7; border: 1px solid #3C3489; }
-                    table.detalle.saldos th.bloque-ctrl { background: #993C1D; border: 1px solid #712B13; }
-                    table.detalle.saldos td.col-empleado,
-                    table.detalle.saldos th.col-empleado {
-                      text-align: center;
+                    table.detalle.saldos th.bloque-vac,
+                    table.detalle.saldos th.bloque-ap,
+                    table.detalle.saldos th.bloque-dias,
+                    table.detalle.saldos th.bloque-horas,
+                    table.detalle.saldos th.bloque-ctrl { background: #2c3e6b; border: 1px solid #1a2d56; }
+                    table.detalle.saldos thead tr:last-child th { background: #6b8bc4; border-color: #5a7ab8; }
+                    table.detalle.saldos thead tr:first-child th { border-bottom: 1px solid #6b8bc4 !important; }
+                    table.detalle.saldos thead tr:last-child th  { border-top: none !important; }
+                    table.detalle.saldos td.col-empleado {
+                      text-align: left;
                       font-weight: 500;
                       min-width: 160px;
+                      position: sticky;
+                      left: 0;
+                      background: #ffffff;
+                      z-index: 3;
                     }
+                    table.detalle.saldos th.col-empleado {
+                      text-align: center;
+                      vertical-align: middle;
+                      font-weight: 600;
+                      min-width: 160px;
+                      position: sticky;
+                      left: 0;
+                      background: #2c3e6b;
+                      z-index: 5;
+                    }
+                    table.detalle.saldos tbody tr:nth-child(even) td.col-empleado { background: #f7f8fc; }
+                    table.detalle.saldos tbody tr:hover td.col-empleado { background: #f0f2f8; }
+                    table.detalle.saldos thead {
+                      position: sticky;
+                      top: 0;
+                      z-index: 4;
+                    }
+                    table.detalle.saldos thead th { position: static; }
+                    table.detalle.saldos thead th.col-empleado { position: sticky; left: 0; z-index: 5; }
                     .valor-pos { color: #3B6D11; font-weight: 500; }
                     .valor-neg { color: #A32D2D; font-weight: 500; }
                     .fila-libre td {
@@ -1144,6 +1964,8 @@ public class InformeService {
                       letter-spacing: 0.5px;
                       border: 1px solid #1a2d56;
                     }
+                    .estado-ejecutada { color: #3B6D11; font-weight: 500; }
+                    .estado-planificada { color: #534AB7; font-weight: 500; }
                     .sin-intervenciones {
                       color: #9aa5be;
                       font-style: italic;
@@ -1255,15 +2077,15 @@ public class InformeService {
         return h + "h " + String.format("%02d", m) + "min";
     }
 
-    /** Formatea una LocalDateTime a HH:mm o devuelve "—" si es null. */
+    /** Formatea una LocalDateTime a HH:mm:ss o devuelve "—" si es null. */
     private String celdaHora(LocalDateTime ldt) {
-        return ldt != null ? ldt.format(FMT_HORA) : "—";
+        return ldt != null ? ldt.format(FMT_HORA_SEG) : "—";
     }
 
     /** Formatea hora de pausa con asterisco si es manual. */
     private String celdaPausa(LocalDateTime ldt, boolean esManual) {
         if (ldt == null) return "—";
-        return esManual ? ldt.format(FMT_HORA) + "*" : ldt.format(FMT_HORA);
+        return esManual ? ldt.format(FMT_HORA_SEG) + "*" : ldt.format(FMT_HORA_SEG);
     }
 
     /** Fila de la tabla resumen en HTML. */
@@ -1329,6 +2151,21 @@ public class InformeService {
         String        observaciones;
     }
 
+    /** Fila del informe de ausencias (merge de planificacion_ausencias + fichajes). */
+    private static class AusenciaInformeRow {
+        LocalDate fecha;
+        String    tipo;
+        String    estado;        // "Ejecutada" | "Planificada"
+        String    observaciones;
+
+        AusenciaInformeRow(LocalDate fecha, String tipo, String estado, String observaciones) {
+            this.fecha         = fecha;
+            this.tipo          = tipo;
+            this.estado        = estado;
+            this.observaciones = observaciones;
+        }
+    }
+
     /** Acumula los totales del resumen del informe. */
     private static class ResumenInforme {
         int diasTrabajados              = 0;
@@ -1336,5 +2173,102 @@ public class InformeService {
         int diasLibres                  = 0;
         int horasPermisoRetribuidoMinutos = 0;
         Map<String, Integer> ausenciasPorTipo = new LinkedHashMap<>();
+    }
+
+    // =========================================================================
+    // Helpers de saldo semanal
+    // =========================================================================
+
+    /**
+     * Calcula el saldo acumulado (en horas, BigDecimal) por empleado
+     * desde el 01/01 del año hasta {@code hasta} (inclusive).
+     *
+     * <p>Optimización: usa {@link SaldoAnual#getSaldoHoras()} como checkpoint.
+     * El proceso nocturno (23:55) deja SaldoAnual actualizado hasta ayer, así
+     * que solo se escanea el delta entre ayer y {@code hasta}:
+     * <ul>
+     *   <li>hasta == ayer → SaldoAnual directo, sin scan adicional</li>
+     *   <li>hasta &lt; ayer → SaldoAnual − fichajes(hasta+1..ayer)</li>
+     *   <li>hasta &gt; ayer → SaldoAnual + fichajes(ayer+1..hasta)</li>
+     * </ul>
+     * Si algún empleado no tiene SaldoAnual se hace fallback al scan completo.</p>
+     */
+    private Map<Long, BigDecimal> calcularSaldoHastaFecha(
+            List<Empleado> empleados, LocalDate desde, LocalDate hasta) {
+
+        Map<Long, BigDecimal> result = new HashMap<>();
+        empleados.forEach(emp -> result.put(emp.getId(), BigDecimal.ZERO));
+
+        if (hasta.isBefore(desde)) return result;
+
+        int anio = desde.getYear();
+        LocalDate ayer = LocalDate.now().minusDays(1);
+
+        // Intentar usar SaldoAnual como checkpoint
+        Map<Long, BigDecimal> baseMap = new HashMap<>();
+        for (Empleado emp : empleados) {
+            saldoRepository.findByEmpleadoIdAndAnio(emp.getId(), anio)
+                    .ifPresentOrElse(
+                            sa -> baseMap.put(emp.getId(), sa.getSaldoHoras()),
+                            ()  -> baseMap.put(emp.getId(), null));
+        }
+
+        boolean todosConSaldo = baseMap.values().stream().noneMatch(java.util.Objects::isNull);
+
+        if (todosConSaldo && !ayer.isBefore(LocalDate.of(anio, 1, 1))) {
+            // Checkpoint disponible: partir de SaldoAnual (01/01..ayer)
+            empleados.forEach(emp -> result.put(emp.getId(), baseMap.get(emp.getId())));
+
+            if (hasta.isBefore(ayer)) {
+                // Restar fichajes de (hasta+1)..ayer
+                acumularFichajes(result, hasta.plusDays(1), ayer, -1);
+            } else if (hasta.isAfter(ayer)) {
+                // Sumar fichajes de (ayer+1)..hasta
+                acumularFichajes(result, ayer.plusDays(1), hasta, +1);
+            }
+            // hasta == ayer → result ya está correcto
+        } else {
+            // Fallback: scan completo desde el inicio del período
+            acumularFichajes(result, desde, hasta, +1);
+        }
+
+        return result;
+    }
+
+    /**
+     * Acumula (o resta, según {@code signo}) las contribuciones de los fichajes
+     * del rango {@code desde..hasta} sobre el mapa {@code result}.
+     * {@code signo} debe ser +1 para sumar o -1 para restar.
+     */
+    private void acumularFichajes(Map<Long, BigDecimal> result,
+                                   LocalDate desde, LocalDate hasta, int signo) {
+        fichajeRepository.findByFiltros(null, desde, hasta, null).forEach(f -> {
+            Long empId = f.getEmpleado().getId();
+            if (!result.containsKey(empId)) return;
+            int jornadaDiaria = f.getEmpleado().getJornadaDiariaMinutos();
+            int efectivo = f.getJornadaEfectivaMinutos() != null
+                    ? f.getJornadaEfectivaMinutos() : 0;
+            int contribMin = signo * saldoContribMinutos(f.getTipo(), efectivo, jornadaDiaria);
+            result.merge(empId,
+                    BigDecimal.valueOf(contribMin).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP),
+                    BigDecimal::add);
+        });
+    }
+
+    /**
+     * Contribución de un fichaje al saldo de horas (en minutos):
+     * <ul>
+     *   <li>NORMAL: efectivo − jornada diaria teórica (puede ser negativo)</li>
+     *   <li>BAJA_MEDICA / PERMISO_RETRIBUIDO: +jornada diaria teórica</li>
+     *   <li>resto (VACACIONES, ASUNTO_PROPIO, FESTIVOS, DIA_LIBRE*, AUSENCIA_*): 0</li>
+     * </ul>
+     */
+    private int saldoContribMinutos(TipoFichaje tipo, int efectivoMinutos, int jornadaDiariaMinutos) {
+        return switch (tipo) {
+            case NORMAL                                    -> efectivoMinutos - jornadaDiariaMinutos;
+            case DIA_LIBRE_COMPENSATORIO,
+                 AUSENCIA_INJUSTIFICADA                    -> -jornadaDiariaMinutos;
+            default                                        -> 0;
+        };
     }
 }

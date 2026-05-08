@@ -4,8 +4,10 @@ import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.SaldoAnual;
 import com.staffflow.domain.entity.Fichaje;
 import com.staffflow.domain.enums.TipoFichaje;
+import com.staffflow.domain.enums.TipoAusencia;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
+import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.dto.response.SaldoResponse;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +49,8 @@ public class SaldoService {
 
     private final SaldoAnualRepository saldoRepository;
     private final EmpleadoRepository empleadoRepository;
-    // Inyectado en el esqueleto original. Necesario para E40 (recalcular
-    // desde fichajes reales). No se usa en E38, E39 ni E41.
     private final FichajeRepository fichajeRepository;
+    private final PlanificacionAusenciaRepository planificacionRepository;
 
     // ----------------------------------------------------------------
     // E38 — GET /api/v1/saldos/{empleadoId}
@@ -74,11 +75,10 @@ public class SaldoService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado no encontrado con id: " + empleadoId));
 
-        // Si no existe el registro para este año, calcularlo on-demand a partir
-        // de los fichajes existentes (mismo patron que E40). Esto evita el 404
-        // antes del primer cierre diario del año y elimina la necesidad de
-        // precarga manual en entornos de desarrollo.
-        if (saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta).isEmpty()) {
+        // Crear on-demand solo para el año actual: evita persistir registros vacíos
+        // para años pasados o futuros sin fichajes reales.
+        if (anioConsulta == Year.now().getValue()
+                && saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta).isEmpty()) {
             recalcularParaProceso(empleadoId, anioConsulta);
         }
 
@@ -108,14 +108,14 @@ public class SaldoService {
     public List<SaldoResponse> listarTodos(Integer anio) {
         int anioConsulta = resolverAnio(anio);
 
-        // Crear on-demand el saldo de cualquier empleado activo que no lo tenga todavía.
-        // Cubre tanto el primer acceso del año como empleados creados después del
-        // primer cierre diario (ej: un nuevo ENCARGADO sin saldo aún). El filtro
-        // doble evita recalcular los que ya existen. N+1 aceptable a escala PYME.
-        empleadoRepository.findAll().stream()
-                .filter(e -> Boolean.TRUE.equals(e.getActivo()))
-                .filter(e -> saldoRepository.findByEmpleadoIdAndAnio(e.getId(), anioConsulta).isEmpty())
-                .forEach(e -> recalcularParaProceso(e.getId(), anioConsulta));
+        // Crear on-demand solo para el año actual: evita persistir registros vacíos
+        // para años pasados o futuros sin fichajes reales.
+        if (anioConsulta == Year.now().getValue()) {
+            empleadoRepository.findAll().stream()
+                    .filter(e -> Boolean.TRUE.equals(e.getActivo()))
+                    .filter(e -> saldoRepository.findByEmpleadoIdAndAnio(e.getId(), anioConsulta).isEmpty())
+                    .forEach(e -> recalcularParaProceso(e.getId(), anioConsulta));
+        }
 
         List<SaldoAnual> saldos = saldoRepository.findByAnio(anioConsulta);
 
@@ -236,18 +236,22 @@ public class SaldoService {
             TipoFichaje tipo = f.getTipo();
 
             switch (tipo) {
-                case NORMAL,
-                     FESTIVO_NACIONAL,
-                     FESTIVO_LOCAL,
-                     DIA_LIBRE_COMPENSATORIO -> {
+                case NORMAL -> {
                     saldo.setDiasTrabajados(saldo.getDiasTrabajados() + 1);
-                    // Acumular diferencia de jornada en saldo de horas.
-                    // jornadaEfectivaMinutos ya descuenta pausas (FichajeService).
                     // Diferencia = efectivos - esperados. Positivo = extra.
+                    // jornadaEfectivaMinutos ya descuenta pausas (FichajeService).
                     int diferencia = f.getJornadaEfectivaMinutos()
                                      - empleado.getJornadaDiariaMinutos();
                     saldo.setSaldoHoras(saldo.getSaldoHoras()
                             .add(minutosAHoras(diferencia)));
+                }
+                case FESTIVO_NACIONAL, FESTIVO_LOCAL -> {
+                    // Neutro: no suma diasTrabajados ni saldoHoras.
+                }
+                case DIA_LIBRE_COMPENSATORIO -> {
+                    // Resta la jornada teórica: el empleado "gasta" horas acumuladas.
+                    saldo.setSaldoHoras(saldo.getSaldoHoras()
+                            .subtract(minutosAHoras(empleado.getJornadaDiariaMinutos())));
                 }
                 case VACACIONES -> {
                     saldo.setDiasVacacionesConsumidos(
@@ -258,15 +262,23 @@ public class SaldoService {
                             saldo.getDiasAsuntosPropiosConsumidos() + 1);
                 }
                 case PERMISO_RETRIBUIDO -> {
+                    // Cuenta como día trabajado pero neutro en saldo:
+                    // jornada efectiva = jornada teórica, ni suma ni resta.
                     saldo.setDiasPermisoRetribuido(
                             saldo.getDiasPermisoRetribuido() + 1);
+                    saldo.setDiasTrabajados(saldo.getDiasTrabajados() + 1);
                 }
                 case BAJA_MEDICA -> {
+                    // Ídem permiso retribuido: día trabajado, neutro en saldo.
                     saldo.setDiasBajaMedica(saldo.getDiasBajaMedica() + 1);
+                    saldo.setDiasTrabajados(saldo.getDiasTrabajados() + 1);
                 }
                 case AUSENCIA_INJUSTIFICADA -> {
                     saldo.setDiasAusenciaInjustificada(
                             saldo.getDiasAusenciaInjustificada() + 1);
+                    // Resta la jornada teórica: el empleado no trabajó ni tiene justificación.
+                    saldo.setSaldoHoras(saldo.getSaldoHoras()
+                            .subtract(minutosAHoras(empleado.getJornadaDiariaMinutos())));
                 }
             }
         }
@@ -319,6 +331,19 @@ public class SaldoService {
         Empleado empleado = empleadoRepository.findByUsuarioUsername(username)
                 .orElseThrow(() -> new IllegalStateException(
                         "Empleado no encontrado para el usuario: " + username));
+
+        // Validar que el año solicitado tiene sentido para este empleado.
+        // Antes del año de alta o en el futuro → 404 (sin datos reales).
+        int anioActual = Year.now().getValue();
+        LocalDate fechaAlta = empleado.getFechaAlta();
+        if (anioConsulta > anioActual) {
+            throw new IllegalStateException(
+                    "No hay datos de saldo para el año " + anioConsulta);
+        }
+        if (fechaAlta != null && anioConsulta < fechaAlta.getYear()) {
+            throw new IllegalStateException(
+                    "No hay datos de saldo para el año " + anioConsulta);
+        }
 
         // Si no existe el registro para este año, calcularlo on-demand.
         // Mismo patron que E38 y E40. Evita el 404 antes del primer cierre
@@ -374,14 +399,37 @@ public class SaldoService {
         nuevo.setDiasBajaMedica(0);
         nuevo.setDiasPermisoRetribuido(0);
         nuevo.setDiasAusenciaInjustificada(0);
-        nuevo.setDiasVacacionesDerechoAnio(empleado.getDiasVacacionesAnuales());
+
+        // Prorrateo por fecha de alta: si el empleado se dio de alta este año,
+        // se calculan los días proporcionales al número de días desde la fecha
+        // de alta hasta el 31 de diciembre (ambos inclusive), sobre el total
+        // de días del año. Redondeo al alza (ceil) para que el empleado no
+        // pierda fracción de día.
+        // Si la fecha de alta es de años anteriores, se asignan los días completos.
+        int diasVacaciones;
+        int diasAsuntosPropios;
+        LocalDate fechaAlta = empleado.getFechaAlta();
+        if (fechaAlta != null && fechaAlta.getYear() == anio) {
+            LocalDate finAnio = LocalDate.of(anio, 12, 31);
+            long diasRestantes = fechaAlta.until(finAnio, java.time.temporal.ChronoUnit.DAYS) + 1;
+            long diasTotalesAnio = java.time.Year.of(anio).length();
+            diasVacaciones = (int) Math.ceil(
+                    empleado.getDiasVacacionesAnuales() * diasRestantes / (double) diasTotalesAnio);
+            diasAsuntosPropios = (int) Math.round(
+                    empleado.getDiasAsuntosPropiosAnuales() * diasRestantes / (double) diasTotalesAnio);
+        } else {
+            diasVacaciones = empleado.getDiasVacacionesAnuales();
+            diasAsuntosPropios = empleado.getDiasAsuntosPropiosAnuales();
+        }
+
+        nuevo.setDiasVacacionesDerechoAnio(diasVacaciones);
         nuevo.setDiasVacacionesPendientesAnioAnterior(0);
         nuevo.setDiasVacacionesConsumidos(0);
-        nuevo.setDiasVacacionesDisponibles(empleado.getDiasVacacionesAnuales());
-        nuevo.setDiasAsuntosPropiosDerechoAnio(empleado.getDiasAsuntosPropiosAnuales());
+        nuevo.setDiasVacacionesDisponibles(diasVacaciones);
+        nuevo.setDiasAsuntosPropiosDerechoAnio(diasAsuntosPropios);
         nuevo.setDiasAsuntosPropiosPendientesAnterior(0);
         nuevo.setDiasAsuntosPropiosConsumidos(0);
-        nuevo.setDiasAsuntosPropiosDisponibles(empleado.getDiasAsuntosPropiosAnuales());
+        nuevo.setDiasAsuntosPropiosDisponibles(diasAsuntosPropios);
         nuevo.setHorasAusenciaRetribuida(BigDecimal.ZERO);
         nuevo.setSaldoHoras(BigDecimal.ZERO);
         nuevo.setCalculadoHastaFecha(null);
@@ -426,21 +474,37 @@ public class SaldoService {
         SaldoResponse.HorasDesglose horas = new SaldoResponse.HorasDesglose(
                 esperadas,
                 trabajadas,
-                saldo.getSaldoHoras()
+                saldo.getSaldoHoras(),
+                saldo.getDiasTrabajados(),
+                saldo.getDiasBajaMedica(),
+                saldo.getDiasPermisoRetribuido(),
+                saldo.getDiasAusenciaInjustificada()
         );
+
+        int anio = saldo.getAnio();
+        LocalDate inicioAnio = LocalDate.of(anio, 1, 1);
+        LocalDate finAnio    = LocalDate.of(anio, 12, 31);
+        Long empId = saldo.getEmpleado().getId();
+
+        int planVac = planificacionRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                empId, TipoAusencia.VACACIONES, inicioAnio, finAnio);
+        int planAp  = planificacionRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                empId, TipoAusencia.ASUNTO_PROPIO, inicioAnio, finAnio);
 
         SaldoResponse.VacacionesDesglose vacaciones = new SaldoResponse.VacacionesDesglose(
                 saldo.getDiasVacacionesDerechoAnio(),
                 saldo.getDiasVacacionesPendientesAnioAnterior(),
                 saldo.getDiasVacacionesConsumidos(),
-                saldo.getDiasVacacionesDisponibles()
+                saldo.getDiasVacacionesDisponibles(),
+                saldo.getDiasVacacionesDisponibles() - planVac
         );
 
         SaldoResponse.AsuntosPropiosDesglose asuntosPropios = new SaldoResponse.AsuntosPropiosDesglose(
                 saldo.getDiasAsuntosPropiosDerechoAnio(),
                 saldo.getDiasAsuntosPropiosPendientesAnterior(),
                 saldo.getDiasAsuntosPropiosConsumidos(),
-                saldo.getDiasAsuntosPropiosDisponibles()
+                saldo.getDiasAsuntosPropiosDisponibles(),
+                saldo.getDiasAsuntosPropiosDisponibles() - planAp
         );
 
         String nombreCompleto = empleado.getNombre() + " " + empleado.getApellido1();

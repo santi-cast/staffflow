@@ -4,7 +4,7 @@ package com.staffflow.domain.enums;
  * Tipo de jornada registrada en un fichaje.
  *
  * Cada fichaje tiene exactamente un tipo que describe la naturaleza de esa jornada.
- * El proceso diario automático (@Scheduled 00:01) asigna el tipo correcto al
+ * El proceso diario automático (@Scheduled 23:55) asigna el tipo correcto al
  * convertir ausencias planificadas en fichajes.
  *
  * IMPORTANTE: este enum reemplaza la versión provisional de Fase 0 que contenía

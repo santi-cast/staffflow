@@ -131,6 +131,43 @@ public class PausaController {
     }
 
     // ---------------------------------------------------------------
+    // E35 — GET /api/v1/pausas/me
+    // RF: Pausas propias del empleado autenticado
+    // NOTA: declarado ANTES de GET / para que Spring MVC no trate
+    //       "me" como parámetro de query.
+    // ---------------------------------------------------------------
+
+    /**
+     * Lista las pausas del empleado autenticado en un rango de fechas (E35).
+     *
+     * Mismo patrón que FichajeController.listarPropios() (E26):
+     * username → service resuelve empleadoId.
+     *
+     * Códigos HTTP:
+     *   200 OK → lista de pausas propias (puede ser vacía)
+     *   403    → acceso denegado (rol incorrecto)
+     *
+     * @param desde          filtro opcional fecha inicio
+     * @param hasta          filtro opcional fecha fin
+     * @param authentication objeto de seguridad para extraer username
+     * @return 200 con lista de PausaResponse del empleado autenticado
+     */
+    @Operation(summary = "Mis pausas",
+               description = "Lista las pausas del empleado autenticado. Solo accesible por EMPLEADO.")
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('EMPLEADO')")
+    public ResponseEntity<List<PausaResponse>> listarPropias(
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false)
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+        return ResponseEntity.ok(pausaService.listarPropios(username, desde, hasta));
+    }
+
+    // ---------------------------------------------------------------
     // E29 — GET /api/v1/pausas
     // RF-24: Listar pausas con filtros
     // ---------------------------------------------------------------

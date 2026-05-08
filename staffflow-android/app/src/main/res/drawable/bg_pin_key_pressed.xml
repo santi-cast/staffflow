@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fondo pulsado de tecla PIN (keycap effect).
+    La cara se desplaza hacia abajo 3dp — simula que la tecla se hunde.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Capa base: mismo canto oscuro -->
+    <item>
+        <shape>
+            <solid android:color="#9E9E9E" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+    <!-- Cara hundida: top=3dp desplaza la cara hacia abajo -->
+    <item android:top="3dp">
+        <shape>
+            <solid android:color="#DCDCDC" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+
+</layer-list>

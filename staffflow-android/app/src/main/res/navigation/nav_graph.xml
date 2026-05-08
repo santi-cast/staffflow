@@ -91,7 +91,7 @@
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.staffflow.android.ui.login.LoginFragment"
-        android:label="Iniciar sesion"
+        android:label="Iniciar sesión"
         tools:layout="@layout/fragment_login">
 
         <!-- P02 -> P03 Recuperar contrasena -->
@@ -105,14 +105,14 @@
     <fragment
         android:id="@+id/recoveryFragment"
         android:name="com.staffflow.android.ui.login.RecoveryFragment"
-        android:label="Recuperar contrasena"
+        android:label="Recuperar contraseña"
         tools:layout="@layout/fragment_recovery" />
 
     <!-- P05 Restablecer contrasena con token por email (deep link) -->
     <fragment
         android:id="@+id/resetPasswordFragment"
         android:name="com.staffflow.android.ui.login.ResetPasswordFragment"
-        android:label="Restablecer contrasena"
+        android:label="Restablecer contraseña"
         tools:layout="@layout/fragment_reset_password">
 
         <deepLink app:uri="staffflow://reset-password?token={token}" />
@@ -134,7 +134,7 @@
     <fragment
         android:id="@+id/cambiarPasswordFragment"
         android:name="com.staffflow.android.ui.login.CambiarPasswordFragment"
-        android:label="Cambiar contrasena"
+        android:label="Cambiar contraseña"
         tools:layout="@layout/fragment_cambiar_password" />
 
     <!-- ============================================================ -->
@@ -192,10 +192,39 @@
             android:id="@+id/action_parte_diario_to_sin_justificar"
             app:destination="@id/sinJustificarFragment" />
 
-        <!-- P17 -> P14 Detalle empleado (tap en fila) -->
+        <!-- P17 -> P-DetalleDia Timeline completo del dia de un empleado (tap en fila) -->
         <action
-            android:id="@+id/action_parte_diario_to_detalle_empleado"
-            app:destination="@id/detalleEmpleadoFragment" />
+            android:id="@+id/action_parte_diario_to_detalle_dia"
+            app:destination="@id/detalleDiaFragment" />
+
+        <!-- P17 -> P20 Editar fichaje o pausa desde evento inline del parte diario -->
+        <action
+            android:id="@+id/action_parte_diario_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
+        <!-- P17 -> P24 Editar ausencia planificada desde evento inline del parte diario -->
+        <action
+            android:id="@+id/action_parte_diario_to_form_ausencia"
+            app:destination="@id/formAusenciaFragment" />
+
+    </fragment>
+
+    <!-- P-DetalleDia Timeline de jornada de un empleado para un dia concreto -->
+    <fragment
+        android:id="@+id/detalleDiaFragment"
+        android:name="com.staffflow.android.ui.encargado.DetalleDiaFragment"
+        android:label="Detalle del día"
+        tools:layout="@layout/fragment_detalle_dia">
+
+        <!-- P-DetalleDia -> P20 Editar o crear fichaje / pausa -->
+        <action
+            android:id="@+id/action_detalle_dia_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
+        <!-- P-DetalleDia -> P24 Editar ausencia planificada -->
+        <action
+            android:id="@+id/action_detalle_dia_to_form_ausencia"
+            app:destination="@id/formAusenciaFragment" />
 
     </fragment>
 
@@ -204,13 +233,39 @@
         android:id="@+id/sinJustificarFragment"
         android:name="com.staffflow.android.ui.encargado.SinJustificarFragment"
         android:label="Sin justificar"
-        tools:layout="@layout/fragment_sin_justificar" />
+        tools:layout="@layout/fragment_sin_justificar">
 
-    <!-- P19 Lista de fichajes -->
+        <!-- Tap en empleado -> formulario de fichaje manual en modo alta -->
+        <action
+            android:id="@+id/action_sin_justificar_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
+    </fragment>
+
+    <!-- P19 Resumen semanal de todos los empleados (WebView interactivo) -->
+    <fragment
+        android:id="@+id/resumenSemanalFragment"
+        android:name="com.staffflow.android.ui.encargado.ResumenSemanalFragment"
+        android:label="Fichajes"
+        tools:layout="@layout/fragment_resumen_semanal">
+
+        <!-- Tap en celda fichaje o pausa -> formulario de edicion -->
+        <action
+            android:id="@+id/action_resumen_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
+        <!-- Tap en celda ausencia -> formulario de edicion -->
+        <action
+            android:id="@+id/action_resumen_to_form_ausencia"
+            app:destination="@id/formAusenciaFragment" />
+
+    </fragment>
+
+    <!-- P19-legacy Lista de fichajes (sin entrada en el drawer) -->
     <fragment
         android:id="@+id/fichajesFragment"
         android:name="com.staffflow.android.ui.encargado.FichajesFragment"
-        android:label="Fichajes"
+        android:label="Fichajes (legacy)"
         tools:layout="@layout/fragment_fichajes">
 
         <!-- P19 -> P20 Registro manual (fichaje o pausa) -->
@@ -248,12 +303,12 @@
         android:label="Ausencia"
         tools:layout="@layout/fragment_form_ausencia" />
 
-    <!-- P26 Saldo anual individual (ENCARGADO/ADMIN) -->
+    <!-- P26 Saldo anual de un empleado (ENCARGADO/ADMIN) -->
     <fragment
-        android:id="@+id/saldoIndividualFragment"
-        android:name="com.staffflow.android.ui.encargado.SaldoIndividualFragment"
-        android:label="Saldo individual"
-        tools:layout="@layout/fragment_saldo_individual" />
+        android:id="@+id/saldoFragment"
+        android:name="com.staffflow.android.ui.encargado.SaldoFragment"
+        android:label="Saldo"
+        tools:layout="@layout/fragment_saldo" />
 
     <!-- P27 Saldos globales de todos los empleados -->
     <fragment
@@ -265,7 +320,7 @@
         <!-- P27 -> P26 Saldo individual (tap en fila) -->
         <action
             android:id="@+id/action_saldos_globales_to_saldo_individual"
-            app:destination="@id/saldoIndividualFragment" />
+            app:destination="@id/saldoFragment" />
 
     </fragment>
 
@@ -314,14 +369,33 @@
         <!-- P14 -> P26 Ver saldo del empleado -->
         <action
             android:id="@+id/action_detalle_to_saldo_individual"
-            app:destination="@id/saldoIndividualFragment" />
+            app:destination="@id/saldoFragment" />
 
-        <!-- P14 -> P19 Ver fichajes del empleado (filtrados) -->
+        <!-- P14 -> InformeFichajesEmpleado (WebView idéntico a P10) -->
         <action
             android:id="@+id/action_detalle_to_fichajes"
-            app:destination="@id/fichajesFragment" />
+            app:destination="@id/informeFichajesEmpleadoFragment" />
+
+        <!-- P14 -> InformeAusenciasEmpleado (WebView idéntico a P11) -->
+        <action
+            android:id="@+id/action_detalle_to_ausencias"
+            app:destination="@id/informeAusenciasEmpleadoFragment" />
 
     </fragment>
+
+    <!-- Informe de fichajes de un empleado (WebView, igual que P10) -->
+    <fragment
+        android:id="@+id/informeFichajesEmpleadoFragment"
+        android:name="com.staffflow.android.ui.encargado.InformeFichajesEmpleadoFragment"
+        android:label="Fichajes"
+        tools:layout="@layout/fragment_mis_fichajes" />
+
+    <!-- Informe de ausencias de un empleado (WebView, igual que P11) -->
+    <fragment
+        android:id="@+id/informeAusenciasEmpleadoFragment"
+        android:name="com.staffflow.android.ui.encargado.InformeAusenciasEmpleadoFragment"
+        android:label="Ausencias"
+        tools:layout="@layout/fragment_mis_ausencias" />
 
     <!-- P15 Crear o editar empleado -->
     <fragment

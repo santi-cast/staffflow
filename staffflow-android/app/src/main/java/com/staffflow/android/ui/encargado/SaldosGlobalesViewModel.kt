@@ -3,10 +3,9 @@ package com.staffflow.android.ui.encargado
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.staffflow.android.data.remote.api.InformeApiService
 import com.staffflow.android.data.remote.api.NetworkModule
-import com.staffflow.android.data.remote.api.SaldoApiService
-import com.staffflow.android.data.remote.dto.SaldoResponse
-import com.staffflow.android.data.remote.repository.SaldoRepository
+import com.staffflow.android.data.remote.repository.InformeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,26 +15,25 @@ import java.util.Calendar
 /**
  * ViewModel de Saldos globales (P27).
  *
- * Llama a E39 GET /saldos?anio= via SaldoRepository.
- * Devuelve la lista de saldos de todos los empleados activos.
+ * Llama a E44 GET /informes/saldos?anio=&formato=html via InformeRepository.
+ * Devuelve el HTML generado por InformeService para cargarlo en un WebView.
  * El año por defecto es el año actual.
  *
  * UiState:
- *   Loading -> skeleton list
- *   Success -> RecyclerView con saldos
- *   Empty   -> icono + mensaje sin datos
+ *   Loading -> CircularProgressIndicator centrado
+ *   Success -> WebView con el HTML del informe
  *   Error   -> icono nube + mensaje + Reintentar
  */
 class SaldosGlobalesViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = SaldoRepository(
-        NetworkModule.retrofit.create(SaldoApiService::class.java)
+    private val repository = InformeRepository(
+        NetworkModule.retrofit.create(InformeApiService::class.java)
     )
 
     sealed class UiState {
         object Loading : UiState()
-        data class Success(val saldos: List<SaldoResponse>) : UiState()
-        object Empty : UiState()
+        data class Success(val html: String) : UiState()
+        data class Empty(val anio: Int) : UiState()
         data class Error(val mensaje: String) : UiState()
     }
 
@@ -46,25 +44,27 @@ class SaldosGlobalesViewModel(application: Application) : AndroidViewModel(appli
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
-        cargarSaldos()
+        cargar()
     }
 
     fun setAnio(anio: Int) {
         _anio.value = anio
-        cargarSaldos()
+        cargar()
     }
 
-    fun reintentar() = cargarSaldos()
+    fun reintentar() = cargar()
 
-    private fun cargarSaldos() {
+    private fun cargar() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
-            repository.getSaldosGlobal(_anio.value).fold(
-                onSuccess = { lista ->
-                    _uiState.value = if (lista.isEmpty()) UiState.Empty else UiState.Success(lista)
-                },
+            repository.getInformeSaldosHtml(_anio.value).fold(
+                onSuccess = { body -> _uiState.value = UiState.Success(body.string()) },
                 onFailure = {
-                    _uiState.value = UiState.Error(it.message ?: "Error al cargar los saldos")
+                    if (it.message?.startsWith("No hay datos de saldo") == true) {
+                        _uiState.value = UiState.Empty(_anio.value)
+                    } else {
+                        _uiState.value = UiState.Error(it.message ?: "Error al cargar los saldos")
+                    }
                 }
             )
         }

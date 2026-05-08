@@ -92,6 +92,12 @@ public class SaldoResponse {
          * derechoAnio + pendientesAnterior - consumidos (RF-35).
          */
         private Integer disponibles;
+
+        /**
+         * Dias de vacaciones disponibles aun no planificados (procesado=false).
+         * disponibles - count(planificacionAusencia VAC procesado=false del año).
+         */
+        private Integer pendientesPlanificar;
     }
 
     /**
@@ -125,6 +131,12 @@ public class SaldoResponse {
          * derechoAnio + pendientesAnterior - consumidos (RF-36).
          */
         private Integer disponibles;
+
+        /**
+         * Dias de asuntos propios disponibles aun no planificados (procesado=false).
+         * disponibles - count(planificacionAusencia AP procesado=false del año).
+         */
+        private Integer pendientesPlanificar;
     }
 
     /**
@@ -159,5 +171,17 @@ public class SaldoResponse {
          * Persistido en SaldoAnual.saldoHoras y actualizado por el proceso nocturno.
          */
         private BigDecimal saldoHoras;
+
+        /** Dias con fichaje NORMAL, BAJA_MEDICA o PERMISO_RETRIBUIDO. */
+        private Integer diasTrabajados;
+
+        /** Dias de baja medica registrados este año. */
+        private Integer diasBajaMedica;
+
+        /** Dias de permiso retribuido registrados este año. */
+        private Integer diasPermisoRetribuido;
+
+        /** Dias de ausencia injustificada registrados este año. */
+        private Integer diasAusenciaInjustificada;
     }
 }

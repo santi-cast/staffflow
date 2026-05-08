@@ -1,9 +1,12 @@
 package com.staffflow.android.data.remote.api
 
 import com.staffflow.android.data.remote.dto.AusenciaPatchRequest
+import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.AusenciaResponse
 import com.staffflow.android.data.remote.dto.MensajeResponse
+import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -12,6 +15,7 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 /**
  * Interfaz Retrofit para los endpoints de ausencias planificadas.
@@ -38,6 +42,13 @@ interface AusenciaApiService {
     suspend fun crearAusencia(@Body request: AusenciaRequest): Response<AusenciaResponse>
 
     /**
+     * E-rango - Crea ausencias planificadas en un rango de fechas.
+     * Error 409 con {error, fechasConflictivas} si hay conflictos y sobrescribir=false.
+     */
+    @POST("ausencias/rango")
+    suspend fun crearAusenciaRango(@Body request: AusenciaRangoRequest): Response<List<AusenciaResponse>>
+
+    /**
      * E31 - Actualiza parcialmente una ausencia no procesada.
      * Error 409 si procesado=true (ya tiene fichaje generado).
      */
@@ -53,7 +64,7 @@ interface AusenciaApiService {
      * Solo disponible si procesado=false.
      */
     @DELETE("ausencias/{id}")
-    suspend fun eliminarAusencia(@Path("id") id: Long): Response<MensajeResponse>
+    suspend fun eliminarAusencia(@Path("id") id: Long): Response<Void>
 
     /**
      * E33 - Lista ausencias con filtros opcionales.
@@ -81,4 +92,45 @@ interface AusenciaApiService {
         @Query("desde") desde: String? = null,
         @Query("hasta") hasta: String? = null
     ): Response<List<AusenciaResponse>>
+
+    /**
+     * E-planificacion-vac-ap - Días pendientes de planificar para vac y AP.
+     * Accesible por ADMIN y ENCARGADO.
+     * @param empleadoId id del empleado
+     * @param anio       año a consultar
+     */
+    @GET("ausencias/planificacion-vac-ap")
+    suspend fun getPlanificacionVacAp(
+        @Query("empleadoId") empleadoId: Long,
+        @Query("anio") anio: Int
+    ): Response<PlanificacionVacApResponse>
+
+    /**
+     * E-ausencias - Informe HTML de ausencias del empleado autenticado.
+     * Combina planificacion_ausencias y fichajes tipo ausencia.
+     * Por defecto muestra el año en curso completo.
+     * @param desde  fecha inicio "yyyy-MM-dd" (opcional)
+     * @param hasta  fecha fin "yyyy-MM-dd" (opcional)
+     * @param filtro "TODAS" (defecto) o "VACACIONES_AP"
+     */
+    @Streaming
+    @GET("ausencias/me/informe")
+    suspend fun getMisAusenciasInforme(
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null,
+        @Query("filtro") filtro: String = "TODAS"
+    ): Response<ResponseBody>
+
+    /**
+     * E-ausencias-id - Informe HTML de ausencias de un empleado por id.
+     * Accesible por ADMIN y ENCARGADO.
+     */
+    @Streaming
+    @GET("ausencias/{empleadoId}/informe")
+    suspend fun getInformeAusenciasEmpleado(
+        @Path("empleadoId") empleadoId: Long,
+        @Query("desde") desde: String? = null,
+        @Query("hasta") hasta: String? = null,
+        @Query("filtro") filtro: String = "TODAS"
+    ): Response<ResponseBody>
 }

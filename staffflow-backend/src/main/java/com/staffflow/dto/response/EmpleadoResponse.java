@@ -69,4 +69,7 @@ public class EmpleadoResponse {
     // Null en E14 (listado), E16 (patch) y E21 (/me) para no exponer el PIN
     // al empleado ni en listados masivos (decisión nº21 revisada).
     private String pinTerminal;
+
+    // Email del usuario asociado. Solo se devuelve en E15 (detalle por id) para ADMIN.
+    private String email;
 }

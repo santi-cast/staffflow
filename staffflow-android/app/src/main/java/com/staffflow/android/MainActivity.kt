@@ -21,7 +21,11 @@ import com.staffflow.android.data.local.SessionManager
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.databinding.ActivityMainBinding
 import com.staffflow.android.domain.model.Rol
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Unica Activity de la app (Single Activity + Navigation Component).
@@ -39,9 +43,9 @@ import kotlinx.coroutines.launch
  * navigateToInitialDestination(rol) tras un login exitoso (E01).
  *
  * Destinos iniciales por rol:
- *   ADMIN     -> usuariosFragment    (P32 pendiente; por ahora lista de usuarios)
+ *   ADMIN     -> parteDiarioFragment (P17)
  *   ENCARGADO -> parteDiarioFragment (P17)
- *   EMPLEADO  -> miSaldoFragment    (P09)
+ *   EMPLEADO  -> miHoyFragment       (P12)
  */
 class MainActivity : AppCompatActivity() {
 
@@ -52,6 +56,8 @@ class MainActivity : AppCompatActivity() {
     private val sessionManager by lazy { SessionManager.getInstance(this) }
     private var nombreUsuario: String? = null
 
+    private val fmtReloj = DateTimeFormatter.ofPattern("EEEE d 'de' MMMM 'de' yyyy · HH:mm", Locale("es"))
+
     /**
      * Destinos de nivel superior: muestran el icono de hamburguesa en lugar
      * del boton Atras. Son los puntos de entrada de cada flujo.
@@ -59,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private val topLevelDestinations = setOf(
         R.id.terminalFragment,
         R.id.loginFragment,
+        R.id.miHoyFragment,
         R.id.miSaldoFragment,
         R.id.parteDiarioFragment,
         R.id.empleadosFragment,
@@ -109,9 +116,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        // Ocultar el titulo por defecto de la ActionBar: el logo custom en toolbar
-        // (toolbarBrand) ya hace de titulo en todas las pantallas.
-        supportActionBar?.setDisplayShowTitleEnabled(false)
+        supportActionBar?.setDisplayShowTitleEnabled(false) // se activa por destino en setupDestinationListener
 
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
@@ -124,10 +129,28 @@ class MainActivity : AppCompatActivity() {
         setupDestinationListener()
         collectAuthEvents()
         checkExistingSession()
+        iniciarReloj()
     }
 
     override fun onSupportNavigateUp(): Boolean =
         NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp()
+
+    // ------------------------------------------------------------------
+    // Reloj del toolbar
+    // ------------------------------------------------------------------
+
+    private fun iniciarReloj() {
+        lifecycleScope.launch {
+            // Sincronizar al inicio del próximo minuto exacto
+            val msHastaProximoMinuto = 60_000L - (System.currentTimeMillis() % 60_000L)
+            binding.tvReloj.text = LocalDateTime.now().format(fmtReloj)
+            delay(msHastaProximoMinuto)
+            while (true) {
+                binding.tvReloj.text = LocalDateTime.now().format(fmtReloj)
+                delay(60_000L)
+            }
+        }
+    }
 
     // ------------------------------------------------------------------
     // Configuracion del Drawer
@@ -195,9 +218,9 @@ class MainActivity : AppCompatActivity() {
      */
     fun navigateToInitialDestination(rol: Rol) {
         val destination = when (rol) {
-            Rol.ADMIN     -> R.id.usuariosFragment
+            Rol.ADMIN     -> R.id.parteDiarioFragment
             Rol.ENCARGADO -> R.id.parteDiarioFragment
-            Rol.EMPLEADO  -> R.id.miSaldoFragment
+            Rol.EMPLEADO  -> R.id.miHoyFragment
         }
         val navOptions = NavOptions.Builder()
             .setPopUpTo(R.id.terminalFragment, inclusive = true)
@@ -219,15 +242,18 @@ class MainActivity : AppCompatActivity() {
             if (destination.id in publicDestinations) {
                 binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 binding.toolbar.navigationIcon = null
-                // Zona publica: logo sin nombre de usuario
                 binding.tvToolbarNombre.visibility = View.GONE
+                binding.tvReloj.visibility = View.GONE
+                supportActionBar?.setDisplayShowTitleEnabled(false)
             } else {
                 binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-                // Zona autenticada: logo + nombre del usuario
                 nombreUsuario?.let {
                     binding.tvToolbarNombre.text = " · $it"
                     binding.tvToolbarNombre.visibility = View.VISIBLE
                 }
+                binding.tvReloj.visibility = View.VISIBLE
+                // Mostrar el label del destino (definido en nav_graph.xml) como titulo
+                supportActionBar?.setDisplayShowTitleEnabled(true)
             }
         }
     }
@@ -261,6 +287,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun checkExistingSession() {
         lifecycleScope.launch {
+            val baseUrl = sessionManager.getBaseUrl()
+            if (baseUrl != null) NetworkModule.init(baseUrl)
             val token = sessionManager.getToken()
             if (token != null) {
                 NetworkModule.authToken = token

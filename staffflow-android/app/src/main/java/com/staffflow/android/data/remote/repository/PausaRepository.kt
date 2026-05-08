@@ -34,6 +34,16 @@ class PausaRepository(private val api: PausaApiService) {
         safeApiCall { api.actualizarPausa(id, request) }
 
     /**
+     * E35 - Devuelve las pausas del empleado autenticado.
+     * P10 (MisFichajesFragment) carga las pausas del rango seleccionado.
+     */
+    suspend fun getMisPausas(
+        desde: String? = null,
+        hasta: String? = null
+    ): Result<List<PausaResponse>> =
+        safeApiCall { api.getMisPausas(desde, hasta) }
+
+    /**
      * E29 - Lista pausas con filtros opcionales.
      * P19 (FichajesFragment) puede mostrar pausas de un fichaje concreto.
      */

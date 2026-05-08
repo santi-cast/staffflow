@@ -184,6 +184,20 @@ data class AusenciaRequest(
 )
 
 /**
+ * Creacion de ausencias en rango (POST /ausencias/rango).
+ * Crea un registro por cada dia entre fechaDesde y fechaHasta.
+ * Error 409 si hay conflictos y sobrescribir=false.
+ */
+data class AusenciaRangoRequest(
+    val empleadoId: Long?,
+    val fechaDesde: String,
+    val fechaHasta: String,
+    val tipoAusencia: TipoAusencia,
+    val observaciones: String? = null,
+    val sobrescribir: Boolean = false
+)
+
+/**
  * Actualizacion parcial de una ausencia no procesada (E31 PATCH /ausencias/{id}).
  * Solo se envian los campos que se quieren modificar (null = sin cambio).
  */
