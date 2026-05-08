@@ -48,7 +48,10 @@ staffflow:
     from: ${MAIL_USERNAME}
     reset-url: staffflow://reset-password?token=
   jwt:
-    secret: staffflow-secret-key-para-desarrollo-minimo-32-caracteres
+    # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir
+    # la variable de entorno JWT_SECRET. El valor de fallback fue rotado el 2026-05-08
+    # (issue: secret leak en historial git).
+    secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
     # Refresh token queda como mejora para v2.0.

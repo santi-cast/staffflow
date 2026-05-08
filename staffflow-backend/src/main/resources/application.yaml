@@ -3,7 +3,8 @@ spring:
     active: dev
 
 jwt:
-  secret: staffflow-secret-key-para-desarrollo-debe-tener-al-menos-256-bits-ok
+  # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir JWT_SECRET.
+  secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
   expiration: 3600000
   refresh-expiration: 604800000
 
@@ -12,10 +13,10 @@ jwt:
 # =========================================================================
 staffflow:
   jwt:
-    # Clave secreta para firmar los tokens HS256.
-    # DEBE tener minimo 32 caracteres (256 bits para HS256).
-    # En produccion se inyecta como variable de entorno JWT_SECRET, nunca en texto plano.
-    secret: staffflow-secret-key-desarrollo-2026-minimo32chars
+    # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir
+    # la variable de entorno JWT_SECRET. El valor de fallback fue rotado el 2026-05-08
+    # (issue: secret leak en historial git).
+    secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
     # Refresh token queda como mejora para v2.0.

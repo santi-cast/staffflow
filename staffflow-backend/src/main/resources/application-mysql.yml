@@ -37,7 +37,8 @@ staffflow:
     from: ${MAIL_USERNAME}
     reset-url: staffflow://reset-password?token=
   jwt:
-    secret: staffflow-secret-key-para-desarrollo-minimo-32-caracteres
+    # JWT_SECRET es OBLIGATORIA en este perfil. El arranque falla si no esta definida (intencional).
+    secret: ${JWT_SECRET:?JWT_SECRET must be set for mysql profile}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
     # Refresh token queda como mejora para v2.0.
