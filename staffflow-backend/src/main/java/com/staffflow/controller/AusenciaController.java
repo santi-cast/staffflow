@@ -82,7 +82,7 @@ public class AusenciaController {
     @Operation(summary = "Mis ausencias planificadas",
                description = "Devuelve las ausencias planificadas del empleado autenticado. Solo accesible por EMPLEADO.")
     @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<AusenciaResponse>> listarPropias(
             @RequestParam(required = false)
                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
@@ -117,7 +117,7 @@ public class AusenciaController {
     @Operation(summary = "Informe HTML de mis ausencias",
                description = "Genera el informe HTML de ausencias del empleado autenticado. Combina planificadas y ejecutadas.")
     @GetMapping("/me/informe")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<String> informeAusenciasMe(
             @RequestParam(required = false)
                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,

@@ -82,7 +82,7 @@ public class PresenciaController {
      * @return estado de presencia del empleado para la fecha indicada
      */
     @GetMapping("/parte-diario/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     @Operation(summary = "Estado propio del día",
                description = "Devuelve el estado de presencia del empleado autenticado para la fecha indicada. " +
                              "Por defecto hoy. Solo accesible por el propio empleado (RF-54).")

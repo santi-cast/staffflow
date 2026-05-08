@@ -59,7 +59,7 @@ public class SaldoController {
      * @return saldo anual completo del empleado autenticado
      */
     @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     @Operation(summary = "Mi saldo anual",
                description = "Devuelve el saldo anual del empleado autenticado (RF-53)")
     public ResponseEntity<SaldoResponse> obtenerMiSaldo(

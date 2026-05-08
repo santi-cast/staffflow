@@ -155,7 +155,7 @@ public class PausaController {
     @Operation(summary = "Mis pausas",
                description = "Lista las pausas del empleado autenticado. Solo accesible por EMPLEADO.")
     @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<PausaResponse>> listarPropias(
             @RequestParam(required = false)
                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,

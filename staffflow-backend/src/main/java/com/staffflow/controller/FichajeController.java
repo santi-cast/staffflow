@@ -244,7 +244,7 @@ public class FichajeController {
     @Operation(summary = "Mis fichajes",
                description = "Lista los fichajes del empleado autenticado. Solo accesible por EMPLEADO.")
     @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<List<FichajeResponse>> listarPropios(
             @RequestParam(required = false)
                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,

@@ -286,14 +286,14 @@ public class EmpleadoController {
      *
      * Códigos HTTP:
      *   200 OK          → perfil devuelto correctamente
-     *   403 Forbidden   → rol insuficiente (ADMIN/ENCARGADO bloqueados)
+     *   403 Forbidden   → rol insuficiente (solo ADMIN bloqueado — ENCARGADO también es empleado)
      *   404 Not Found   → usuario autenticado sin perfil de empleado
      *
      * @param authentication objeto Authentication inyectado por Spring Security
      * @return 200 OK con EmpleadoResponse (sin pinTerminal)
      */
     @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<EmpleadoResponse> obtenerMiPerfil(Authentication authentication) {
         // authentication.getName() devuelve el username del User estándar de Spring Security.
         // Compatible con UserDetailsServiceImpl que no implementa getId() (Opción B, D-017).

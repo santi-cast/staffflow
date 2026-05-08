@@ -58,7 +58,7 @@ public class InformeController {
      * @return HTML del informe de horas del empleado autenticado
      */
     @GetMapping("/me/horas")
-    @PreAuthorize("hasRole('EMPLEADO')")
+    @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<Object> informeHorasMe(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
