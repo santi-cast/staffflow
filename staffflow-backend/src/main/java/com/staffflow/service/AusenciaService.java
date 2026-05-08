@@ -347,6 +347,7 @@ public class AusenciaService {
      * @param procesado  filtro por estado procesado (nullable)
      * @return lista de ausencias que cumplen los filtros
      */
+    @Transactional(readOnly = true)
     public List<AusenciaResponse> listar(Long empleadoId, LocalDate desde,
                                          LocalDate hasta, Boolean procesado) {
         return ausenciaRepository
@@ -372,6 +373,7 @@ public class AusenciaService {
      * @param hasta    fecha de fin del rango (nullable)
      * @return lista de ausencias propias del empleado
      */
+    @Transactional(readOnly = true)
     public List<AusenciaResponse> listarMias(String username,
                                               LocalDate desde, LocalDate hasta) {
 

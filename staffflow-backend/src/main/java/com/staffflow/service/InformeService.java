@@ -18,6 +18,7 @@ import com.staffflow.exception.NotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -184,6 +185,7 @@ public class InformeService {
      * @param hasta    fecha de fin del periodo
      * @return HTML del informe de horas del empleado autenticado
      */
+    @Transactional(readOnly = true)
     public Object informeHorasMe(String username, LocalDate desde, LocalDate hasta) {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -197,6 +199,7 @@ public class InformeService {
         return informeHorasEmpleado(empleado.getId(), desde, hasta, "html", null);
     }
 
+    @Transactional(readOnly = true)
     public Object informeHorasEmpleado(Long empleadoId, LocalDate desde,
                                         LocalDate hasta, String formato,
                                         List<String> tipos) {
@@ -237,6 +240,7 @@ public class InformeService {
      * @param tipos   lista de tipos a incluir (null = todos)
      * @return informe global de horas en el formato solicitado
      */
+    @Transactional(readOnly = true)
     public Object informeHorasGlobal(LocalDate desde, LocalDate hasta,
                                       String formato, List<String> tipos) {
 
@@ -288,6 +292,7 @@ public class InformeService {
      * @param campos      lista de bloques o campos a incluir (null = todos)
      * @return informe de saldos en el formato solicitado
      */
+    @Transactional(readOnly = true)
     public Object informeSaldos(Integer anio, String formato,
                                  List<Long> empleadoIds, List<String> campos) {
 
@@ -1099,6 +1104,7 @@ public class InformeService {
      * @param filtro     "TODAS" o "VACACIONES_AP"
      * @return HTML del informe de ausencias
      */
+    @Transactional(readOnly = true)
     public String informeAusenciasEmpleado(Long empleadoId, LocalDate desde, LocalDate hasta, String filtro) {
 
         Empleado empleado = empleadoRepository.findById(empleadoId)
@@ -1139,6 +1145,7 @@ public class InformeService {
         return generarHtmlAusencias(empleado, desde, hasta, filas, nombreEmpresa, soloVacAp);
     }
 
+    @Transactional(readOnly = true)
     public String informeAusenciasMe(String username, LocalDate desde, LocalDate hasta, String filtro) {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -1278,6 +1285,7 @@ public class InformeService {
      * @param username username del usuario autenticado
      * @return HTML del resumen semanal
      */
+    @Transactional(readOnly = true)
     public String informeSemana(LocalDate desde, LocalDate hasta, String username) {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -1605,6 +1613,7 @@ public class InformeService {
      * @param username username del usuario autenticado
      * @return HTML del resumen de ausencias
      */
+    @Transactional(readOnly = true)
     public String informeAusenciasGlobal(LocalDate desde, LocalDate hasta, String username) {
 
         Usuario usuario = usuarioRepository.findByUsername(username)

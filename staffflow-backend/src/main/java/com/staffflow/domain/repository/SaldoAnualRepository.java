@@ -2,6 +2,8 @@ package com.staffflow.domain.repository;
 
 import com.staffflow.domain.entity.SaldoAnual;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -73,4 +75,21 @@ public interface SaldoAnualRepository extends JpaRepository<SaldoAnual, Long> {
      * @return lista de saldos de ese año (puede ser vacia)
      */
     List<SaldoAnual> findByAnio(Integer anio);
+
+    /**
+     * Devuelve todos los saldos anuales de un año concreto con el empleado cargado en la misma query.
+     *
+     * <p>JOIN FETCH s.empleado evita el problema N+1 al acceder a s.getEmpleado()
+     * fuera de una sesion Hibernate (por ejemplo, en metodos de servicio sin
+     * {@code @Transactional}). Usar este metodo cuando el contexto de llamada
+     * no garantiza una sesion abierta.</p>
+     *
+     * <p>Alternativa a {@link #findByAnio} cuando se necesita que el empleado
+     * este disponible sin lazy loading adicional.</p>
+     *
+     * @param anio año a consultar (ej: 2026)
+     * @return lista de saldos de ese año con empleado cargado (puede ser vacia)
+     */
+    @Query("SELECT s FROM SaldoAnual s JOIN FETCH s.empleado WHERE s.anio = :anio")
+    List<SaldoAnual> findAllByAnioWithEmpleado(@Param("anio") Integer anio);
 }

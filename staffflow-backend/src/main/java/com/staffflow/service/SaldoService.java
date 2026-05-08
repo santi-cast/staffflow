@@ -106,6 +106,7 @@ public class SaldoService {
      * @param anio año a consultar; si null se usa el año actual
      * @return lista de saldos anuales de todos los empleados con registro ese año
      */
+    @Transactional(readOnly = true)
     public List<SaldoResponse> listarTodos(Integer anio) {
         int anioConsulta = resolverAnio(anio);
 
@@ -120,11 +121,13 @@ public class SaldoService {
 
         List<SaldoAnual> saldos = saldoRepository.findByAnio(anioConsulta);
 
-        // Cada SaldoAnual tiene su empleado cargado via @ManyToOne.
-        // Con fetch LAZY Hibernate hara una query por empleado al acceder
-        // a saldo.getEmpleado() (N+1). Para un volumen de PYME (max ~50
-        // empleados) es aceptable. Si se detecta problema de rendimiento
-        // la solucion es anadir @EntityGraph o JOIN FETCH en findByAnio.
+        // Cada SaldoAnual tiene su empleado en LAZY. El metodo esta anotado
+        // con @Transactional(readOnly=true) para que la sesion Hibernate
+        // permanezca abierta durante el mapeo — Hibernate resuelve el
+        // empleado de cada saldo dentro de la misma sesion (N+1 aceptable
+        // para un volumen de PYME, max ~50 empleados).
+        // Si en el futuro se detecta problema de rendimiento: usar
+        // findAllByAnioWithEmpleado con JOIN FETCH en SaldoAnualRepository.
         return saldos.stream()
                 .map(s -> toSaldoResponse(s, s.getEmpleado()))
                 .toList();
