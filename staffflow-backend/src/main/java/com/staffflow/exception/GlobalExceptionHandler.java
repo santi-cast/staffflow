@@ -164,19 +164,23 @@ public class GlobalExceptionHandler {
     // ─── 404 NOT FOUND ───────────────────────────────────────────────────────
 
     /**
-     * Maneja recursos no encontrados en BD (404).
+     * Maneja recursos no encontrados en la base de datos (404).
      *
-     * <p>IllegalStateException se usa exclusivamente para "recurso no
-     * encontrado". Los conflictos de unicidad se gestionan con
-     * ConflictException (HTTP 409) para distinguir claramente ambos casos.
+     * <p>{@link NotFoundException} es la excepción de dominio estándar para
+     * señalar que el recurso solicitado no existe. Sustituye el uso incorrecto
+     * de {@link IllegalStateException} como señal de "not found".
+     *
+     * <p>El mensaje de la excepción describe el tipo de recurso y el criterio
+     * de búsqueda (ej: "Empleado no encontrado con id: 42") y se devuelve
+     * directamente al cliente en el campo "error" del cuerpo de la respuesta.
      *
      * @param ex excepción con el mensaje descriptivo del recurso ausente
      * @param request información de la petición HTTP
      * @return 404 con { error, timestamp, path }
      */
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalState(
-            IllegalStateException ex, WebRequest request) {
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(
+            NotFoundException ex, WebRequest request) {
 
         log.warn("Recurso no encontrado: {}", ex.getMessage());
 
@@ -186,6 +190,12 @@ public class GlobalExceptionHandler {
 
     /**
      * Maneja EntityNotFoundException de JPA (404).
+     *
+     * <p>Nota: el handler de {@link IllegalStateException} fue eliminado en
+     * la tarea de hardening ISE-01. Las ISE que permanecen en el código
+     * (PdfService iText7, SaldoService datos inconsistentes) caen al
+     * manejador genérico {@link #handleGenericException} → HTTP 500,
+     * lo que es la semántica correcta para errores de estado interno.</p>
      *
      * <p>jakarta.persistence.EntityNotFoundException la lanza TerminalService
      * cuando el PIN introducido no corresponde a ningun empleado registrado.
