@@ -10,6 +10,7 @@ import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
+import com.staffflow.exception.NotFoundException;
 import com.staffflow.service.SaldoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +97,7 @@ public class ProcesoCierreDiario {
         // Se busca por username (no por id) para no depender del autoincremental
         // de BD, que puede diferir entre dev y prod.
         Usuario usuarioSistema = usuarioRepository.findByUsername("terminal_service")
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario 'terminal_service' no encontrado en BD. "
                         + "El proceso nocturno no puede ejecutarse sin este usuario."));
 

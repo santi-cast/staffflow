@@ -10,6 +10,7 @@ import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.dto.response.SaldoResponse;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,7 +73,7 @@ public class SaldoService {
 
         // 404 si el empleado no existe
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id: " + empleadoId));
 
         // Crear on-demand solo para el año actual: evita persistir registros vacíos
@@ -83,7 +84,7 @@ public class SaldoService {
         }
 
         SaldoAnual saldo = saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "No existe saldo para el empleado " + empleadoId
                         + " en el año " + anioConsulta));
 
@@ -158,7 +159,7 @@ public class SaldoService {
 
         // 404 si el empleado no existe
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id: " + empleadoId));
 
         // Delegar logica de recalculo al metodo interno compartido con
@@ -170,8 +171,8 @@ public class SaldoService {
         // Siempre existe en este punto: recalcularParaProceso usa findOrCreate.
         SaldoAnual saldo = saldoRepository
                 .findByEmpleadoIdAndAnio(empleadoId, anioConsulta)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Error inesperado: saldo no encontrado tras recalculo"));
+                .orElseThrow(() -> new NotFoundException(
+                        "Saldo no encontrado tras recalculo para el empleado " + empleadoId));
 
         return toSaldoResponse(saldo, empleado);
     }
@@ -206,7 +207,7 @@ public class SaldoService {
 
         // Cargar empleado — necesario para jornadaDiariaMinutos y findOrCreate
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id: " + empleadoId));
 
         // findOrCreate: si no existe el saldo lo crea con valores iniciales
@@ -329,7 +330,7 @@ public class SaldoService {
         // Mismo patron que E34 (AusenciaService) y E37 (PresenciaService).
         // ADMIN devuelve Optional.empty() pero @PreAuthorize lo impide antes.
         Empleado empleado = empleadoRepository.findByUsuarioUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado para el usuario: " + username));
 
         // Validar que el año solicitado tiene sentido para este empleado.
@@ -354,7 +355,7 @@ public class SaldoService {
 
         SaldoAnual saldo = saldoRepository
                 .findByEmpleadoIdAndAnio(empleado.getId(), anioConsulta)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "No existe saldo para el año " + anioConsulta));
 
         return toSaldoResponse(saldo, empleado);

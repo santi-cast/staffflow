@@ -33,6 +33,7 @@ import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.dto.response.EmpresaResponse;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -136,7 +137,7 @@ public class PdfService {
     public byte[] generarPdfHorasEmpleado(Long empleadoId, LocalDate desde, LocalDate hasta) {
 
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id " + empleadoId));
 
         // Obtener datos via InformeService (Opcion C — sin duplicar logica)
@@ -346,7 +347,7 @@ public class PdfService {
     public byte[] generarPdfAusencias(Long empleadoId, Integer anio) {
 
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id " + empleadoId));
 
         EmpresaResponse empresa = obtenerEmpresa();

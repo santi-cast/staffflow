@@ -13,6 +13,7 @@ import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.dto.response.DetallePresenciaResponse;
 import com.staffflow.dto.response.ParteDiarioResponse;
 import com.staffflow.dto.response.SinJustificarResponse;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -238,13 +239,13 @@ public class PresenciaService {
      * @param username username extraído del JWT en el controller
      * @param fecha    fecha a consultar (por defecto hoy en el controller)
      * @return detalle de presencia del empleado para esa fecha
-     * @throws IllegalStateException si el username no tiene perfil de empleado
+     * @throws NotFoundException si el username no tiene perfil de empleado
      */
     public DetallePresenciaResponse obtenerMiPresencia(String username, LocalDate fecha) {
 
         // Resuelve el empleado desde el username del JWT
         Empleado emp = empleadoRepository.findByUsuarioUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "El usuario autenticado no tiene perfil de empleado."));
 
         // Carga los datos relevantes solo para este empleado

@@ -16,6 +16,7 @@ import com.staffflow.dto.request.AusenciaRequest;
 import com.staffflow.dto.response.AusenciaResponse;
 import com.staffflow.dto.response.PlanificacionVacApResponse;
 import com.staffflow.exception.ConflictException;
+import com.staffflow.exception.NotFoundException;
 import com.staffflow.exception.RangoConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -85,7 +86,7 @@ public class AusenciaService {
 
         // --- Resolver usuario autenticado para restriccion D-026 y auditoria ---
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
         // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
@@ -109,7 +110,7 @@ public class AusenciaService {
         Empleado empleado = null;
         if (request.getEmpleadoId() != null) {
             empleado = empleadoRepository.findById(request.getEmpleadoId())
-                    .orElseThrow(() -> new IllegalStateException(
+                    .orElseThrow(() -> new NotFoundException(
                             "Empleado no encontrado con id " + request.getEmpleadoId()));
         }
 
@@ -158,7 +159,7 @@ public class AusenciaService {
 
         // --- Resolver usuario autenticado para D-026 y auditoría ---
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
         // --- Validar que fechaDesde <= fechaHasta ---
@@ -213,7 +214,7 @@ public class AusenciaService {
         Empleado empleado = null;
         if (request.getEmpleadoId() != null) {
             empleado = empleadoRepository.findById(request.getEmpleadoId())
-                    .orElseThrow(() -> new IllegalStateException(
+                    .orElseThrow(() -> new NotFoundException(
                             "Empleado no encontrado con id " + request.getEmpleadoId()));
         }
 
@@ -260,12 +261,12 @@ public class AusenciaService {
     public AusenciaResponse actualizar(Long id, AusenciaPatchRequest request, String username) {
 
         PlanificacionAusencia ausencia = ausenciaRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Ausencia no encontrada con id " + id));
 
         // Resolver usuario autenticado para restriccion D-026
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
         // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
@@ -316,7 +317,7 @@ public class AusenciaService {
     public void eliminar(Long id) {
 
         PlanificacionAusencia ausencia = ausenciaRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Ausencia no encontrada con id " + id));
 
         // procesado=true → fichaje ya generado e inmutable → HTTP 409
@@ -376,7 +377,7 @@ public class AusenciaService {
 
         // Resolver empleadoId a partir del username del JWT
         Empleado empleado = empleadoRepository.findByUsuarioUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Perfil de empleado no encontrado para el usuario: " + username));
 
         return ausenciaRepository
@@ -409,7 +410,7 @@ public class AusenciaService {
     public PlanificacionVacApResponse getPlanificacionVacAp(Long empleadoId, int anio) {
 
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id: " + empleadoId));
 
         Optional<SaldoAnual> existente = saldoAnualRepository

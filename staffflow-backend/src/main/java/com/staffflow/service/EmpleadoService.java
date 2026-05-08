@@ -11,6 +11,7 @@ import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.MensajeResponse;
 import com.staffflow.dto.response.ParteDiarioResponse;
 import com.staffflow.exception.ConflictException;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,7 +105,7 @@ public class EmpleadoService {
     public EmpleadoResponse crear(EmpleadoRequest request) {
         // Verificar que el usuarioId existe (HTTP 404 si no)
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario con id " + request.getUsuarioId() + " no encontrado"));
 
         // Validación preventiva de unicidad de DNI (HTTP 409 con mensaje claro)
@@ -241,7 +242,7 @@ public class EmpleadoService {
     @Transactional(readOnly = true)
     public EmpleadoResponse obtenerPorId(Long id) {
         Empleado empleado = empleadoRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
         // PIN y email incluidos en el detalle individual (solo ADMIN los consume en Android)
         EmpleadoResponse response = toEmpleadoResponse(empleado);
@@ -281,7 +282,7 @@ public class EmpleadoService {
     @Transactional
     public EmpleadoResponse actualizar(Long id, EmpleadoPatchRequest request) {
         Empleado empleado = empleadoRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
 
         if (request.getNombre() != null) {
@@ -313,14 +314,14 @@ public class EmpleadoService {
         }
         if (request.getPinTerminal() != null) {
             if (empleadoRepository.existsByPinTerminalAndIdNot(request.getPinTerminal(), id)) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "El PIN de terminal '" + request.getPinTerminal() + "' ya está registrado");
             }
             empleado.setPinTerminal(request.getPinTerminal());
         }
         if (request.getCodigoNfc() != null) {
             if (empleadoRepository.existsByCodigoNfcAndIdNot(request.getCodigoNfc(), id)) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "El código NFC '" + request.getCodigoNfc() + "' ya está registrado");
             }
             empleado.setCodigoNfc(request.getCodigoNfc());
@@ -344,7 +345,7 @@ public class EmpleadoService {
     @Transactional
     public MensajeResponse darDeBaja(Long id) {
         Empleado empleado = empleadoRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
 
         empleado.setActivo(false);
@@ -367,7 +368,7 @@ public class EmpleadoService {
     @Transactional
     public MensajeResponse reactivar(Long id) {
         Empleado empleado = empleadoRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
 
         if (empleado.getActivo()) {
@@ -473,11 +474,11 @@ public class EmpleadoService {
     @Transactional(readOnly = true)
     public EmpleadoResponse obtenerMiPerfil(String username) {
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
         Empleado empleado = empleadoRepository.findByUsuarioId(usuario.getId())
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "No existe perfil de empleado para el usuario '" + username + "'"));
 
         // PIN nunca se devuelve en /me

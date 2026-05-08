@@ -4,6 +4,7 @@ import com.staffflow.domain.entity.ConfiguracionEmpresa;
 import com.staffflow.domain.repository.ConfiguracionEmpresaRepository;
 import com.staffflow.dto.request.EmpresaRequest;
 import com.staffflow.dto.response.EmpresaResponse;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,12 +46,12 @@ public class EmpresaService {
      * sin error dificulta detectar que el sistema no está configurado.
      *
      * @return EmpresaResponse con los datos actuales de la empresa
-     * @throws IllegalStateException si el registro singleton no existe
+     * @throws NotFoundException si el registro singleton no existe
      */
     public EmpresaResponse obtenerEmpresa() {
         // El singleton siempre tiene id=1 — convención de diseño (RF-02)
         ConfiguracionEmpresa empresa = configuracionEmpresaRepository.findById(1L)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "La configuración de empresa no ha sido inicializada"));
 
         log.info("Consulta configuracion empresa: {}", empresa.getNombreEmpresa());

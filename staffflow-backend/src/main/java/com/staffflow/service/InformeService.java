@@ -14,6 +14,7 @@ import com.staffflow.domain.repository.PausaRepository;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
+import com.staffflow.exception.NotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -201,7 +202,7 @@ public class InformeService {
                                         List<String> tipos) {
 
         Empleado empleado = empleadoRepository.findById(empleadoId)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado con id " + empleadoId));
 
         String nombreEmpresa = obtenerNombreEmpresa();
@@ -300,7 +301,7 @@ public class InformeService {
                 .collect(Collectors.toList());
 
         if (existentes.isEmpty()) {
-            throw new IllegalStateException("No hay datos de saldo para el año " + anio);
+            throw new NotFoundException("No hay datos de saldo para el año " + anio);
         }
 
         // El año tiene datos: completar on-demand los empleados activos que aún no tengan registro.

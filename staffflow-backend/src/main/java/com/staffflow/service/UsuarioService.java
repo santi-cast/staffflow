@@ -8,6 +8,7 @@ import com.staffflow.dto.request.UsuarioRequest;
 import com.staffflow.dto.response.MensajeResponse;
 import com.staffflow.dto.response.UsuarioResponse;
 import com.staffflow.exception.ConflictException;
+import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  *     antes de insertar para dar un mensaje de error claro en lugar
  *     de dejar explotar DataIntegrityViolationException con mensaje
  *     genérico de BD. Se lanza ConflictException (HTTP 409) para
- *     duplicados e IllegalStateException (HTTP 404) para no encontrado.
+ *     duplicados y NotFoundException (HTTP 404) para recursos ausentes.
  *     Ambos casos son distintos semánticamente y requieren códigos HTTP
  *     distintos.
  *   - Filtros combinables en listar(): rol y activo son independientes
@@ -161,7 +162,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponse obtenerPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario con id " + id + " no encontrado"));
         return toUsuarioResponse(usuario);
     }
@@ -200,7 +201,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponse actualizar(Long id, UsuarioPatchRequest request) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario con id " + id + " no encontrado"));
 
         if (request.getEmail() != null) {
@@ -250,7 +251,7 @@ public class UsuarioService {
     @Transactional
     public MensajeResponse desactivar(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new NotFoundException(
                         "Usuario con id " + id + " no encontrado"));
 
         usuario.setActivo(false);
