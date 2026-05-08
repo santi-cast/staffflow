@@ -311,7 +311,7 @@ public class SaldoService {
     /**
      * Devuelve el saldo anual del empleado autenticado (E41 -- /me).
      *
-     * <p>Roles: solo EMPLEADO. RF-53.
+     * <p>Roles: EMPLEADO y ENCARGADO. RF-53.
      * Recibe el username extraido del JWT por authentication.getName()
      * en el controller. Resuelve el empleado con findByUsuarioUsername,
      * el mismo patron que usan AusenciaService.listarMias() (E34) y
@@ -331,13 +331,16 @@ public class SaldoService {
 
         // Resuelve el empleado desde el username del JWT.
         // Mismo patron que E34 (AusenciaService) y E37 (PresenciaService).
-        // ADMIN devuelve Optional.empty() pero @PreAuthorize lo impide antes.
+        // ADMIN no llega aqui: @PreAuthorize del controller exige EMPLEADO o ENCARGADO.
         Empleado empleado = empleadoRepository.findByUsuarioUsername(username)
                 .orElseThrow(() -> new NotFoundException(
                         "Empleado no encontrado para el usuario: " + username));
 
         // Validar que el año solicitado tiene sentido para este empleado.
-        // Antes del año de alta o en el futuro → 404 (sin datos reales).
+        // Antes del año de alta o en el futuro → IllegalStateException
+        // que cae al handler generico de GlobalExceptionHandler → HTTP 500.
+        // Es estado invalido (no deberia pedirse un año fuera de rango),
+        // no recurso ausente.
         int anioActual = Year.now().getValue();
         LocalDate fechaAlta = empleado.getFechaAlta();
         if (anioConsulta > anioActual) {

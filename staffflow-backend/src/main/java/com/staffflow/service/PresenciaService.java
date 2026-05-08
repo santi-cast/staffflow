@@ -222,7 +222,7 @@ public class PresenciaService {
     // ================================================================
     // E37 — GET /api/v1/presencia/parte-diario/me
     // RF-54 — Estado propio del empleado autenticado
-    // Rol: EMPLEADO
+    // Roles: EMPLEADO y ENCARGADO (ambos son trabajadores con perfil propio)
     // ================================================================
 
     /**

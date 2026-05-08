@@ -37,9 +37,10 @@ public class EmpresaService {
      * Devuelve la configuración actual de la empresa (E06).
      *
      * <p>Busca el registro con id=1. Si no existe (sistema recién
-     * instalado y nunca configurado) lanza IllegalStateException.
-     * En producción el sistema debe inicializarse con un INSERT
-     * previo antes de ser usado.
+     * instalado y nunca configurado) lanza NotFoundException
+     * que GlobalExceptionHandler traduce a HTTP 404. En producción
+     * el sistema debe inicializarse con un INSERT previo antes de
+     * ser usado.
      *
      * <p>Alternativa descartada: devolver un EmpresaResponse vacío
      * si no existe. Se rechazó porque un GET que devuelve datos vacíos

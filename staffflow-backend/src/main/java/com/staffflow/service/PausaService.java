@@ -27,10 +27,11 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión de pausas.
  *
- * Cubre los endpoints E27-E29:
+ * Cubre los endpoints E27-E29 y E55:
  *   E27 POST  /api/v1/pausas       → crear()
  *   E28 PATCH /api/v1/pausas/{id}  → cerrar()
  *   E29 GET   /api/v1/pausas       → listar()
+ *   E55 GET   /api/v1/pausas/me    → listarPropias()
  *
  * Reglas de negocio clave:
  *   - RNF-L01: sin DELETE en pausas. Nunca se eliminan registros.
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
  *   - Al cerrar una pausa no retribuida se actualiza totalPausasMinutos
  *     en el fichaje del día y se recalcula jornadaEfectivaMinutos.
  *   - Pausas AUSENCIA_RETRIBUIDA NO descuentan de la jornada efectiva.
- *   - D-026: ENCARGADO solo puede gestionar pausas del dia actual.
+ *   - D-026: ENCARGADO solo puede gestionar pausas del dia actual y fechas futuras.
  *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
  *     crear() (E27) y cerrar() (E28).
  *
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
  *
  * Roles:
  *   ADMIN y ENCARGADO → E27, E28, E29
+ *   EMPLEADO y ENCARGADO → E55
  */
 @Service
 @RequiredArgsConstructor
@@ -89,7 +91,7 @@ public class PausaService {
      *   1. Verifica que el empleado existe (404 si no).
      *   2. Resuelve el usuario autenticado desde username.
      *   3. Valida restriccion de fecha si el usuario es ENCARGADO (D-026):
-     *      solo puede gestionar pausas del dia actual. ADMIN sin restriccion.
+     *      solo puede gestionar pausas del dia actual y fechas futuras. ADMIN sin restriccion.
      *   4. Verifica que no hay ya una pausa activa ese día (409 si hay).
      *      Solo puede haber una pausa con horaFin=null por empleado/día.
      *   5. Si llega horaFin, calcula duracionMinutos con Math.floor.
@@ -177,7 +179,7 @@ public class PausaService {
      *
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
-     * Restriccion D-026: ENCARGADO solo puede modificar pausas del dia actual.
+     * Restriccion D-026: ENCARGADO solo puede modificar pausas del dia actual y fechas futuras.
      * La fecha a validar es la de la pausa cargada de BD, no del request.
      * ADMIN puede modificar pausas de cualquier fecha sin restriccion.
      *
@@ -286,18 +288,19 @@ public class PausaService {
     }
 
     // ---------------------------------------------------------------
-    // E35 — GET /api/v1/pausas/me
+    // E55 — GET /api/v1/pausas/me
     // ---------------------------------------------------------------
 
     /**
-     * Lista las pausas del empleado autenticado en un rango de fechas (E35).
+     * Lista las pausas del empleado autenticado en un rango de fechas.
      *
      * Mismo patrón que FichajeService.listarPropios() (D-017, Opción B):
      * recibe el username del controller, resuelve usuario → empleado,
      * y filtra las pausas por empleadoId + rango de fechas.
      *
-     * Spring Security garantiza que el rol EMPLEADO solo puede llegar
-     * aquí con su propio token — no puede ver pausas ajenas.
+     * Spring Security restringe el endpoint a roles EMPLEADO y ENCARGADO.
+     * El service resuelve el empleadoId a partir del username del JWT, así
+     * que cada llamante solo ve sus propias pausas — nunca ajenas.
      *
      * @param username username del empleado autenticado (de authentication.getName())
      * @param desde    filtro opcional fecha inicio

@@ -42,8 +42,8 @@ import java.util.stream.Collectors;
  * <p>Una ausencia con procesado=true ya fue convertida en fichaje por
  * ProcesoCierreDiario y no puede modificarse ni eliminarse.</p>
  *
- * <p>D-026: ENCARGADO solo puede gestionar ausencias del dia actual.
- * La restriccion se aplica en crear() (E30) y actualizar() (E31).
+ * <p>D-026: ENCARGADO solo puede gestionar ausencias del dia actual y
+ * fechas futuras. La restriccion se aplica en crear() (E30) y actualizar() (E31).
  * E32 no necesita restriccion de fecha: se protege solo con procesado=false.
  * En condiciones normales, si la fecha ya paso, ProcesoCierreDiario ya
  * habra marcado procesado=true y E32 devuelve 409 automaticamente.</p>
@@ -74,8 +74,8 @@ public class AusenciaService {
      * DataIntegrityViolationException.</p>
      *
      * <p>Restriccion D-026: ENCARGADO solo puede planificar ausencias
-     * para el dia actual. ADMIN puede planificar para cualquier fecha.
-     * La validacion se aplica sobre request.getFecha().</p>
+     * para el dia actual y fechas futuras. ADMIN puede planificar para
+     * cualquier fecha. La validacion se aplica sobre request.getFecha().</p>
      *
      * @param request   datos de la ausencia a planificar
      * @param username  username del usuario autenticado (para auditoría y D-026)
@@ -249,8 +249,8 @@ public class AusenciaService {
      * devuelve HTTP 409: hay que modificar el fichaje generado (E23).</p>
      *
      * <p>Restriccion D-026: ENCARGADO solo puede modificar ausencias del
-     * dia actual. La fecha a validar es ausencia.getFecha(), obtenida tras
-     * cargar la entidad con findById. ADMIN sin restriccion de fecha.</p>
+     * dia actual y fechas futuras. La fecha a validar es ausencia.getFecha(),
+     * obtenida tras cargar la entidad con findById. ADMIN sin restriccion de fecha.</p>
      *
      * @param id      id de la ausencia a modificar
      * @param request campos a actualizar (PATCH selectivo)

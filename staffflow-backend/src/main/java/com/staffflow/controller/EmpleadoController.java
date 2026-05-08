@@ -26,7 +26,9 @@ import java.util.List;
  *
  * Control de acceso:
  *   - E13-E20: ADMIN y ENCARGADO. EMPLEADO recibe HTTP 403.
- *   - E21 (/me): exclusivo de EMPLEADO. ADMIN y ENCARGADO reciben HTTP 403.
+ *   - E21 (/me): EMPLEADO y ENCARGADO (ambos son personas físicas
+ *     trabajadoras con perfil de empleado). ADMIN recibe HTTP 403
+ *     porque no tiene perfil de empleado asociado.
  *
  * El controller extrae del JWT (objeto Authentication de Spring Security)
  * dos piezas de información que necesita el service:

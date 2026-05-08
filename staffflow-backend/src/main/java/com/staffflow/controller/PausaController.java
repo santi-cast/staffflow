@@ -30,6 +30,7 @@ import java.util.List;
  *   E27 POST  /api/v1/pausas      → crear pausa manual  (ADMIN, ENCARGADO)
  *   E28 PATCH /api/v1/pausas/{id} → cerrar/modificar    (ADMIN, ENCARGADO)
  *   E29 GET   /api/v1/pausas      → listar con filtros  (ADMIN, ENCARGADO)
+ *   E55 GET   /api/v1/pausas/me   → pausas propias      (EMPLEADO, ENCARGADO)
  *
  * Patrón de autenticación (igual que FichajeController y EmpleadoController):
  *   authentication.getName() → username → service resuelve usuarioId.
@@ -131,14 +132,14 @@ public class PausaController {
     }
 
     // ---------------------------------------------------------------
-    // E35 — GET /api/v1/pausas/me
+    // E55 — GET /api/v1/pausas/me
     // RF: Pausas propias del empleado autenticado
     // NOTA: declarado ANTES de GET / para que Spring MVC no trate
     //       "me" como parámetro de query.
     // ---------------------------------------------------------------
 
     /**
-     * Lista las pausas del empleado autenticado en un rango de fechas (E35).
+     * Lista las pausas del empleado autenticado en un rango de fechas.
      *
      * Mismo patrón que FichajeController.listarPropios() (E26):
      * username → service resuelve empleadoId.

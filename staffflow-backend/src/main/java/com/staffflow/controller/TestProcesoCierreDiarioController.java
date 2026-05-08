@@ -29,7 +29,12 @@ public class TestProcesoCierreDiarioController {
     /**
      * Dispara el proceso nocturno manualmente.
      * Solo accesible con perfil dev activo.
-     * No requiere autenticacion — es un endpoint de prueba interno.
+     *
+     * Tras Bloque 5 (@EnableMethodSecurity activo): requiere autenticacion
+     * JWT como cualquier otro endpoint no listado en SecurityConfig.permitAll().
+     * En perfil dev cualquier usuario autenticado puede ejecutarlo (no hay
+     * @PreAuthorize especifico). En perfil mysql el bean ni siquiera se
+     * registra (@Profile("dev")).
      */
     @PostMapping("/cierre-diario")
     public ResponseEntity<String> ejecutar() {

@@ -14,7 +14,7 @@ spring:
     # Necesario para que data.sql se ejecute DESPUÉS de que Hibernate
     # crea el esquema con ddl-auto: create-drop. Sin esta línea,
     # Spring Boot intenta ejecutar data.sql antes de que existan las tablas
-    # y falla con "Table not found".
+    # y falla con el error literal "Table not found" de H2.
     defer-datasource-initialization: true
   sql:
     init:
@@ -50,7 +50,7 @@ staffflow:
   jwt:
     # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir
     # la variable de entorno JWT_SECRET. El valor de fallback fue rotado el 2026-05-08
-    # (issue: secret leak en historial git).
+    # (incidencia: filtración del secreto en el historial git).
     secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.

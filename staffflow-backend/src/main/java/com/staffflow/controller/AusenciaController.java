@@ -33,7 +33,7 @@ import java.util.List;
  *   E31 PATCH  /api/v1/ausencias/{id}  → modificar ausencia         (ADMIN, ENCARGADO)
  *   E32 DELETE /api/v1/ausencias/{id}  → eliminar ausencia          (ADMIN, ENCARGADO)
  *   E33 GET    /api/v1/ausencias       → listar con filtros         (ADMIN, ENCARGADO)
- *   E34 GET    /api/v1/ausencias/me    → ausencias propias          (EMPLEADO)
+ *   E34 GET    /api/v1/ausencias/me    → ausencias propias          (EMPLEADO, ENCARGADO)
  *
  * Patrón /me: igual que FichajeController (E26).
  *   authentication.getName() devuelve el username del JWT.
@@ -67,8 +67,10 @@ public class AusenciaController {
     /**
      * Devuelve las ausencias planificadas del empleado autenticado (RF-52).
      *
-     * Spring Security garantiza que solo el propio empleado puede llegar
-     * aquí con rol EMPLEADO. No puede ver ausencias ajenas.
+     * Spring Security restringe este endpoint a roles EMPLEADO y ENCARGADO
+     * (ambos son trabajadores con perfil de empleado propio). El service
+     * resuelve el empleadoId a partir del username del JWT, así que cada
+     * llamante solo ve sus propias ausencias — nunca ajenas.
      *
      * Códigos HTTP:
      *   200 OK → lista de ausencias propias (puede ser vacía)

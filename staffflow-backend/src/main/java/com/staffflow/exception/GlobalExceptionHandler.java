@@ -192,10 +192,12 @@ public class GlobalExceptionHandler {
      * Maneja EntityNotFoundException de JPA (404).
      *
      * <p>Nota: el handler de {@link IllegalStateException} fue eliminado en
-     * la tarea de hardening ISE-01. Las ISE que permanecen en el código
-     * (PdfService iText7, SaldoService datos inconsistentes) caen al
-     * manejador genérico {@link #handleGenericException} → HTTP 500,
-     * lo que es la semántica correcta para errores de estado interno.</p>
+     * la tarea de hardening ISE-01 (SDD backend-hardening-high-issues).
+     * Las 9 ISE intencionales que permanecen en el código (7 en PdfService
+     * por errores de iText7, 2 en SaldoService por años fuera del rango
+     * valido del empleado) caen al manejador genérico
+     * {@link #handleGenericException} → HTTP 500, lo que es la semántica
+     * correcta para errores de estado interno.</p>
      *
      * <p>jakarta.persistence.EntityNotFoundException la lanza TerminalService
      * cuando el PIN introducido no corresponde a ningun empleado registrado.

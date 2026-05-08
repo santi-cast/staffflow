@@ -196,9 +196,9 @@ public class FichajeService {
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
      * Restriccion D-026: ENCARGADO solo puede modificar fichajes del dia
-     * actual. La fecha a validar es la del fichaje existente en BD, no
-     * un campo del request. Si es ENCARGADO y el fichaje es de otro dia
-     * → HTTP 400. ADMIN puede modificar fichajes de cualquier fecha.
+     * actual y fechas futuras. La fecha a validar es la del fichaje existente
+     * en BD, no un campo del request. Si es ENCARGADO y el fichaje es de
+     * fecha pasada → HTTP 400. ADMIN puede modificar fichajes de cualquier fecha.
      *
      * Recálculo de jornadaEfectivaMinutos:
      *   Si tras el PATCH el fichaje tiene horaEntrada y horaSalida,

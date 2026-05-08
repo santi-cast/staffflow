@@ -38,7 +38,7 @@ public interface SaldoAnualRepository extends JpaRepository<SaldoAnual, Long> {
      * para obtener el registro existente o crear uno nuevo si no existe.</p>
      *
      * <p>Si devuelve Optional.empty() en E38 y E41 se lanza
-     * IllegalStateException que GlobalExceptionHandler mapea a HTTP 404.
+     * NotFoundException que GlobalExceptionHandler mapea a HTTP 404.
      * En E40 se usa orElseGet() para crear el registro inicial.</p>
      *
      * @param empleadoId id del empleado

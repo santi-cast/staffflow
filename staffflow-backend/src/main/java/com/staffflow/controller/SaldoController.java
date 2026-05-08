@@ -48,7 +48,8 @@ public class SaldoController {
     /**
      * Devuelve el saldo anual del empleado autenticado (E41).
      *
-     * <p>Rol: solo EMPLEADO. RF-53.
+     * <p>Roles: EMPLEADO y ENCARGADO (ambos son personas físicas
+     * trabajadoras con perfil de empleado). ADMIN excluido. RF-53.
      * El username se extrae del JWT con authentication.getName().
      * El service resuelve el empleado internamente con findByUsuarioUsername,
      * mismo patron que E34 (AusenciaController) y E37 (PresenciaController).

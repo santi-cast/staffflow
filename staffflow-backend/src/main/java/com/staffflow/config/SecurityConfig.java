@@ -35,7 +35,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>Decision 21: PIN para terminal compartido, JWT para acceso a datos personales.</li>
  *   <li>Decision 18: sin refresh token en v1.0 (JWT de 8h cubre jornada completa).</li>
  *   <li>RNF-S05: bloqueo por dispositivo gestionado en TerminalController, no aqui.</li>
- *   <li>Block 5: {@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
+ *   <li>Bloque 5: {@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
  *       en tiempo de ejecucion. Sin esta anotacion, las 53 anotaciones {@code @PreAuthorize}
  *       de los controllers son decorativas y la seguridad opera solo en la capa URL.</li>
  * </ul>
@@ -182,7 +182,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/saldos/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E37: parte diario propio
                 .requestMatchers("/api/v1/presencia/parte-diario/me").hasAnyRole("EMPLEADO", "ENCARGADO")
-                // E35: pausas propias
+                // E55: pausas propias
                 .requestMatchers("/api/v1/pausas/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E-me: informe de horas propio
                 .requestMatchers("/api/v1/informes/me/**").hasAnyRole("EMPLEADO", "ENCARGADO")

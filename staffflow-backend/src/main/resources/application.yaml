@@ -2,20 +2,14 @@ spring:
   profiles:
     active: dev
 
-jwt:
-  # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir JWT_SECRET.
-  secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
-  expiration: 3600000
-  refresh-expiration: 604800000
-
 # =========================================================================
-# CONFIGURACION JWT — añadir a application.yml (nivel raiz, mismo nivel que spring:)
+# CONFIGURACION JWT (la unica activa — leida por JwtTokenProvider)
 # =========================================================================
 staffflow:
   jwt:
     # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir
     # la variable de entorno JWT_SECRET. El valor de fallback fue rotado el 2026-05-08
-    # (issue: secret leak en historial git).
+    # (incidencia: filtración del secreto en el historial git).
     secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.

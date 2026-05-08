@@ -75,7 +75,7 @@ public class PresenciaController {
      * Security, que lo inyecta automáticamente en el parámetro del método.
      * El service resuelve internamente el empleadoId a partir del username.
      *
-     * RF-54. Rol: EMPLEADO.
+     * RF-54. Roles: EMPLEADO y ENCARGADO (ambos son trabajadores con perfil propio).
      *
      * @param fecha          fecha a consultar (por defecto hoy)
      * @param authentication objeto de Spring Security con el JWT del empleado

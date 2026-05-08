@@ -83,8 +83,8 @@ public class ProcesoCierreDiario {
      *
      * <p>El usuario terminal_service (username fijo) debe existir en BD tanto
      * en dev como en prod. Es el autor de los fichajes generados automaticamente.
-     * Si no existe, el proceso falla con IllegalStateException y ningun fichaje
-     * automatico se crea ese dia.</p>
+     * Si no existe, el proceso falla con NotFoundException y ningun fichaje
+     * automatico se crea ese dia. La transaccion hace rollback completo.</p>
      */
     @Scheduled(cron = "0 55 23 * * *")
     @Transactional

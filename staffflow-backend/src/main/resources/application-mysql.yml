@@ -38,7 +38,7 @@ staffflow:
     reset-url: staffflow://reset-password?token=
   jwt:
     # JWT_SECRET es OBLIGATORIA en este perfil. El arranque falla si no esta definida (intencional).
-    secret: ${JWT_SECRET:?JWT_SECRET must be set for mysql profile}
+    secret: ${JWT_SECRET:?La variable JWT_SECRET es obligatoria para el perfil mysql}
     # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
     # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
     # Refresh token queda como mejora para v2.0.

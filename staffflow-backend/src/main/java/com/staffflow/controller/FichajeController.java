@@ -31,7 +31,7 @@ import java.util.List;
  *   E23 PATCH  /api/v1/fichajes/{id}        → modificar fichaje     (ADMIN, ENCARGADO)
  *   E24 GET    /api/v1/fichajes             → listar con filtros    (ADMIN, ENCARGADO)
  *   E25 GET    /api/v1/fichajes/incompletos → jornadas sin salida   (ADMIN, ENCARGADO)
- *   E26 GET    /api/v1/fichajes/me          → historial propio      (EMPLEADO)
+ *   E26 GET    /api/v1/fichajes/me          → historial propio      (EMPLEADO, ENCARGADO)
  *
  * Patrón de autenticación (igual que EmpleadoController, D-017 Opción B):
  *   authentication.getName() devuelve el username del usuario autenticado.
@@ -226,8 +226,9 @@ public class FichajeController {
      * EmpleadoController.obtenerMiPerfil() (D-017, Opción B).
      * El service resuelve el empleadoId a partir del username.
      *
-     * Spring Security garantiza que el rol EMPLEADO solo puede llegar
-     * aquí con su propio token: no puede ver fichajes ajenos.
+     * Spring Security restringe el endpoint a roles EMPLEADO y ENCARGADO.
+     * El service resuelve el empleadoId a partir del username del JWT, así
+     * que cada llamante solo ve sus propios fichajes — nunca ajenos.
      *
      * Filtros opcionales: desde, hasta, tipo — misma lógica que E24.
      *

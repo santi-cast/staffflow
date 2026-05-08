@@ -26,16 +26,19 @@ import java.util.stream.Collectors;
  *
  * Cubre los endpoints E13-E21 del Grupo 4 (Gestión de Empleados).
  * ADMIN y ENCARGADO acceden a todos los empleados (E13-E20).
- * EMPLEADO solo accede a sus propios datos mediante /me (E21).
+ * EMPLEADO y ENCARGADO acceden a sus propios datos mediante /me (E21).
  *
  * Decisiones de diseño aplicadas:
  *   - Relación 1:1 usuario-empleado inmutable (decisión nº22): una vez
  *     vinculado un usuario a un empleado, el campo usuarioId no puede
  *     modificarse. Esta restricción se aplica en actualizar() ignorando
  *     el campo usuarioId aunque venga en el request.
- *   - ADMIN excluido de perfiles de empleado: si un usuario ADMIN llama
- *     a /me devuelve HTTP 404 porque ADMIN no tiene perfil de empleado.
- *     Esto es comportamiento esperado, no un error del sistema.
+ *   - ADMIN excluido de /me a nivel de seguridad (Bloque 5):
+ *     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')") en el controller
+ *     bloquea a ADMIN con HTTP 403 antes de llegar al service. Si en el
+ *     futuro se autorizase ADMIN en method security, el service responderia
+ *     HTTP 404 via NotFoundException porque ADMIN no tiene perfil de
+ *     empleado. Comportamiento esperado en ambos casos.
  *   - pinTerminal nunca expuesto por API (D-018): EmpleadoResponse no
  *     tiene el campo pinTerminal. La Opción A original (filtrar por rol
  *     recibido como parámetro) fue descartada en sesión 10 porque el PIN
