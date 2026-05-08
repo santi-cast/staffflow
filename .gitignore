@@ -21,3 +21,15 @@ local.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Documentación interna del TFG (no va al repo)
+Documentos/
+
+# Artefactos de herramientas de IA / SDD
+openspec/
+.atl/
+.engram/
+
+# Basura accidental
+--help
+.gga

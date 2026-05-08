@@ -1,9 +1,0 @@
-Acciones que tienes que hacer antes de compilar
-
-1 Borrar o vaciar ProcesoDiarioService.java del proyecto (o eliminarlo del árbol). Su clase ya no existe: ahora es ProcesoCierreDiario en el mismo paquete service/scheduled.
-
-2 En los controllers de FichajeController, PausaController y AusenciaController: los métodos actualizar() y cerrar() necesitan recibir String username y pasarlo al service. Si ahora solo pasan id y request, añadir authentication.getName() como tercer argumento en la llamada.
-
-3 Verificar que el usuario terminal_service está en el script de inicialización de MySQL prod, igual que en data.sql de dev.
-
-4 Importar Rol en los tres services — ya está en los imports de los ficheros generados.
