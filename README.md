@@ -334,7 +334,8 @@ staffflow/
 
 ### Ramas
 
-- `main` → única rama del repositorio. Refleja el estado entregable del proyecto.
+- `main` → rama estable. Refleja siempre el último estado entregable del proyecto.
+- `dev` → rama de desarrollo activo. Los cambios se integran primero aquí y se mergean a `main` cuando alcanzan el estado de entrega.
 
 ---
 
