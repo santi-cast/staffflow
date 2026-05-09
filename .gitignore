@@ -1,5 +1,26 @@
 *
 !staffflow-backend/
+!staffflow-backend/**
 !staffflow-android/
+!staffflow-android/**
+!openspec/
+!openspec/**
 !.gitignore
 !README.md
+
+# Build artifacts dentro de los whitelisted (re-ignorados)
+staffflow-backend/target/
+staffflow-backend/.mvn/wrapper/maven-wrapper.jar
+staffflow-android/build/
+staffflow-android/**/build/
+staffflow-android/.gradle/
+staffflow-android/local.properties
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.iml
+
+# OS
+**/.DS_Store
+**/Thumbs.db

@@ -1,0 +1,71 @@
+schema: spec-driven
+project: staffflow
+detected: 2026-05-08
+
+context: |
+  Backend: Spring Boot 3.5.11, Java 21, Maven, Lombok, JPA (H2/MySQL), Spring Security 6, JWT (jjwt 0.12.6), SpringDoc OpenAPI, iText7
+  Android: Kotlin 2.1.0, AGP 8.13.0, ViewBinding (no Compose), Navigation, Retrofit+OkHttp, Coroutines+StateFlow
+  Architecture: Layered (controller → service → repository/domain). No Compose, no Hilt on Android.
+  SDD scope: staffflow-backend/ ONLY for this cycle.
+  Package root: com.staffflow (backend), com.staffflow.android (android)
+
+strict_tdd: true
+test_command: "./mvnw test -Dtest='!GlobalExceptionHandlerTest,!StaffflowBackendApplicationTests'"
+unit_test_command: "./mvnw test -Dtest='SaldoServiceTest,JwtTokenProviderTest,TerminalServiceTest'"
+
+testing:
+  backend:
+    runner: Maven Surefire (mvnw)
+    framework: JUnit 5 + Mockito + AssertJ
+    command: "./mvnw test"
+    unit_command: "./mvnw test -Dtest='SaldoServiceTest,JwtTokenProviderTest,TerminalServiceTest'"
+    unit_layers:
+      - SaldoServiceTest (Mockito, 10 tests — 1 failing pre-existing)
+      - JwtTokenProviderTest (pure unit, 10 tests — all pass)
+      - TerminalServiceTest (Mockito)
+      - GlobalExceptionHandlerTest (@WebMvcTest — broken context due to missing DB config in test scope)
+      - StaffflowBackendApplicationTests (@SpringBootTest — requires running DB, skip in CI)
+    integration: "@WebMvcTest slices — currently broken (ApplicationContext fails without test DB config)"
+    e2e: false
+    coverage: false
+  android:
+    runner: Gradle (gradlew)
+    framework: JUnit 4 + Espresso (instrumented)
+    command: "./gradlew test" (from staffflow-android/)
+    unit_layers:
+      - ExampleUnitTest (placeholder only — no real tests)
+    integration: Espresso instrumented (ExampleInstrumentedTest — placeholder)
+    e2e: false
+    coverage: false
+
+rules:
+  proposal:
+    - Include rollback plan for any DB schema changes
+    - Specify affected endpoints (E-number) and roles (ADMIN/ENCARGADO/EMPLEADO)
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Reference existing exception classes (ConflictException, IllegalStateException, etc.)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Never use findById + manual check — use orElseThrow() pattern
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Reference affected files (controller/service/dto/entity)
+  apply:
+    - Follow existing code style (Lombok, @Transactional, @RequiredArgsConstructor)
+    - No System.out.println — use Lombok @Slf4j + log.warn/info/error
+    - DTOs must have Javadoc referencing the endpoint (E-number)
+    - Repositories extend JpaRepository — no custom impl unless necessary
+    tdd: true
+    test_command: "./mvnw test -Dtest='SaldoServiceTest,JwtTokenProviderTest,TerminalServiceTest'"
+  verify:
+    test_command: "./mvnw test -Dtest='SaldoServiceTest,JwtTokenProviderTest,TerminalServiceTest'"
+    build_command: ""
+    coverage_threshold: 0
+    note: "GlobalExceptionHandlerTest and StaffflowBackendApplicationTests are pre-broken (infra) — exclude from verify gate"
+  archive:
+    - Warn before merging destructive deltas
+    - Update openspec/specs/ domain files after archive
