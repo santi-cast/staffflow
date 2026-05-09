@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 53 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 24 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 34 tests unitarios (JUnit 5 + Mockito) y smoke test de los 53 endpoints contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 57 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 24 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios (JUnit 5 + Mockito) y smoke test de los 57 endpoints contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -55,16 +55,16 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - JPA / Hibernate
 - MySQL 8.0 (producción) · H2 (desarrollo)
 - jjwt 0.12.6
-- SpringDoc OpenAPI (Swagger UI)
+- SpringDoc OpenAPI 2.8.16 (Swagger UI)
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (34 tests unitarios)
+- JUnit 5 + Mockito (52 tests unitarios)
 
 ### Cliente Android
 
-- Kotlin
-- AGP 9.0.1
+- Kotlin 2.1.0
+- AGP 8.13.0
 - Retrofit 2.9.0 + OkHttp 4.12.0
 - Navigation Component 2.8.0 (Single Activity)
 - DataStore Preferences 1.1.1
@@ -141,7 +141,7 @@ La API se ha definido con enfoque **design‑first**: todos los endpoints están
 
 La especificación incluye:
 
-- **53 endpoints** en **13 grupos funcionales**
+- **57 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` (sin JWT, cadena de seguridad propia)
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN → bloqueo 30 s + HTTP 423
@@ -155,8 +155,8 @@ La especificación incluye:
 | Usuarios | `/api/v1/usuarios` | E08–E12 | ✅ Operativos |
 | Empleados | `/api/v1/empleados` | E13–E21 | ✅ Operativos |
 | Fichajes | `/api/v1/fichajes` | E22–E26 | ✅ Operativos |
-| Pausas | `/api/v1/pausas` | E27–E29 | ✅ Operativos |
-| Terminal PIN/NFC | `/api/v1/terminal` | E48–E51 | ✅ Operativos |
+| Pausas | `/api/v1/pausas` | E27–E29, E55 | ✅ Operativos |
+| Terminal PIN/NFC | `/api/v1/terminal` | E48–E54 | ✅ Operativos |
 | Ausencias | `/api/v1/ausencias` | E30–E34 | ✅ Operativos |
 | Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
 | Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
@@ -164,7 +164,7 @@ La especificación incluye:
 | PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E53 | ✅ Operativos |
 | Health | `/api/health` | E52 | ✅ Operativo |
 
-**53 endpoints operativos** (verificados con MySQL 8.0 y H2).
+**57 endpoints operativos** (verificados con MySQL 8.0 y H2).
 
 ### Convención PUT / PATCH
 
@@ -211,33 +211,7 @@ staffflow/
 
 ### Ramas
 
-- `master` → código estable. Solo recibe merges al cerrar cada fase.
-- `develop` → trabajo diario.
-
-### Estado actual del repositorio
-
-```
-master  → db03d55  feat: add health check endpoint  (tag: v1.0-fase1)
-develop → 9b1547a  feat(android): boton volver al terminal desde login P02
-```
-
-Commits principales en develop:
-
-| Hash | Descripción |
-|---|---|
-| `284b918` | Bloque 1 backend — DTOs, repositories y services esqueleto |
-| `cba406a` | Bloque 2 backend — JWT + SecurityConfig |
-| `a0416d4` | Bloque 3 parcial — AuthController E02-E05 + OpenApiConfig |
-| `25d6824` | Bloque 3 cierre — EmpresaController E06-E07 + GlobalExceptionHandler |
-| `f3a9c11` | Bloque 4 — UsuarioController E08-E12 + EmpleadoController E13-E21 |
-| `ae5fa86` | Bloque 5 — FichajeService/Controller E22-E26 + PausaService/Controller E27-E29 |
-| `0e2136c` | Bloque 5 — TerminalService/Controller E48-E51 + data.sql + application-dev.yml |
-| `e4e188e` | Bloque 5 verificación — corrección D-022 TerminalService |
-| `cd196e8` | Bloque 7 backend — E42-E47 + E53 + PdfController + ProcesoCierreDiario |
-| `f63fe18` | chore — normalize CRLF to LF |
-| `d0fbfd1` | Android Bloque 1 — infraestructura base Android |
-| `53ef59d` | Android Bloque 2 — Terminal, Login, Saldo y Parte diario |
-| `9b1547a` | Android — boton volver al terminal desde login P02 |
+- `main` → única rama del repositorio. Refleja el estado entregable del proyecto.
 
 ---
 
@@ -247,12 +221,12 @@ Commits principales en develop:
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (53 endpoints, JWT, iText 7) | ✅ Completada — 53/53 endpoints operativos · commit cd196e8 |
+| Fase 2 | Desarrollo del backend (57 endpoints, JWT, iText 7) | ✅ Completada — 57/57 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (24 pantallas, Kotlin, Navigation Component) | ✅ Completada — 24 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 34 tests unitarios (JUnit 5 + Mockito) + smoke test 52/53 endpoints |
+| Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + smoke test 57/57 endpoints + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
-**Entrega final:** 20-24 de abril de 2026 · 225 horas totales
+**Entrega final:** 15 de junio de 2026 · 225 horas totales
 
 ---
 
@@ -272,7 +246,7 @@ Usuarios y empleados se desactivan con `activo = false`. El historial queda inta
 
 ### 4. Terminal de fichaje con PIN separado del flujo JWT
 
-Los 4 endpoints de terminal (`/api/v1/terminal/`) no requieren JWT. Se identifican por PIN de 4 dígitos con bloqueo por fuerza bruta por dispositivo. El resto de la API (historial, saldos, perfil) requiere siempre JWT, garantizando que un PIN conocido por un compañero no permite acceder a datos personales.
+Los 7 endpoints de terminal (`/api/v1/terminal/`) no requieren JWT. Se identifican por PIN de 4 dígitos con bloqueo por fuerza bruta por dispositivo. El resto de la API (historial, saldos, perfil) requiere siempre JWT, garantizando que un PIN conocido por un compañero no permite acceder a datos personales.
 
 ### 5. Single Activity + Navigation Component en Android
 
@@ -295,6 +269,18 @@ Los patrones utilizados son:
 | WebView de informe | P35 | P36, P37 |
 
 Esta estrategia redujo el tiempo de implementación de ~60–70 horas (una pantalla desde cero cada vez) a ~30 horas, sin ningún impacto visible para el usuario.
+
+---
+
+## Endurecimiento de seguridad y robustez
+
+Sobre la base funcional se aplicó una capa adicional de hardening centrada en seguridad y resiliencia:
+
+- **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado". `IllegalStateException` queda reservada para errores internos genuinos (5xx).
+- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 54 anotaciones `@PreAuthorize` del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
+- **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
+- **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
+- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize`) y `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
 
 ---
 
