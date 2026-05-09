@@ -148,25 +148,146 @@ La especificación incluye:
 - Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN → bloqueo 30 s + HTTP 423
 
-### Grupos de endpoints
+### Catálogo de endpoints
 
-| Grupo | Ruta base | Endpoints | Estado |
-|---|---|---|---|
-| Auth | `/api/v1/auth` | E01–E05 | ✅ Operativos |
-| Empresa | `/api/v1/empresa` | E06–E07 | ✅ Operativos |
-| Usuarios | `/api/v1/usuarios` | E08–E12 | ✅ Operativos |
-| Empleados | `/api/v1/empleados` | E13–E21 | ✅ Operativos |
-| Fichajes | `/api/v1/fichajes` | E22–E26 | ✅ Operativos |
-| Pausas | `/api/v1/pausas` | E27–E29, E55 | ✅ Operativos |
-| Ausencias | `/api/v1/ausencias` | E30–E34, E61–E64 | ✅ Operativos |
-| Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
-| Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
-| Informes HTML | `/api/v1/informes` | E42–E44, E58–E60 | ✅ Operativos |
-| PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E57 | ✅ Operativos |
-| Terminal PIN/NFC | `/api/v1/terminal` | E48–E54 | ✅ Operativos |
-| Health | `/api/health` | E56 | ✅ Operativo |
+Los 64 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
 
-**64 endpoints operativos** (verificados con MySQL 8.0 y H2).
+Convenciones de la tabla:
+
+- **Path relativo**: la ruta base de cada grupo aparece en el encabezado de la sección.
+- **Roles**: `público` (sin autenticación) · `autenticado` (cualquier rol con JWT válido) · uno o más de `EMPLEADO`, `ENCARGADO`, `ADMIN`.
+- **Pantalla(s)**: identificador `P##` de la pantalla Android que consume el endpoint, o `—` si la app actual no lo invoca (la API expone capacidades; otros clientes consumirán las suyas).
+
+#### Auth (`/api/v1/auth`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E01 | POST /login | público | Autentica con email y password, devuelve un JWT con rol y empleadoId | P02 |
+| E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual | — |
+| E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado | P04 |
+| E04 | POST /password/recovery | público | Solicita recuperación: genera contraseña temporal y la envía por email | P03 |
+| E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email | P05 |
+
+#### Empresa (`/api/v1/empresa`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P34 |
+| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa | P34 |
+
+#### Usuarios (`/api/v1/usuarios`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol) | P32 |
+| E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P31, P32 |
+| E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P32 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email, rol o estado activo de un usuario | P32 |
+| E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P32 |
+
+#### Empleados (`/api/v1/empleados`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P32 |
+| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13, P28 |
+| E15 | GET /{id} | ADMIN, ENCARGADO | Detalle completo de un empleado | P14, P15 |
+| E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado | P15 |
+| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
+| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja | — |
+| E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
+| E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
+| E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
+
+#### Fichajes (`/api/v1/fichajes`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E22 | POST / | ADMIN, ENCARGADO | Crea un fichaje manual con observaciones obligatorias | P20 |
+| E23 | PATCH /{id} | ADMIN, ENCARGADO | Modifica un fichaje existente con observaciones obligatorias | P20 |
+| E24 | GET / | ADMIN, ENCARGADO | Lista fichajes con filtros (empleado, rango de fechas, tipo) | P16 |
+| E25 | GET /incompletos | ADMIN, ENCARGADO | Lista fichajes sin hora de salida (jornadas abiertas) | — |
+| E26 | GET /me | EMPLEADO, ENCARGADO | Lista los fichajes del empleado autenticado en formato JSON | — |
+
+#### Pausas (`/api/v1/pausas`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual sobre un fichaje | P20 |
+| E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente | P20 |
+| E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales | P16 |
+| E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON | — |
+
+#### Ausencias (`/api/v1/ausencias`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E30 | POST / | ADMIN, ENCARGADO | Planifica una ausencia individual o festivo global (empleadoId null) | P24 |
+| E31 | PATCH /{id} | ADMIN, ENCARGADO | Modifica una ausencia planificada no procesada | P24 |
+| E32 | DELETE /{id} | ADMIN, ENCARGADO | Elimina una ausencia planificada no procesada | P24 |
+| E33 | GET / | ADMIN, ENCARGADO | Lista ausencias planificadas con filtros opcionales | P16 |
+| E34 | GET /me | EMPLEADO, ENCARGADO | Lista las ausencias del empleado autenticado en formato JSON | — |
+| E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado | P11 |
+| E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto | P22 |
+| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada con detección de conflictos | P24 |
+| E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios | P23, P24 |
+
+#### Presencia (`/api/v1/presencia`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 5 estados por empleado | P17 |
+| E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha | P18 |
+| E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del propio empleado en una fecha | P12 |
+
+#### Saldos (`/api/v1/saldos`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P26 |
+| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados activos en formato JSON | — |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P26 |
+| E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
+
+#### Informes HTML (`/api/v1/informes`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P28 |
+| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P28 |
+| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P27, P28 |
+| E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado | P10 |
+| E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal interactiva con fichajes, pausas y ausencias | P19 |
+| E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados en un rango | P23 |
+
+#### PDF para firmar (`/api/v1/informes/pdf`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P28 |
+| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P28 |
+| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P28 |
+| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P28 |
+
+#### Terminal PIN/NFC (`/api/v1/terminal`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E48 | POST /entrada | público | Registra el inicio de jornada con PIN de 4 dígitos | P06 |
+| E49 | POST /salida | público | Registra el fin de jornada con PIN | P06 |
+| E50 | POST /pausa/iniciar | público | Inicia una pausa con PIN y tipo (comida, descanso, etc.) | P06 |
+| E51 | POST /pausa/finalizar | público | Finaliza la pausa activa del empleado | P06 |
+| E52 | POST /estado | público | Verifica el PIN y devuelve el estado actual del empleado para mostrar bienvenida | P01 |
+| E53 | GET /bloqueo | ADMIN, ENCARGADO | Consulta si algún terminal está bloqueado por intentos fallidos | P17 |
+| E54 | DELETE /bloqueo | ADMIN, ENCARGADO | Desbloquea el terminal tras un bloqueo por fuerza bruta | P17 |
+
+#### Health (`/api/health`)
+
+| E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
+|----|--------------|-------|-------------|--------------|
+| E56 | GET /api/health | público | Health check para herramientas de monitorización (status: UP) | — |
+
+> **Sobre la columna "Pantalla(s)"**: el guión (—) en pantalla indica que la app Android actual no consume ese endpoint. La API expone el contrato completo del dominio (operaciones de gestión avanzada, listados JSON para tablas nativas, monitorización externa); cada cliente que se conecte a futuro consumirá las capacidades que necesite. Esta separación es la base de la arquitectura desacoplada del proyecto: el backend no asume qué cliente lo invoca.
 
 ### Convención PUT / PATCH
 
@@ -267,26 +388,26 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P05 | ResetPasswordFragment | 1 — Auth | E05 | público (deep link) |
 | P06 | ConfirmacionFragment | 1 — Terminal | E48, E49, E50, E51 | público |
 | P07 | TipoPausaFragment | 1 — Terminal | (local) | público |
-| P08 | MiPerfilFragment | 2 — Empleado | E21 | EMPLEADO+ |
-| P09 | MiSaldoFragment | 2 — Empleado | E41 | EMPLEADO+ |
-| P10 | MisFichajesFragment | 2 — Empleado | E58 | EMPLEADO+ |
-| P11 | MisAusenciasFragment | 2 — Empleado | E61 | EMPLEADO+ |
-| P12 | MiHoyFragment | 2 — Empleado | E37 | EMPLEADO+ |
-| P13 | EmpleadosFragment | 3 — Gestión | E14 | ENCARGADO+ |
-| P14 | DetalleEmpleadoFragment | 3 — Gestión | E15 | ENCARGADO+ |
-| P15 | FormEmpleadoFragment | 3 — Gestión | E13, E15, E16 | ENCARGADO+ |
-| P16 | DetalleDiaFragment | 4 — Encargado | E24, E29, E33 | ENCARGADO+ |
-| P17 | ParteDiarioFragment | 4 — Encargado | E35, E53, E54 | ENCARGADO+ |
-| P18 | SinJustificarFragment | 4 — Encargado | E36 | ENCARGADO+ |
-| P19 | ResumenSemanalFragment | 4 — Encargado | E59 | ENCARGADO+ |
-| P20 | FormFichajeFragment | 4 — Encargado | E22, E23, E27, E28, E40 | ENCARGADO+ |
-| P21 | InformeFichajesEmpleadoFragment | 4 — Encargado | E42 | ENCARGADO+ |
-| P22 | InformeAusenciasEmpleadoFragment | 4 — Encargado | E62 | ENCARGADO+ |
-| P23 | AusenciasFragment | 4 — Encargado | E60, E64 | ENCARGADO+ |
-| P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ENCARGADO+ |
-| P26 | SaldoFragment | 4 — Encargado | E38, E40 | ENCARGADO+ |
-| P27 | SaldosGlobalesFragment | 4 — Encargado | E44 | ENCARGADO+ |
-| P28 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ENCARGADO+ |
+| P08 | MiPerfilFragment | 2 — Empleado | E21 | EMPLEADO, ENCARGADO |
+| P09 | MiSaldoFragment | 2 — Empleado | E41 | EMPLEADO, ENCARGADO |
+| P10 | MisFichajesFragment | 2 — Empleado | E58 | EMPLEADO, ENCARGADO |
+| P11 | MisAusenciasFragment | 2 — Empleado | E61 | EMPLEADO, ENCARGADO |
+| P12 | MiHoyFragment | 2 — Empleado | E37 | EMPLEADO, ENCARGADO |
+| P13 | EmpleadosFragment | 3 — Gestión | E14 | ADMIN, ENCARGADO |
+| P14 | DetalleEmpleadoFragment | 3 — Gestión | E15 | ADMIN, ENCARGADO |
+| P15 | FormEmpleadoFragment | 3 — Gestión | E13, E15, E16 | ADMIN, ENCARGADO |
+| P16 | DetalleDiaFragment | 4 — Encargado | E24, E29, E33 | ADMIN, ENCARGADO |
+| P17 | ParteDiarioFragment | 4 — Encargado | E35, E53, E54 | ADMIN, ENCARGADO |
+| P18 | SinJustificarFragment | 4 — Encargado | E36 | ADMIN, ENCARGADO |
+| P19 | ResumenSemanalFragment | 4 — Encargado | E59 | ADMIN, ENCARGADO |
+| P20 | FormFichajeFragment | 4 — Encargado | E22, E23, E27, E28, E40 | ADMIN, ENCARGADO |
+| P21 | InformeFichajesEmpleadoFragment | 4 — Encargado | E42 | ADMIN, ENCARGADO |
+| P22 | InformeAusenciasEmpleadoFragment | 4 — Encargado | E62 | ADMIN, ENCARGADO |
+| P23 | AusenciasFragment | 4 — Encargado | E60, E64 | ADMIN, ENCARGADO |
+| P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ADMIN, ENCARGADO |
+| P26 | SaldoFragment | 4 — Encargado | E38, E40 | ADMIN, ENCARGADO |
+| P27 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
+| P28 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ADMIN, ENCARGADO |
 | P31 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
 | P32 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
 | P34 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
