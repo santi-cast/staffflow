@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Detalle de jornada de un empleado para un dia concreto (P-DetalleDia).
+    Detalle de jornada de un empleado para un dia concreto (P16).
 
     Muestra el fichaje del dia y todas sus pausas en orden cronologico.
     Cada fila es tappable: navega a FormFichajeFragment en modo edicion.

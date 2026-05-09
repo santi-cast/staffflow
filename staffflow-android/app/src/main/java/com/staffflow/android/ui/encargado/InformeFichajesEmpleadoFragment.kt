@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 /**
- * Informe de fichajes de un empleado específico (WebView). Accesible por ADMIN y ENCARGADO.
+ * Informe de fichajes de un empleado específico (P21). WebView. Accesible por ADMIN y ENCARGADO.
  *
  * Endpoint: E42 GET /api/v1/informes/horas/{empleadoId}?desde=&hasta=&formato=html
  *

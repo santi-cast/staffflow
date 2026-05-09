@@ -26,7 +26,7 @@ import com.staffflow.android.domain.model.TipoPausa
 import kotlinx.coroutines.launch
 
 /**
- * Detalle de jornada de un empleado para un dia concreto (P-DetalleDia).
+ * Detalle de jornada de un empleado para un dia concreto (P16).
  *
  * Accesible para ENCARGADO y ADMIN desde ParteDiarioFragment al tocar un empleado.
  * Carga en paralelo el fichaje y las pausas del dia via E24 y E29.

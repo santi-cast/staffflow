@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel del detalle de jornada de un empleado (P-DetalleDia).
+ * ViewModel del detalle de jornada de un empleado (P16).
  *
  * Carga en paralelo los fichajes, pausas y ausencias de un empleado para una fecha concreta:
  *   E24 GET /fichajes?empleadoId=X&desde=fecha&hasta=fecha   → todos los fichajes del dia

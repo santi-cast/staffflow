@@ -17,7 +17,7 @@
 
     Zona autenticada (con Drawer):
       EMPLEADO:  P08, P09, P10, P11, P12
-      ENCARGADO: P13, P14, P15, P17, P18, P19, P20, P23, P24, P26, P27, P28
+      ENCARGADO: P13, P14, P15, P16, P17, P18, P19, P20, P21, P22, P23, P24, P25, P26, P27
       ADMIN:     P28, P29, P30
       TODOS:     P04
 
@@ -192,7 +192,7 @@
             android:id="@+id/action_parte_diario_to_sin_justificar"
             app:destination="@id/sinJustificarFragment" />
 
-        <!-- P17 -> P-DetalleDia Timeline completo del dia de un empleado (tap en fila) -->
+        <!-- P17 -> P16 Timeline completo del dia de un empleado (tap en fila) -->
         <action
             android:id="@+id/action_parte_diario_to_detalle_dia"
             app:destination="@id/detalleDiaFragment" />
@@ -209,19 +209,19 @@
 
     </fragment>
 
-    <!-- P-DetalleDia Timeline de jornada de un empleado para un dia concreto -->
+    <!-- P16 Timeline de jornada de un empleado para un dia concreto -->
     <fragment
         android:id="@+id/detalleDiaFragment"
         android:name="com.staffflow.android.ui.encargado.DetalleDiaFragment"
         android:label="Detalle del día"
         tools:layout="@layout/fragment_detalle_dia">
 
-        <!-- P-DetalleDia -> P20 Editar o crear fichaje / pausa -->
+        <!-- P16 -> P20 Editar o crear fichaje / pausa -->
         <action
             android:id="@+id/action_detalle_dia_to_form_fichaje"
             app:destination="@id/formFichajeFragment" />
 
-        <!-- P-DetalleDia -> P24 Editar ausencia planificada -->
+        <!-- P16 -> P24 Editar ausencia planificada -->
         <action
             android:id="@+id/action_detalle_dia_to_form_ausencia"
             app:destination="@id/formAusenciaFragment" />
@@ -289,28 +289,28 @@
         android:label="Ausencia"
         tools:layout="@layout/fragment_form_ausencia" />
 
-    <!-- P26 Saldo anual de un empleado (ENCARGADO/ADMIN) -->
+    <!-- P25 Saldo anual de un empleado (ENCARGADO/ADMIN) -->
     <fragment
         android:id="@+id/saldoFragment"
         android:name="com.staffflow.android.ui.encargado.SaldoFragment"
         android:label="Saldo"
         tools:layout="@layout/fragment_saldo" />
 
-    <!-- P27 Saldos globales de todos los empleados -->
+    <!-- P26 Saldos globales de todos los empleados -->
     <fragment
         android:id="@+id/saldosGlobalesFragment"
         android:name="com.staffflow.android.ui.encargado.SaldosGlobalesFragment"
         android:label="Saldos"
         tools:layout="@layout/fragment_saldos_globales">
 
-        <!-- P27 -> P26 Saldo individual (tap en fila) -->
+        <!-- P26 -> P25 Saldo individual (tap en fila) -->
         <action
             android:id="@+id/action_saldos_globales_to_saldo_individual"
             app:destination="@id/saldoFragment" />
 
     </fragment>
 
-    <!-- P28 Informes (tabs: horas individual / horas global / saldos) -->
+    <!-- P27 Informes (tabs: horas individual / horas global / saldos) -->
     <fragment
         android:id="@+id/informesFragment"
         android:name="com.staffflow.android.ui.encargado.InformesFragment"
@@ -352,7 +352,7 @@
             android:id="@+id/action_detalle_to_form_empleado"
             app:destination="@id/formEmpleadoFragment" />
 
-        <!-- P14 -> P26 Ver saldo del empleado -->
+        <!-- P14 -> P25 Ver saldo del empleado -->
         <action
             android:id="@+id/action_detalle_to_saldo_individual"
             app:destination="@id/saldoFragment" />
@@ -369,14 +369,14 @@
 
     </fragment>
 
-    <!-- Informe de fichajes de un empleado (WebView, igual que P10) -->
+    <!-- P21 Informe de fichajes de un empleado (WebView, igual que P10) -->
     <fragment
         android:id="@+id/informeFichajesEmpleadoFragment"
         android:name="com.staffflow.android.ui.encargado.InformeFichajesEmpleadoFragment"
         android:label="Fichajes"
         tools:layout="@layout/fragment_mis_fichajes" />
 
-    <!-- Informe de ausencias de un empleado (WebView, igual que P11) -->
+    <!-- P22 Informe de ausencias de un empleado (WebView, igual que P11) -->
     <fragment
         android:id="@+id/informeAusenciasEmpleadoFragment"
         android:name="com.staffflow.android.ui.encargado.InformeAusenciasEmpleadoFragment"

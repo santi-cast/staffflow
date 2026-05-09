@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 /**
- * Informe de ausencias de un empleado específico (WebView). Accesible por ADMIN y ENCARGADO.
+ * Informe de ausencias de un empleado específico (P22). WebView. Accesible por ADMIN y ENCARGADO.
  *
  * Endpoint: GET /api/v1/ausencias/{empleadoId}/informe?desde=&hasta=&filtro=
  *

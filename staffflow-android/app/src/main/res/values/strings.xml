@@ -125,7 +125,7 @@
     <string name="empleados_vacio">No hay empleados registrados</string>
     <string name="empleados_buscar_hint">Buscar por nombre o número…</string>
 
-    <!-- P27 Saldos globales -->
+    <!-- P26 Saldos globales -->
     <string name="saldo_globales_vacio">No hay saldos para este año</string>
     <string name="saldo_globales_col_vacaciones">Vacaciones</string>
     <string name="saldo_globales_col_asuntos">A. propios</string>
@@ -252,7 +252,7 @@
     <string name="form_ausencia_dialogo_conflicto_sobrescribir">Sobrescribir</string>
     <string name="form_ausencia_eliminada">Ausencia eliminada correctamente</string>
 
-    <!-- P28 Informes -->
+    <!-- P27 Informes -->
     <string name="informes_selector_rango_titulo">Selecciona el rango de fechas</string>
     <string name="informes_selector_anio_titulo">Selecciona el año</string>
     <string name="informes_error_abrir_pdf">No se pudo abrir el PDF</string>
