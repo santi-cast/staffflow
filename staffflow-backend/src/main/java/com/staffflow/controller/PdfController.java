@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Controlador de informes PDF firmables generados con iText 7.
  *
- * <p>Cubre los endpoints E45-E53 (Grupo 11). Delega toda la logica
+ * <p>Cubre los endpoints E45-E47 + E57 (Grupo 11). Delega toda la logica
  * en PdfService. Devuelve siempre ResponseEntity<byte[]> con
  * Content-Type application/pdf y Content-Disposition attachment.</p>
  *
@@ -162,13 +162,13 @@ public class PdfController {
     }
 
     // =========================================================================
-    // E53 — GET /api/v1/informes/pdf/vacaciones
+    // E57 — GET /api/v1/informes/pdf/vacaciones
     // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
     // =========================================================================
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados
-     * por un empleado en un año (E53).
+     * por un empleado en un año (E57).
      *
      * <p>Dos tablas con listado de fechas y total por tipo. Mismo estilo que
      * E47. Documento firmable para acreditar las vacaciones y asuntos propios

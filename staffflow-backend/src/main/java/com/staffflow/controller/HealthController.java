@@ -30,18 +30,18 @@ import java.util.Map;
  *
  * @author Santiago Castillo
  */
-@Tag(name = "Health", description = "Comprobacion de estado del servidor (E52)")
+@Tag(name = "Health", description = "Comprobacion de estado del servidor (E56)")
 @RestController
 @RequestMapping("/api")
 public class HealthController {
 
     // =========================================================================
-    // E52 — GET /api/health
+    // E56 — GET /api/health
     // RF-45: Comprobacion de disponibilidad del servicio
     // =========================================================================
 
     /**
-     * Devuelve el estado actual del servidor (E52).
+     * Devuelve el estado actual del servidor (E56).
      *
      * <p>Ruta publica: no requiere autenticacion. Devuelve siempre
      * HTTP 200 con {"status": "UP"} mientras la aplicacion este en

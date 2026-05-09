@@ -40,7 +40,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Cálculo de saldo anual: vacaciones, asuntos propios y saldo de horas
 - Parte diario de presencia (Fichado · En pausa · Ausencia registrada · Ausencia planificada · Sin justificar)
 - Informes operativos de horas trabajadas y ausencias en JSON y HTML imprimible
-- Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E53)
+- Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E57)
 - Recuperación de contraseña por email: se genera una contraseña temporal de 8 caracteres y se envía al email registrado via Gmail SMTP. El usuario inicia sesión con ella y la cambia desde la aplicación (E03). La recuperación por token de un solo uso está documentada como mejora para v2.0
 
 ---
@@ -161,8 +161,8 @@ La especificación incluye:
 | Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
 | Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
 | Informes | `/api/v1/informes` | E42–E44 | ✅ Operativos |
-| PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E53 | ✅ Operativos |
-| Health | `/api/health` | E52 | ✅ Operativo |
+| PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E57 | ✅ Operativos |
+| Health | `/api/health` | E56 | ✅ Operativo |
 
 **57 endpoints operativos** (verificados con MySQL 8.0 y H2).
 
