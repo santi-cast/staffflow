@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 64 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 51 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 64 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (51 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
+- JUnit 5 + Mockito (52 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
 
 ### Cliente Android
 
@@ -93,7 +93,7 @@ El backend soporta dos perfiles Spring:
 Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
 
 ```
-staffflow-backend/src/main/resources/staffflow_v7_ddl_mysql.sql
+Documentos/Memoria final/Diagramas/staffflow_v7_ddl_mysql.sql
 ```
 
 Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
@@ -113,6 +113,8 @@ Para arrancar con perfil dev:
 ```
 
 El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
+
+Adicionalmente, el perfil `dev` expone un endpoint auxiliar **`POST /api/v1/test/cierre-diario`** (`TestProcesoCierreDiarioController`, anotado con `@Profile("dev")`) que permite disparar manualmente el proceso nocturno de cierre de jornada sin esperar al cron de las 23:55. **Este endpoint NO se registra en el perfil `mysql`** — Spring lo excluye del contexto y por tanto no existe en producción.
 
 ---
 
@@ -180,7 +182,7 @@ Convenciones de la tabla:
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
 | E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol) | P29 |
-| E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P25, P29 |
+| E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
 | E11 | PATCH /{id} | ADMIN | Actualiza email, rol o estado activo de un usuario | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
@@ -190,7 +192,7 @@ Convenciones de la tabla:
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
 | E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P29 |
-| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13, P25 |
+| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle completo de un empleado | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado | P15 |
 | E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
@@ -229,7 +231,7 @@ Convenciones de la tabla:
 | E34 | GET /me | EMPLEADO, ENCARGADO | Lista las ausencias del empleado autenticado en formato JSON | — |
 | E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado | P11 |
 | E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto | P22 |
-| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada con detección de conflictos | P24 |
+| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada con detección de conflictos (`RangoConflictException` 409 con payload de fechas en conflicto si no se fuerza la sobrescritura) | P24 |
 | E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios | P23, P24 |
 
 #### Presencia (`/api/v1/presencia`)
@@ -246,16 +248,16 @@ Convenciones de la tabla:
 |----|--------------|-------|-------------|--------------|
 | E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P25 |
 | E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados activos en formato JSON | — |
-| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P25 |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P24, P25 |
 | E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
 
 #### Informes HTML (`/api/v1/informes`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P25 |
-| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P25 |
-| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P25, P25 |
+| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P27 |
+| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P27 |
+| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P26, P27 |
 | E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado | P10 |
 | E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal interactiva con fichajes, pausas y ausencias | P19 |
 | E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados en un rango | P23 |
@@ -264,10 +266,10 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P25 |
-| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P25 |
-| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P25 |
-| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P25 |
+| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P27 |
+| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P27 |
+| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P27 |
+| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P27 |
 
 #### Terminal PIN/NFC (`/api/v1/terminal`)
 
@@ -347,7 +349,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (64 endpoints, JWT, iText 7) | ✅ Completada — 64/64 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 51 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
@@ -407,15 +409,15 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P23 | AusenciasFragment | 4 — Encargado | E60, E64 | ADMIN, ENCARGADO |
 | P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ADMIN, ENCARGADO |
 | P25 | SaldoFragment | 4 — Encargado | E38, E40 | ADMIN, ENCARGADO |
-| P25 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
-| P25 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ADMIN, ENCARGADO |
-| P25 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
+| P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
+| P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
+| P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
 | P29 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
 Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
 
-Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P25, P25) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
+Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P26, P27) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
 
 ---
 
@@ -424,10 +426,12 @@ Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo
 Sobre la base funcional se aplicó una capa adicional de hardening centrada en seguridad y resiliencia:
 
 - **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado". `IllegalStateException` queda reservada para errores internos genuinos (5xx).
-- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 54 anotaciones `@PreAuthorize` del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
+- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 54 anotaciones `@PreAuthorize` de la capa controller del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
 - **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
 - **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize`) y `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
+
+La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 
 ---
 
