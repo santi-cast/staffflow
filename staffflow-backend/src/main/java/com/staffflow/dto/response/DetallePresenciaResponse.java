@@ -54,7 +54,7 @@ public class DetallePresenciaResponse {
     private String apellido2;
 
     // Estado calculado en tiempo real. Determina el icono y color
-    // que muestra Android en el panel de presencia (P29).
+    // que muestra Android en el panel de presencia (P17).
     private EstadoPresencia estado;
 
     // NULL si el empleado no ha iniciado jornada (AUSENCIA_PLANIFICADA,
