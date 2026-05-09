@@ -203,6 +203,10 @@ class SaldoServiceTest {
     @Test
     @DisplayName("recalcularParaProceso — mezcla de tipos — contadores independientes correctos")
     void recalcularParaProceso_mezclaDeTipos_contadoresCorrectosIndependientes() {
+        // BAJA_MEDICA y PERMISO_RETRIBUIDO cuentan como dia trabajado (jornada
+        // consumida con justificacion legal), neutros en saldoHoras. Por eso
+        // diasTrabajados = NORMAL (1) + BAJA_MEDICA (1) = 2. Vacaciones y
+        // asuntos propios NO suman diasTrabajados — van a sus propios contadores.
         List<Fichaje> fichajes = List.of(
                 fichaje(TipoFichaje.NORMAL, 480, 0),
                 fichaje(TipoFichaje.VACACIONES, 0, 0),
@@ -215,7 +219,7 @@ class SaldoServiceTest {
         saldoService.recalcularParaProceso(EMPLEADO_ID, ANIO);
 
         SaldoAnual guardado = capturarSaldoGuardado();
-        assertThat(guardado.getDiasTrabajados()).isEqualTo(1);
+        assertThat(guardado.getDiasTrabajados()).isEqualTo(2); // NORMAL + BAJA_MEDICA
         assertThat(guardado.getDiasVacacionesConsumidos()).isEqualTo(2);
         assertThat(guardado.getDiasAsuntosPropiosConsumidos()).isEqualTo(1);
         assertThat(guardado.getDiasBajaMedica()).isEqualTo(1);
