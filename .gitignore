@@ -1,36 +1,4 @@
-# Maven
-target/
-*.class
-
-# IntelliJ
-.idea/
-*.iml
-*.iws
-*.ipr
-
-# Android Studio
-.gradle/
-build/
-local.properties
-*.apk
-*.aab
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Documentación interna del TFG (no va al repo)
-Documentos/
-
-# Artefactos de herramientas de IA / SDD
-openspec/
-.atl/
-.engram/
-AGENTS.md
-
-# Basura accidental
---help
-.gga
+*
+!staffflow-backend/
+!staffflow-android/
+!.gitignore
