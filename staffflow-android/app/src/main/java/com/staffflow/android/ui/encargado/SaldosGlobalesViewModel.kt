@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * ViewModel de Saldos globales (P27).
+ * ViewModel de Saldos globales (P26).
  *
  * Llama a E44 GET /informes/saldos?anio=&formato=html via InformeRepository.
  * Devuelve el HTML generado por InformeService para cargarlo en un WebView.

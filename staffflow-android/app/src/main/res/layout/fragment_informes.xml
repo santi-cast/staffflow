@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    P28 - Informes. ADMIN y ENCARGADO.
+    P27 - Informes. ADMIN y ENCARGADO.
 
     Tab 0 - Horas individual:
       Seleccionar empleado (dropdown) + rango fechas -> HTML auto-carga en WebView.

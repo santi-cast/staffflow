@@ -21,7 +21,7 @@ import com.staffflow.android.domain.model.Rol
 import kotlinx.coroutines.launch
 
 /**
- * Formulario de usuario (P32). Solo ADMIN.
+ * Formulario de usuario (P29). Solo ADMIN.
  *
  * Modo alta   (usuarioId = -1): E08 POST /usuarios.
  *   Al crear EMPLEADO o ENCARGADO: Snackbar con accion "Crear perfil" -> P15.

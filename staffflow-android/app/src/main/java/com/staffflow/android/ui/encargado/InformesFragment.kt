@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 /**
- * Pantalla de informes con 3 tabs (P28). ADMIN y ENCARGADO.
+ * Pantalla de informes con 3 tabs (P27). ADMIN y ENCARGADO.
  *
  * Tab 0 - Horas individual:
  *   Seleccionar empleado (dropdown) + rango fechas -> HTML auto-carga en WebView (E42).

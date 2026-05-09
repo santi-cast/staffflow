@@ -17,7 +17,7 @@ import com.staffflow.android.databinding.FragmentEmpresaBinding
 import kotlinx.coroutines.launch
 
 /**
- * Configuracion de la empresa (P34). Solo ADMIN.
+ * Configuracion de la empresa (P30). Solo ADMIN.
  *
  * Patron C (dato unico) + formulario de edicion.
  * Endpoints: E06 GET /empresa (carga) | E07 PUT /empresa (guarda).

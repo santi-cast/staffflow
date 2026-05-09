@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de Saldos globales (P27).
+    Layout de Saldos globales (P26).
 
     Patron WebView. Endpoint: E44 GET /informes/saldos?anio=&formato=html
     Roles: ENCARGADO y ADMIN.

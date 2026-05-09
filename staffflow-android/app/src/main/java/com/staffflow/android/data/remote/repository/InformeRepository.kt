@@ -26,7 +26,7 @@ class InformeRepository(private val api: InformeApiService) {
 
     /**
      * E42 - Informe de horas de un empleado en HTML (formato=html).
-     * P28 tab Horas individual -> boton Imprimir y boton Ver informe.
+     * P27 tab Horas individual -> boton Imprimir y boton Ver informe.
      */
     suspend fun getInformeHorasHtml(
         empleadoId: Long,
@@ -37,21 +37,21 @@ class InformeRepository(private val api: InformeApiService) {
 
     /**
      * E43 - Informe de horas global en HTML (formato=html).
-     * P28 tab Horas global -> boton Ver informe.
+     * P27 tab Horas global -> boton Ver informe.
      */
     suspend fun getInformeHorasGlobalHtml(desde: String, hasta: String): Result<ResponseBody> =
         safeApiCall { api.getInformeHorasGlobalHtml(desde, hasta) }
 
     /**
      * E44 - Informe de saldos anuales en HTML (formato=html).
-     * P28 tab Saldos -> boton Ver saldos.
+     * P27 tab Saldos -> boton Ver saldos.
      */
     suspend fun getInformeSaldosHtml(anio: Int): Result<ResponseBody> =
         safeApiCall { api.getInformeSaldosHtml(anio) }
 
     /**
      * E45 - PDF informe de horas de un empleado.
-     * P28 tab Horas individual -> boton PDF.
+     * P27 tab Horas individual -> boton PDF.
      */
     suspend fun getPdfHorasEmpleado(
         empleadoId: Long,
@@ -62,21 +62,21 @@ class InformeRepository(private val api: InformeApiService) {
 
     /**
      * E46 - PDF informe de horas global de todos los empleados.
-     * P28 tab Horas global -> boton PDF.
+     * P27 tab Horas global -> boton PDF.
      */
     suspend fun getPdfHorasGlobal(desde: String, hasta: String): Result<ResponseBody> =
         safeApiCall { api.getPdfHorasGlobal(desde, hasta) }
 
     /**
      * E47 - PDF informe de saldos anuales.
-     * P28 tab Saldos -> boton PDF saldos.
+     * P27 tab Saldos -> boton PDF saldos.
      */
     suspend fun getPdfSaldos(anio: Int): Result<ResponseBody> =
         safeApiCall { api.getPdfSaldos(anio) }
 
     /**
      * E57 - PDF informe de vacaciones de un empleado.
-     * P28 tab Saldos -> boton PDF vacaciones.
+     * P27 tab Saldos -> boton PDF vacaciones.
      */
     suspend fun getPdfVacaciones(empleadoId: Long, anio: Int): Result<ResponseBody> =
         safeApiCall { api.getPdfVacaciones(empleadoId, anio) }

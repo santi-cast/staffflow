@@ -18,7 +18,7 @@
     Zona autenticada (con Drawer):
       EMPLEADO:  P08, P09, P10, P11, P12
       ENCARGADO: P13, P14, P15, P17, P18, P19, P20, P23, P24, P26, P27, P28
-      ADMIN:     P31, P32, P34
+      ADMIN:     P28, P29, P30
       TODOS:     P04
 
     Las acciones de navegacion se anadiran en cada bloque conforme
@@ -394,35 +394,35 @@
     <!-- ZONA AUTENTICADA -ADMIN                                     -->
     <!-- ============================================================ -->
 
-    <!-- P31 Lista de usuarios del sistema -->
+    <!-- P28 Lista de usuarios del sistema -->
     <fragment
         android:id="@+id/usuariosFragment"
         android:name="com.staffflow.android.ui.admin.UsuariosFragment"
         android:label="Usuarios"
         tools:layout="@layout/fragment_usuarios">
 
-        <!-- P31 -> P32 Crear o editar usuario -->
+        <!-- P28 -> P29 Crear o editar usuario -->
         <action
             android:id="@+id/action_usuarios_to_form_usuario"
             app:destination="@id/formUsuarioFragment" />
 
     </fragment>
 
-    <!-- P32 Crear o editar usuario -->
+    <!-- P29 Crear o editar usuario -->
     <fragment
         android:id="@+id/formUsuarioFragment"
         android:name="com.staffflow.android.ui.admin.FormUsuarioFragment"
         android:label="Usuario"
         tools:layout="@layout/fragment_form_usuario">
 
-        <!-- P32 -> P15 Crear perfil empleado (snackbar tras crear usuario) -->
+        <!-- P29 -> P15 Crear perfil empleado (snackbar tras crear usuario) -->
         <action
             android:id="@+id/action_form_usuario_to_form_empleado"
             app:destination="@id/formEmpleadoFragment" />
 
     </fragment>
 
-    <!-- P34 Configuracion de la empresa (singleton) -->
+    <!-- P30 Configuracion de la empresa (singleton) -->
     <fragment
         android:id="@+id/empresaFragment"
         android:name="com.staffflow.android.ui.admin.EmpresaFragment"

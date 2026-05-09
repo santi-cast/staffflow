@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel de la configuracion de empresa (P34). Solo ADMIN.
+ * ViewModel de la configuracion de empresa (P30). Solo ADMIN.
  *
  * Carga los datos actuales con E06 GET /empresa.
  * Guarda los cambios con E07 PUT /empresa (objeto completo).

@@ -29,21 +29,21 @@ class SaldoRepository(private val api: SaldoApiService) {
 
     /**
      * E38 - Saldo anual de un empleado concreto.
-     * P26 (SaldoIndividualFragment) llama a este metodo al cargar o cambiar el ano.
+     * P25 (SaldoIndividualFragment) llama a este metodo al cargar o cambiar el ano.
      */
     suspend fun getSaldoEmpleado(empleadoId: Long, anio: Int? = null): Result<SaldoResponse> =
         safeApiCall { api.getSaldoEmpleado(empleadoId, anio) }
 
     /**
      * E39 - Saldos anuales de todos los empleados activos.
-     * P27 (SaldosGlobalesFragment) llama a este metodo al cargar o cambiar el ano.
+     * P26 (SaldosGlobalesFragment) llama a este metodo al cargar o cambiar el ano.
      */
     suspend fun getSaldosGlobal(anio: Int? = null): Result<List<SaldoResponse>> =
         safeApiCall { api.getSaldosGlobal(anio) }
 
     /**
      * E40 - Recalcula el saldo anual de un empleado concreto.
-     * P26 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
+     * P25 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
      */
     suspend fun recalcularSaldo(empleadoId: Long, anio: Int): Result<MensajeResponse> =
         safeApiCall { api.recalcularSaldo(empleadoId, anio) }

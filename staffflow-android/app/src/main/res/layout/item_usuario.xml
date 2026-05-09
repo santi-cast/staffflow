@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Item del RecyclerView de lista de usuarios (P31).
+    Item del RecyclerView de lista de usuarios (P28).
 
     Estructura:
       - Borde izquierdo: activo (#4CAF50) / inactivo (#9E9E9E)
@@ -10,7 +10,7 @@
       - Estado (Activo/Inactivo) alineado a la derecha
 
     El color del borde se establece desde UsuarioAdapter segun activo.
-    Tap navega a P32 en modo edicion.
+    Tap navega a P29 en modo edicion.
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"

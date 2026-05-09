@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout del formulario de usuario (P32). Solo ADMIN.
+    Layout del formulario de usuario (P29). Solo ADMIN.
 
     Modo alta   (usuarioId=-1): tilUsername, tilPassword, tilEmail, tilRol, btnGuardar.
     Modo edicion (usuarioId>0): tilUsername (disabled), tilEmail, tilRol,

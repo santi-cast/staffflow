@@ -17,7 +17,7 @@ import com.staffflow.android.databinding.FragmentUsuariosBinding
 import kotlinx.coroutines.launch
 
 /**
- * Lista de usuarios del sistema (P31). Solo ADMIN.
+ * Lista de usuarios del sistema (P28). Solo ADMIN.
  *
  * Endpoint: E09 GET /usuarios
  *
@@ -27,9 +27,9 @@ import kotlinx.coroutines.launch
  *   Empty   -> icono + mensaje sin datos
  *   Success -> RecyclerView con pull-to-refresh
  *
- * FAB (+) navega a P32 (FormUsuarioFragment) en modo alta.
- * Tap en fila -> P32 en modo edicion con usuarioId.
- * onResume() llama reintentar() para refrescar al volver de P32.
+ * FAB (+) navega a P29 (FormUsuarioFragment) en modo alta.
+ * Tap en fila -> P29 en modo edicion con usuarioId.
+ * onResume() llama reintentar() para refrescar al volver de P29.
  */
 class UsuariosFragment : Fragment() {
 

@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * Saldos globales de todos los empleados (P27).
+ * Saldos globales de todos los empleados (P26).
  *
  * Patron WebView. Endpoint: E44 GET /informes/saldos?anio=&formato=html
  * Roles: ENCARGADO y ADMIN.

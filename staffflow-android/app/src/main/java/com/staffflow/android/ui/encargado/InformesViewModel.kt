@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel de la pantalla de informes (P28). ADMIN y ENCARGADO.
+ * ViewModel de la pantalla de informes (P27). ADMIN y ENCARGADO.
  *
  * Flujo:
  *   - HTML auto-carga (E42/E43/E44) al seleccionar empleado, fechas o año -> HtmlVistaListo.
@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
  *   PdfListo       -> PDF listo, Fragment lo abre con Intent ACTION_VIEW
  *   Error          -> mensaje de error
  */
-/** Par id+nombre para el autocomplete de empleados en P28. */
+/** Par id+nombre para el autocomplete de empleados en P27. */
 data class EmpleadoItem(val id: Long, val nombreCompleto: String) {
     override fun toString() = nombreCompleto
 }

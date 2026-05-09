@@ -193,7 +193,7 @@
     <string name="mi_perfil_asuntos_valor">%d días</string>
     <string name="mi_perfil_asuntos_caption">Días de ausencia por asuntos personales anuales</string>
 
-    <!-- P34 Configuracion empresa -->
+    <!-- P30 Configuracion empresa -->
     <string name="empresa_hint_nombre">Nombre de empresa</string>
     <string name="empresa_hint_cif">CIF</string>
     <string name="empresa_hint_direccion">Dirección (opcional)</string>
@@ -202,7 +202,7 @@
     <string name="empresa_guardar">Guardar</string>
     <string name="empresa_guardado">Configuración guardada</string>
 
-    <!-- P32 Formulario de usuario -->
+    <!-- P29 Formulario de usuario -->
     <string name="form_usuario_hint_username">Usuario</string>
     <string name="form_usuario_hint_password">Contraseña</string>
     <string name="form_usuario_hint_email">Email</string>
@@ -216,7 +216,7 @@
     <string name="form_usuario_dialogo_cancelar">Cancelar</string>
     <string name="form_usuario_dialogo_confirmar">Desactivar</string>
 
-    <!-- P31 Lista de usuarios -->
+    <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
     <string name="usuarios_fab_desc">Nuevo usuario</string>
 

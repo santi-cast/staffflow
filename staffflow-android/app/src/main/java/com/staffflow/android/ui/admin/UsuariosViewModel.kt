@@ -13,11 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel de la lista de usuarios del sistema (P31). Solo ADMIN.
+ * ViewModel de la lista de usuarios del sistema (P28). Solo ADMIN.
  *
  * Endpoint: E09 GET /usuarios
  * Carga todos los usuarios sin filtro al inicio.
- * onResume() del fragment llama reintentar() para refrescar tras volver de P32.
+ * onResume() del fragment llama reintentar() para refrescar tras volver de P29.
  */
 class UsuariosViewModel(application: Application) : AndroidViewModel(application) {
 

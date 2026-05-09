@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de Saldo individual (P26).
+    Layout de Saldo individual (P25).
 
     Patron C - dato unico, solo lectura. Endpoint: E38 GET /saldos/{empleadoId}?anio=
     Roles: ENCARGADO y ADMIN.
 
     Identico a fragment_mi_saldo.xml (P09) pero para un empleado especifico.
     Recibe empleadoId como argumento de navegacion.
-    Acceso desde P14 (chip "Ver saldo") y P27 (tap en fila).
+    Acceso desde P14 (chip "Ver saldo") y P26 (tap en fila).
 
     Tres estados gestionados por visibilidad:
       CARGANDO -> progressIndicator visible, resto GONE

@@ -39,7 +39,7 @@ import java.time.format.DateTimeFormatter
  *
  * Recibe empleadoId como argumento de navegacion (Long).
  * Boton Editar en toolbar: visible solo para ADMIN -> P15 (FormEmpleadoFragment).
- * Chip "Ver saldo"    -> P26 (action_detalle_to_saldo_individual).
+ * Chip "Ver saldo"    -> P25 (action_detalle_to_saldo_individual).
  * Chip "Ver fichajes" -> P21 InformeFichajesEmpleado (action_detalle_to_informe_fichajes).
  */
 class DetalleEmpleadoFragment : Fragment() {

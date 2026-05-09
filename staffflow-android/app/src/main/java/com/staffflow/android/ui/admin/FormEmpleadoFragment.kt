@@ -103,7 +103,7 @@ class FormEmpleadoFragment : Fragment() {
         // En modo edicion: DNI no es modificable via PATCH
         binding.tilDni.isVisible = !modoEdicion
 
-        // tilUsuarioId eliminado: P15 solo se alcanza desde P32 (usuarioId llega pre-llenado)
+        // tilUsuarioId eliminado: P15 solo se alcanza desde P29 (usuarioId llega pre-llenado)
     }
 
     private fun configurarListeners() {
@@ -193,7 +193,7 @@ class FormEmpleadoFragment : Fragment() {
         val dni = binding.etDni.text?.toString().orEmpty().trim()
 
         viewModel.guardar(
-            usuarioIdInput      = null,  // siempre viene de P32 via argumento de navegacion
+            usuarioIdInput      = null,  // siempre viene de P29 via argumento de navegacion
             nombre              = nombre,
             apellido1           = apellido1,
             apellido2           = apellido2.ifBlank { null },

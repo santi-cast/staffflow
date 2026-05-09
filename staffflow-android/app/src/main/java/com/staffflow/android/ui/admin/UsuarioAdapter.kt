@@ -12,12 +12,12 @@ import com.staffflow.android.databinding.ItemUsuarioBinding
 import com.staffflow.android.domain.model.Rol
 
 /**
- * Adapter del RecyclerView de lista de usuarios (P31).
+ * Adapter del RecyclerView de lista de usuarios (P28).
  *
  * Cada item muestra username, email, rol legible y estado activo/inactivo.
  * El borde izquierdo indica el estado: activo (#4CAF50) / inactivo (#9E9E9E).
  *
- * @param onClick Callback llamado al pulsar un item. UsuariosFragment navega a P32 edicion.
+ * @param onClick Callback llamado al pulsar un item. UsuariosFragment navega a P29 edicion.
  */
 class UsuarioAdapter(
     private val onClick: (UsuarioResponse) -> Unit

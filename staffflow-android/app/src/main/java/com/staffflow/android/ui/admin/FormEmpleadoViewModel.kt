@@ -60,7 +60,7 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
      * Llamado desde FormEmpleadoFragment.onViewCreated con los argumentos de navegacion.
      *
      * @param empleadoId Id del empleado a editar, o -1 para modo alta.
-     * @param usuarioId  Id del usuario al que vincular el empleado (modo alta desde P32).
+     * @param usuarioId  Id del usuario al que vincular el empleado (modo alta desde P29).
      *                   -1 si el ADMIN lo introduce manualmente.
      */
     fun init(empleadoId: Long, usuarioId: Long) {

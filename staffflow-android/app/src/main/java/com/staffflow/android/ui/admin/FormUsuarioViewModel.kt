@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel del formulario de usuario (P32). Solo ADMIN.
+ * ViewModel del formulario de usuario (P29). Solo ADMIN.
  *
  * Modo alta   (usuarioId = -1): E08 POST /usuarios.
  * Modo edicion (usuarioId > 0): pre-carga con E10 GET /usuarios/{id},

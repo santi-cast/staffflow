@@ -19,14 +19,14 @@ class UsuarioRepository(private val api: UsuarioApiService) {
 
     /**
      * E08 - Crea un nuevo usuario del sistema.
-     * P32 (FormUsuarioFragment) en modo alta llama a este metodo.
+     * P29 (FormUsuarioFragment) en modo alta llama a este metodo.
      */
     suspend fun crearUsuario(request: UsuarioRequest): Result<UsuarioResponse> =
         safeApiCall { api.crearUsuario(request) }
 
     /**
      * E09 - Lista usuarios con filtros opcionales.
-     * P31 (UsuariosFragment) llama a este metodo al cargar.
+     * P28 (UsuariosFragment) llama a este metodo al cargar.
      */
     suspend fun listarUsuarios(
         rol: String? = null,
@@ -36,21 +36,21 @@ class UsuarioRepository(private val api: UsuarioApiService) {
 
     /**
      * E10 - Obtiene el detalle de un usuario concreto.
-     * P32 en modo edicion llama a este metodo para pre-rellenar el formulario.
+     * P29 en modo edicion llama a este metodo para pre-rellenar el formulario.
      */
     suspend fun obtenerUsuario(id: Long): Result<UsuarioResponse> =
         safeApiCall { api.obtenerUsuario(id) }
 
     /**
      * E11 - Actualiza parcialmente un usuario.
-     * P32 en modo edicion llama a este metodo al guardar.
+     * P29 en modo edicion llama a este metodo al guardar.
      */
     suspend fun actualizarUsuario(id: Long, request: UsuarioPatchRequest): Result<UsuarioResponse> =
         safeApiCall { api.actualizarUsuario(id, request) }
 
     /**
      * E12 - Desactiva un usuario (baja logica).
-     * P32 (FormUsuarioFragment) con el boton Desactivar llama a este metodo.
+     * P29 (FormUsuarioFragment) con el boton Desactivar llama a este metodo.
      */
     suspend fun desactivarUsuario(id: Long): Result<MensajeResponse> =
         safeApiCall { api.desactivarUsuario(id) }

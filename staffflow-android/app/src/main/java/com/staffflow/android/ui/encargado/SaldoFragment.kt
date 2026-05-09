@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * Saldo individual de un empleado concreto (P26).
+ * Saldo individual de un empleado concreto (P25).
  *
  * Patron C - dato unico, solo lectura. Endpoint: E38 GET /saldos/{empleadoId}?anio=
  * Roles: ENCARGADO y ADMIN.
@@ -36,7 +36,7 @@ import java.util.Calendar
  * Identico a MiSaldoFragment (P09) pero recibe empleadoId como argumento de navegacion.
  * Acceso desde:
  *   P14 DetalleEmpleadoFragment (chip "Ver saldo")  con empleadoId
- *   P27 SaldosGlobalesFragment  (tap en fila)       con empleadoId
+ *   P26 SaldosGlobalesFragment  (tap en fila)       con empleadoId
  *
  * Tres estados: Loading | Error | Success.
  * Selector de año en la toolbar.

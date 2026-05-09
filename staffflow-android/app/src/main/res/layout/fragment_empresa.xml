@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout de la configuracion de empresa (P34). Solo ADMIN.
+    Layout de la configuracion de empresa (P30). Solo ADMIN.
 
     Patron C (dato unico) con 3 estados gestionados por visibilidad:
       CARGANDO: progressIndicator centrado

@@ -21,7 +21,7 @@ import retrofit2.http.Query
  *
  * SaldoResponse incluye nested classes para vacaciones, asuntos propios
  * y horas. El campo saldoHoras puede ser negativo (deficit).
- * P09 y P26 muestran saldoHoras en verde si >= 0 y en rojo si < 0.
+ * P09 y P25 muestran saldoHoras en verde si >= 0 y en rojo si < 0.
  */
 interface SaldoApiService {
 
@@ -35,7 +35,7 @@ interface SaldoApiService {
 
     /**
      * E38 - Saldo anual de un empleado concreto.
-     * P26 (SaldoIndividualFragment) llama a este metodo.
+     * P25 (SaldoIndividualFragment) llama a este metodo.
      * @param empleadoId Id del empleado a consultar.
      * @param anio       Año a consultar. Si es null el backend usa el año actual.
      */
@@ -47,7 +47,7 @@ interface SaldoApiService {
 
     /**
      * E39 - Saldos anuales de todos los empleados activos.
-     * P27 (SaldosGlobalesFragment) llama a este metodo al cargar o cambiar el año.
+     * P26 (SaldosGlobalesFragment) llama a este metodo al cargar o cambiar el año.
      * @param anio Año a consultar. Si es null el backend usa el año actual.
      */
     @GET("saldos")
@@ -55,7 +55,7 @@ interface SaldoApiService {
 
     /**
      * E40 - Recalcula el saldo anual de un empleado concreto.
-     * P26 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
+     * P25 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
      * @param empleadoId Id del empleado a recalcular.
      * @param anio       Año a recalcular.
      */

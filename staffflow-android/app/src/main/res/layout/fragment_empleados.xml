@@ -12,7 +12,7 @@
           VACIO:    layoutVacio (icono + mensaje)
           EXITO:    SwipeRefreshLayout > RecyclerView
 
-    Los empleados se crean desde P32 (FormUsuario) al dar de alta un usuario
+    Los empleados se crean desde P29 (FormUsuario) al dar de alta un usuario
     con rol EMPLEADO o ENCARGADO — no hay FAB de alta directa aqui.
 
     El SearchView se muestra en la toolbar via MenuProvider (menu_empleados.xml).

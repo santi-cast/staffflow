@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Menu de la toolbar en P27 SaldosGlobalesFragment.
+    Menu de la toolbar en P26 SaldosGlobalesFragment.
     Muestra el año seleccionado como accion en la toolbar.
     Al pulsarlo se abre el dialogo selector de año.
 -->

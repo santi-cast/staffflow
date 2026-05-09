@@ -145,7 +145,7 @@ data class AusenciaResponse(
  * (E38, E39, E41).
  *
  * horas.saldoHoras: positivo = horas extra | negativo = deficit de horas.
- * Se muestra en verde/rojo segun signo en P09 y P26.
+ * Se muestra en verde/rojo segun signo en P09 y P25.
  * calculadoHastaFecha indica hasta que fecha se han computado los datos.
  */
 data class SaldoResponse(

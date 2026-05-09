@@ -172,25 +172,25 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P34 |
-| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa | P34 |
+| E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P30 |
+| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa | P30 |
 
 #### Usuarios (`/api/v1/usuarios`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol) | P32 |
-| E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P31, P32 |
-| E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P32 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email, rol o estado activo de un usuario | P32 |
-| E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P32 |
+| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol) | P29 |
+| E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P25, P29 |
+| E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email, rol o estado activo de un usuario | P29 |
+| E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
 
 #### Empleados (`/api/v1/empleados`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P32 |
-| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13, P28 |
+| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P29 |
+| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13, P25 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle completo de un empleado | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado | P15 |
 | E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
@@ -244,18 +244,18 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P26 |
+| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P25 |
 | E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados activos en formato JSON | — |
-| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P26 |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P25 |
 | E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
 
 #### Informes HTML (`/api/v1/informes`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P28 |
-| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P28 |
-| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P27, P28 |
+| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P25 |
+| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P25 |
+| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P25, P25 |
 | E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado | P10 |
 | E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal interactiva con fichajes, pausas y ausencias | P19 |
 | E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados en un rango | P23 |
@@ -264,10 +264,10 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P28 |
-| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P28 |
-| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P28 |
-| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P28 |
+| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P25 |
+| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P25 |
+| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P25 |
+| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P25 |
 
 #### Terminal PIN/NFC (`/api/v1/terminal`)
 
@@ -406,16 +406,16 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P22 | InformeAusenciasEmpleadoFragment | 4 — Encargado | E62 | ADMIN, ENCARGADO |
 | P23 | AusenciasFragment | 4 — Encargado | E60, E64 | ADMIN, ENCARGADO |
 | P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ADMIN, ENCARGADO |
-| P26 | SaldoFragment | 4 — Encargado | E38, E40 | ADMIN, ENCARGADO |
-| P27 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
-| P28 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ADMIN, ENCARGADO |
-| P31 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
-| P32 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
-| P34 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
+| P25 | SaldoFragment | 4 — Encargado | E38, E40 | ADMIN, ENCARGADO |
+| P25 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
+| P25 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ADMIN, ENCARGADO |
+| P25 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
+| P29 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
+| P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
-Los huecos de numeración (P25, P29, P30, P33) reflejan la agrupación por bloques funcionales heredada del diseño original.
+Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
 
-Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P27, P28) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
+Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P25, P25) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
 
 ---
 

@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 
 /**
- * ViewModel de Saldo individual (P26).
+ * ViewModel de Saldo individual (P25).
  *
  * Llama a E38 GET /saldos/{empleadoId}?anio= via SaldoRepository.
  * Recibe el empleadoId via init() desde el Fragment (argumentos de navegacion).
