@@ -5,7 +5,7 @@ import com.staffflow.android.util.safeApiCall
 import okhttp3.ResponseBody
 
 /**
- * Repositorio para los endpoints de informes (E42-E44, E45-E47, E53).
+ * Repositorio para los endpoints de informes (E42-E44, E45-E47, E57).
  *
  * Accesible con rol ADMIN o ENCARGADO.
  * Los metodos PDF devuelven ResponseBody para escribir el byte[] a un
@@ -18,7 +18,7 @@ import okhttp3.ResponseBody
 class InformeRepository(private val api: InformeApiService) {
 
     /**
-     * E-me - Informe de horas del empleado autenticado en HTML.
+     * E58 - Informe de horas del empleado autenticado en HTML.
      * P10 (MisFichajesFragment) lo carga en WebView.
      */
     suspend fun getMisHorasHtml(desde: String, hasta: String): Result<ResponseBody> =
@@ -75,21 +75,21 @@ class InformeRepository(private val api: InformeApiService) {
         safeApiCall { api.getPdfSaldos(anio) }
 
     /**
-     * E53 - PDF informe de vacaciones de un empleado.
+     * E57 - PDF informe de vacaciones de un empleado.
      * P28 tab Saldos -> boton PDF vacaciones.
      */
     suspend fun getPdfVacaciones(empleadoId: Long, anio: Int): Result<ResponseBody> =
         safeApiCall { api.getPdfVacaciones(empleadoId, anio) }
 
     /**
-     * E-Semana - Tabla HTML semanal de todos los empleados activos.
+     * E59 - Tabla HTML semanal de todos los empleados activos.
      * ResumenSemanalFragment la carga en WebView.
      */
     suspend fun getInformeSemana(desde: String, hasta: String): Result<ResponseBody> =
         safeApiCall { api.getInformeSemana(desde, hasta) }
 
     /**
-     * E-ausencias-global - Tabla HTML de ausencias de todos los empleados activos.
+     * E60 - Tabla HTML de ausencias de todos los empleados activos.
      * AusenciasFragment la carga en WebView.
      */
     suspend fun getInformeAusenciasGlobal(desde: String, hasta: String): Result<ResponseBody> =

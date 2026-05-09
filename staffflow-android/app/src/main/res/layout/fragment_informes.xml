@@ -13,7 +13,7 @@
     Tab 2 - Saldos:
       Selector de año -> HTML saldos auto-carga en WebView.
       Boton "Imprimir saldos" -> E47 PDF -> Intent ACTION_VIEW.
-      Selector empleado + boton "Imprimir vacaciones" -> E53 PDF -> Intent ACTION_VIEW.
+      Selector empleado + boton "Imprimir vacaciones" -> E57 PDF -> Intent ACTION_VIEW.
 
     Cada tab es un LinearLayout vertical:
       - ScrollView (controles, altura wrap_content)

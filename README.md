@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 57 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 24 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios (JUnit 5 + Mockito) y smoke test de los 57 endpoints contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 64 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -41,6 +41,8 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Parte diario de presencia (Fichado · En pausa · Ausencia registrada · Ausencia planificada · Sin justificar)
 - Informes operativos de horas trabajadas y ausencias en JSON y HTML imprimible
 - Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E57)
+- Informes HTML interactivos para WebView Android: horas individuales (E58), tabla semanal global (E59), ausencias globales (E60), informes individuales por empleado (E61, E62) y planificación de vacaciones/asuntos propios (E64)
+- Creación de ausencias por rango de fechas en una sola llamada (E63), con detección de conflictos y opción de sobrescritura
 - Recuperación de contraseña por email: se genera una contraseña temporal de 8 caracteres y se envía al email registrado via Gmail SMTP. El usuario inicia sesión con ella y la cambia desde la aplicación (E03). La recuperación por token de un solo uso está documentada como mejora para v2.0
 
 ---
@@ -59,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (52 tests unitarios)
+- JUnit 5 + Mockito (52 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
 
 ### Cliente Android
 
@@ -141,7 +143,7 @@ La API se ha definido con enfoque **design‑first**: todos los endpoints están
 
 La especificación incluye:
 
-- **57 endpoints** en **13 grupos funcionales**
+- **64 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` (sin JWT, cadena de seguridad propia)
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN → bloqueo 30 s + HTTP 423
@@ -156,15 +158,15 @@ La especificación incluye:
 | Empleados | `/api/v1/empleados` | E13–E21 | ✅ Operativos |
 | Fichajes | `/api/v1/fichajes` | E22–E26 | ✅ Operativos |
 | Pausas | `/api/v1/pausas` | E27–E29, E55 | ✅ Operativos |
-| Terminal PIN/NFC | `/api/v1/terminal` | E48–E54 | ✅ Operativos |
-| Ausencias | `/api/v1/ausencias` | E30–E34 | ✅ Operativos |
+| Ausencias | `/api/v1/ausencias` | E30–E34, E61–E64 | ✅ Operativos |
 | Presencia | `/api/v1/presencia` | E35–E37 | ✅ Operativos |
 | Saldos | `/api/v1/saldos` | E38–E41 | ✅ Operativos |
-| Informes | `/api/v1/informes` | E42–E44 | ✅ Operativos |
+| Informes HTML | `/api/v1/informes` | E42–E44, E58–E60 | ✅ Operativos |
 | PDF para firmar | `/api/v1/informes/pdf` | E45–E47, E57 | ✅ Operativos |
+| Terminal PIN/NFC | `/api/v1/terminal` | E48–E54 | ✅ Operativos |
 | Health | `/api/health` | E56 | ✅ Operativo |
 
-**57 endpoints operativos** (verificados con MySQL 8.0 y H2).
+**64 endpoints operativos** (verificados con MySQL 8.0 y H2).
 
 ### Convención PUT / PATCH
 
@@ -221,9 +223,9 @@ staffflow/
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (57 endpoints, JWT, iText 7) | ✅ Completada — 57/57 endpoints operativos |
-| Fase 3 | Desarrollo de la app Android (24 pantallas, Kotlin, Navigation Component) | ✅ Completada — 24 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + smoke test 57/57 endpoints + matrix de seguridad 35/35 |
+| Fase 2 | Desarrollo del backend (64 endpoints, JWT, iText 7) | ✅ Completada — 64/64 endpoints operativos |
+| Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
+| Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
@@ -246,29 +248,52 @@ Usuarios y empleados se desactivan con `activo = false`. El historial queda inta
 
 ### 4. Terminal de fichaje con PIN separado del flujo JWT
 
-Los 7 endpoints de terminal (`/api/v1/terminal/`) no requieren JWT. Se identifican por PIN de 4 dígitos con bloqueo por fuerza bruta por dispositivo. El resto de la API (historial, saldos, perfil) requiere siempre JWT, garantizando que un PIN conocido por un compañero no permite acceder a datos personales.
+Los 5 endpoints públicos de terminal (`/api/v1/terminal/entrada`, `/salida`, `/pausa/iniciar`, `/pausa/finalizar`, `/estado` — E48 a E52) no requieren JWT. Se identifican por PIN de 4 dígitos con bloqueo por fuerza bruta por dispositivo. Los 2 endpoints de gestión del bloqueo (`/terminal/bloqueo` GET y DELETE — E53 y E54) sí requieren JWT con rol ADMIN o ENCARGADO. El resto de la API (historial, saldos, perfil) requiere siempre JWT, garantizando que un PIN conocido por un compañero no permite acceder a datos personales.
 
 ### 5. Single Activity + Navigation Component en Android
 
 La app Android usa una única `MainActivity` con `NavHostFragment`. Cada pantalla es un `Fragment`. Navigation Component gestiona el back stack automáticamente desde `nav_graph.xml`. El Navigation Drawer vive en `MainActivity` y se infla dinámicamente según el rol del JWT.
 
-### 6. Implementación Android por patrones de Fragment
+### 6. Catálogo de pantallas Android
 
-Las 24 pantallas de la app Android se implementaron reutilizando **Fragments base con variantes derivadas** para pantallas del mismo patrón visual. Cada patrón define una vez la estructura, el ViewModel y las llamadas a la API; las pantallas derivadas solo sobreescriben los detalles que cambian (título, endpoint, campos visibles).
+Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol:
 
-Los patrones utilizados son:
+| ID | Fragment | Bloque | Endpoints principales | Roles |
+|---|---|---|---|---|
+| P01 | TerminalFragment | 1 — Terminal | E52 | público |
+| P02 | LoginFragment | 1 — Auth | E01 | público |
+| P03 | RecoveryFragment | 1 — Auth | E04 | público |
+| P04 | CambiarPasswordFragment | 1 — Auth | E03 | autenticado |
+| P05 | ResetPasswordFragment | 1 — Auth | E05 | público (deep link) |
+| P06 | ConfirmacionFragment | 1 — Terminal | E48, E49, E50, E51 | público |
+| P07 | TipoPausaFragment | 1 — Terminal | (local) | público |
+| P08 | MiPerfilFragment | 2 — Empleado | E21 | EMPLEADO+ |
+| P09 | MiSaldoFragment | 2 — Empleado | E41 | EMPLEADO+ |
+| P10 | MisFichajesFragment | 2 — Empleado | E58 | EMPLEADO+ |
+| P11 | MisAusenciasFragment | 2 — Empleado | E61 | EMPLEADO+ |
+| P12 | MiHoyFragment | 2 — Empleado | E37 | EMPLEADO+ |
+| P13 | EmpleadosFragment | 3 — Gestión | E14 | ENCARGADO+ |
+| P14 | DetalleEmpleadoFragment | 3 — Gestión | E15 | ENCARGADO+ |
+| P15 | FormEmpleadoFragment | 3 — Gestión | E13, E15, E16 | ENCARGADO+ |
+| P16 | DetalleDiaFragment | 4 — Encargado | E24, E29, E33 | ENCARGADO+ |
+| P17 | ParteDiarioFragment | 4 — Encargado | E35, E53, E54 | ENCARGADO+ |
+| P18 | SinJustificarFragment | 4 — Encargado | E36 | ENCARGADO+ |
+| P19 | ResumenSemanalFragment | 4 — Encargado | E59 | ENCARGADO+ |
+| P20 | FormFichajeFragment | 4 — Encargado | E22, E23, E27, E28, E40 | ENCARGADO+ |
+| P21 | InformeFichajesEmpleadoFragment | 4 — Encargado | E42 | ENCARGADO+ |
+| P22 | InformeAusenciasEmpleadoFragment | 4 — Encargado | E62 | ENCARGADO+ |
+| P23 | AusenciasFragment | 4 — Encargado | E60, E64 | ENCARGADO+ |
+| P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ENCARGADO+ |
+| P26 | SaldoFragment | 4 — Encargado | E38, E40 | ENCARGADO+ |
+| P27 | SaldosGlobalesFragment | 4 — Encargado | E44 | ENCARGADO+ |
+| P28 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ENCARGADO+ |
+| P31 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
+| P32 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
+| P34 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
-| Patrón | Fragment base | Pantallas que lo usan |
-|---|---|---|
-| Terminal PIN | P01 | — (única) |
-| Formulario simple (login / password) | P02 | P03, P04, P05, P38 |
-| Dashboard por rol | P09 | P13, P17 |
-| Lista con RecyclerView | P14 | P21, P23 |
-| Formulario de creación | P15 | P20, P24 |
-| Detalle y edición | P16 | P22 |
-| WebView de informe | P35 | P36, P37 |
+Los huecos de numeración (P25, P29, P30, P33) reflejan la agrupación por bloques funcionales heredada del diseño original.
 
-Esta estrategia redujo el tiempo de implementación de ~60–70 horas (una pantalla desde cero cada vez) a ~30 horas, sin ningún impacto visible para el usuario.
+Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; la pantalla de detalle (P14) define el patrón aplicado a otros detalles; las pantallas con WebView de informe (P10, P11, P19, P22, P23, P27, P28) comparten el mismo esqueleto. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
 
 ---
 

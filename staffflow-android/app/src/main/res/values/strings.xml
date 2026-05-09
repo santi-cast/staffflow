@@ -180,12 +180,6 @@
     <string name="form_fichaje_observaciones_helper">Obligatorio (RNF-L02)</string>
     <string name="form_fichaje_guardar">Guardar</string>
 
-    <!-- P19 Lista de fichajes -->
-    <string name="fichajes_vacio">No hay fichajes en este periodo</string>
-    <string name="fichajes_fab_desc">Nuevo fichaje</string>
-    <string name="fichajes_selector_rango_titulo">Selecciona el periodo</string>
-    <string name="fichajes_menu_rango_fechas">Periodo</string>
-
     <!-- P08 Mi perfil (empleado) -->
     <string name="mi_perfil_datos_personales">Datos personales</string>
     <string name="mi_perfil_condiciones">Condiciones laborales</string>

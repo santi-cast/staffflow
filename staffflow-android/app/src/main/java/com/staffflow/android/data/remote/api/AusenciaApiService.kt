@@ -42,7 +42,7 @@ interface AusenciaApiService {
     suspend fun crearAusencia(@Body request: AusenciaRequest): Response<AusenciaResponse>
 
     /**
-     * E-rango - Crea ausencias planificadas en un rango de fechas.
+     * E63 - Crea ausencias planificadas en un rango de fechas.
      * Error 409 con {error, fechasConflictivas} si hay conflictos y sobrescribir=false.
      */
     @POST("ausencias/rango")
@@ -94,7 +94,7 @@ interface AusenciaApiService {
     ): Response<List<AusenciaResponse>>
 
     /**
-     * E-planificacion-vac-ap - Días pendientes de planificar para vac y AP.
+     * E64 - Días pendientes de planificar para vac y AP.
      * Accesible por ADMIN y ENCARGADO.
      * @param empleadoId id del empleado
      * @param anio       año a consultar
@@ -106,7 +106,7 @@ interface AusenciaApiService {
     ): Response<PlanificacionVacApResponse>
 
     /**
-     * E-ausencias - Informe HTML de ausencias del empleado autenticado.
+     * E61 - Informe HTML de ausencias del empleado autenticado.
      * Combina planificacion_ausencias y fichajes tipo ausencia.
      * Por defecto muestra el año en curso completo.
      * @param desde  fecha inicio "yyyy-MM-dd" (opcional)
@@ -122,7 +122,7 @@ interface AusenciaApiService {
     ): Response<ResponseBody>
 
     /**
-     * E-ausencias-id - Informe HTML de ausencias de un empleado por id.
+     * E62 - Informe HTML de ausencias de un empleado por id.
      * Accesible por ADMIN y ENCARGADO.
      */
     @Streaming

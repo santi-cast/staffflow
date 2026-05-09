@@ -390,7 +390,7 @@ public class AusenciaService {
     }
 
     // ------------------------------------------------------------------
-    // E-planificacion-vac-ap — GET /api/v1/ausencias/planificacion-vac-ap
+    // E64 — GET /api/v1/ausencias/planificacion-vac-ap
     // Días pendientes de planificar para vacaciones y asuntos propios
     // ------------------------------------------------------------------
 

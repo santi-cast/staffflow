@@ -261,20 +261,6 @@
 
     </fragment>
 
-    <!-- P19-legacy Lista de fichajes (sin entrada en el drawer) -->
-    <fragment
-        android:id="@+id/fichajesFragment"
-        android:name="com.staffflow.android.ui.encargado.FichajesFragment"
-        android:label="Fichajes (legacy)"
-        tools:layout="@layout/fragment_fichajes">
-
-        <!-- P19 -> P20 Registro manual (fichaje o pausa) -->
-        <action
-            android:id="@+id/action_fichajes_to_form_fichaje"
-            app:destination="@id/formFichajeFragment" />
-
-    </fragment>
-
     <!-- P20 Registro manual de fichaje o pausa (formulario reutilizable) -->
     <fragment
         android:id="@+id/formFichajeFragment"
@@ -371,9 +357,9 @@
             android:id="@+id/action_detalle_to_saldo_individual"
             app:destination="@id/saldoFragment" />
 
-        <!-- P14 -> InformeFichajesEmpleado (WebView idéntico a P10) -->
+        <!-- P14 -> P21 InformeFichajesEmpleado (WebView, mismo patron que P10) -->
         <action
-            android:id="@+id/action_detalle_to_fichajes"
+            android:id="@+id/action_detalle_to_informe_fichajes"
             app:destination="@id/informeFichajesEmpleadoFragment" />
 
         <!-- P14 -> InformeAusenciasEmpleado (WebView idéntico a P11) -->

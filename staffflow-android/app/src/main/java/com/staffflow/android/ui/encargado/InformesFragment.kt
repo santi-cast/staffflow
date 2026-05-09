@@ -41,7 +41,7 @@ import java.util.Calendar
  * Tab 2 - Saldos / Vacaciones:
  *   Cambiar año -> HTML saldos auto-carga en WebView (E44).
  *   "Imprimir saldos"     -> E47 PDF -> Intent ACTION_VIEW.
- *   Seleccionar empleado + "Imprimir vacaciones" -> E53 PDF -> Intent ACTION_VIEW.
+ *   Seleccionar empleado + "Imprimir vacaciones" -> E57 PDF -> Intent ACTION_VIEW.
  */
 class InformesFragment : Fragment() {
 

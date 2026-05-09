@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  * Resumen de ausencias de todos los empleados activos (P23). Accesible para ENCARGADO y ADMIN.
  *
  * Patron WebView con navegacion semanal < / >.
- * Endpoint: E-ausencias-global GET /api/v1/informes/ausencias?desde=&hasta=
+ * Endpoint: E60 GET /api/v1/informes/ausencias?desde=&hasta=
  *
  * Intercepta URLs staffflow://ausencia/{id} generadas por InformeService para
  * navegar al formulario de edicion de ausencias (P24).

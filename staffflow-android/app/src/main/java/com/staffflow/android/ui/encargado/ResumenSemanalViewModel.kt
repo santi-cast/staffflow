@@ -18,7 +18,7 @@ import java.util.Locale
 /**
  * ViewModel del resumen semanal de todos los empleados activos (WebView).
  *
- * Endpoint: E-Semana GET /api/v1/informes/semana?desde=&hasta=
+ * Endpoint: E59 GET /api/v1/informes/semana?desde=&hasta=
  * Accesible por ADMIN y ENCARGADO. Destino del drawer en group_encargado.
  *
  * Rango por defecto: semana actual de lunes a domingo.

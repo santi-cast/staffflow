@@ -21,7 +21,7 @@ import java.util.Locale
 /**
  * ViewModel del resumen de ausencias globales (P23).
  *
- * Endpoint: E-ausencias-global GET /api/v1/informes/ausencias?desde=&hasta=
+ * Endpoint: E60 GET /api/v1/informes/ausencias?desde=&hasta=
  * Accesible por ADMIN y ENCARGADO.
  *
  * Rango por defecto: semana actual de lunes a domingo.

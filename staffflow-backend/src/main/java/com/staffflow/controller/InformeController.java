@@ -41,13 +41,13 @@ public class InformeController {
     private final InformeService informeService;
 
     // =========================================================================
-    // E-me — GET /api/v1/informes/me/horas
+    // E58 — GET /api/v1/informes/me/horas
     // Informe de horas del empleado autenticado en HTML
     // NOTA: declarado ANTES de /horas/{empleadoId} por convención /me primero.
     // =========================================================================
 
     /**
-     * Informe de horas del empleado autenticado en HTML (E-me).
+     * Informe de horas del empleado autenticado en HTML (E58).
      *
      * Devuelve el mismo HTML que E42 pero filtrado por el empleado del token.
      * Accesible por EMPLEADO y ENCARGADO. El service resuelve username → empleadoId.
@@ -142,12 +142,12 @@ public class InformeController {
     }
 
     // =========================================================================
-    // E-Semana — GET /api/v1/informes/semana
+    // E59 — GET /api/v1/informes/semana
     // Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados
     // =========================================================================
 
     /**
-     * Tabla HTML semanal de presencia de todos los empleados activos (E-Semana).
+     * Tabla HTML semanal de presencia de todos los empleados activos (E59).
      *
      * <p>Devuelve un HTML con una tabla empleado × dia (lunes–domingo) donde
      * cada celda muestra el fichaje, pausas y ausencias del dia. Los datos
@@ -208,12 +208,12 @@ public class InformeController {
     }
 
     // =========================================================================
-    // E-ausencias-global — GET /api/v1/informes/ausencias
+    // E60 — GET /api/v1/informes/ausencias
     // Resumen HTML de ausencias de todos los empleados activos en un rango
     // =========================================================================
 
     /**
-     * Resumen de ausencias globales de todos los empleados activos (E-ausencias-global).
+     * Resumen de ausencias globales de todos los empleados activos (E60).
      *
      * <p>Devuelve una tabla HTML empleado × día para el rango solicitado.
      * Muestra ausencias ejecutadas (fichajes tipo != NORMAL/DIA_LIBRE) y

@@ -23,7 +23,7 @@ import retrofit2.http.Streaming
  *       -> ResponseBody (PDF byte[] global)
  *   E47 GET /informes/pdf/saldos?anio=
  *       -> ResponseBody (PDF byte[] saldos anuales)
- *   E53 GET /informes/pdf/vacaciones?empleadoId=&anio=
+ *   E57 GET /informes/pdf/vacaciones?empleadoId=&anio=
  *       -> ResponseBody (PDF byte[] vacaciones de un empleado)
  *
  * Los endpoints PDF usan @Streaming para evitar cargar el binario completo
@@ -35,7 +35,7 @@ import retrofit2.http.Streaming
 interface InformeApiService {
 
     /**
-     * E-me - Informe de horas del empleado autenticado en HTML.
+     * E58 - Informe de horas del empleado autenticado en HTML.
      * Solo accesible con rol EMPLEADO. P10 (MisFichajesFragment) lo usa para
      * mostrar la vista de fichajes en WebView.
      */
@@ -107,7 +107,7 @@ interface InformeApiService {
     suspend fun getPdfSaldos(@Query("anio") anio: Int): Response<ResponseBody>
 
     /**
-     * E53 - PDF del informe de vacaciones de un empleado en un anno.
+     * E57 - PDF del informe de vacaciones de un empleado en un anno.
      */
     @Streaming
     @GET("informes/pdf/vacaciones")
@@ -117,7 +117,7 @@ interface InformeApiService {
     ): Response<ResponseBody>
 
     /**
-     * E-Semana - Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados.
+     * E59 - Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados.
      * ResumenSemanalFragment la carga en WebView con intercepciones staffflow://.
      */
     @GET("informes/semana")
@@ -127,7 +127,7 @@ interface InformeApiService {
     ): Response<ResponseBody>
 
     /**
-     * E-ausencias-global - Tabla HTML de ausencias de todos los empleados en un rango.
+     * E60 - Tabla HTML de ausencias de todos los empleados en un rango.
      * AusenciasFragment la carga en WebView con intercepciones staffflow://.
      */
     @GET("informes/ausencias")

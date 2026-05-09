@@ -116,7 +116,12 @@ public class AusenciaController {
      * @param authentication objeto de seguridad para extraer el username
      * @return 200 con HTML del informe de ausencias
      */
-    @Operation(summary = "Informe HTML de mis ausencias",
+    // ------------------------------------------------------------------
+    // E61 — GET /api/v1/ausencias/me/informe
+    // Informe HTML de ausencias del empleado autenticado
+    // ------------------------------------------------------------------
+
+    @Operation(summary = "Informe HTML de mis ausencias (E61)",
                description = "Genera el informe HTML de ausencias del empleado autenticado. Combina planificadas y ejecutadas.")
     @GetMapping("/me/informe")
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
@@ -141,13 +146,13 @@ public class AusenciaController {
     }
 
     // ------------------------------------------------------------------
-    // E-ausencias-id — GET /api/v1/ausencias/{empleadoId}/informe
+    // E62 — GET /api/v1/ausencias/{empleadoId}/informe
     // Informe HTML de ausencias de un empleado por id (ADMIN/ENCARGADO)
     // ------------------------------------------------------------------
 
     /**
-     * Devuelve el informe HTML de ausencias de un empleado concreto.
-     * Misma lógica que /me/informe pero accesible por ADMIN y ENCARGADO.
+     * Devuelve el informe HTML de ausencias de un empleado concreto (E62).
+     * Misma lógica que E61 pero accesible por ADMIN y ENCARGADO.
      *
      * @param empleadoId id del empleado
      * @param desde  fecha de inicio (defecto: 1 enero del año actual)
@@ -178,12 +183,48 @@ public class AusenciaController {
     }
 
     // ------------------------------------------------------------------
+    // E63 — POST /api/v1/ausencias/rango
+    // RF-25b: planificar varias ausencias consecutivas en una sola llamada
+    // ------------------------------------------------------------------
+
+    /**
+     * Planifica una ausencia para cada día del rango [fechaDesde, fechaHasta] (E63).
+     *
+     * Si hay conflictos (algún día ya tiene ausencia) y sobrescribir=false,
+     * devuelve 409 con la lista de fechasConflictivas en el cuerpo. Si
+     * sobrescribir=true, elimina los conflictos antes de crear el rango.
+     *
+     * Códigos HTTP:
+     *   201 Created → todas las ausencias del rango creadas
+     *   400         → datos inválidos (@Valid)
+     *   403         → rol insuficiente
+     *   409         → conflicto con ausencias existentes (con fechasConflictivas)
+     *
+     * @param request        datos del rango (empleadoId, fechaDesde, fechaHasta, tipo, sobrescribir)
+     * @param authentication objeto de seguridad para auditoría
+     * @return 201 con List<AusenciaResponse> de las ausencias creadas
+     */
+    @Operation(summary = "Planificar rango de ausencias (E63)",
+               description = "Crea una ausencia por cada día del rango [fechaDesde, fechaHasta]. " +
+                             "Si hay conflictos y sobrescribir=false devuelve 409 con fechasConflictivas.")
+    @PostMapping("/rango")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<List<AusenciaResponse>> crearRango(
+            @Valid @RequestBody AusenciaRangoRequest request,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+        List<AusenciaResponse> creadas = ausenciaService.crearRango(request, username);
+        return ResponseEntity.status(HttpStatus.CREATED).body(creadas);
+    }
+
+    // ------------------------------------------------------------------
     // E30 — POST /api/v1/ausencias
     // RF-25: ausencia individual | RF-26: festivo global (empleadoId null)
     // ------------------------------------------------------------------
 
     /**
-     * Planifica una ausencia futura para un empleado (RF-25, RF-26).
+     * Planifica una ausencia futura para un empleado (E30, RF-25, RF-26).
      *
      * Si empleadoId es null en el body, crea un festivo global que
      * ProcesoDiario aplicará a todos los empleados activos ese día (RF-26).
@@ -199,21 +240,7 @@ public class AusenciaController {
      * @param authentication objeto de seguridad para auditoría
      * @return 201 con AusenciaResponse de la ausencia creada
      */
-    @Operation(summary = "Planificar rango de ausencias",
-               description = "Crea una ausencia por cada día del rango [fechaDesde, fechaHasta]. " +
-                             "Si hay conflictos y sobrescribir=false devuelve 409 con fechasConflictivas.")
-    @PostMapping("/rango")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
-    public ResponseEntity<List<AusenciaResponse>> crearRango(
-            @Valid @RequestBody AusenciaRangoRequest request,
-            Authentication authentication) {
-
-        String username = authentication.getName();
-        List<AusenciaResponse> creadas = ausenciaService.crearRango(request, username);
-        return ResponseEntity.status(HttpStatus.CREATED).body(creadas);
-    }
-
-    @Operation(summary = "Planificar ausencia",
+    @Operation(summary = "Planificar ausencia (E30)",
                description = "Crea una ausencia planificada. Si empleadoId es null, crea un festivo global (RF-26).")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
@@ -263,14 +290,14 @@ public class AusenciaController {
     }
 
     // ------------------------------------------------------------------
-    // E-planificacion-vac-ap — GET /api/v1/ausencias/planificacion-vac-ap
+    // E64 — GET /api/v1/ausencias/planificacion-vac-ap
     // Días pendientes de planificar para vacaciones y asuntos propios
     // NOTA: declarado ANTES de /{id} para evitar conflicto de ruta
     // ------------------------------------------------------------------
 
     /**
      * Devuelve los días pendientes de planificar para vacaciones y asuntos
-     * propios de un empleado en un año concreto.
+     * propios de un empleado en un año concreto (E64).
      *
      * Si no existe SaldoAnual para ese año, lo crea on-demand con el derecho
      * del empleado. El flag anioFuturoSinCierre=true indica que los pendientes

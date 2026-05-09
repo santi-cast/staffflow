@@ -175,7 +175,7 @@ public class InformeService {
      * @return informe de horas del empleado en el formato solicitado
      */
     /**
-     * Informe de horas del empleado autenticado (E-me).
+     * Informe de horas del empleado autenticado (E58).
      *
      * Resuelve username → usuario → empleado y delega en informeHorasEmpleado()
      * con formato=html fijo. Mismo patrón D-017 que FichajeService.listarPropios().
@@ -1597,7 +1597,7 @@ public class InformeService {
     }
 
     // =========================================================================
-    // E-ausencias-global — GET /api/v1/informes/ausencias
+    // E60 — GET /api/v1/informes/ausencias
     // Resumen de ausencias globales de todos los empleados activos
     // =========================================================================
 

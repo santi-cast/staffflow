@@ -40,7 +40,7 @@ import java.time.format.DateTimeFormatter
  * Recibe empleadoId como argumento de navegacion (Long).
  * Boton Editar en toolbar: visible solo para ADMIN -> P15 (FormEmpleadoFragment).
  * Chip "Ver saldo"    -> P26 (action_detalle_to_saldo_individual).
- * Chip "Ver fichajes" -> P19 (action_detalle_to_fichajes).
+ * Chip "Ver fichajes" -> P21 InformeFichajesEmpleado (action_detalle_to_informe_fichajes).
  */
 class DetalleEmpleadoFragment : Fragment() {
 
@@ -117,7 +117,7 @@ class DetalleEmpleadoFragment : Fragment() {
             val args = Bundle().apply {
                 putLong("empleadoId", arguments?.getLong("empleadoId") ?: -1L)
             }
-            findNavController().navigate(R.id.action_detalle_to_fichajes, args)
+            findNavController().navigate(R.id.action_detalle_to_informe_fichajes, args)
         }
         binding.chipVerAusencias.setOnClickListener {
             val args = Bundle().apply {

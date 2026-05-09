@@ -38,7 +38,7 @@ class AusenciaRepository(private val api: AusenciaApiService) {
         safeApiCall { api.crearAusencia(request) }
 
     /**
-     * E-rango - Crea ausencias planificadas en un rango de fechas.
+     * E63 - Crea ausencias planificadas en un rango de fechas.
      * Devuelve RangoConflictException si el backend responde 409.
      */
     suspend fun crearAusenciaRango(request: AusenciaRangoRequest): Result<List<AusenciaResponse>> {
@@ -118,7 +118,7 @@ class AusenciaRepository(private val api: AusenciaApiService) {
         safeApiCall { api.getMisAusencias(desde, hasta) }
 
     /**
-     * E-ausencias - Informe HTML de ausencias del empleado autenticado.
+     * E61 - Informe HTML de ausencias del empleado autenticado.
      * P11 (MisAusenciasFragment) WebView — combina planificadas y ejecutadas.
      */
     suspend fun getMisAusenciasInforme(
@@ -129,7 +129,7 @@ class AusenciaRepository(private val api: AusenciaApiService) {
         safeApiCall { api.getMisAusenciasInforme(desde, hasta, filtro) }
 
     /**
-     * E-planificacion-vac-ap - Días pendientes de planificar para vac y AP.
+     * E64 - Días pendientes de planificar para vac y AP.
      * Accesible por ADMIN y ENCARGADO. Usado en P24 modo rango.
      */
     suspend fun getPlanificacionVacAp(
@@ -139,7 +139,7 @@ class AusenciaRepository(private val api: AusenciaApiService) {
         safeApiCall { api.getPlanificacionVacAp(empleadoId, anio) }
 
     /**
-     * E-ausencias-id - Informe HTML de ausencias de un empleado por id.
+     * E62 - Informe HTML de ausencias de un empleado por id.
      * Accesible por ADMIN y ENCARGADO. Desde P14 chip "Ver ausencias".
      */
     suspend fun getInformeAusenciasEmpleado(

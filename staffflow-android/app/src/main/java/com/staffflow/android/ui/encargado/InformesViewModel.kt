@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
  *
  * Flujo:
  *   - HTML auto-carga (E42/E43/E44) al seleccionar empleado, fechas o año -> HtmlVistaListo.
- *   - Botones "Imprimir" piden el PDF (E45/E46/E47/E53) -> PdfListo -> Intent ACTION_VIEW.
+ *   - Botones "Imprimir" piden el PDF (E45/E46/E47/E57) -> PdfListo -> Intent ACTION_VIEW.
  *
  * UiState:
  *   Idle           -> pantalla en reposo
@@ -129,7 +129,7 @@ class InformesViewModel(application: Application) : AndroidViewModel(application
         descargarPdf(nombre) { repository.getPdfSaldos(anio) }
     }
 
-    /** E53 — PDF vacaciones de un empleado. */
+    /** E57 — PDF vacaciones de un empleado. */
     fun descargarPdfVacaciones(empleadoId: Long, anio: Int) {
         val nombre = "informe_vacaciones_${empleadoId}_$anio.pdf"
         descargarPdf(nombre) { repository.getPdfVacaciones(empleadoId, anio) }

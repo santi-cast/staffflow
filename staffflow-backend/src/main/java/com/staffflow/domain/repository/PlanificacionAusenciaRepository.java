@@ -177,7 +177,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
     List<PlanificacionAusencia> findByFechaAndProcesadoFalse(@Param("fecha") LocalDate fecha);
 
     // ------------------------------------------------------------------
-    // E-planificacion-vac-ap — conteo de planificadas por tipo y rango
+    // E64 — conteo de planificadas por tipo y rango
     // ------------------------------------------------------------------
 
     /**

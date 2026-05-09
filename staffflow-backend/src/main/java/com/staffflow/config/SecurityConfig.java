@@ -152,7 +152,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/password/recovery").permitAll()
                 // E05: restablecer contrasena con token
                 .requestMatchers("/api/v1/auth/password/reset").permitAll()
-                // E52: health check (creado en Fase 0, fuera de /api/v1)
+                // E56: health check (creado en Fase 0, fuera de /api/v1)
                 .requestMatchers("/api/health").permitAll()
                 // H2 Console: accesible en perfil dev sin autenticacion
                 .requestMatchers("/h2-console/**").permitAll()
@@ -184,7 +184,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/presencia/parte-diario/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E55: pausas propias
                 .requestMatchers("/api/v1/pausas/me").hasAnyRole("EMPLEADO", "ENCARGADO")
-                // E-me: informe de horas propio
+                // E58: informe de horas propio
                 .requestMatchers("/api/v1/informes/me/**").hasAnyRole("EMPLEADO", "ENCARGADO")
 
                 // --- ADMIN o ENCARGADO ---

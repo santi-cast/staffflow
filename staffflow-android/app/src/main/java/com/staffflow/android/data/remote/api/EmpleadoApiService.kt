@@ -68,20 +68,6 @@ interface EmpleadoApiService {
     ): Response<EmpleadoResponse>
 
     /**
-     * E17 - Da de baja logica a un empleado (activo = false).
-     * Error 404 si no existe | 409 si ya esta dado de baja.
-     */
-    @PATCH("empleados/{id}/baja")
-    suspend fun darDeBaja(@Path("id") id: Long): Response<MensajeResponse>
-
-    /**
-     * E18 - Reactiva un empleado dado de baja (activo = true).
-     * Error 404 si no existe | 409 si ya esta activo.
-     */
-    @PATCH("empleados/{id}/reactivar")
-    suspend fun reactivar(@Path("id") id: Long): Response<MensajeResponse>
-
-    /**
      * E21 - Devuelve el perfil del empleado autenticado.
      * Solo accesible con rol EMPLEADO. HTTP 403 para ADMIN y ENCARGADO.
      */

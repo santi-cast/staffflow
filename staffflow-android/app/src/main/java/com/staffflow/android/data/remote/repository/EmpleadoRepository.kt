@@ -56,20 +56,6 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
         safeApiCall { api.actualizarEmpleado(id, request) }
 
     /**
-     * E17 - Da de baja logica a un empleado.
-     * P14 (DetalleEmpleadoFragment) expone esta accion al ADMIN.
-     */
-    suspend fun darDeBaja(id: Long): Result<MensajeResponse> =
-        safeApiCall { api.darDeBaja(id) }
-
-    /**
-     * E18 - Reactiva un empleado dado de baja.
-     * P14 (DetalleEmpleadoFragment) expone esta accion al ADMIN.
-     */
-    suspend fun reactivar(id: Long): Result<MensajeResponse> =
-        safeApiCall { api.reactivar(id) }
-
-    /**
      * E21 - Devuelve el perfil del empleado autenticado.
      * P08 (MiPerfilFragment, Bloque 5) llama a este metodo.
      */

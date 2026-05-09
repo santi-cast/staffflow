@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * Resumen semanal de todos los empleados activos (P19 rediseñado).
  *
  * Patron WebView con navegacion semanal < / >.
- * Endpoint: E-Semana GET /api/v1/informes/semana?desde=&hasta=
+ * Endpoint: E59 GET /api/v1/informes/semana?desde=&hasta=
  *
  * Intercepta URLs staffflow:// generadas por InformeService para
  * navegar a los formularios de edicion:

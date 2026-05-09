@@ -69,18 +69,4 @@ interface FichajeApiService {
     suspend fun listarIncompletos(
         @Query("fecha") fecha: String? = null
     ): Response<List<FichajeResponse>>
-
-    /**
-     * E26 - Devuelve los fichajes del empleado autenticado.
-     * Solo accesible con rol EMPLEADO.
-     * @param desde Fecha inicio "yyyy-MM-dd"
-     * @param hasta Fecha fin "yyyy-MM-dd"
-     * @param tipo  Valor del enum TipoFichaje
-     */
-    @GET("fichajes/me")
-    suspend fun getMisFichajes(
-        @Query("desde") desde: String? = null,
-        @Query("hasta") hasta: String? = null,
-        @Query("tipo") tipo: String? = null
-    ): Response<List<FichajeResponse>>
 }
