@@ -60,9 +60,20 @@ class SessionManager private constructor(context: Context) {
         dataStore.edit { prefs -> prefs[Keys.BASE_URL] = baseUrl }
     }
 
-    /** Elimina todos los datos de sesion. Llamar al cerrar sesion o en 401. */
+    /**
+     * Elimina los datos de sesion del usuario (token, rol, username, empleadoId, nombre).
+     * NO borra la BASE_URL configurada para el dispositivo, que es configuracion persistente
+     * y no parte de la sesion (ver Decision auto-detect IP). Llamar al cerrar sesion o en 401.
+     */
     suspend fun clear() {
-        dataStore.edit { it.clear() }
+        dataStore.edit { prefs ->
+            prefs.remove(Keys.TOKEN)
+            prefs.remove(Keys.ROL)
+            prefs.remove(Keys.USERNAME)
+            prefs.remove(Keys.EMPLEADO_ID)
+            prefs.remove(Keys.NOMBRE)
+            // Keys.BASE_URL se preserva intencionadamente.
+        }
     }
 
     // ------------------------------------------------------------------

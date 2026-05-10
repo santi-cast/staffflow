@@ -2,8 +2,11 @@ package com.staffflow.android.data.remote.api
 
 import com.staffflow.android.data.local.AuthEvent
 import com.staffflow.android.data.local.AuthEventBus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -109,5 +112,44 @@ object NetworkModule {
             .removePrefix("http://")
             .substringBefore(":")
         retrofit = buildRetrofit(baseUrl)
+    }
+
+    // ------------------------------------------------------------------
+    // Auto-deteccion de IP del backend (sondeo /api/health)
+    // ------------------------------------------------------------------
+
+    /**
+     * Cliente HTTP dedicado al sondeo de descubrimiento de IP.
+     * Timeout corto (1500 ms) para no colgar la UX si el host no responde.
+     * NO compartir con el cliente principal (que tiene 30 s justificados
+     * para latencias de red real).
+     */
+    private val probeClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(1500, TimeUnit.MILLISECONDS)
+            .readTimeout(1500, TimeUnit.MILLISECONDS)
+            .writeTimeout(1500, TimeUnit.MILLISECONDS)
+            .build()
+    }
+
+    /**
+     * Sondea GET http://{host}:8080/api/health para descubrir si el backend
+     * esta accesible en ese host. Devuelve true si la respuesta es 2xx.
+     *
+     * El endpoint /api/health (E56) es publico (sin auth), por lo que no
+     * requiere token JWT. Pensado para ejecutarse en el primer arranque
+     * de la app cuando no hay BASE_URL guardada en DataStore.
+     *
+     * @param host host a sondear sin esquema ni puerto (ej: "10.0.2.2", "127.0.0.1")
+     * @return true si /api/health responde 2xx, false si falla, da timeout o devuelve error
+     */
+    suspend fun probeHealth(host: String): Boolean = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("http://$host:8080/api/health")
+            .get()
+            .build()
+        runCatching {
+            probeClient.newCall(request).execute().use { it.isSuccessful }
+        }.getOrElse { false }
     }
 }

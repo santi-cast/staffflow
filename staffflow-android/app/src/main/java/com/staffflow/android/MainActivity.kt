@@ -280,6 +280,15 @@ class MainActivity : AppCompatActivity() {
      * Si existe, configura el Drawer y navega al destino inicial por rol
      * sin pasar por el login (Decision 24-C).
      *
+     * Para la URL base del backend:
+     *   1. Si hay BASE_URL en DataStore (configurada previamente) -> usarla directamente.
+     *   2. Si NO hay BASE_URL guardada -> sondear /api/health en orden:
+     *        a. http://10.0.2.2:8080  (emulador Android Studio)
+     *        b. http://127.0.0.1:8080  (demo standalone: backend en la misma tablet)
+     *      Si alguno responde 2xx, persistir esa baseUrl e inicializar NetworkModule.
+     *      Si ninguno responde, no se hace nada: LoginViewModel detectara el fallo
+     *      en el primer login y mostrara el dialogo manual de "configurar IP".
+     *
      * Nota: el terminal (P01) es SIEMPRE la pantalla de inicio, independientemente
      * de si hay sesion activa. La sesion se carga en memoria para que el
      * AuthInterceptor la use y para que LoginFragment pueda saltar el formulario
@@ -288,13 +297,42 @@ class MainActivity : AppCompatActivity() {
     private fun checkExistingSession() {
         lifecycleScope.launch {
             val baseUrl = sessionManager.getBaseUrl()
-            if (baseUrl != null) NetworkModule.init(baseUrl)
+            if (baseUrl != null) {
+                NetworkModule.init(baseUrl)
+            } else {
+                autoDetectBackendBaseUrl()
+            }
             val token = sessionManager.getToken()
             if (token != null) {
                 NetworkModule.authToken = token
                 refreshDrawerMenu()
             }
         }
+    }
+
+    /**
+     * Sondeo de descubrimiento de IP en el primer arranque.
+     *
+     * Orden 10.0.2.2 -> 127.0.0.1 elegido conscientemente: el emulador es el
+     * caso mas frecuente en desarrollo y evaluacion del TFG. Si falla, se prueba
+     * el loopback (demo standalone con backend en Termux en la misma tablet).
+     *
+     * Tiempo peor caso: ~3 s (2 timeouts de 1.5 s). Solo ocurre una vez en la
+     * vida del dispositivo: tras el primer sondeo exitoso la baseUrl queda
+     * persistida en DataStore y los arranques posteriores la leen directamente.
+     */
+    private suspend fun autoDetectBackendBaseUrl() {
+        val candidates = listOf("10.0.2.2", "127.0.0.1")
+        for (host in candidates) {
+            if (NetworkModule.probeHealth(host)) {
+                val baseUrl = "http://$host:8080/api/v1/"
+                sessionManager.saveBaseUrl(baseUrl)
+                NetworkModule.init(baseUrl)
+                return
+            }
+        }
+        // Ningun host respondio: se mantiene la baseUrl por defecto del NetworkModule.
+        // El primer login fallara y LoginViewModel mostrara el dialogo manual de IP.
     }
 
     /**
