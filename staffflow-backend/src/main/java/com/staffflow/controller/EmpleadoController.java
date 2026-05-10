@@ -5,6 +5,7 @@ import com.staffflow.dto.request.EmpleadoRequest;
 import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.MensajeResponse;
 import com.staffflow.dto.response.ParteDiarioResponse;
+import com.staffflow.dto.response.RegenerarPinResponse;
 import com.staffflow.service.EmpleadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -159,7 +160,7 @@ public class EmpleadoController {
      *   400 Bad Request → datos inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → PIN, DNI o número de empleado duplicados
+     *   409 Conflict    → NFC o DNI duplicados
      *
      * @param id      ID del empleado (path variable)
      * @param request body JSON con los campos a actualizar (todos opcionales)
@@ -301,5 +302,37 @@ public class EmpleadoController {
         // Compatible con UserDetailsServiceImpl que no implementa getId() (Opción B, D-017).
         String username = authentication.getName();
         return ResponseEntity.ok(empleadoService.obtenerMiPerfil(username));
+    }
+
+    // ----------------------------------------------------------------
+    // E65 — POST /api/v1/empleados/{id}/regenerar-pin
+    // Regenerar PIN de terminal del empleado
+    // ----------------------------------------------------------------
+
+    /**
+     * Regenera el PIN de terminal de un empleado y lo devuelve UNA sola vez.
+     *
+     * El servidor genera un nuevo PIN de 4 dígitos único mediante
+     * {@code generarPinUnico()}, lo persiste en BD y lo devuelve en la respuesta.
+     * Una vez entregado, el PIN no puede volver a consultarse por API (D-018):
+     * el ADMIN o ENCARGADO debe entregarlo al empleado en persona.
+     *
+     * La modificación del PIN de terminal se realiza EXCLUSIVAMENTE por este
+     * endpoint (E65). El endpoint E16 (PATCH /{id}) ya NO acepta ni procesa
+     * el campo {@code pinTerminal}.
+     *
+     * Códigos HTTP producidos:
+     *   200 OK           → PIN regenerado y devuelto correctamente
+     *   401 Unauthorized → token JWT ausente o inválido
+     *   403 Forbidden    → rol insuficiente (requiere ADMIN o ENCARGADO)
+     *   404 Not Found    → empleado con el id indicado no existe
+     *
+     * @param id ID del empleado cuyo PIN se va a regenerar (path variable)
+     * @return 200 OK con {@link RegenerarPinResponse} que contiene empleadoId y pinTerminal
+     */
+    @PostMapping("/{id}/regenerar-pin")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    public ResponseEntity<RegenerarPinResponse> regenerarPin(@PathVariable Long id) {
+        return ResponseEntity.ok(empleadoService.regenerarPin(id));
     }
 }

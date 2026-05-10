@@ -10,6 +10,7 @@ import com.staffflow.dto.request.EmpleadoRequest;
 import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.MensajeResponse;
 import com.staffflow.dto.response.ParteDiarioResponse;
+import com.staffflow.dto.response.RegenerarPinResponse;
 import com.staffflow.exception.ConflictException;
 import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -276,7 +277,7 @@ public class EmpleadoService {
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → PIN o NFC duplicados en otro empleado
+     *   409 Conflict    → NFC duplicado en otro empleado
      *
      * @param id      ID del empleado a actualizar
      * @param request campos a actualizar (todos opcionales)
@@ -314,13 +315,6 @@ public class EmpleadoService {
         }
         if (request.getDiasAsuntosPropiosAnuales() != null) {
             empleado.setDiasAsuntosPropiosAnuales(request.getDiasAsuntosPropiosAnuales());
-        }
-        if (request.getPinTerminal() != null) {
-            if (empleadoRepository.existsByPinTerminalAndIdNot(request.getPinTerminal(), id)) {
-                throw new ConflictException(
-                        "El PIN de terminal '" + request.getPinTerminal() + "' ya está registrado");
-            }
-            empleado.setPinTerminal(request.getPinTerminal());
         }
         if (request.getCodigoNfc() != null) {
             if (empleadoRepository.existsByCodigoNfcAndIdNot(request.getCodigoNfc(), id)) {
@@ -486,6 +480,42 @@ public class EmpleadoService {
 
         // PIN nunca se devuelve en /me
         return toEmpleadoResponse(empleado);
+    }
+
+    // ----------------------------------------------------------------
+    // E65 — POST /api/v1/empleados/{id}/regenerar-pin
+    // Regenerar PIN de terminal del empleado
+    // ----------------------------------------------------------------
+
+    /**
+     * Regenera el PIN de terminal de un empleado y lo devuelve UNA sola vez.
+     *
+     * El nuevo PIN se genera mediante {@code generarPinUnico()}, garantizando
+     * unicidad entre todos los empleados del sistema (RNF-R03). Una vez
+     * devuelto en la respuesta, el PIN no se puede volver a consultar por API
+     * (decisión D-018). El ADMIN o ENCARGADO debe entregarlo al empleado en persona.
+     *
+     * Códigos HTTP producidos:
+     *   200 OK        → PIN regenerado y devuelto correctamente
+     *   401 Unauthorized → token JWT ausente o inválido
+     *   403 Forbidden → rol insuficiente (requiere ADMIN o ENCARGADO)
+     *   404 Not Found → empleado con el id indicado no existe
+     *
+     * @param id ID del empleado cuyo PIN se va a regenerar
+     * @return RegenerarPinResponse con el ID del empleado y el nuevo PIN de 4 dígitos
+     * @throws NotFoundException si no existe ningún empleado con el id indicado
+     */
+    @Transactional
+    public RegenerarPinResponse regenerarPin(Long id) {
+        Empleado empleado = empleadoRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Empleado con id " + id + " no encontrado"));
+
+        String nuevoPin = generarPinUnico();
+        empleado.setPinTerminal(nuevoPin);
+        empleadoRepository.save(empleado);
+
+        return new RegenerarPinResponse(empleado.getId(), nuevoPin);
     }
 
     // ----------------------------------------------------------------

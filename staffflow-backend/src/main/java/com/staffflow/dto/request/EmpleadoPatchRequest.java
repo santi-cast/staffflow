@@ -43,12 +43,6 @@ public class EmpleadoPatchRequest {
     @Min(0)
     private Integer diasAsuntosPropiosAnuales;
 
-    // Exactamente 4 dígitos numéricos. Único por empleado (decisión nº21).
-    // No se devuelve en ningún DTO response por seguridad.
-    @Size(min = 4, max = 4)
-    @Pattern(regexp = "\\d{4}")
-    private String pinTerminal;
-
     // Alternativa al PIN para fichaje por NFC (RF-48). Opcional.
     @Size(max = 100)
     private String codigoNfc;
