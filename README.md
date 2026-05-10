@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 64 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -145,14 +145,14 @@ La API se ha definido con enfoque **design‑first**: todos los endpoints están
 
 La especificación incluye:
 
-- **64 endpoints** en **13 grupos funcionales**
+- **65 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN → bloqueo 30 s + HTTP 423
 
 ### Catálogo de endpoints
 
-Los 64 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
+Los 65 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
 
 Convenciones de la tabla:
 
@@ -194,11 +194,12 @@ Convenciones de la tabla:
 | E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P29 |
 | E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle completo de un empleado | P14, P15 |
-| E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado | P15 |
+| E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado (PIN de terminal NO se modifica aquí — usar E65) | P15 |
 | E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
 | E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja | — |
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
+| E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve UNA sola vez | P15, P29 |
 | E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
 
 #### Fichajes (`/api/v1/fichajes`)
