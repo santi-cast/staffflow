@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 54 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 61 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -22,7 +22,7 @@ El sistema permite a una empresa gestionar el registro horario de sus empleados 
 - Registro y gestión de pausas durante la jornada
 - Planificación de ausencias (vacaciones, permisos, festivos nacionales y locales)
 - Cálculo automático de saldos de horas y días disponibles
-- Parte diario de presencia con 5 estados posibles por empleado
+- Parte diario de presencia con 6 estados posibles por empleado
 - Generación de informes operativos y PDFs firmables
 
 La arquitectura separa completamente **backend y cliente**, permitiendo que múltiples aplicaciones consuman la misma API REST.
@@ -38,7 +38,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Planificación de ausencias individuales y festivos globales
 - Proceso diario automático que convierte ausencias planificadas en fichajes
 - Cálculo de saldo anual: vacaciones, asuntos propios y saldo de horas
-- Parte diario de presencia (Fichado · En pausa · Ausencia registrada · Ausencia planificada · Sin justificar)
+- Parte diario de presencia (Jornada iniciada · En pausa · Jornada completada · Ausencia registrada · Ausencia planificada · Sin justificar)
 - Informes operativos de horas trabajadas y ausencias en JSON y HTML imprimible
 - Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E57)
 - Informes HTML interactivos para WebView Android: horas individuales (E58), tabla semanal global (E59), ausencias globales (E60), informes individuales por empleado (E61, E62) y planificación de vacaciones/asuntos propios (E64)
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (54 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
+- JUnit 5 + Mockito (61 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura) + 1 smoke test (@SpringBootTest)
 
 ### Cliente Android
 
@@ -148,7 +148,7 @@ La especificación incluye:
 - **65 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
-- Bloqueo por fuerza bruta: 5 intentos fallidos de PIN → bloqueo 30 s + HTTP 423
+- Bloqueo por fuerza bruta: 5 intentos fallidos de PIN desde el mismo dispositivoId → HTTP 423. El bloqueo persiste hasta que un ADMIN/ENCARGADO desbloquea el terminal vía E54 (DELETE /api/v1/terminal/bloqueo), un PIN exitoso reinicia el contador o el servidor se reinicia (contador in-memory).
 
 ### Catálogo de endpoints
 
@@ -168,7 +168,7 @@ Convenciones de la tabla:
 | E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual | — |
 | E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado | P04 |
 | E04 | POST /password/recovery | público | Solicita recuperación: genera contraseña temporal y la envía por email | P03 |
-| E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email | P05 |
+| E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email. Implementado como contrato preparado; en v1.0 el flujo activo es contraseña temporal vía E04 (E05 responde siempre "token inválido" porque ningún endpoint popula `resetToken` en producción — populado pendiente para v2.0) | P05 |
 
 #### Empresa (`/api/v1/empresa`)
 
@@ -239,7 +239,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 5 estados por empleado | P17 |
+| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado | P17 |
 | E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha | P18 |
 | E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del propio empleado en una fecha | P12 |
 
@@ -350,7 +350,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (65 endpoints, JWT, iText 7) | ✅ Completada — 65/65 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 54 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 61 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
