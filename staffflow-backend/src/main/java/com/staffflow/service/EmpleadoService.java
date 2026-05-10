@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  *     D-017 y D-018 documentan el cambio de diseño.
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
- *   - HTTP 409 preventivo para DNI, numero_empleado, PIN o NFC duplicados
+   *   - HTTP 409 preventivo para DNI, numero_empleado o NFC duplicados
  *     antes de que explote la BD con DataIntegrityViolationException.
  *   - Baja lógica (decisión nº4): activo=false, nunca SQL DELETE.
  *     El historial de fichajes, pausas y saldos queda intacto.

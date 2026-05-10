@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Controller REST para la gestión del perfil laboral de los empleados.
  *
- * Cubre los endpoints E13-E21 del Grupo 4 (Gestión de Empleados).
+ * Cubre los endpoints E13-E21 y E65 del Grupo 4 (Gestión de Empleados).
  * Ruta base: /api/v1/empleados
  *
  * Control de acceso:
@@ -30,16 +30,17 @@ import java.util.List;
  *   - E21 (/me): EMPLEADO y ENCARGADO (ambos son personas físicas
  *     trabajadoras con perfil de empleado). ADMIN recibe HTTP 403
  *     porque no tiene perfil de empleado asociado.
+ *   - E65 (/{id}/regenerar-pin): ADMIN y ENCARGADO. Genera un PIN
+ *     nuevo de 4 dígitos para el terminal físico. El PIN nunca se
+ *     expone en otros endpoints (decisión nº21, D-018).
  *
  * El controller extrae del JWT (objeto Authentication de Spring Security)
- * dos piezas de información que necesita el service:
- *   - El rol del usuario autenticado: para filtrar pinTerminal en E15.
- *   - El usuarioId del usuario autenticado: para identificar al empleado en E21.
+ * el usuarioId del usuario autenticado para identificar al empleado en E21.
  *
  * Responsabilidad única (SRP, decisión D del documento de endpoints):
  *   - Recibe la petición HTTP y extrae parámetros.
  *   - Valida el body con @Valid (Bean Validation — HTTP 400 automático).
- *   - Extrae rol y usuarioId del JWT cuando el service los necesita.
+ *   - Extrae usuarioId del JWT cuando el service lo necesita.
  *   - Delega toda la lógica en EmpleadoService.
  *   - Devuelve la respuesta con el código HTTP correcto.
  *   - Sin lógica de negocio en ningún método (RNF-M01).

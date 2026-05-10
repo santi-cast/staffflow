@@ -348,7 +348,7 @@ staffflow/
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (64 endpoints, JWT, iText 7) | ✅ Completada — 64/64 endpoints operativos |
+| Fase 2 | Desarrollo del backend (65 endpoints, JWT, iText 7) | ✅ Completada — 65/65 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
 | Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
