@@ -65,11 +65,24 @@ class MainActivity : AppCompatActivity() {
     private val topLevelDestinations = setOf(
         R.id.terminalFragment,
         R.id.loginFragment,
+        // Empleado
         R.id.miHoyFragment,
+        R.id.misFichajesFragment,
+        R.id.misAusenciasFragment,
         R.id.miSaldoFragment,
+        R.id.miPerfilFragment,
+        // Encargado
         R.id.parteDiarioFragment,
         R.id.empleadosFragment,
-        R.id.usuariosFragment
+        R.id.resumenSemanalFragment,
+        R.id.ausenciasFragment,
+        R.id.saldosGlobalesFragment,
+        R.id.informesFragment,
+        // Admin
+        R.id.usuariosFragment,
+        R.id.empresaFragment,
+        // Ajustes (todos los roles)
+        R.id.cambiarPasswordFragment
     )
 
     /**
