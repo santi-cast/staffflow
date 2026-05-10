@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 52 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 54 tests unitarios + 1 test de arquitectura (JUnit 5 + Mockito + ArchUnit) y smoke test de los endpoints operativos contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (52 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
+- JUnit 5 + Mockito (54 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura)
 
 ### Cliente Android
 
@@ -350,7 +350,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (65 endpoints, JWT, iText 7) | ✅ Completada — 65/65 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 52 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 54 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + smoke test de endpoints + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
@@ -420,6 +420,10 @@ Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
 
 Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P26, P27) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
 
+### 7. Auto-detección de la URL del backend en Android
+
+En el primer arranque la app sondea una lista de hosts candidatos hasta encontrar el backend activo, eliminando la necesidad de configurar manualmente la URL. La dirección detectada se persiste en `DataStore` y sobrevive a los cierres de sesión (`SessionManager.clear()` la preserva intencionalmente). Si la detección automática falla, el usuario puede introducir la URL manualmente desde la pantalla de configuración de la app.
+
 ---
 
 ## Endurecimiento de seguridad y robustez
@@ -433,6 +437,8 @@ Sobre la base funcional se aplicó una capa adicional de hardening centrada en s
 - **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize`) y `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
 
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
+
+El endpoint E65 (`POST /empleados/{id}/regenerar-pin`) fue especificado e implementado siguiendo el mismo flujo SDD. Su trazabilidad completa (proposal, spec, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-10-regenerar-pin-empleado/`.
 
 ---
 
