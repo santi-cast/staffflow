@@ -123,7 +123,7 @@ INSERT INTO empleados (
     pin_terminal, codigo_nfc, activo
 ) VALUES (
     3, 'Ana', 'Garcia', 'Lopez', '11111111A', 'EMP-001',
-    '2026-03-30', 'OPERARIO', 40, 480,
+    '2026-03-30', 'OPERARIO', 40.00, 480,
     22, 3,
     '1111', NULL, TRUE
 );
@@ -135,7 +135,7 @@ INSERT INTO empleados (
     pin_terminal, codigo_nfc, activo
 ) VALUES (
     4, 'Carlos', 'Lopez', 'Martinez', '22222222B', 'EMP-002',
-    '2026-03-30', 'OPERARIO', 40, 480,
+    '2026-03-30', 'OPERARIO', 40.00, 480,
     22, 3,
     '2222', NULL, TRUE
 );
@@ -147,7 +147,7 @@ INSERT INTO empleados (
     pin_terminal, codigo_nfc, activo
 ) VALUES (
     2, 'Laura', 'Fernandez', 'Ruiz', '33333333C', 'EMP-003',
-    '2026-03-30', 'ENCARGADO', 40, 480,
+    '2026-03-30', 'ENCARGADO', 40.00, 480,
     22, 3,
     '3333', NULL, TRUE
 );
