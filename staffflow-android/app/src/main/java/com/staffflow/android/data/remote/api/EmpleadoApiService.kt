@@ -4,6 +4,7 @@ import com.staffflow.android.data.remote.dto.EmpleadoRequest
 import com.staffflow.android.data.remote.dto.EmpleadoPatchRequest
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.data.remote.dto.MensajeResponse
+import com.staffflow.android.data.remote.dto.RegenerarPinResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -66,6 +67,14 @@ interface EmpleadoApiService {
         @Path("id") id: Long,
         @Body request: EmpleadoPatchRequest
     ): Response<EmpleadoResponse>
+
+    /**
+     * E65 - POST /empleados/{id}/regenerar-pin.
+     * Regenera el PIN del empleado y lo devuelve en claro UNA sola vez.
+     * Error 404 si el empleado no existe.
+     */
+    @POST("empleados/{id}/regenerar-pin")
+    suspend fun regenerarPin(@Path("id") id: Long): Response<RegenerarPinResponse>
 
     /**
      * E21 - Devuelve el perfil del empleado autenticado.

@@ -352,3 +352,12 @@ data class TerminalPausaResponse(
 data class TerminalBloqueoResponse(
     val bloqueado: Boolean
 )
+
+/**
+ * Respuesta del endpoint E65 — POST /empleados/{id}/regenerar-pin.
+ * Contiene el PIN nuevo en claro, devuelto una sola vez.
+ */
+data class RegenerarPinResponse(
+    val empleadoId: Long,
+    val pinTerminal: String,
+)

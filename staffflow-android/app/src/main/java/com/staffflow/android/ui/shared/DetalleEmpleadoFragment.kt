@@ -3,13 +3,8 @@ package com.staffflow.android.ui.shared
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.MenuHost
-import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -17,6 +12,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.FragmentDetalleEmpleadoBinding
@@ -38,9 +35,14 @@ import java.time.format.DateTimeFormatter
  *   Success -> ScrollView con cards de datos y chips de acciones
  *
  * Recibe empleadoId como argumento de navegacion (Long).
- * Boton Editar en toolbar: visible solo para ADMIN -> P15 (FormEmpleadoFragment).
- * Chip "Ver saldo"    -> P25 (action_detalle_to_saldo_individual).
- * Chip "Ver fichajes" -> P21 InformeFichajesEmpleado (action_detalle_to_informe_fichajes).
+ *
+ * Chips de accion:
+ *   Ver saldo      -> P25 (action_detalle_to_saldo_individual)
+ *   Ver fichajes   -> P21 InformeFichajesEmpleado (action_detalle_to_informe_fichajes)
+ *   Ver ausencias  -> action_detalle_to_ausencias
+ *   Editar         -> P15 (FormEmpleadoFragment).        Solo ADMIN.
+ *   Regenerar PIN  -> E65 POST /empleados/{id}/regenerar-pin.
+ *                     ADMIN o ENCARGADO. Confirmacion + dialog con PIN nuevo.
  */
 class DetalleEmpleadoFragment : Fragment() {
 
@@ -48,9 +50,6 @@ class DetalleEmpleadoFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: DetalleEmpleadoViewModel by viewModels()
-
-    /** menuItem editar para mostrar/ocultar segun rol. */
-    private var menuItemEditar: MenuItem? = null
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -69,7 +68,6 @@ class DetalleEmpleadoFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val empleadoId = arguments?.getLong("empleadoId") ?: -1L
         viewModel.init(empleadoId)
-        configurarMenu()
         configurarListeners()
         observarViewModel()
     }
@@ -82,28 +80,6 @@ class DetalleEmpleadoFragment : Fragment() {
     // ------------------------------------------------------------------
     // Configuracion
     // ------------------------------------------------------------------
-
-    private fun configurarMenu() {
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(object : MenuProvider {
-            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
-                inflater.inflate(R.menu.menu_detalle_empleado, menu)
-                menuItemEditar = menu.findItem(R.id.action_editar)
-                // Ocultar hasta que se resuelva el rol
-                menuItemEditar?.isVisible = false
-            }
-            override fun onMenuItemSelected(item: MenuItem): Boolean {
-                if (item.itemId == R.id.action_editar) {
-                    val args = Bundle().apply {
-                        putLong("empleadoId", arguments?.getLong("empleadoId") ?: -1L)
-                    }
-                    findNavController().navigate(R.id.action_detalle_to_form_empleado, args)
-                    return true
-                }
-                return false
-            }
-        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
 
     private fun configurarListeners() {
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
@@ -125,6 +101,15 @@ class DetalleEmpleadoFragment : Fragment() {
             }
             findNavController().navigate(R.id.action_detalle_to_ausencias, args)
         }
+        binding.chipEditar.setOnClickListener {
+            val args = Bundle().apply {
+                putLong("empleadoId", arguments?.getLong("empleadoId") ?: -1L)
+            }
+            findNavController().navigate(R.id.action_detalle_to_form_empleado, args)
+        }
+        binding.chipRegenerarPin.setOnClickListener {
+            mostrarDialogConfirmarRegenerarPin()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -135,7 +120,29 @@ class DetalleEmpleadoFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.uiState.collect { procesarEstado(it) } }
-                launch { viewModel.rol.collect { configurarMenuPorRol(it) } }
+                launch { viewModel.rol.collect { aplicarGatingPorRol(it) } }
+                launch {
+                    viewModel.eventoRegenerarPin.collect { evento ->
+                        when (evento) {
+                            is RegenerarPinEvento.Cargando -> {
+                                binding.chipRegenerarPin.isEnabled = false
+                            }
+                            is RegenerarPinEvento.Exito -> {
+                                binding.chipRegenerarPin.isEnabled = true
+                                mostrarDialogPinRegenerado(evento.pin)
+                            }
+                            is RegenerarPinEvento.Error -> {
+                                binding.chipRegenerarPin.isEnabled = true
+                                val msg = when (evento.codigo) {
+                                    "404" -> getString(R.string.regenerar_pin_error_404)
+                                    "red" -> getString(R.string.regenerar_pin_error_red)
+                                    else -> getString(R.string.regenerar_pin_error_generico)
+                                }
+                                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -210,9 +217,59 @@ class DetalleEmpleadoFragment : Fragment() {
         binding.filaAsuntosPropios.tvValor.text = "${e.diasAsuntosPropiosAnuales} días/año"
     }
 
-    /** Muestra el boton Editar en la toolbar solo cuando el usuario autenticado es ADMIN. */
-    private fun configurarMenuPorRol(rol: Rol?) {
-        menuItemEditar?.isVisible = rol == Rol.ADMIN
+    /**
+     * Aplica el gating por rol a los chips de accion:
+     *   Editar         -> solo ADMIN
+     *   Regenerar PIN  -> ADMIN o ENCARGADO
+     */
+    private fun aplicarGatingPorRol(rol: Rol?) {
+        binding.chipEditar.isVisible = rol == Rol.ADMIN
+        binding.chipRegenerarPin.isVisible = rol == Rol.ADMIN || rol == Rol.ENCARGADO
+    }
+
+    // ------------------------------------------------------------------
+    // Dialogs E65 - Regenerar PIN
+    // ------------------------------------------------------------------
+
+    private fun mostrarDialogConfirmarRegenerarPin() {
+        val empleadoId = arguments?.getLong("empleadoId") ?: -1L
+        val nombre = nombreEmpleadoActual()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.regenerar_pin_dialog_titulo)
+            .setMessage(getString(R.string.regenerar_pin_dialog_mensaje, nombre))
+            .setPositiveButton(R.string.form_ausencia_dialogo_cancelar, null)
+            .setNegativeButton(R.string.regenerar_pin_dialog_confirmar) { _, _ ->
+                viewModel.regenerarPin(empleadoId)
+            }
+            .show()
+    }
+
+    private fun mostrarDialogPinRegenerado(pin: String) {
+        val nombre = nombreEmpleadoActual()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.regenerar_pin_resultado_titulo)
+            .setMessage(getString(R.string.regenerar_pin_resultado_mensaje, nombre, pin))
+            .setPositiveButton(R.string.cerrar, null)
+            .show()
+    }
+
+    /**
+     * Devuelve el nombre del empleado del estado actual del ViewModel.
+     * Si no hay Success cargado todavia, usa un fallback generico.
+     */
+    private fun nombreEmpleadoActual(): String {
+        val estado = viewModel.uiState.value
+        return if (estado is DetalleEmpleadoViewModel.UiState.Success) {
+            val e = estado.empleado
+            buildString {
+                append(e.nombre)
+                append(" ")
+                append(e.apellido1)
+                e.apellido2?.let { append(" $it") }
+            }
+        } else {
+            "este empleado"
+        }
     }
 
     private fun nombreCategoria(categoria: CategoriaEmpleado): String = when (categoria) {

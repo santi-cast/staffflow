@@ -5,6 +5,7 @@ import com.staffflow.android.data.remote.dto.EmpleadoPatchRequest
 import com.staffflow.android.data.remote.dto.EmpleadoRequest
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.data.remote.dto.MensajeResponse
+import com.staffflow.android.data.remote.dto.RegenerarPinResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
@@ -54,6 +55,14 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
      */
     suspend fun actualizarEmpleado(id: Long, request: EmpleadoPatchRequest): Result<EmpleadoResponse> =
         safeApiCall { api.actualizarEmpleado(id, request) }
+
+    /**
+     * E65 - Regenera el PIN del empleado y devuelve el nuevo PIN en claro
+     * (una sola vez). P14 (DetalleEmpleadoFragment) llama a este metodo
+     * desde el chip "Regenerar PIN" tras confirmacion.
+     */
+    suspend fun regenerarPin(id: Long): Result<RegenerarPinResponse> =
+        safeApiCall { api.regenerarPin(id) }
 
     /**
      * E21 - Devuelve el perfil del empleado autenticado.

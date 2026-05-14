@@ -14,10 +14,10 @@
       Header:   nombre completo + numero empleado + badge activo/baja
       Datos:    DNI, fecha de alta, categoria
       Jornada:  horas semanales, dias vacaciones, dias asuntos propios
-      Acciones: chips "Ver saldo" y "Ver fichajes"
-
-    El boton Editar se muestra en la toolbar via MenuProvider (menu_detalle_empleado.xml)
-    y solo es visible para ADMIN.
+      Acciones: chips "Ver saldo", "Ver fichajes", "Ver ausencias",
+                "Editar empleado" y "Regenerar PIN".
+                Editar visible solo para ADMIN.
+                Regenerar PIN visible para ADMIN y ENCARGADO.
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -231,6 +231,20 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/detalle_empleado_ver_ausencias" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipEditar"
+                            style="@style/Widget.Material3.Chip.Assist"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detalle_empleado_chip_editar" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipRegenerarPin"
+                            style="@style/Widget.Material3.Chip.Assist"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detalle_empleado_chip_regenerar_pin" />
 
                     </com.google.android.material.chip.ChipGroup>
 

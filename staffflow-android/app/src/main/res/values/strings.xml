@@ -118,8 +118,28 @@
     <string name="detalle_empleado_ver_saldo">Ver saldo</string>
     <string name="detalle_empleado_ver_fichajes">Ver fichajes</string>
     <string name="detalle_empleado_ver_ausencias">Ver ausencias</string>
-    <string name="detalle_empleado_editar">Editar empleado</string>
     <string name="detalle_empleado_pin">PIN terminal</string>
+
+    <!-- P14 DetalleEmpleado - chips de accion -->
+    <string name="detalle_empleado_chip_editar">Editar empleado</string>
+    <string name="detalle_empleado_chip_regenerar_pin">Regenerar PIN</string>
+
+    <!-- P14 DetalleEmpleado - dialog confirmacion regenerar PIN -->
+    <string name="regenerar_pin_dialog_titulo">Regenerar PIN</string>
+    <string name="regenerar_pin_dialog_mensaje">¿Seguro que quieres regenerar el PIN de %1$s?</string>
+    <string name="regenerar_pin_dialog_confirmar">Regenerar PIN</string>
+
+    <!-- P14 DetalleEmpleado - dialog resultado regenerar PIN -->
+    <string name="regenerar_pin_resultado_titulo">PIN regenerado</string>
+    <string name="regenerar_pin_resultado_mensaje">El nuevo PIN de %1$s es: %2$s\n\nAnótalo ahora, no se podrá volver a consultar.</string>
+
+    <!-- P14 DetalleEmpleado - errores regenerar PIN -->
+    <string name="regenerar_pin_error_404">No se encontró el empleado.</string>
+    <string name="regenerar_pin_error_red">Sin conexión con el servidor. Inténtalo de nuevo.</string>
+    <string name="regenerar_pin_error_generico">No se pudo regenerar el PIN. Inténtalo más tarde.</string>
+
+    <!-- Comun -->
+    <string name="cerrar">Cerrar</string>
 
     <!-- P13 Lista de empleados -->
     <string name="empleados_vacio">No hay empleados registrados</string>
