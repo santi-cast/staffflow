@@ -199,7 +199,7 @@ Convenciones de la tabla:
 | E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja | — |
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
-| E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve UNA sola vez | P15, P29 |
+| E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve UNA sola vez | P14 |
 | E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
 
 #### Fichajes (`/api/v1/fichajes`)
@@ -398,7 +398,7 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P11 | MisAusenciasFragment | 2 — Empleado | E61 | EMPLEADO, ENCARGADO |
 | P12 | MiHoyFragment | 2 — Empleado | E37 | EMPLEADO, ENCARGADO |
 | P13 | EmpleadosFragment | 3 — Gestión | E14 | ADMIN, ENCARGADO |
-| P14 | DetalleEmpleadoFragment | 3 — Gestión | E15 | ADMIN, ENCARGADO |
+| P14 | DetalleEmpleadoFragment | 3 — Gestión | E15, E65 | ADMIN, ENCARGADO |
 | P15 | FormEmpleadoFragment | 3 — Gestión | E13, E15, E16 | ADMIN, ENCARGADO |
 | P16 | DetalleDiaFragment | 4 — Encargado | E24, E29, E33 | ADMIN, ENCARGADO |
 | P17 | ParteDiarioFragment | 4 — Encargado | E35, E53, E54 | ADMIN, ENCARGADO |
