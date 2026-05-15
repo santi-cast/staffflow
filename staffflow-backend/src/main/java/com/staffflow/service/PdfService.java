@@ -76,7 +76,7 @@ import java.util.Map;
  * PieSaldosHandler (START_PAGE) + segunda pasada sobreescribirNumeracionSaldos().
  * Patron identico a E45.</p>
  *
- * <p>E53: genera el informe de vacaciones y asuntos propios disfrutados por un
+ * <p>E57: genera el informe de vacaciones y asuntos propios disfrutados por un
  * empleado en un año. Dos tablas (una por tipo) con listado de fechas y total.
  * Mismo estilo que E47. Ruta base: /api/v1/informes/pdf/ausencias.</p>
  *
@@ -321,13 +321,13 @@ public class PdfService {
     }
 
     // =========================================================================
-    // E53 — GET /api/v1/informes/pdf/vacaciones
+    // E57 — GET /api/v1/informes/pdf/vacaciones
     // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
     // =========================================================================
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados
-     * por un empleado en un año (E53).
+     * por un empleado en un año (E57).
      *
      * <p>Dos tablas: una para vacaciones y otra para asuntos propios, cada una
      * con el listado de fechas disfrutadas, fila de total y fila de dias
@@ -398,14 +398,14 @@ public class PdfService {
             return sobreescribirNumeracionSaldos(baos.toByteArray(), totalPaginas);
 
         } catch (Exception e) {
-            log.error("Error generando PDF E53 empleadoId={} anio={}: {}",
+            log.error("Error generando PDF E57 empleadoId={} anio={}: {}",
                     empleadoId, anio, e.getMessage(), e);
             throw new IllegalStateException(
                     "Error generando el informe PDF de ausencias: " + e.getMessage(), e);
         }
     }
 
-    /** Cabecera del informe de vacaciones y asuntos propios (E53): empresa + logo + datos empleado + año. */
+    /** Cabecera del informe de vacaciones y asuntos propios (E57): empresa + logo + datos empleado + año. */
     private void agregarCabeceraAusencias(Document doc, EmpresaResponse empresa,
                                            Empleado empleado, Integer anio) throws Exception {
         PdfFont fontBold = PdfFontFactory.createFont(
