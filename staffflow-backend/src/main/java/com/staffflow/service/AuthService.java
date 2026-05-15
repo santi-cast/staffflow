@@ -31,12 +31,11 @@ import java.util.UUID;
  *
  * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
  * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
- * descrito a continuación pertenece al andamiaje reservado para v2.0
- * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+ * descrito a continuación pertenece al andamiaje reservado para v2.0.</p>
  *
  * <p>Cubre los cinco endpoints del grupo /api/v1/auth:</p>
  * <ul>
- *   <li>E01 — login (implementado en Bloque 2, no se toca aquí)</li>
+ *   <li>E01 — login</li>
  *   <li>E02 — obtener datos del usuario autenticado</li>
  *   <li>E03 — cambiar contraseña (usuario conoce la contraseña actual)</li>
  *   <li>E04 — solicitar recuperación por email (en v1 entrega contraseña
@@ -95,9 +94,9 @@ public class AuthService {
     /**
      * Autentica al usuario y devuelve un JWT válido.
      *
-     * <p>Implementado en Bloque 2. Flujo: AuthenticationManager valida
-     * credenciales → JwtTokenProvider genera token → se devuelve LoginResponse
-     * con token, rol, username y empleadoId (null si ADMIN).</p>
+     * <p>Flujo: AuthenticationManager valida credenciales → JwtTokenProvider
+     * genera token → se devuelve LoginResponse con token, rol, username y
+     * empleadoId (null si ADMIN).</p>
      *
      * @param request DTO con username y password
      * @return LoginResponse con el JWT y metadatos del usuario
@@ -181,7 +180,7 @@ public class AuthService {
      * </p>
      *
      * <p>Si currentPassword es incorrecto se lanza una excepción que el
-     * GlobalExceptionHandler (Bloque 4) convertirá en HTTP 400.</p>
+     * GlobalExceptionHandler convertirá en HTTP 400.</p>
      *
      * @param request DTO con currentPassword y newPassword
      * @return MensajeResponse confirmando el cambio
@@ -219,8 +218,7 @@ public class AuthService {
      *
      * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
      * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
-     * descrito a continuación pertenece al andamiaje reservado para v2.0
-     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     * descrito a continuación pertenece al andamiaje reservado para v2.0.</p>
      *
      * <p>Comportamiento real en v1:</p>
      * <ol>
@@ -281,8 +279,7 @@ public class AuthService {
      *
      * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
      * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
-     * descrito a continuación pertenece al andamiaje reservado para v2.0
-     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     * descrito a continuación pertenece al andamiaje reservado para v2.0.</p>
      *
      * <p>Estado real en v1: este método siempre falla con
      * IllegalArgumentException (HTTP 400). El motivo es que E04 no escribe

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  *     3. findPausasActivasByFecha(fecha)   → todas las pausas activas del día
  *     4. findByFechaAndProcesadoFalse(fecha) → ausencias planificadas del día
  *   A partir de ahí la clasificación se hace en memoria con Maps y Sets,
- *   sin lanzar ninguna query adicional (decisión técnica Bloque 6 Tarea 2).
+ *   sin lanzar ninguna query adicional.
  *
  * Lógica de clasificación por orden de prioridad (EstadoPresencia):
  *   1. EN_PAUSA           → empleado tiene pausa con horaFin = null hoy

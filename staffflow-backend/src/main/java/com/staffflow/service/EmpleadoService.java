@@ -34,17 +34,14 @@ import java.util.stream.Collectors;
  *     vinculado un usuario a un empleado, el campo usuarioId no puede
  *     modificarse. Esta restricción se aplica en actualizar() ignorando
  *     el campo usuarioId aunque venga en el request.
- *   - ADMIN excluido de /me a nivel de seguridad (Bloque 5):
+ *   - ADMIN excluido de /me a nivel de seguridad:
  *     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')") en el controller
  *     bloquea a ADMIN con HTTP 403 antes de llegar al service. Si en el
  *     futuro se autorizase ADMIN en method security, el service responderia
  *     HTTP 404 via NotFoundException porque ADMIN no tiene perfil de
  *     empleado. Comportamiento esperado en ambos casos.
- *   - pinTerminal nunca expuesto por API (D-018): EmpleadoResponse no
- *     tiene el campo pinTerminal. La Opción A original (filtrar por rol
- *     recibido como parámetro) fue descartada en sesión 10 porque el PIN
- *     no tiene uso legitimo fuera del terminal físico.
- *     D-017 y D-018 documentan el cambio de diseño.
+ *   - pinTerminal nunca expuesto por API: EmpleadoResponse no tiene el
+ *     campo pinTerminal. El PIN no tiene uso legitimo fuera del terminal físico.
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
    *   - HTTP 409 preventivo para DNI, numero_empleado o NFC duplicados
@@ -57,14 +54,6 @@ import java.util.stream.Collectors;
  *
  * RF cubiertos: RF-08 a RF-16, RF-50.
  * RNF aplicados: RNF-M01 (sin lógica en controller), RNF-R03 (PIN único).
- *
- * D-017: firma de obtenerPorId ajustada respecto al esqueleto del Bloque 1.
- * D-018: decision de no exponer pinTerminal por API. EmpleadoResponse no
- * tiene el campo pinTerminal. El PIN se gestiona exclusivamente en el
- * terminal físico. Ambas desviaciones documentadas en
- * StaffFlow_Desviaciones.
- *
- * D-030: campo nss renombrado a numero_empleado en entidad, DTOs y repositorio.
  */
 @Service
 @RequiredArgsConstructor
@@ -492,8 +481,8 @@ public class EmpleadoService {
      *
      * El nuevo PIN se genera mediante {@code generarPinUnico()}, garantizando
      * unicidad entre todos los empleados del sistema (RNF-R03). Una vez
-     * devuelto en la respuesta, el PIN no se puede volver a consultar por API
-     * (decisión D-018). El ADMIN o ENCARGADO debe entregarlo al empleado en persona.
+     * devuelto en la respuesta, el PIN no se puede volver a consultar por API.
+     * El ADMIN o ENCARGADO debe entregarlo al empleado en persona.
      *
      * Códigos HTTP producidos:
      *   200 OK        → PIN regenerado y devuelto correctamente
@@ -551,7 +540,7 @@ public class EmpleadoService {
         response.setJornadaDiariaMinutos(empleado.getJornadaDiariaMinutos());
         response.setDiasVacacionesAnuales(empleado.getDiasVacacionesAnuales());
         response.setDiasAsuntosPropiosAnuales(empleado.getDiasAsuntosPropiosAnuales());
-        // pinTerminal nunca se expone en ningún DTO de respuesta (decisión nº21)
+        // pinTerminal nunca se expone en ningún DTO de respuesta
         response.setCodigoNfc(empleado.getCodigoNfc());
         response.setActivo(empleado.getActivo());
         return response;

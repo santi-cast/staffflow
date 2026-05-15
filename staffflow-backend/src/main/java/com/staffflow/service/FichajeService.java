@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  *   - UNIQUE(empleado_id, fecha): un solo fichaje por empleado por día.
  *   - jornadaEfectivaMinutos se calcula con Math.ceil sobre minutos brutos
  *     menos totalPausasMinutos (ya almacenado en el fichaje).
- *   - D-026: ENCARGADO puede gestionar hoy y fechas futuras, no el pasado.
+ *   - ENCARGADO puede gestionar hoy y fechas futuras, no el pasado.
  *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
  *     crear() (E22) y actualizar() (E23).
  *   - Fichajes en fechas futuras no permitidos para ningún rol.
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  *   El controller pasa authentication.getName() (username) a los métodos
  *   que necesitan identificar al usuario autenticado. El service resuelve
  *   el id a partir del username usando UsuarioRepository. Este es el mismo
- *   patrón usado en EmpleadoService.obtenerMiPerfil() (E21, D-017 Opción B).
+ *   patrón usado en EmpleadoService.obtenerMiPerfil() (E21).
  *
  * Roles:
  *   ADMIN y ENCARGADO → E22, E23, E24, E25
@@ -70,8 +70,8 @@ public class FichajeService {
     /**
      * Repositorio de usuarios. Necesario para resolver username → usuarioId en E22
      * (auditoría) y username → empleadoId en E26 (/me). En E22 y E23 tambien se usa
-     * para resolver el rol del usuario autenticado y aplicar la restriccion D-026.
-     * Mismo patrón que EmpleadoService (D-017, Opción B).
+     * para resolver el rol del usuario autenticado y aplicar la restriccion de fecha
+     * del ENCARGADO. Mismo patrón que EmpleadoService.
      */
     private final UsuarioRepository usuarioRepository;
 
@@ -86,7 +86,7 @@ public class FichajeService {
      *   1. Valida que las observaciones no están vacías (RNF-L02).
      *   2. Verifica que el empleado existe (404 si no).
      *   3. Resuelve el usuario autenticado desde username.
-     *   4. Valida restriccion de fecha si el usuario es ENCARGADO (D-026):
+     *   4. Valida restriccion de fecha si el usuario es ENCARGADO:
      *      solo puede gestionar el dia actual. ADMIN sin restriccion.
      *   5. Verifica unicidad empleado+fecha antes de persistir (409 si existe).
      *   6. Calcula jornadaEfectivaMinutos si hay horaEntrada y horaSalida.
@@ -119,7 +119,7 @@ public class FichajeService {
                         "Empleado no encontrado con id: " + request.getEmpleadoId()));
 
         // Resolver usuario autenticado desde username.
-        // Necesario tanto para la restriccion D-026 (rol) como para auditoria.
+        // Necesario tanto para resolver el rol como para auditoria.
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
@@ -130,7 +130,7 @@ public class FichajeService {
                     "No se pueden registrar fichajes en fechas futuras");
         }
 
-        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
+        // ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear fichajes para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
                 && request.getFecha().isBefore(LocalDate.now())) {
@@ -195,7 +195,7 @@ public class FichajeService {
      *
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
-     * Restriccion D-026: ENCARGADO solo puede modificar fichajes del dia
+     * Restriccion de fecha: ENCARGADO solo puede modificar fichajes del dia
      * actual y fechas futuras. La fecha a validar es la del fichaje existente
      * en BD, no un campo del request. Si es ENCARGADO y el fichaje es de
      * fecha pasada → HTTP 400. ADMIN puede modificar fichajes de cualquier fecha.
@@ -224,7 +224,7 @@ public class FichajeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Fichaje no encontrado con id: " + id));
 
-        // Resolver usuario autenticado para aplicar restriccion D-026
+        // Resolver usuario autenticado para aplicar la restriccion de fecha del ENCARGADO
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
@@ -235,7 +235,7 @@ public class FichajeService {
                     "No se pueden modificar fichajes en fechas futuras");
         }
 
-        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
+        // ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la del fichaje cargado de BD, no del request.
         // ADMIN puede modificar fichajes de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
@@ -341,7 +341,7 @@ public class FichajeService {
      *
      * Recibe el username del controller (authentication.getName()) y
      * resuelve el empleadoId a partir de él. Mismo patrón que
-     * EmpleadoService.obtenerMiPerfil() (D-017, Opción B).
+     * EmpleadoService.obtenerMiPerfil().
      *
      * Spring Security garantiza que el rol EMPLEADO solo puede llegar
      * aquí con su propio token — no puede ver fichajes ajenos.
@@ -359,7 +359,7 @@ public class FichajeService {
                                                LocalDate hasta, TipoFichaje tipo) {
 
         // Resolver username → usuario → empleado
-        // Mismo patrón que obtenerMiPerfil() en EmpleadoService (D-017, Opción B)
+        // Mismo patrón que obtenerMiPerfil() en EmpleadoService
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));

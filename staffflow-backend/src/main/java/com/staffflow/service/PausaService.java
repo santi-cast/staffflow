@@ -40,13 +40,13 @@ import java.util.stream.Collectors;
  *   - Al cerrar una pausa no retribuida se actualiza totalPausasMinutos
  *     en el fichaje del día y se recalcula jornadaEfectivaMinutos.
  *   - Pausas AUSENCIA_RETRIBUIDA NO descuentan de la jornada efectiva.
- *   - D-026: ENCARGADO solo puede gestionar pausas del dia actual y fechas futuras.
+ *   - ENCARGADO solo puede gestionar pausas del dia actual y fechas futuras.
  *     ADMIN no tiene restriccion de fecha. La validacion se aplica en
  *     crear() (E27) y cerrar() (E28).
  *
  * Patrón de autenticación:
  *   El controller pasa authentication.getName() (username). El service
- *   resuelve el usuarioId a partir del username (D-017, Opción B).
+ *   resuelve el usuarioId a partir del username.
  *
  * Roles:
  *   ADMIN y ENCARGADO → E27, E28, E29
@@ -75,8 +75,8 @@ public class PausaService {
 
     /**
      * Repositorio de usuarios. Para resolver username → usuario (auditoría
-     * y restriccion D-026). Mismo patrón que FichajeService y EmpleadoService
-     * (D-017, Opción B).
+     * y restriccion de fecha del ENCARGADO). Mismo patrón que FichajeService
+     * y EmpleadoService.
      */
     private final UsuarioRepository usuarioRepository;
 
@@ -90,7 +90,7 @@ public class PausaService {
      * Flujo:
      *   1. Verifica que el empleado existe (404 si no).
      *   2. Resuelve el usuario autenticado desde username.
-     *   3. Valida restriccion de fecha si el usuario es ENCARGADO (D-026):
+     *   3. Valida restriccion de fecha si el usuario es ENCARGADO:
      *      solo puede gestionar pausas del dia actual y fechas futuras. ADMIN sin restriccion.
      *   4. Verifica que no hay ya una pausa activa ese día (409 si hay).
      *      Solo puede haber una pausa con horaFin=null por empleado/día.
@@ -112,7 +112,7 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Empleado no encontrado con id: " + request.getEmpleadoId()));
 
-        // Resolver usuario autenticado para restriccion D-026 y auditoria
+        // Resolver usuario autenticado para la restriccion de fecha del ENCARGADO y auditoria
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
@@ -123,7 +123,7 @@ public class PausaService {
                     "No se pueden registrar pausas en fechas futuras");
         }
 
-        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
+        // ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear pausas para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
                 && request.getFecha().isBefore(LocalDate.now())) {
@@ -179,7 +179,7 @@ public class PausaService {
      *
      * Observaciones obligatorias (RNF-L02): si llegan null o vacías → 400.
      *
-     * Restriccion D-026: ENCARGADO solo puede modificar pausas del dia actual y fechas futuras.
+     * Restriccion de fecha: ENCARGADO solo puede modificar pausas del dia actual y fechas futuras.
      * La fecha a validar es la de la pausa cargada de BD, no del request.
      * ADMIN puede modificar pausas de cualquier fecha sin restriccion.
      *
@@ -209,7 +209,7 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Pausa no encontrada con id: " + id));
 
-        // Resolver usuario autenticado para restriccion D-026
+        // Resolver usuario autenticado para la restriccion de fecha del ENCARGADO
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
@@ -220,7 +220,7 @@ public class PausaService {
                     "No se pueden modificar pausas en fechas futuras");
         }
 
-        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
+        // ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la de la pausa cargada de BD.
         // ADMIN puede modificar pausas de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
@@ -294,7 +294,7 @@ public class PausaService {
     /**
      * Lista las pausas del empleado autenticado en un rango de fechas.
      *
-     * Mismo patrón que FichajeService.listarPropios() (D-017, Opción B):
+     * Mismo patrón que FichajeService.listarPropios():
      * recibe el username del controller, resuelve usuario → empleado,
      * y filtra las pausas por empleadoId + rango de fechas.
      *
