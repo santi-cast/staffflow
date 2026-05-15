@@ -17,14 +17,25 @@ import com.staffflow.android.databinding.FragmentResetPasswordBinding
 import kotlinx.coroutines.launch
 
 /**
- * Pantalla de restablecimiento de contraseña con token del email (P05).
+ * Pantalla de restablecimiento de contraseña (P05).
  *
- * Acceso: deep link staffflow://reset-password?token={token}
- * El token llega en arguments?.getString("token") gracias al deep link
- * configurado en nav_graph.xml.
+ * **v1.0 — no operativo:** en v1 este flujo entrega una contraseña temporal
+ * de 8 caracteres por email (E04). El token UUID de 30 minutos descrito a
+ * continuación pertenece al andamiaje reservado para v2.0 (ver memoria TFG,
+ * bloque B10 Vías Futuras → Reset password con token UUID).
+ *
+ * En v1 el deep link `staffflow://reset-password?token={token}` NO está
+ * activo: el AndroidManifest no declara intent-filter para el esquema
+ * `staffflow://`, y por tanto este fragment no se invoca desde ningún flujo
+ * de producción. La declaración del deep link en `nav_graph.xml` queda
+ * aislada y reservada para v2.0.
+ *
+ * Comportamiento previsto (v2.0): el token llegaría en
+ * `arguments?.getString("token")` desde el deep link configurado en
+ * `nav_graph.xml`.
  *
  * OK   -> Snackbar "Contraseña restablecida" + navegar a P02 (action_reset_to_login).
- * Error -> mostrar mensaje del backend (ej: "Token expirado") + boton volver al login.
+ * Error -> mostrar mensaje del backend (por ejemplo "Token expirado") + botón volver al login.
  */
 class ResetPasswordFragment : Fragment() {
 

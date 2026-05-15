@@ -28,9 +28,21 @@ data class PasswordChangeRequest(
 data class PasswordRecoveryRequest(val email: String)
 
 /**
- * Restablecimiento de contrasena con token recibido por email
+ * Restablecimiento de contraseña con token recibido por email
  * (E05 POST /auth/password/reset).
- * Error 400 si el token ha expirado o es invalido.
+ *
+ * **v1.0 — no operativo:** en v1 este flujo entrega una contraseña temporal
+ * de 8 caracteres por email (E04). El token UUID de 30 minutos descrito a
+ * continuación pertenece al andamiaje reservado para v2.0 (ver memoria TFG,
+ * bloque B10 Vías Futuras → Reset password con token UUID).
+ *
+ * En v1 este DTO se construye técnicamente bien, pero el endpoint que lo
+ * consume devuelve siempre HTTP 400: la base de datos nunca contiene tokens
+ * válidos porque ningún flujo de producción escribe `resetToken` en la
+ * entidad `Usuario`.
+ *
+ * Comportamiento previsto (v2.0): error 400 si el token ha expirado o es
+ * inválido.
  */
 data class PasswordResetRequest(
     val token: String,

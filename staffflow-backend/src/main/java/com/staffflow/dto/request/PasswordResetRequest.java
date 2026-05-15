@@ -6,9 +6,22 @@ import lombok.Data;
 
 /**
  * Token de recuperación y nueva contraseña para completar el reseteo.
- * Usado en E05 (POST /api/v1/auth/password/reset), endpoint público sin JWT.
- * El token se recibe por email tras invocar E04. Es de un solo uso:
- * se invalida inmediatamente tras el reseteo exitoso (RF-45, RNF-S04).
+ *
+ * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+ * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+ * descrito a continuación pertenece al andamiaje reservado para v2.0
+ * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+ *
+ * <p>Usado en E05 (POST /api/v1/auth/password/reset), endpoint público sin JWT.
+ * En v1, este DTO se acepta sintácticamente (Bean Validation pasa si
+ * los campos cumplen las restricciones), pero el endpoint que lo consume
+ * siempre devuelve HTTP 400: AuthService busca el token con
+ * {@code findByResetToken} y nadie escribe ese campo en la base de datos,
+ * por lo que la búsqueda siempre falla.</p>
+ *
+ * <p>Flujo previsto en v2.0 (contexto, no operativo en v1): el token se
+ * recibiría por email tras invocar E04. Sería de un solo uso y se
+ * invalidaría inmediatamente tras el reseteo exitoso (RNF-S04).</p>
  *
  * @author Santiago Castillo
  */

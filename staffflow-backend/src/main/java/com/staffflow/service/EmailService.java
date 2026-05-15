@@ -23,6 +23,13 @@ import org.springframework.stereotype.Service;
  * <p>El envío es {@code @Async} para no bloquear el hilo HTTP del endpoint E04.
  * Si el envío falla se loguea el error pero no se propaga al cliente (el
  * endpoint E04 ya respondió 200 antes de que se dispare el correo).</p>
+ *
+ * <p><b>v1.0 — no operativo:</b> en v1 el flujo real de recuperación es el
+ * de {@link #enviarPasswordTemporal(String, String)}, que entrega una
+ * contraseña temporal de 8 caracteres en claro por correo. El envío de un
+ * token UUID de un solo uso con caducidad de 30 minutos pertenece al
+ * andamiaje reservado para v2.0 (ver memoria TFG, bloque B10 Vías Futuras →
+ * Reset password con token UUID).</p>
  */
 @Slf4j
 @Service
@@ -35,10 +42,22 @@ public class EmailService {
     private String from;
 
     /**
-     * Envía el correo de recuperación de contraseña.
+     * Envía el correo de recuperación de contraseña con la contraseña
+     * temporal generada en E04.
      *
-     * @param destinatario Email del usuario
-     * @param token        Token UUID de un solo uso (válido 30 minutos)
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     *
+     * <p>El cuerpo del correo es HTML y muestra la contraseña temporal en
+     * claro, indicando al usuario que la cambie desde Ajustes una vez
+     * dentro de la aplicación.</p>
+     *
+     * @param destinatario      email del usuario al que se envía el correo
+     * @param passwordTemporal  contraseña temporal de 8 caracteres
+     *                          alfanuméricos generada en E04 (se incrusta
+     *                          en el cuerpo del correo en claro)
      */
     @Async
     public void enviarPasswordTemporal(String destinatario, String passwordTemporal) {

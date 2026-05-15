@@ -12,18 +12,24 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 
 /**
- * Interfaz Retrofit para los endpoints de autenticacion.
+ * Interfaz Retrofit para los endpoints de autenticación.
  *
  * Endpoints cubiertos:
  *   E01 POST /auth/login             -> LoginResponse
  *   E03 PUT  /auth/password          -> MensajeResponse  (JWT requerido)
- *   E04 POST /auth/password/recovery -> MensajeResponse  (sin JWT, anti-enumeracion)
- *   E05 POST /auth/password/reset    -> MensajeResponse  (sin JWT, token por email)
+ *   E04 POST /auth/password/recovery -> MensajeResponse  (sin JWT, anti-enumeración)
+ *   E05 POST /auth/password/reset    -> MensajeResponse  (sin JWT, ver nota inferior)
  *
  * Errores comunes:
- *   401 credenciales invalidas / token incorrecto
- *   400 token expirado o invalido (E05)
+ *   401 credenciales inválidas / token incorrecto
+ *   400 token expirado o inválido (E05)
  *   423 demasiados intentos (E01)
+ *
+ * Nota sobre E05 (**v1.0 — no operativo**): el método [restablecerPassword]
+ * pertenece al andamiaje reservado para v2.0. En v1 invocarlo devuelve
+ * siempre HTTP 400 porque la base de datos nunca tiene tokens válidos. Ver
+ * memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID, y
+ * el KDoc del propio método [restablecerPassword].
  */
 interface AuthApiService {
 
@@ -50,7 +56,18 @@ interface AuthApiService {
 
     /**
      * E05 - Restablecer contraseña con token recibido por email.
-     * Sin JWT. Error 400 si el token ha expirado o es invalido.
+     *
+     * **v1.0 — no operativo:** en v1 este flujo entrega una contraseña temporal
+     * de 8 caracteres por email (E04). El token UUID de 30 minutos descrito a
+     * continuación pertenece al andamiaje reservado para v2.0 (ver memoria TFG,
+     * bloque B10 Vías Futuras → Reset password con token UUID).
+     *
+     * En v1 invocar este método devuelve siempre HTTP 400: la base de datos
+     * nunca contiene tokens válidos porque ningún flujo de producción escribe
+     * `resetToken` en la entidad `Usuario`.
+     *
+     * Comportamiento previsto (v2.0): sin JWT. Error 400 si el token ha
+     * expirado o es inválido.
      */
     @POST("auth/password/reset")
     suspend fun restablecerPassword(@Body request: PasswordResetRequest): Response<MensajeResponse>

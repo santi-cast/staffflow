@@ -29,17 +29,25 @@ import java.util.UUID;
 /**
  * Servicio de autenticación y gestión de credenciales.
  *
+ * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+ * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+ * descrito a continuación pertenece al andamiaje reservado para v2.0
+ * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+ *
  * <p>Cubre los cinco endpoints del grupo /api/v1/auth:</p>
  * <ul>
  *   <li>E01 — login (implementado en Bloque 2, no se toca aquí)</li>
  *   <li>E02 — obtener datos del usuario autenticado</li>
  *   <li>E03 — cambiar contraseña (usuario conoce la contraseña actual)</li>
- *   <li>E04 — solicitar recuperación por email (stub: token en log)</li>
- *   <li>E05 — restablecer contraseña con token de un solo uso</li>
+ *   <li>E04 — solicitar recuperación por email (en v1 entrega contraseña
+ *       temporal real vía Gmail SMTP)</li>
+ *   <li>E05 — restablecer contraseña con token de un solo uso (andamiaje
+ *       v2.0; en v1 siempre HTTP 400 porque nadie escribe el token)</li>
  * </ul>
  *
- * <p>RNF-S04: el token de recuperación tiene validez de 30 minutos y se
- * invalida tras el primer uso exitoso (resetToken = null).</p>
+ * <p>RNF-S04 en v1 aplica a la contraseña temporal entregada por E04
+ * (longitud, anti-enumeración y respuesta genérica), no al token UUID,
+ * cuyo flujo de 30 minutos queda reservado para v2.0.</p>
  *
  * @author Santiago Castillo
  */
@@ -207,18 +215,32 @@ public class AuthService {
     // =========================================================================
 
     /**
-     * Solicita un token de recuperación de contraseña por email.
+     * Solicita la recuperación de contraseña por email (E04).
      *
-     * <p>El correo se envía de forma asíncrona via {@link EmailService} usando
-     * Gmail SMTP con las credenciales configuradas por variables de entorno.</p>
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     *
+     * <p>Comportamiento real en v1:</p>
+     * <ol>
+     *   <li>Si el email existe en BD, se genera una contraseña temporal de
+     *       8 caracteres alfanuméricos mediante {@code generarPasswordTemporal()}
+     *       (SecureRandom sobre un alfabeto sin caracteres ambiguos).</li>
+     *   <li>Se sobrescribe {@code passwordHash} del usuario con el hash BCrypt
+     *       de esa contraseña temporal.</li>
+     *   <li>Se envía la contraseña en claro al email del usuario a través de
+     *       {@link EmailService#enviarPasswordTemporal(String, String)} (Gmail
+     *       SMTP, envío asíncrono).</li>
+     * </ol>
+     *
+     * <p>Este flujo NO toca {@code resetToken} ni {@code resetTokenExpiry}
+     * en la entidad Usuario; ambos campos quedan reservados para v2.0.</p>
      *
      * <p>Decisión de seguridad (RNF-S04): si el email no existe en BD se
      * devuelve exactamente la misma respuesta 200 que si existe. Esto evita
      * que un atacante pueda enumerar qué emails están registrados en el
      * sistema mediante las respuestas de este endpoint.</p>
-     *
-     * <p>El token tiene validez de 30 minutos (RNF-S04) y es de un solo uso:
-     * E05 lo invalida al usarlo.</p>
      *
      * @param request DTO con el email del usuario
      * @return MensajeResponse con mensaje genérico (mismo tanto si existe como si no)
@@ -255,26 +277,38 @@ public class AuthService {
     // =========================================================================
 
     /**
-     * Restablece la contraseña usando el token de recuperación.
+     * Restablece la contraseña usando el token de recuperación (E05).
      *
-     * <p>Flujo:
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     *
+     * <p>Estado real en v1: este método siempre falla con
+     * IllegalArgumentException (HTTP 400). El motivo es que E04 no escribe
+     * {@code resetToken} en la base de datos en v1; por lo tanto la búsqueda
+     * {@code findByResetToken} en el paso 1 siempre devuelve
+     * {@code Optional.empty} y se lanza la excepción del orElseThrow.</p>
+     *
+     * <p>Flujo previsto en v2.0 (contexto, no operativo en v1):</p>
      * <ol>
      *   <li>Buscar usuario por resetToken.</li>
-     *   <li>Verificar que el token no ha caducado (resetTokenExpiry > ahora).</li>
+     *   <li>Verificar que el token no ha caducado (resetTokenExpiry &gt; ahora).</li>
      *   <li>Hashear newPassword con BCrypt y guardar.</li>
      *   <li>Invalidar el token: resetToken = null, resetTokenExpiry = null.</li>
      * </ol>
-     * </p>
      *
-     * <p>Si el token no existe o ha caducado se lanza IllegalArgumentException
-     * que el GlobalExceptionHandler convertirá en HTTP 400.</p>
-     *
-     * <p>RNF-S04: token de un solo uso. Una vez usado, resetToken se pone a null
-     * y un segundo intento con el mismo token devuelve 400.</p>
+     * <p>En v2.0, si el token no existe o ha caducado se lanza
+     * IllegalArgumentException que el GlobalExceptionHandler convertirá en
+     * HTTP 400. RNF-S04 (v2.0): token de un solo uso; una vez usado,
+     * resetToken se pone a null y un segundo intento con el mismo token
+     * devuelve 400.</p>
      *
      * @param request DTO con token y newPassword
      * @return MensajeResponse confirmando el restablecimiento
-     * @throws IllegalArgumentException si el token no existe o ha caducado
+     *         (en v1 nunca se alcanza: siempre se lanza la excepción)
+     * @throws IllegalArgumentException siempre en v1; en v2.0, si el token no
+     *         existe o ha caducado
      */
     @Transactional
     public MensajeResponse restablecerPassword(PasswordResetRequest request) {

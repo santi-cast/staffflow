@@ -17,13 +17,18 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controlador REST para autenticación y gestión de credenciales.
  *
+ * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+ * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+ * descrito a continuación pertenece al andamiaje reservado para v2.0
+ * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+ *
  * <p>Cubre el grupo /api/v1/auth con cinco endpoints:</p>
  * <ul>
  *   <li>E01 POST /login         — login público, devuelve JWT</li>
  *   <li>E02 GET  /me            — datos del usuario autenticado</li>
  *   <li>E03 PUT  /password      — cambio de contraseña (requiere actual)</li>
- *   <li>E04 POST /password/recovery — solicitud de recuperación por email</li>
- *   <li>E05 POST /password/reset    — restablecimiento con token</li>
+ *   <li>E04 POST /password/recovery — envío de contraseña temporal por email</li>
+ *   <li>E05 POST /password/reset    — andamiaje v2.0; en v1 siempre HTTP 400</li>
  * </ul>
  *
  * <p>E01, E04 y E05 son rutas públicas (declaradas en SecurityConfig y en
@@ -117,7 +122,12 @@ public class AuthController {
     // =========================================================================
 
     /**
-     * Solicita el envío de un token de recuperación de contraseña al email.
+     * Solicita la recuperación de contraseña por email.
+     *
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
      *
      * <p>Ruta pública: no requiere token (el usuario no puede autenticarse
      * si ha olvidado su contraseña).</p>
@@ -125,8 +135,12 @@ public class AuthController {
      * <p>Siempre devuelve 200 con el mismo mensaje, exista o no el email en
      * la BD. Esto impide la enumeración de usuarios registrados (RNF-S04).</p>
      *
-     * <p>STUB: el token no se envía por email. Se loguea en el servidor
-     * con log.info() para poder probarlo en Swagger durante el desarrollo.</p>
+     * <p>Comportamiento real en v1: si el email existe, AuthService genera
+     * una contraseña temporal de 8 caracteres alfanuméricos, sobrescribe el
+     * passwordHash del usuario y envía la contraseña en claro por correo
+     * a través de EmailService (Gmail SMTP). Los campos resetToken y
+     * resetTokenExpiry de la entidad Usuario no se tocan; quedan reservados
+     * para el flujo de token UUID previsto en v2.0.</p>
      *
      * @param request DTO con el email del usuario
      * @return 200 OK con MensajeResponse (mensaje genérico)
@@ -144,15 +158,27 @@ public class AuthController {
     /**
      * Restablece la contraseña usando el token de recuperación.
      *
-     * <p>Ruta pública: el usuario llega aquí desde el enlace del email (en el
-     * stub, desde el token que aparece en el log del servidor).</p>
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
      *
-     * <p>Si el token no existe, ya fue usado o ha caducado (más de 30 minutos
-     * desde E04), AuthService lanza IllegalArgumentException que se convierte
-     * en 400. El token se invalida tras el primer uso exitoso (RNF-S04).</p>
+     * <p>Estado real en v1: el endpoint está expuesto y acepta el DTO, pero
+     * siempre devuelve HTTP 400. La razón es que E04 nunca escribe
+     * {@code resetToken} en la base de datos, por lo que la búsqueda
+     * {@code findByResetToken} siempre devuelve {@code Optional.empty} y
+     * AuthService lanza IllegalArgumentException. El flujo está operativo
+     * solo nominalmente; queda reservado para activarse en v2.0.</p>
+     *
+     * <p>Descripción del flujo previsto en v2.0 (contexto, no operativo en v1):
+     * el usuario llegaría aquí desde el enlace del email. Si el token no
+     * existe, ya fue usado o ha caducado (más de 30 minutos desde E04),
+     * AuthService lanzaría IllegalArgumentException que se convierte en 400.
+     * El token se invalida tras el primer uso exitoso (RNF-S04).</p>
      *
      * @param request DTO con token y newPassword
      * @return 200 OK con MensajeResponse confirmando el restablecimiento
+     *         (en v1 siempre 400 por el motivo arriba indicado)
      */
     @PostMapping("/password/reset")
     public ResponseEntity<MensajeResponse> restablecerPassword(

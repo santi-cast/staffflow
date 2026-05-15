@@ -72,12 +72,24 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     /**
      * Busca un usuario por su token de recuperación de contraseña.
      *
-     * Usado por AuthService en E05 (reset con token). El token es de un
-     * solo uso y caduca a los 30 minutos. Si no existe
-     * o ha caducado → HTTP 400.
+     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
+     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
+     * descrito a continuación pertenece al andamiaje reservado para v2.0
+     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
      *
-     * @param resetToken token opaco generado en E04
+     * <p>Estado real en v1: este método siempre devuelve {@code Optional.empty}.
+     * Ningún flujo de v1 escribe {@code resetToken} en la base de datos, por
+     * lo que la columna está siempre a NULL. Su único consumidor (AuthService
+     * en E05) recibe el {@code empty} y lanza IllegalArgumentException, que
+     * el GlobalExceptionHandler convierte en HTTP 400.</p>
+     *
+     * <p>Rol previsto en v2.0: AuthService llamaría a este método en E05
+     * (reset con token). El token sería de un solo uso y caducaría a los
+     * 30 minutos; si no existiera o hubiera caducado → HTTP 400.</p>
+     *
+     * @param resetToken token opaco generado en E04 (en v1 no se genera)
      * @return Optional con el usuario si el token existe y es válido
+     *         (en v1 siempre vacío)
      */
     Optional<Usuario> findByResetToken(String resetToken);
 
