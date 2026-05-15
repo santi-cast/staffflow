@@ -30,7 +30,7 @@ import java.util.List;
  *
  * Sustituto del ParteDiarioResponse anterior, renombrado para mayor
  * claridad semántica: este DTO es el detalle de un empleado individual,
- * no el parte completo (decisión de refactoring Bloque 6 Tarea 2).
+ * no el parte completo.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).

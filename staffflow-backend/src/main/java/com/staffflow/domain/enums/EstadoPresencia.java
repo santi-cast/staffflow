@@ -20,7 +20,6 @@ package com.staffflow.domain.enums;
  *   5. Si tiene planificacion_ausencias con procesado = false → AUSENCIA_PLANIFICADA
  *   6. Sin ninguno de los anteriores → SIN_JUSTIFICAR
  *
- * Decisión: enum nuevo no previsto en el diseño inicial (D-012).
  * Alternativa descartada: String en el DTO — pierde tipado y
  * aumenta el riesgo de valores inconsistentes entre servicio y cliente.
  *

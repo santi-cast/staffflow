@@ -10,7 +10,7 @@ import lombok.Setter;
  *
  * Devuelve UNA SOLA VEZ el PIN de terminal regenerado para el empleado.
  * El valor {@code pinTerminal} debe entregarse al empleado en persona;
- * no se almacena ni se puede volver a consultar por API (decisión D-018).
+ * no se almacena ni se puede volver a consultar por API.
  *
  * Campos:
  *   - empleadoId: ID del empleado al que pertenece el PIN regenerado.

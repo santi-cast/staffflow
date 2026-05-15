@@ -13,7 +13,7 @@ import lombok.Data;
  *
  * El campo dispositivoId identifica el terminal físico desde el que se
  * realiza la operación. Es necesario para el bloqueo por dispositivo
- * (RNF-S05, D-021): tras 5 intentos fallidos el dispositivo queda
+ * (RNF-S05): tras 5 intentos fallidos el dispositivo queda
  * bloqueado y devuelve HTTP 423 hasta que se reinicia el contador.
  * El bloqueo es por dispositivo, no por empleado.
  *

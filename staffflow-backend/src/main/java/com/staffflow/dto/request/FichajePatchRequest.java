@@ -19,18 +19,15 @@ import java.time.LocalDateTime;
  * del motivo. La validación la realiza FichajeService, no @NotBlank aquí,
  * porque @NotBlank impediría enviar null para los campos realmente opcionales.
  *
- * Desviación D-020 (13/03/2026, sesión 10):
- *   El documento DTOs_v1 declaraba FichajePatchRequest solo con observaciones
- *   (inmutabilidad total de fichajes). Confirmado en sesión 10 que E23 sí puede
- *   modificar horaEntrada, horaSalida y tipo como corrección manual del ENCARGADO
- *   o ADMIN. Se añaden estos tres campos opcionales.
- *   El service recalcula jornadaEfectivaMinutos si se modifican las horas,
- *   usando el totalPausasMinutos ya almacenado en BD (E23 no toca pausas).
+ * E23 permite a ENCARGADO o ADMIN modificar horaEntrada, horaSalida y tipo
+ * como corrección manual además de observaciones. El service recalcula
+ * jornadaEfectivaMinutos si cambian las horas, usando el totalPausasMinutos
+ * ya almacenado en BD (E23 no toca pausas).
  *
  * Campos modificables:
- *   - tipo           → tipo de jornada (D-020)
- *   - horaEntrada    → hora de entrada del empleado (D-020)
- *   - horaSalida     → hora de salida del empleado (D-020)
+ *   - tipo           → tipo de jornada
+ *   - horaEntrada    → hora de entrada del empleado
+ *   - horaSalida     → hora de salida del empleado
  *   - observaciones  → notas obligatorias para trazabilidad (RNF-L02)
  *
  * Campos NO modificables (no presentes en este DTO):

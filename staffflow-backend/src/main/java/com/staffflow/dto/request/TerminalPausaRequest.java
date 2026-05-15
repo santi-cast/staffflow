@@ -18,7 +18,7 @@ import lombok.Data;
  * el PIN.
  *
  * El campo dispositivoId identifica el terminal físico para el bloqueo
- * por dispositivo (RNF-S05, D-021). Mismo mecanismo que TerminalPinRequest.
+ * por dispositivo (RNF-S05). Mismo mecanismo que TerminalPinRequest.
  *
  * Nota: E51 (finalizar pausa) usa TerminalPinRequest, no este DTO,
  * porque no necesita tipoPausa — el tipo se recupera de la pausa activa
@@ -49,7 +49,7 @@ public class TerminalPausaRequest {
 
     /**
      * Identificador del dispositivo terminal desde el que se inicia la pausa.
-     * Necesario para el bloqueo por dispositivo (RNF-S05, D-021).
+     * Necesario para el bloqueo por dispositivo (RNF-S05).
      */
     @NotBlank
     private String dispositivoId;
