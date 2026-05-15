@@ -9,7 +9,7 @@
 
     Campos mostrados:
       - Nombre completo (nombre + apellido1 + apellido2)
-      - Numero de empleado (D-030, antes "NSS")
+      - Numero de empleado (antes "NSS")
       - DNI
       - Categoria
       - Jornada semanal (horas)

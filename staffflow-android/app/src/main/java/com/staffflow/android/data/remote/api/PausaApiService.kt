@@ -20,7 +20,7 @@ import retrofit2.http.Query
  *   E29 GET  /pausas             -> List<PausaResponse>  (ADMIN, ENCARGADO)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
- * ENCARGADO solo puede gestionar pausas del dia actual (D-026).
+ * ENCARGADO solo puede gestionar pausas del dia actual.
  */
 interface PausaApiService {
 

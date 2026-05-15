@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
  *   Success -> datos del empleado en cards
  *
  * Boton "Cambiar contrasena" navega a P04 (CambiarPasswordFragment).
- * NOTA: el wireframe mostraba "NSS" — en v1.0 el campo es numeroEmpleado (D-030).
+ * El campo se llama numeroEmpleado (antes "NSS").
  */
 class MiPerfilFragment : Fragment() {
 

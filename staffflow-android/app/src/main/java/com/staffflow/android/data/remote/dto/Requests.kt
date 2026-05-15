@@ -131,7 +131,7 @@ data class EmpresaRequest(
  * horaEntrada es null en ausencias planificadas.
  * Error 409 si ya existe fichaje para ese empleado en esa fecha.
  * Solo accesible para ADMIN y ENCARGADO. ENCARGADO solo puede
- * crear fichajes del dia actual (D-026).
+ * crear fichajes del dia actual.
  */
 data class FichajeRequest(
     val empleadoId: Long,
@@ -146,7 +146,7 @@ data class FichajeRequest(
  * Actualizacion parcial de un fichaje (E23 PATCH /fichajes/{id}).
  *
  * observaciones es OBLIGATORIA aunque sea PATCH (RNF-L02).
- * ENCARGADO solo puede modificar fichajes del dia actual (D-026).
+ * ENCARGADO solo puede modificar fichajes del dia actual.
  */
 data class FichajePatchRequest(
     val tipo: TipoFichaje? = null,

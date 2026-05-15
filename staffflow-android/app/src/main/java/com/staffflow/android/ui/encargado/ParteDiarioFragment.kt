@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  *   Success -> chips de resumen + RecyclerView con pull-to-refresh
  *
  * Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
- * Tap en fila -> action_parte_diario_to_detalle_empleado (P14, Bloque 3).
+ * Tap en fila -> action_parte_diario_to_detalle_empleado (P14).
  */
 class ParteDiarioFragment : Fragment() {
 

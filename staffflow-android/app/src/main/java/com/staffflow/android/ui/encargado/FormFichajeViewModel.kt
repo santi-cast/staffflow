@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
  *   Modo edicion (pausaId > 0): llama a E28 PATCH /pausas/{id}.
  *
  * Las observaciones son OBLIGATORIAS en todas las variantes (RNF-L02).
- * ENCARGADO solo puede gestionar registros del dia actual (D-026, validado en backend).
+ * ENCARGADO solo puede gestionar registros del dia actual (validado en backend).
  *
  * UiState:
  *   Idle    -> formulario listo para rellenar

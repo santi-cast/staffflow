@@ -40,10 +40,10 @@ data class UsuarioResponse(
 /**
  * Datos de un empleado (E14, E15, E21).
  *
- * numeroEmpleado tiene formato EMP-001 (renombrado desde nss en D-030).
+ * numeroEmpleado tiene formato EMP-001 (renombrado desde nss).
  * apellido2 y codigoNfc son opcionales (pueden ser null).
  *
- * pinTerminal y email son nullables y dependen del endpoint y del rol (D-017 Opción A):
+ * pinTerminal y email son nullables y dependen del endpoint y del rol:
  *   - E13 POST /empleados              -> pinTerminal con valor (creación), email segun lo enviado
  *   - E15 GET /empleados/{id} ADMIN    -> pinTerminal con valor, email con valor
  *   - E15 GET /empleados/{id} ENCARGADO-> pinTerminal = null, email = null

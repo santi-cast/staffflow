@@ -15,7 +15,7 @@
     En la zona publica (P01 Terminal, P02 Login y similares) el
     DrawerLayout se bloquea para que no se pueda abrir con gesto.
 
-    El NavHostFragment referencia @navigation/nav_graph (Tarea 6).
+    El NavHostFragment referencia @navigation/nav_graph.
     La Toolbar se conecta al NavController en MainActivity para
     mostrar automaticamente el boton Atras o el icono de hamburguesa
     segun el destino actual (AppBarConfiguration).

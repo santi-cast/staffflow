@@ -23,7 +23,7 @@ import retrofit2.http.Query
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  * Las observaciones son OBLIGATORIAS en E22 y E23 (RNF-L02).
- * ENCARGADO solo puede gestionar fichajes del dia actual (D-026).
+ * ENCARGADO solo puede gestionar fichajes del dia actual.
  */
 interface FichajeApiService {
 

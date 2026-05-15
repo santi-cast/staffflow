@@ -66,7 +66,7 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
 
     /**
      * E21 - Devuelve el perfil del empleado autenticado.
-     * P08 (MiPerfilFragment, Bloque 5) llama a este metodo.
+     * P08 (MiPerfilFragment) llama a este metodo.
      */
     suspend fun getMiPerfil(): Result<EmpleadoResponse> =
         safeApiCall { api.getMiPerfil() }

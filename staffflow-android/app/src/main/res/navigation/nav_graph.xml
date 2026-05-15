@@ -21,9 +21,7 @@
       ADMIN:     P28, P29, P30
       TODOS:     P04
 
-    Las acciones de navegacion se anadiran en cada bloque conforme
-    se implementen los fragments. En el Bloque 1 solo se definen
-    las acciones del flujo del terminal (P01 <-> P06 <-> P07).
+    Las acciones del flujo del terminal son P01 <-> P06 <-> P07.
 -->
 <navigation
     xmlns:android="http://schemas.android.com/apk/res/android"
