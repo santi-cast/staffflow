@@ -337,18 +337,19 @@ public class SaldoService {
                         "Empleado no encontrado para el usuario: " + username));
 
         // Validar que el año solicitado tiene sentido para este empleado.
-        // Antes del año de alta o en el futuro → IllegalStateException
-        // que cae al handler generico de GlobalExceptionHandler → HTTP 500.
-        // Es estado invalido (no deberia pedirse un año fuera de rango),
-        // no recurso ausente.
+        // Año en el futuro o anterior al alta del empleado: no puede existir
+        // saldo para ese año, por tanto NotFoundException → HTTP 404. Mismo
+        // contrato que el 404 del final del metodo cuando no se encuentra el
+        // registro tras intentar calcularlo. IllegalStateException queda
+        // reservada para fallos internos genuinos (5xx).
         int anioActual = Year.now().getValue();
         LocalDate fechaAlta = empleado.getFechaAlta();
         if (anioConsulta > anioActual) {
-            throw new IllegalStateException(
+            throw new NotFoundException(
                     "No hay datos de saldo para el año " + anioConsulta);
         }
         if (fechaAlta != null && anioConsulta < fechaAlta.getYear()) {
-            throw new IllegalStateException(
+            throw new NotFoundException(
                     "No hay datos de saldo para el año " + anioConsulta);
         }
 

@@ -25,9 +25,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * <ul>
  *   <li>{@code PdfService} — errores de iText7 al generar PDFs (I/O fallido,
  *       documento corrupto). El cliente no puede recuperarse: 5xx es correcto.</li>
- *   <li>{@code SaldoService#obtenerMiSaldo} — años fuera del rango contractual
- *       del empleado (alta futura o futuro). Es estado inválido del request,
- *       no recurso ausente. Documentado en GlobalExceptionHandler.</li>
  * </ul>
  *
  * <p><strong>Cómo extender la whitelist:</strong> añadir una clase requiere
@@ -53,8 +50,7 @@ class ServiceLayerArchitectureTest {
      * clase de test (ver párrafo "Cómo extender la whitelist").
      */
     private static final String[] WHITELIST_ISE = {
-            "com.staffflow.service.PdfService",
-            "com.staffflow.service.SaldoService"
+            "com.staffflow.service.PdfService"
     };
 
     @Test
@@ -63,7 +59,6 @@ class ServiceLayerArchitectureTest {
         ArchRule rule = noClasses()
                 .that().resideInAPackage(SERVICE_PACKAGE)
                 .and().doNotHaveFullyQualifiedName(WHITELIST_ISE[0])
-                .and().doNotHaveFullyQualifiedName(WHITELIST_ISE[1])
                 .should().dependOnClassesThat().haveFullyQualifiedName("java.lang.IllegalStateException")
                 .because("ISE en services indica regresión del patrón viejo. "
                         + "Para 'no encontrado' usar NotFoundException (404), "
