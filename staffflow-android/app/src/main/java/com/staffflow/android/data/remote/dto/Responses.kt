@@ -41,8 +41,14 @@ data class UsuarioResponse(
  * Datos de un empleado (E14, E15, E21).
  *
  * numeroEmpleado tiene formato EMP-001 (renombrado desde nss en D-030).
- * pinTerminal nunca se incluye en este DTO por seguridad.
  * apellido2 y codigoNfc son opcionales (pueden ser null).
+ *
+ * pinTerminal y email son nullables y dependen del endpoint y del rol (D-017 Opción A):
+ *   - E13 POST /empleados              -> pinTerminal con valor (creación), email segun lo enviado
+ *   - E15 GET /empleados/{id} ADMIN    -> pinTerminal con valor, email con valor
+ *   - E15 GET /empleados/{id} ENCARGADO-> pinTerminal = null, email = null
+ *   - E14 GET /empleados (lista)       -> pinTerminal = null, email = null
+ *   - E21 GET /empleados/me            -> pinTerminal = null, email del usuario autenticado
  */
 data class EmpleadoResponse(
     val id: Long,
@@ -60,8 +66,8 @@ data class EmpleadoResponse(
     val diasAsuntosPropiosAnuales: Int,
     val codigoNfc: String?,
     val activo: Boolean,
-    val pinTerminal: String? = null,  // Solo presente en E13 (crear) y E15 (detalle por id)
-    val email: String? = null         // Solo presente en E15 (detalle por id), solo para ADMIN
+    val pinTerminal: String? = null,  // E13 (crear) y E15 (detalle por id) si rol = ADMIN
+    val email: String? = null         // E15 (detalle por id) si rol = ADMIN, o E21 (perfil propio)
 )
 
 /**
