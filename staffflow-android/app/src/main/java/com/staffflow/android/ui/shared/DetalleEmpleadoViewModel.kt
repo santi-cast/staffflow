@@ -102,12 +102,25 @@ class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(appl
      * a un codigo simple ("404" | "red" | "generico") que el Fragment
      * resuelve a string. Se basa en el mensaje del throwable porque
      * safeApiCall ya colapsa HttpException/IOException a Exception plana.
+     *
+     * En exito tambien actualiza _uiState con el PIN nuevo (copy del
+     * EmpleadoResponse actual) para que P14 refleje el cambio sin tener
+     * que salir y reentrar a la pantalla. Aprovecha que E65 ya devuelve
+     * el PIN nuevo, asi evitamos una request extra a E15.
      */
     fun regenerarPin(empleadoId: Long) {
         viewModelScope.launch {
             _eventoRegenerarPin.emit(RegenerarPinEvento.Cargando)
             repository.regenerarPin(empleadoId).fold(
-                onSuccess = { _eventoRegenerarPin.emit(RegenerarPinEvento.Exito(it.pinTerminal)) },
+                onSuccess = { resp ->
+                    val actual = _uiState.value
+                    if (actual is UiState.Success) {
+                        _uiState.value = UiState.Success(
+                            actual.empleado.copy(pinTerminal = resp.pinTerminal)
+                        )
+                    }
+                    _eventoRegenerarPin.emit(RegenerarPinEvento.Exito(resp.pinTerminal))
+                },
                 onFailure = { _eventoRegenerarPin.emit(RegenerarPinEvento.Error(mapearError(it))) }
             )
         }
