@@ -26,7 +26,8 @@ import java.util.Optional;
  *   - findByFiltros → E29 filtros combinables</p>
  *
  * <p>Métodos añadidos en Bloque 7 (sesión 18):
- *   - findByEmpleadoIdAndFechaBetween → InformeService E42/E43</p>
+ *   - findByEmpleadoIdAndFechaBetweenOrderByFechaAscHoraInicioAsc
+ *     → InformeService E42/E43</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.Pausa
@@ -169,7 +170,9 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
     // ---------------------------------------------------------------
 
     /**
-     * Devuelve todas las pausas de un empleado en un rango de fechas.
+     * Devuelve todas las pausas de un empleado en un rango de fechas,
+     * ordenadas por fecha ascendente y dentro de cada fecha por hora
+     * de inicio ascendente.
      *
      * <p>Usado por InformeService para cargar el detalle de pausas de
      * cada día del período en E42 y E43. A diferencia de findByFiltros,
@@ -177,14 +180,17 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
      * resuelto en el contexto del informe) y el empleadoId es siempre
      * obligatorio. Más limpio y eficiente para este caso de uso.</p>
      *
-     * <p>Spring Data JPA genera la implementación automáticamente a partir
-     * del nombre del método. No requiere @Query explícita.</p>
+     * <p>El sufijo OrderByFechaAscHoraInicioAsc fuerza a Spring Data JPA
+     * a generar la cláusula ORDER BY explícita. Sin este sufijo, el orden
+     * de los resultados dependería del plan de ejecución de la BD y no
+     * está garantizado entre H2 (perfil dev) y MySQL (perfil mysql).</p>
      *
      * @param empleadoId id del empleado (obligatorio)
      * @param desde      fecha de inicio del rango (inclusive)
      * @param hasta      fecha de fin del rango (inclusive)
      * @return lista de pausas del empleado en el rango indicado, ordenadas
-     *         por fecha y hora de inicio de forma natural por BD
+     *         por fecha y hora de inicio ascendentes
      */
-    List<Pausa> findByEmpleadoIdAndFechaBetween(Long empleadoId, LocalDate desde, LocalDate hasta);
+    List<Pausa> findByEmpleadoIdAndFechaBetweenOrderByFechaAscHoraInicioAsc(
+            Long empleadoId, LocalDate desde, LocalDate hasta);
 }

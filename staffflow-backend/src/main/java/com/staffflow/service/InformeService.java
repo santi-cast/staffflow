@@ -606,7 +606,7 @@ public class InformeService {
 
         // Cargar todas las pausas del período en una sola query
         List<Pausa> pausas = pausaRepository
-                .findByEmpleadoIdAndFechaBetween(empleadoId, desde, hasta);
+                .findByEmpleadoIdAndFechaBetweenOrderByFechaAscHoraInicioAsc(empleadoId, desde, hasta);
         Map<LocalDate, List<Pausa>> pausasPorFecha = pausas.stream()
                 .collect(Collectors.groupingBy(Pausa::getFecha));
 
