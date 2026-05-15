@@ -27,10 +27,10 @@ import java.util.Optional;
  *   - findById()   → obtener detalle (E10)
  *   - findAll()    → listar sin filtros (E09)
  *
- * Métodos custom — Bloque 1 (AuthService, UserDetailsServiceImpl):
+ * Métodos custom — usados por AuthService, UserDetailsServiceImpl:
  *   - findByUsername, findByEmail, findByResetToken
  *
- * Métodos custom añadidos — Bloque 4 (UsuarioService):
+ * Métodos custom — usados por UsuarioService:
  *   - existsByUsername, existsByEmail
  *   - existsByUsernameAndIdNot, existsByEmailAndIdNot
  *   - findByRol, findByActivo, findByRolAndActivo
@@ -41,7 +41,6 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // ----------------------------------------------------------------
-    // Métodos del Bloque 1
     // Usados por: AuthService, UserDetailsServiceImpl
     // ----------------------------------------------------------------
 
@@ -94,7 +93,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByResetToken(String resetToken);
 
     // ----------------------------------------------------------------
-    // Métodos añadidos en Bloque 4
     // Usados por: UsuarioService (E08, E09, E11)
     // ----------------------------------------------------------------
 

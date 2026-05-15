@@ -125,7 +125,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
             @Param("hasta")      LocalDate hasta);
 
     // ------------------------------------------------------------------
-    // ProcesoCierreDiario — usado en Bloque 6 Tarea 4
+    // Usado por ProcesoCierreDiario
     // ------------------------------------------------------------------
 
     /**
@@ -147,7 +147,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
             @Param("fecha") LocalDate fecha);
 
     // ---------------------------------------------------------------
-    // Método añadido en Bloque 6 Tarea 2 (PresenciaService E35-E37)
+    // Método para PresenciaService (E35-E37)
     // ---------------------------------------------------------------
 
     /**

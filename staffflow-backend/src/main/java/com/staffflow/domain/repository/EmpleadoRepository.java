@@ -30,10 +30,10 @@ import java.util.Optional;
  *   - save()       → crear y actualizar empleado (E13, E16, E17, E18)
  *   - findById()   → obtener detalle (E15)
  *
- * Métodos custom — Bloque 1 (PresenciaService, TerminalService):
+ * Métodos custom — usados por PresenciaService, TerminalService:
  *   - findByUsuarioId, findByActivo, findByPinTerminal
  *
- * Métodos custom añadidos — Bloque 4 (EmpleadoService):
+ * Métodos custom — usados por EmpleadoService:
  *   - existsByDni, existsByNumeroEmpleado, existsByPinTerminal, existsByCodigoNfc
  *   - existsByDniAndIdNot, existsByNumeroEmpleadoAndIdNot,
  *     existsByPinTerminalAndIdNot, existsByCodigoNfcAndIdNot
@@ -46,7 +46,6 @@ import java.util.Optional;
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
     // ----------------------------------------------------------------
-    // Métodos del Bloque 1
     // Usados por: EmpleadoService (/me), PresenciaService, TerminalService
     // ----------------------------------------------------------------
 
@@ -75,7 +74,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Optional<Empleado> findByPinTerminal(String pinTerminal);
 
     // ----------------------------------------------------------------
-    // Métodos añadidos en Bloque 4
     // Usados por: EmpleadoService (E13, E14, E16)
     // ----------------------------------------------------------------
 
@@ -92,7 +90,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      *
      * Usado en EmpleadoService.crear() (E13) para validación preventiva
      * de unicidad antes de insertar. HTTP 409 con mensaje claro si devuelve true.
-     * Renombrado desde existsByNss (D-030, v1.0 → campo numero_empleado).
+     * Renombrado desde existsByNss (v1.0 → campo numero_empleado).
      *
      * @param numeroEmpleado número de empleado a verificar
      * @return true si ya existe un empleado con ese número
@@ -129,7 +127,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el número de empleado indicado,
      * excluyendo al empleado con el id especificado.
      *
-     * Renombrado desde existsByNssAndIdNot (D-030, v1.0 → campo numero_empleado).
+     * Renombrado desde existsByNssAndIdNot (v1.0 → campo numero_empleado).
      *
      * @param numeroEmpleado número de empleado a verificar
      * @param id             ID del empleado que se está editando (se excluye)

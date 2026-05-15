@@ -16,17 +16,14 @@ import java.util.Optional;
  *
  * <p>Los fichajes son inmutables por mandato del RD-ley 8/2019 (RNF-L01):
  * no existe DELETE ni modificación de campos de registro. Solo se permite
- * PATCH en observaciones y horas (E23, D-020). Este repositorio no expone
+ * PATCH en observaciones y horas (E23). Este repositorio no expone
  * ningún método de eliminación más allá del heredado de JpaRepository,
  * que nunca debe llamarse desde FichajeService.</p>
  *
  * <p>Restricción de tabla: UNIQUE(empleado_id, fecha). Un empleado no puede
  * tener dos fichajes el mismo día.</p>
  *
- * <p>Métodos añadidos en Bloque 5 (sesión 10):
- *   - findByFechaAndHoraSalidaIsNull → E25 fichajes incompletos
- *   - findByFiltros                  → E24 y E26 filtros combinables
- * El método existsByEmpleadoIdAndFecha no se añade porque ya existe
+ * <p>El método existsByEmpleadoIdAndFecha no se añade porque ya existe
  * findByEmpleadoIdAndFecha que cubre la misma necesidad con .isPresent().</p>
  *
  * @author Santiago Castillo
@@ -34,10 +31,6 @@ import java.util.Optional;
  */
 @Repository
 public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
-
-    // ---------------------------------------------------------------
-    // Métodos existentes (Bloque 1)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todos los fichajes de un empleado.
@@ -78,10 +71,6 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
      * @return lista de fichajes del empleado en el rango indicado
      */
     List<Fichaje> findByEmpleadoIdAndFechaBetween(Long empleadoId, LocalDate desde, LocalDate hasta);
-
-    // ---------------------------------------------------------------
-    // Métodos añadidos en Bloque 5 (sesión 10)
-    // ---------------------------------------------------------------
 
     /**
      * Lista los fichajes de una fecha concreta que tienen horaEntrada
@@ -134,7 +123,7 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
             @Param("tipo") TipoFichaje tipo);
 
     // ---------------------------------------------------------------
-    // Métodos añadidos en Bloque 6 Tarea 2 (PresenciaService E35-E37)
+    // Métodos para PresenciaService (E35-E37)
     // ---------------------------------------------------------------
 
     /**

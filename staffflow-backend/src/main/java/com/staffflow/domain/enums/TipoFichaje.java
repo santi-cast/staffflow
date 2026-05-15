@@ -7,12 +7,12 @@ package com.staffflow.domain.enums;
  * El proceso diario automático (@Scheduled 23:55) asigna el tipo correcto al
  * convertir ausencias planificadas en fichajes.
  *
- * IMPORTANTE: este enum reemplaza la versión provisional de Fase 0 que contenía
- * ENTRADA y SALIDA. Esos valores eran incorrectos: el fichaje es el registro
- * completo del día (con hora_entrada y hora_salida en la misma fila), no eventos
- * separados. Se eliminan para evitar errores de mapeo con Hibernate.
+ * Una versión anterior contenía ENTRADA y SALIDA. Esos valores eran
+ * incorrectos: el fichaje es el registro completo del día (con hora_entrada
+ * y hora_salida en la misma fila), no eventos separados. Se eliminan para
+ * evitar errores de mapeo con Hibernate.
  *
- * Valores alineados con la columna ENUM de la tabla fichajes (DDL v4).
+ * Valores alineados con la columna ENUM de la tabla fichajes.
  * Referencia: RF-17, RF-18, RF-19, RNF-L01, RNF-L02.
  */
 public enum TipoFichaje {
@@ -41,8 +41,8 @@ public enum TipoFichaje {
     /**
      * Día libre para compensar saldo de horas positivo acumulado,
      * o día libre por haber trabajado un festivo.
-     * Decisión de diseño nº13: ambas situaciones tienen el mismo tratamiento
-     * contable, por lo que se unifican en un único valor.
+     * Ambas situaciones tienen el mismo tratamiento contable, por lo que
+     * se unifican en un único valor.
      */
     DIA_LIBRE_COMPENSATORIO,
 

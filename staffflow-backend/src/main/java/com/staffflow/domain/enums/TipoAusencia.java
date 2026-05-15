@@ -7,7 +7,7 @@ package com.staffflow.domain.enums;
  * con antelación que serán convertidas automáticamente en fichajes por el
  * proceso diario (@Scheduled 23:55).
  *
- * Distinción clave (decisión de diseño nº7):
+ * Distinción clave de diseño:
  *   - Ausencia PLANIFICADA → va a planificacion_ausencias con este enum.
  *   - Ausencia JUSTIFICADA IMPREVISTA (baja médica, etc.) → se registra
  *     directamente como fichaje manual con el TipoFichaje correcto.
@@ -16,7 +16,7 @@ package com.staffflow.domain.enums;
  * Por eso TipoAusencia no incluye BAJA_MEDICA ni AUSENCIA_INJUSTIFICADA:
  * esos tipos solo existen en TipoFichaje.
  *
- * Valores alineados con la columna ENUM de la tabla planificacion_ausencias (DDL v4).
+ * Valores alineados con la columna ENUM de la tabla planificacion_ausencias.
  * Referencia: RF-25, RF-26, RF-27, RF-28, RF-29.
  */
 public enum TipoAusencia {
@@ -41,8 +41,8 @@ public enum TipoAusencia {
 
     /**
      * Día libre compensatorio planificado.
-     * Decisión de diseño nº13: cubre tanto la compensación por saldo de horas
-     * positivo como el día libre por haber trabajado un festivo.
+     * Cubre tanto la compensación por saldo de horas positivo como el día
+     * libre por haber trabajado un festivo.
      * Mismo valor que en TipoFichaje para coherencia semántica entre tablas.
      */
     DIA_LIBRE_COMPENSATORIO,

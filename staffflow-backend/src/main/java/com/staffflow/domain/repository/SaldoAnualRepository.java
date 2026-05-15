@@ -17,10 +17,9 @@ import java.util.Optional;
  * con un patron findOrCreate: si no existe el registro para el año en curso
  * lo crea con los valores iniciales antes de actualizar.</p>
  *
- * <p>Los saldos los actualiza el proceso nocturno @Scheduled (ProcesoCierreDiario,
- * Tarea 4 del Bloque 6) y manualmente E40 recalcular (solo ADMIN).
- * El cierre anual (boton manual ADMIN) crea el registro
- * del año siguiente con los pendientes arrastrados.</p>
+ * <p>Los saldos los actualiza el proceso nocturno @Scheduled (ProcesoCierreDiario)
+ * y manualmente E40 recalcular (solo ADMIN). El cierre anual (boton manual ADMIN)
+ * crea el registro del año siguiente con los pendientes arrastrados.</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.SaldoAnual

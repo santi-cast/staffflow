@@ -22,22 +22,11 @@ import java.util.Optional;
  * estado es imprescindible para los endpoints de terminal E50 y E51,
  * que detectan si hay pausa activa antes de registrar inicio o fin.</p>
  *
- * <p>Métodos añadidos en Bloque 5 (sesión 10):
- *   - findByFiltros → E29 filtros combinables</p>
- *
- * <p>Métodos añadidos en Bloque 7 (sesión 18):
- *   - findByEmpleadoIdAndFechaBetweenOrderByFechaAscHoraInicioAsc
- *     → InformeService E42/E43</p>
- *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.Pausa
  */
 @Repository
 public interface PausaRepository extends JpaRepository<Pausa, Long> {
-
-    // ---------------------------------------------------------------
-    // Métodos existentes (Bloque 1)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todas las pausas de un empleado.
@@ -91,10 +80,6 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
      */
     int countByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha);
 
-    // ---------------------------------------------------------------
-    // Métodos añadidos en Bloque 5 (sesión 10)
-    // ---------------------------------------------------------------
-
     /**
      * Busca pausas aplicando filtros opcionales y combinables.
      *
@@ -128,7 +113,7 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
             @Param("tipoPausa") TipoPausa tipoPausa);
 
     // ---------------------------------------------------------------
-    // Métodos añadidos en Bloque 6 Tarea 2 (PresenciaService E35-E37)
+    // Métodos para PresenciaService (E35-E37)
     // ---------------------------------------------------------------
 
     /**
@@ -166,7 +151,7 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
     List<Pausa> findByFechaWithEmpleado(@Param("fecha") LocalDate fecha);
 
     // ---------------------------------------------------------------
-    // Métodos añadidos en Bloque 7 (sesión 18 — InformeService E42/E43)
+    // Métodos para InformeService (E42/E43)
     // ---------------------------------------------------------------
 
     /**

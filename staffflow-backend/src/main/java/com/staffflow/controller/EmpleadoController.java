@@ -32,7 +32,7 @@ import java.util.List;
  *     porque no tiene perfil de empleado asociado.
  *   - E65 (/{id}/regenerar-pin): ADMIN y ENCARGADO. Genera un PIN
  *     nuevo de 4 dígitos para el terminal físico. El PIN nunca se
- *    expone en otros endpoints (D-018).
+ *     expone en otros endpoints.
  *
  * El controller extrae del JWT (objeto Authentication de Spring Security)
  * el usuarioId del usuario autenticado para identificar al empleado en E21.
@@ -125,7 +125,7 @@ public class EmpleadoController {
      * Devuelve el perfil completo de un empleado.
      *
      * Extrae el rol del JWT y lo pasa al service para que filtre
-     * pinTerminal según la Opción A acordada (D-017):
+     * pinTerminal según la Opción A acordada:
      *   - ADMIN     → pinTerminal con valor real
      *   - ENCARGADO → pinTerminal = null
      *
@@ -223,7 +223,6 @@ public class EmpleadoController {
     // ----------------------------------------------------------------
     // E19 — GET /api/v1/empleados/estado
     // RF-15: Estado en tiempo real de los empleados
-    // Pendiente de implementación en Bloque 6
     // ----------------------------------------------------------------
 
     /**
@@ -282,9 +281,9 @@ public class EmpleadoController {
      *
      * Extrae el username del objeto Authentication de Spring Security
      * mediante authentication.getName() — disponible en el User estándar
-     * de Spring sin necesidad de cast ni implementación propia (Opción B,
-     * decisión de sesión 7, D-017). El service resuelve el id del usuario
-     * a partir del username y localiza el perfil de empleado vinculado.
+     * de Spring sin necesidad de cast ni implementación propia (Opción B).
+     * El service resuelve el id del usuario a partir del username y localiza
+     * el perfil de empleado vinculado.
      *
      * El PIN nunca se incluye en /me independientemente del rol.
      *
@@ -300,7 +299,7 @@ public class EmpleadoController {
     @PreAuthorize("hasAnyRole('EMPLEADO','ENCARGADO')")
     public ResponseEntity<EmpleadoResponse> obtenerMiPerfil(Authentication authentication) {
         // authentication.getName() devuelve el username del User estándar de Spring Security.
-        // Compatible con UserDetailsServiceImpl que no implementa getId() (Opción B, D-017).
+        // Compatible con UserDetailsServiceImpl que no implementa getId() (Opción B).
         String username = authentication.getName();
         return ResponseEntity.ok(empleadoService.obtenerMiPerfil(username));
     }
@@ -315,7 +314,7 @@ public class EmpleadoController {
      *
      * El servidor genera un nuevo PIN de 4 dígitos único mediante
      * {@code generarPinUnico()}, lo persiste en BD y lo devuelve en la respuesta.
-     * Una vez entregado, el PIN no puede volver a consultarse por API (D-018):
+     * Una vez entregado, el PIN no puede volver a consultarse por API:
      * el ADMIN o ENCARGADO debe entregarlo al empleado en persona.
      *
      * La modificación del PIN de terminal se realiza EXCLUSIVAMENTE por este
