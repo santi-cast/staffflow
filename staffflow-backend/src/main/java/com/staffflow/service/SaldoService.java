@@ -40,7 +40,7 @@ import java.util.List;
  * <p>recalcularParaProceso() es el metodo interno usado por
  * ProcesoCierreDiario (Tarea C). Contiene toda la logica de recalculo
  * pero no construye SaldoResponse, evitando trabajo innecesario en el
- * proceso nocturno (Decision 1, Opcion A).</p>
+ * proceso nocturno.</p>
  *
  * @author Santiago Castillo
  */
@@ -189,8 +189,7 @@ public class SaldoService {
      *
      * <p>Contiene toda la logica de recalculo de E40 pero no construye
      * SaldoResponse. Esto evita trabajo innecesario cuando lo llama
-     * ProcesoCierreDiario a las 23:55 para cada empleado activo
-     * (Decision 1, Opcion A de la sesion 16).</p>
+     * ProcesoCierreDiario a las 23:55 para cada empleado activo.</p>
      *
      * <p>El metodo recalcular() (E40) llama a este metodo internamente
      * y luego construye el SaldoResponse para devolverlo al cliente.

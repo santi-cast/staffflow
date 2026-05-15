@@ -243,7 +243,7 @@ public class ProcesoCierreDiario {
         // Se ejecuta siempre despues de A y B para que el recalculo incluya
         // todos los fichajes del dia recien cerrado. Llama a
         // SaldoService.recalcularParaProceso() que hace el recalculo completo
-        // desde cero sin construir DTO (Decision 1, Opcion A, sesion 16).
+        // desde cero sin construir DTO.
         // -------------------------------------------------------------------
         log.info("Tarea C iniciada: recalculo saldos anuales para {} empleados activos",
                 empleadosActivos.size());
@@ -311,10 +311,10 @@ public class ProcesoCierreDiario {
      *
      * <p>El mapeo es directo por nombre: todos los valores de TipoAusencia
      * tienen un TipoFichaje con el mismo nombre. Esta correspondencia fue
-     * verificada en el diseño del sistema (sesion 16) y los enums lo
-     * garantizan. Se usa valueOf para que una discrepancia futura entre
-     * enums falle en tiempo de ejecucion con mensaje claro en lugar de
-     * producir datos incorrectos silenciosamente.</p>
+     * verificada en el diseño del sistema y los enums lo garantizan.
+     * Se usa valueOf para que una discrepancia futura entre enums falle
+     * en tiempo de ejecucion con mensaje claro en lugar de producir datos
+     * incorrectos silenciosamente.</p>
      *
      * <p>Mapeo completo:
      *   FESTIVO_NACIONAL        → TipoFichaje.FESTIVO_NACIONAL

@@ -36,13 +36,13 @@ import java.util.stream.Collectors;
  * como Map o HTML imprimible según el parámetro ?formato= de la petición.
  * El formato HTML está diseñado para PrintManager + WebView en Android.</p>
  *
- * <p>D-027: E42 y E43 aceptan el parámetro opcional ?tipo= que filtra
+ * <p>E42 y E43 aceptan el parámetro opcional ?tipo= que filtra
  * el detalle por uno o varios tipos de jornada. Valores válidos: cualquier
  * valor del enum TipoFichaje más DIA_LIBRE y SIN_REGISTRO.</p>
  *
- * <p>D-029: E44 renombrado a GET /api/v1/informes/saldos. Acepta parámetros
- * opcionales ?empleadoId= (uno o varios ids separados por coma) y ?campos=
- * (bloques o campos individuales). Sin parámetros devuelve todos los empleados
+ * <p>E44 (GET /api/v1/informes/saldos) acepta parámetros opcionales
+ * ?empleadoId= (uno o varios ids separados por coma) y ?campos= (bloques
+ * o campos individuales). Sin parámetros devuelve todos los empleados
  * activos con saldo en ese año y todos los campos.</p>
  *
  * <p>Lógica de construcción del detalle de jornada:
@@ -164,7 +164,7 @@ public class InformeService {
      * pausas del día y el total de horas efectivas. Si formato=html devuelve
      * HTML imprimible; si formato=json devuelve Map estructurado.</p>
      *
-     * <p>D-027: el parámetro tipos filtra el detalle por tipo de jornada.
+     * <p>El parámetro tipos filtra el detalle por tipo de jornada.
      * null o vacío devuelve todos los días del período.</p>
      *
      * @param empleadoId id del empleado
@@ -178,7 +178,7 @@ public class InformeService {
      * Informe de horas del empleado autenticado (E58).
      *
      * Resuelve username → usuario → empleado y delega en informeHorasEmpleado()
-     * con formato=html fijo. Mismo patrón D-017 que FichajeService.listarPropios().
+     * con formato=html fijo.
      *
      * @param username username del empleado autenticado (de authentication.getName())
      * @param desde    fecha de inicio del periodo
@@ -232,7 +232,7 @@ public class InformeService {
      * <p>Resumen por empleado con el total de horas efectivas y desglose
      * de tipos de jornada. Acepta ?formato=html para impresión desde Android.</p>
      *
-     * <p>D-027: el parámetro tipos filtra el detalle por tipo de jornada.</p>
+     * <p>El parámetro tipos filtra el detalle por tipo de jornada.</p>
      *
      * @param desde   fecha de inicio del período (inclusive)
      * @param hasta   fecha de fin del período (inclusive)
@@ -267,7 +267,6 @@ public class InformeService {
     // =========================================================================
     // E44 — GET /api/v1/informes/saldos
     // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
-    // D-029: renombrado desde /vacaciones, añadidos ?empleadoId= y ?campos=
     // =========================================================================
 
     /**
@@ -278,11 +277,11 @@ public class InformeService {
      * ausencia injustificada), horas de ausencia retribuida, saldo de horas,
      * fecha calculado hasta y fecha de última modificación.</p>
      *
-     * <p>D-029: parámetro ?empleadoId= opcional. Sin parámetro devuelve todos
+     * <p>Parámetro ?empleadoId= opcional. Sin parámetro devuelve todos
      * los empleados activos con saldo en ese año. Con uno o varios ids separados
      * por coma devuelve solo esos empleados.</p>
      *
-     * <p>D-029: parámetro ?campos= opcional. Acepta bloques predefinidos
+     * <p>Parámetro ?campos= opcional. Acepta bloques predefinidos
      * (DIAS_VACACIONES, DIAS_ASUNTOS_PROPIOS, RESTO_DIAS, HORAS, CONTROL)
      * y campos individuales. Sin parámetro se muestran todos los bloques.</p>
      *
@@ -649,12 +648,12 @@ public class InformeService {
         dia.tieneFichaje = true;
 
         // Intervención manual: ni el propio empleado ni terminal_service.
-        // D-028: si el fichaje es candidato a manual, se consulta
-        // planificacion_ausencias para descartar registros planificados
-        // anticipadamente (festivos, vacaciones planificadas, etc.).
+        // Si el fichaje es candidato a manual, se consulta planificacion_ausencias
+        // para descartar registros planificados anticipadamente (festivos,
+        // vacaciones planificadas, etc.).
         // Si existe planificación para ese empleado y fecha → no es manual.
         // Si no existe planificación → sí es intervención manual real.
-        // Solución definitiva en M-012 (DDL v6 con planificacion_id en Fichaje).
+        // Solución definitiva en M-012 (planificacion_id en Fichaje).
         boolean candidatoManual = fichaje.getUsuario() != null
                 && fichaje.getUsuario().getRol() != Rol.EMPLEADO
                 && !"terminal_service".equals(fichaje.getUsuario().getUsername());

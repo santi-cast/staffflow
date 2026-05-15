@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * <p>Una ausencia con procesado=true ya fue convertida en fichaje por
  * ProcesoCierreDiario y no puede modificarse ni eliminarse.</p>
  *
- * <p>D-026: ENCARGADO solo puede gestionar ausencias del dia actual y
+ * <p>ENCARGADO solo puede gestionar ausencias del dia actual y
  * fechas futuras. La restriccion se aplica en crear() (E30) y actualizar() (E31).
  * E32 no necesita restriccion de fecha: se protege solo con procesado=false.
  * En condiciones normales, si la fecha ya paso, ProcesoCierreDiario ya
@@ -73,23 +73,23 @@ public class AusenciaService {
      * devolver HTTP 409 con mensaje claro en lugar de dejar explotar
      * DataIntegrityViolationException.</p>
      *
-     * <p>Restriccion D-026: ENCARGADO solo puede planificar ausencias
+     * <p>Restriccion: ENCARGADO solo puede planificar ausencias
      * para el dia actual y fechas futuras. ADMIN puede planificar para
      * cualquier fecha. La validacion se aplica sobre request.getFecha().</p>
      *
      * @param request   datos de la ausencia a planificar
-     * @param username  username del usuario autenticado (para auditoría y D-026)
+     * @param username  username del usuario autenticado (para auditoría)
      * @return ausencia planificada creada con procesado=false
      */
     @Transactional
     public AusenciaResponse crear(AusenciaRequest request, String username) {
 
-        // --- Resolver usuario autenticado para restriccion D-026 y auditoria ---
+        // --- Resolver usuario autenticado para restriccion de rol y auditoria ---
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
-        // D-026: ENCARGADO puede gestionar hoy y futuro, no el pasado.
+        // ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede planificar ausencias para cualquier fecha sin restriccion.
         // Ausencias futuras están permitidas para ambos roles (a diferencia de fichajes/pausas).
         if (usuario.getRol() == Rol.ENCARGADO
@@ -147,7 +147,7 @@ public class AusenciaService {
      * <p>Si algún día tiene procesado=true (ya materializado en fichaje),
      * devuelve HTTP 400 — no se puede sobrescribir un fichaje generado.</p>
      *
-     * <p>Restriccion D-026: ENCARGADO solo puede planificar desde hoy
+     * <p>Restriccion: ENCARGADO solo puede planificar desde hoy
      * en adelante. ADMIN sin restricción de fecha.</p>
      *
      * @param request   datos del rango a planificar
@@ -157,7 +157,7 @@ public class AusenciaService {
     @Transactional
     public List<AusenciaResponse> crearRango(AusenciaRangoRequest request, String username) {
 
-        // --- Resolver usuario autenticado para D-026 y auditoría ---
+        // --- Resolver usuario autenticado para restriccion de rol y auditoría ---
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
@@ -168,7 +168,7 @@ public class AusenciaService {
                     "fechaDesde no puede ser posterior a fechaHasta");
         }
 
-        // D-026: ENCARGADO solo puede gestionar hoy y fechas futuras
+        // ENCARGADO solo puede gestionar hoy y fechas futuras
         if (usuario.getRol() == Rol.ENCARGADO
                 && request.getFechaDesde().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
@@ -248,13 +248,13 @@ public class AusenciaService {
      * <p>Solo se puede modificar si procesado=false. Si procesado=true
      * devuelve HTTP 409: hay que modificar el fichaje generado (E23).</p>
      *
-     * <p>Restriccion D-026: ENCARGADO solo puede modificar ausencias del
+     * <p>Restriccion: ENCARGADO solo puede modificar ausencias del
      * dia actual y fechas futuras. La fecha a validar es ausencia.getFecha(),
      * obtenida tras cargar la entidad con findById. ADMIN sin restriccion de fecha.</p>
      *
      * @param id      id de la ausencia a modificar
      * @param request campos a actualizar (PATCH selectivo)
-     * @param username username del usuario autenticado (para D-026)
+     * @param username username del usuario autenticado (para restriccion de rol)
      * @return ausencia actualizada
      */
     @Transactional
@@ -264,12 +264,12 @@ public class AusenciaService {
                 .orElseThrow(() -> new NotFoundException(
                         "Ausencia no encontrada con id " + id));
 
-        // Resolver usuario autenticado para restriccion D-026
+        // Resolver usuario autenticado para restriccion de rol
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException(
                         "Usuario no encontrado: " + username));
 
-        // D-026: ENCARGADO puede modificar hoy y futuro, no el pasado.
+        // ENCARGADO puede modificar hoy y futuro, no el pasado.
         // La fecha a validar es la de la ausencia cargada de BD, no del request.
         // ADMIN puede modificar ausencias de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
@@ -306,7 +306,7 @@ public class AusenciaService {
      * <p>Solo funciona si procesado=false. Si procesado=true devuelve
      * HTTP 409: el fichaje generado es inmutable (RNF-L01).</p>
      *
-     * <p>E32 no necesita restriccion de fecha D-026: la validacion
+     * <p>E32 no necesita restriccion de fecha: la validacion
      * procesado=false la cubre. En condiciones normales, si la fecha
      * ya paso, ProcesoCierreDiario ya habrá marcado procesado=true y
      * este metodo devuelve 409 automaticamente.</p>

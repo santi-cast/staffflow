@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Todos los endpoints son PÚBLICOS: no usan JWT. La autenticación se
  * realiza exclusivamente por PIN de 4 dígitos.
  *
- * Bloqueo por dispositivo (RNF-S05, D-016, Opción A):
+ * Bloqueo por dispositivo (RNF-S05):
  *   Los intentos fallidos de PIN se acumulan en memoria (ConcurrentHashMap).
  *   Tras 5 intentos fallidos consecutivos desde el mismo dispositivoId,
  *   el service lanza HTTP 423 hasta que se reinicia el contador.
@@ -67,7 +67,7 @@ public class TerminalService {
     private static final int MAX_INTENTOS = 5;
 
     // ---------------------------------------------------------------
-    // Bloqueo en memoria por dispositivo (Opción A, D-016)
+    // Bloqueo en memoria por dispositivo.
     // ConcurrentHashMap: seguro para acceso concurrente desde múltiples
     // peticiones simultáneas sin sincronización manual.
     // ---------------------------------------------------------------
@@ -136,10 +136,10 @@ public class TerminalService {
                     "El empleado ya tiene registrada la entrada hoy " + hoy);
         }
 
-        // Crear fichaje con horaEntrada = ahora, horaSalida = null
-        // Auditoría: usuario sistema 'terminal_service' (D-021, Opción B).
-        // El terminal no tiene sesión JWT — se usa usuario de servicio predefinido
-        // para cumplir NOT NULL de usuario_id y mantener trazabilidad (RNF-L01).
+        // Crear fichaje con horaEntrada = ahora, horaSalida = null.
+        // Auditoría: el terminal no tiene sesión JWT — se usa usuario de servicio
+        // predefinido 'terminal_service' para cumplir NOT NULL de usuario_id y
+        // mantener trazabilidad (RNF-L01).
         LocalDateTime ahora = LocalDateTime.now();
         Usuario usuarioSistema = obtenerUsuarioSistema();
         Fichaje fichaje = new Fichaje();
