@@ -22,13 +22,6 @@ import java.util.List;
  * <p>Los informes PDF firmables (E45-E47) se gestionan en PdfController,
  * bajo la ruta base /api/v1/informes/pdf.</p>
  *
- * <p>D-027: E42 y E43 aceptan el parametro opcional ?tipo= con uno o
- * varios valores separados por coma para filtrar el detalle por tipo
- * de jornada.</p>
- *
- * <p>D-029: E44 renombrado a GET /api/v1/informes/saldos. Acepta los
- * parametros opcionales ?empleadoId= y ?campos=.</p>
- *
  * <p>Roles permitidos: ADMIN y ENCARGADO en todos los endpoints.</p>
  *
  * @author Santiago Castillo
@@ -81,7 +74,7 @@ public class InformeController {
      * Con ?formato=html devuelve HTML imprimible para PrintManager + WebView.
      * Con ?formato=json (defecto) devuelve estructura JSON.</p>
      *
-     * <p>D-027: el parametro ?tipo= acepta uno o varios valores del enum
+     * <p>El parametro ?tipo= acepta uno o varios valores del enum
      * TipoFichaje separados por coma, mas DIA_LIBRE y SIN_REGISTRO.
      * Sin ?tipo= se devuelven todos los dias del periodo.</p>
      *
@@ -119,7 +112,7 @@ public class InformeController {
      * y desglose de tipos de jornada. Con ?formato=html devuelve HTML
      * para impresion desde Android.</p>
      *
-     * <p>D-027: el parametro ?tipo= funciona igual que en E42.</p>
+     * <p>El parametro ?tipo= funciona igual que en E42.</p>
      *
      * @param desde   fecha de inicio del periodo (?desde=yyyy-MM-dd)
      * @param hasta   fecha de fin del periodo (?hasta=yyyy-MM-dd)
@@ -172,17 +165,16 @@ public class InformeController {
     // =========================================================================
     // E44 — GET /api/v1/informes/saldos
     // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
-    // D-029: renombrado desde /vacaciones, anadidos ?empleadoId= y ?campos=
     // =========================================================================
 
     /**
      * Informe de saldos anuales de empleados (E44).
      *
-     * <p>D-029: parametro ?empleadoId= opcional. Sin parametro devuelve todos
+     * <p>Parametro ?empleadoId= opcional. Sin parametro devuelve todos
      * los empleados activos con saldo en ese ano. Con uno o varios ids separados
      * por coma devuelve solo esos empleados.</p>
      *
-     * <p>D-029: parametro ?campos= opcional. Acepta bloques predefinidos y
+     * <p>Parametro ?campos= opcional. Acepta grupos predefinidos y
      * campos individuales separados por coma. Sin parametro se muestran todos.</p>
      *
      * @param anio        ano a consultar — defecto: ano actual

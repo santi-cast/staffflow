@@ -27,11 +27,11 @@ import java.util.Date;
  *       {@code empleadoId} (null para ADMIN, Long para ENCARGADO/EMPLEADO).</li>
  * </ul>
  *
- * <p>Decisiones de diseno:
+ * <p>Decisiones activas:
  * <ul>
- *   <li>Decision 18 (actualizada D-024): sin refresh token en v1.0. Validez de 12h cubre
- *       jornadas ordinarias y extraordinarias incluyendo pausas largas. Refresh token
- *       queda como mejora para v2.0.</li>
+ *   <li>Sin refresh token en v1.0. Validez de 12h cubre jornadas ordinarias y
+ *       extraordinarias incluyendo pausas largas. Refresh token queda como
+ *       mejora para v2.0.</li>
  *   <li>Algoritmo HS384: firma simetrica con clave secreta. Suficiente para una API monolitica
  *       donde el mismo servidor genera y valida los tokens. Alternativa descartada: RS256
  *       (asimetrico) — solo necesario si otros servicios externos validan el token.</li>
@@ -53,7 +53,7 @@ public class JwtTokenProvider {
 
     /**
      * Validez del token en milisegundos, leida de application.yml.
-     * Valor por defecto: 43200000 ms = 12 horas (decision de diseno 18, actualizada D-024).
+     * Valor por defecto: 43200000 ms = 12 horas.
      * 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
      * Refresh token queda como mejora para v2.0.
      */
@@ -109,7 +109,7 @@ public class JwtTokenProvider {
                 .claim("empleadoId", empleadoId)
                 // iat: fecha de emision del token
                 .issuedAt(ahora)
-                // exp: fecha de expiracion (12h por defecto, decision de diseno 18 -- D-024)
+                // exp: fecha de expiracion (12h por defecto)
                 .expiration(expiracion)
                 // Firmar con HS384 y la clave simetrica inicializada en @PostConstruct
                 .signWith(secretKey)

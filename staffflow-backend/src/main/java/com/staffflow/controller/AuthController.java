@@ -54,7 +54,7 @@ public class AuthController {
     /**
      * Autentica al usuario y devuelve un JWT válido.
      *
-     * <p>Ruta pública: no requiere token. Implementado en Bloque 2.</p>
+     * <p>Ruta pública: no requiere token.</p>
      *
      * <p>Spring valida el DTO con @Valid antes de llamar al servicio.
      * Si username o password están ausentes, Bean Validation devuelve 400
@@ -99,11 +99,10 @@ public class AuthController {
      * <p>Requiere JWT válido. El usuario debe proporcionar su contraseña
      * actual para confirmar la identidad antes del cambio (doble verificación).
      * Si currentPassword no coincide, AuthService lanza IllegalArgumentException
-     * que se convierte en 400 (GlobalExceptionHandler, Bloque 4).</p>
+     * que se convierte en 400 (GlobalExceptionHandler).</p>
      *
      * <p>Usa PUT porque el contrato establece que /auth/password es un
-     * formulario completo que sustituye el valor existente (convención
-     * PUT/PATCH cerrada en Fase 1).</p>
+     * formulario completo que sustituye el valor existente.</p>
      *
      * <p>Roles: ADMIN, ENCARGADO, EMPLEADO.</p>
      *

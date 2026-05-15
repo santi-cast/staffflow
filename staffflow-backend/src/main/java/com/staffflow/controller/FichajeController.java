@@ -33,7 +33,7 @@ import java.util.List;
  *   E25 GET    /api/v1/fichajes/incompletos → jornadas sin salida   (ADMIN, ENCARGADO)
  *   E26 GET    /api/v1/fichajes/me          → historial propio      (EMPLEADO, ENCARGADO)
  *
- * Patrón de autenticación (igual que EmpleadoController, D-017 Opción B):
+ * Patrón de autenticación (igual que EmpleadoController, Opción B):
  *   authentication.getName() devuelve el username del usuario autenticado.
  *   El service resuelve usuarioId y empleadoId a partir del username.
  *   Sin casting, sin JwtTokenProvider en el controller.
@@ -92,7 +92,7 @@ public class FichajeController {
             Authentication authentication) {
 
         // authentication.getName() devuelve el username del User estándar de Spring Security.
-        // El service resuelve el usuarioId a partir del username (D-017, Opción B).
+        // El service resuelve el usuarioId a partir del username (Opción B).
         String username = authentication.getName();
         FichajeResponse response = fichajeService.crear(request, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -132,7 +132,7 @@ public class FichajeController {
             @Valid @RequestBody FichajePatchRequest request,
             Authentication authentication) {
 
-        // username necesario para aplicar restriccion D-026 en el service
+        // username necesario para aplicar la restriccion de propiedad en el service
         String username = authentication.getName();
         FichajeResponse response = fichajeService.actualizar(id, request, username);
         return ResponseEntity.ok(response);
@@ -223,7 +223,7 @@ public class FichajeController {
      * Lista los fichajes del empleado autenticado (RF-51).
      *
      * El username se extrae de authentication.getName() — igual que en
-     * EmpleadoController.obtenerMiPerfil() (D-017, Opción B).
+     * EmpleadoController.obtenerMiPerfil() (Opción B).
      * El service resuelve el empleadoId a partir del username.
      *
      * Spring Security restringe el endpoint a roles EMPLEADO y ENCARGADO.
@@ -254,7 +254,7 @@ public class FichajeController {
             @RequestParam(required = false) TipoFichaje tipo,
             Authentication authentication) {
 
-        // authentication.getName() devuelve el username — mismo patrón que E21 (D-017 Opción B)
+        // authentication.getName() devuelve el username — mismo patrón que E21 (Opción B)
         String username = authentication.getName();
         return ResponseEntity.ok(fichajeService.listarPropios(username, desde, hasta, tipo));
     }

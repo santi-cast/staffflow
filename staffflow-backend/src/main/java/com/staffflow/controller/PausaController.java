@@ -83,7 +83,7 @@ public class PausaController {
             @Valid @RequestBody PausaRequest request,
             Authentication authentication) {
 
-        // authentication.getName() devuelve el username (D-017, Opción B)
+        // authentication.getName() devuelve el username (Opción B)
         String username = authentication.getName();
         PausaResponse response = pausaService.crear(request, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -125,7 +125,7 @@ public class PausaController {
             @Valid @RequestBody PausaPatchRequest request,
             Authentication authentication) {
 
-        // username necesario para aplicar restriccion D-026 en el service
+        // username necesario para aplicar la restriccion de propiedad en el service
         String username = authentication.getName();
         PausaResponse response = pausaService.cerrar(id, request, username);
         return ResponseEntity.ok(response);

@@ -30,12 +30,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *       El resto exige JWT valido y rol suficiente segun Endpoints_v3.</li>
  * </ul>
  *
- * <p>Decisiones de diseno aplicadas:
+ * <p>Reglas activas:
  * <ul>
- *   <li>Decision 21: PIN para terminal compartido, JWT para acceso a datos personales.</li>
- *   <li>Decision 18: sin refresh token en v1.0 (JWT de 8h cubre jornada completa).</li>
- *   <li>RNF-S05: bloqueo por dispositivo gestionado en TerminalController, no aqui.</li>
- *   <li>Bloque 5: {@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
+ *   <li>PIN para terminal compartido, JWT para acceso a datos personales.</li>
+ *   <li>Sin refresh token en v1.0: el JWT de 12h cubre la jornada completa.</li>
+ *   <li>RNF-S05: el bloqueo por dispositivo se gestiona en TerminalController, no aqui.</li>
+ *   <li>{@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
  *       en tiempo de ejecucion. Sin esta anotacion, las 53 anotaciones {@code @PreAuthorize}
  *       de los controllers son decorativas y la seguridad opera solo en la capa URL.</li>
  * </ul>
@@ -152,7 +152,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/password/recovery").permitAll()
                 // E05: restablecer contrasena con token
                 .requestMatchers("/api/v1/auth/password/reset").permitAll()
-                // E56: health check (creado en Fase 0, fuera de /api/v1)
+                // E56: health check (fuera de /api/v1)
                 .requestMatchers("/api/health").permitAll()
                 // H2 Console: accesible en perfil dev sin autenticacion
                 .requestMatchers("/h2-console/**").permitAll()

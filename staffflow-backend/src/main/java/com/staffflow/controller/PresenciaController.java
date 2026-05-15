@@ -27,10 +27,10 @@ import java.util.List;
  * No crea ni modifica ningún dato: todos los endpoints son GET de solo lectura
  * que agregan información de fichajes, pausas y ausencias planificadas.
  *
- * Separado de FichajeController por responsabilidad única (decisión de diseño
- * Bloque 6): los fichajes son el registro histórico inmutable (RD-ley 8/2019),
- * la presencia es una vista calculada en tiempo real. Mezclarlos en el mismo
- * controller confundiría las responsabilidades y dificultaría el mantenimiento.
+ * Separado de FichajeController por responsabilidad única: los fichajes son
+ * el registro histórico inmutable (RD-ley 8/2019), la presencia es una vista
+ * calculada en tiempo real. Mezclarlos en el mismo controller confundiría las
+ * responsabilidades y dificultaría el mantenimiento.
  *
  * Ruta base: /api/v1/presencia
  *

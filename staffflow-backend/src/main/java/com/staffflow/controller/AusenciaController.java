@@ -351,7 +351,7 @@ public class AusenciaController {
             @RequestBody AusenciaPatchRequest request,
             Authentication authentication) {
 
-        // username necesario para aplicar restriccion D-026 en el service
+        // username necesario para aplicar la restriccion de propiedad en el service
         String username = authentication.getName();
         return ResponseEntity.ok(ausenciaService.actualizar(id, request, username));
     }
