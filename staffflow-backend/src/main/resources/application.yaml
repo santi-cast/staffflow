@@ -11,7 +11,7 @@ staffflow:
     # la variable de entorno JWT_SECRET. El valor de fallback fue rotado el 2026-05-08
     # (incidencia: filtración del secreto en el historial git).
     secret: ${JWT_SECRET:dev-only-staffflow-2026-05-08-NOT-FOR-PRODUCTION-pad01}
-    # Validez del token en milisegundos. 43200000 = 12 horas (decision de diseno 18 -- D-024).
-    # 12h cubre jornadas ordinarias y extraordinarias incluyendo pausas largas.
+    # Validez del token en milisegundos. 43200000 = 12 horas.
+    # 12h cubre una jornada laboral con descanso de comida.
     # Refresh token queda como mejora para v2.0.
     expiration-ms: 43200000

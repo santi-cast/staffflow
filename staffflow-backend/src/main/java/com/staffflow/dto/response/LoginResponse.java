@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginResponse {
 
-    // JWT de 8 horas. Cubre una jornada laboral completa.
+    // JWT de 12 horas. Cubre una jornada laboral con descanso de comida.
     // Android lo almacena en DataStore y lo envía en Authorization: Bearer.
     private String token;
 

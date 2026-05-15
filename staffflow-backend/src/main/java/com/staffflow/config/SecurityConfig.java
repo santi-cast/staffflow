@@ -33,7 +33,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * <p>Reglas activas:
  * <ul>
  *   <li>PIN para terminal compartido, JWT para acceso a datos personales.</li>
- *   <li>Sin refresh token en v1.0: el JWT de 12h cubre la jornada completa.</li>
+ *   <li>Sin refresh token en v1.0: el JWT de 12h cubre una jornada laboral con descanso de comida.</li>
  *   <li>RNF-S05: el bloqueo por dispositivo se gestiona en TerminalController, no aqui.</li>
  *   <li>{@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
  *       en tiempo de ejecucion. Sin esta anotacion, las 53 anotaciones {@code @PreAuthorize}
