@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * EMPLEADO y ENCARGADO acceden a sus propios datos mediante /me (E21).
  *
  * Decisiones de diseño aplicadas:
- *   - Relación 1:1 usuario-empleado inmutable (decisión nº22): una vez
+ *   - Relación 1:1 usuario-empleado inmutable: una vez
  *     vinculado un usuario a un empleado, el campo usuarioId no puede
  *     modificarse. Esta restricción se aplica en actualizar() ignorando
  *     el campo usuarioId aunque venga en el request.
@@ -43,13 +43,13 @@ import java.util.stream.Collectors;
  *   - pinTerminal nunca expuesto por API (D-018): EmpleadoResponse no
  *     tiene el campo pinTerminal. La Opción A original (filtrar por rol
  *     recibido como parámetro) fue descartada en sesión 10 porque el PIN
- *     no tiene uso legitimo fuera del terminal físico (decisión nº21).
+ *     no tiene uso legitimo fuera del terminal físico.
  *     D-017 y D-018 documentan el cambio de diseño.
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
    *   - HTTP 409 preventivo para DNI, numero_empleado o NFC duplicados
  *     antes de que explote la BD con DataIntegrityViolationException.
- *   - Baja lógica (decisión nº4): activo=false, nunca SQL DELETE.
+ *   - Baja lógica: activo=false, nunca SQL DELETE.
  *     El historial de fichajes, pausas y saldos queda intacto.
  *   - E19 (estado tiempo real) y E20 (export CSV/PDF) están fuera del
  *     alcance de v1.0. Sus métodos lanzan UnsupportedOperationException
@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
  * D-017: firma de obtenerPorId ajustada respecto al esqueleto del Bloque 1.
  * D-018: decision de no exponer pinTerminal por API. EmpleadoResponse no
  * tiene el campo pinTerminal. El PIN se gestiona exclusivamente en el
- * terminal físico (decisión nº21). Ambas desviaciones documentadas en
+ * terminal físico. Ambas desviaciones documentadas en
  * StaffFlow_Desviaciones.
  *
  * D-030: campo nss renombrado a numero_empleado en entidad, DTOs y repositorio.
@@ -92,7 +92,7 @@ public class EmpleadoService {
      * RNF-R03): permite la búsqueda en menos de 100ms desde el terminal.
      *
      * Los campos jornadaSemanalHoras y jornadaDiariaMinutos tienen propósitos
-     * distintos (decisión nº22):
+     * distintos:
      *   - jornadaSemanalHoras: dato contractual introducido por el ADMIN.
      *   - jornadaDiariaMinutos: referencia de cálculo para el saldo de horas.
      *
@@ -265,11 +265,11 @@ public class EmpleadoService {
      *
      * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      * El campo usuarioId nunca se modifica: la vinculación usuario-empleado
-     * es permanente (decisión nº22).
+     * es permanente.
      *
      * Valida unicidad de PIN y DNI excluyendo al propio empleado que
      * se está editando (puede conservar sus propios valores sin conflicto).
-     * dni, numeroEmpleado y fechaAlta son inmutables (decisión nº22) —
+     * dni, numeroEmpleado y fechaAlta son inmutables —
      * no existen en EmpleadoPatchRequest.
      *
      * Códigos HTTP producidos:
@@ -298,7 +298,7 @@ public class EmpleadoService {
         if (request.getApellido2() != null) {
             empleado.setApellido2(request.getApellido2());
         }
-        // dni, numeroEmpleado y fechaAlta son inmutables (decisión nº22)
+        // dni, numeroEmpleado y fechaAlta son inmutables
         // no existen en EmpleadoPatchRequest
         if (request.getCategoria() != null) {
             // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()

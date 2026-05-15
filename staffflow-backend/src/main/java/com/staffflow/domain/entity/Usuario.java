@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * Usuario del sistema con acceso a la aplicación móvil y/o web.
  * Todo empleado tiene un usuario asociado, pero no todo usuario
  * tiene un empleado (p.ej. un ADMIN sin ficha de empleado).
- * El rol determina los permisos de acceso (RF-01, RF-02, decisión nº14).
+ * El rol determina los permisos de acceso (RF-01, RF-02).
  *
  * @author Santiago Castillo
  */
@@ -44,7 +44,7 @@ public class Usuario {
     @Column(name = "rol", nullable = false, length = 20)
     private Rol rol;
 
-    // Baja lógica: activo=false. Nunca DELETE físico (decisión nº4).
+    // Baja lógica: activo=false. Nunca DELETE físico.
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 

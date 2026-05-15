@@ -9,7 +9,7 @@ import java.time.LocalDate;
  * Ficha del empleado vinculada a un {@link Usuario} del sistema.
  * Contiene los datos contractuales y operativos necesarios para
  * el cálculo de jornada, vacaciones y asuntos propios (RF-35, RF-36).
- * La categoría es informativa y no afecta a los permisos (decisión nº19).
+ * La categoría es informativa y no afecta a los permisos.
  *
  * @author Santiago Castillo
  */
@@ -50,7 +50,7 @@ public class Empleado {
     @Column(name = "fecha_alta", nullable = false)
     private LocalDate fechaAlta;
 
-    // Informativa: no determina permisos ni acceso (decisión nº19).
+    // Informativa: no determina permisos ni acceso.
     @Enumerated(EnumType.STRING)
     @Column(name = "categoria", nullable = false, length = 20)
     private CategoriaEmpleado categoria;
@@ -70,7 +70,7 @@ public class Empleado {
     @Column(name = "dias_asuntos_propios_anuales", nullable = false)
     private Integer diasAsuntosPropiosAnuales = 3;
 
-    // PIN de 4 dígitos para fichar desde el terminal compartido (decisión nº21).
+    // PIN de 4 dígitos para fichar desde el terminal compartido.
     // No se expone en ningún DTO response (seguridad).
     // CHAR(4) fijo porque el PIN siempre tiene exactamente 4 dígitos.
     @Column(name = "pin_terminal", nullable = false, unique = true, length = 4, columnDefinition = "CHAR(4)")
@@ -80,7 +80,7 @@ public class Empleado {
     @Column(name = "codigo_nfc", unique = true, length = 50)
     private String codigoNfc;
 
-    // Baja lógica: activo=false. Nunca DELETE físico (decisión nº4).
+    // Baja lógica: activo=false. Nunca DELETE físico.
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 }

@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
  * Datos para registrar manualmente una pausa dentro de la jornada de un empleado.
  * Usado en E27 (POST /api/v1/pausas), accesible por ADMIN y ENCARGADO.
  * Para iniciar o finalizar una pausa desde el terminal se usan
- * {@link TerminalPausaRequest} (E50, E51, decisión nº8).
- * Sin DELETE físico una vez creada (RNF-L01, decisión nº1).
+ * {@link TerminalPausaRequest} (E50, E51).
+ * Sin DELETE físico una vez creada (RNF-L01).
  *
  * @author Santiago Castillo
  */

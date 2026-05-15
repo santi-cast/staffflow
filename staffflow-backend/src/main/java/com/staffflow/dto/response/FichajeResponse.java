@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
  * Usado en E22 (POST crear manual), E23 (PATCH modificar),
  * E24 (GET lista con filtros), E25 (GET incompletos) y E26 (GET /me historial propio).
  * ADMIN y ENCARGADO acceden a todos los fichajes.
- * EMPLEADO solo puede consultar los suyos (decisión nº10 y nº14).
+ * EMPLEADO solo puede consultar los suyos.
  *
  * Los fichajes son inmutables tras su creación salvo corrección
  * manual con observaciones obligatorias (RNF-L01, RD-ley 8/2019).
- * Sin DELETE físico bajo ningún concepto (decisión nº1).
+ * Sin DELETE físico bajo ningún concepto.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).
@@ -41,7 +41,7 @@ public class FichajeResponse {
     private TipoFichaje tipo;
 
     // NULL en ausencias planificadas (VACACIONES, BAJA_MEDICA...).
-    // NULL si la jornada aún no ha comenzado (decisión nº7).
+    // NULL si la jornada aún no ha comenzado.
     private LocalDateTime horaEntrada;
 
     // NULL si la jornada sigue en curso (fichaje abierto).

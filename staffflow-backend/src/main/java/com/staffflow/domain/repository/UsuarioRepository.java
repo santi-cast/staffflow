@@ -20,7 +20,7 @@ import java.util.Optional;
  *     que GlobalExceptionHandler convierte en HTTP 400. Las validaciones
  *     preventivas existsBy* en UsuarioService interceptan los duplicados
  *     antes de llegar a BD y devuelven HTTP 409 con mensaje claro.
- *   - Bajas lógicas: activo=false, nunca DELETE físico (decisión nº4).
+ *   - Bajas lógicas: activo=false, nunca DELETE físico.
  *
  * Métodos heredados de JpaRepository usados:
  *   - save()       → crear y actualizar usuario (E08, E11, E12)
@@ -73,7 +73,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Busca un usuario por su token de recuperación de contraseña.
      *
      * Usado por AuthService en E05 (reset con token). El token es de un
-     * solo uso y caduca a los 30 minutos (decisión nº9). Si no existe
+     * solo uso y caduca a los 30 minutos. Si no existe
      * o ha caducado → HTTP 400.
      *
      * @param resetToken token opaco generado en E04

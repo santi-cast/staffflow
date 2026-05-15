@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
  * Usado en E27 (POST crear manual), E28 (PATCH cerrar/modificar)
  * y E29 (GET lista con filtros).
  * ADMIN y ENCARGADO acceden a todas las pausas.
- * EMPLEADO solo puede consultar las suyas (decisión nº10 y nº14).
+ * EMPLEADO solo puede consultar las suyas.
  *
  * Una pausa activa se identifica por horaFin = NULL.
- * Sin DELETE físico bajo ningún concepto (decisión nº1, RNF-L01).
+ * Sin DELETE físico bajo ningún concepto (RNF-L01).
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).

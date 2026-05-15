@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * Una pausa activa se identifica por horaFin = NULL (E50, E51).
  * Al cerrar la pausa se calcula duracionMinutos con Math.floor,
  * redondeando a la baja para beneficiar al empleado.
- * Sin DELETE físico (RNF-L01, decisión nº1).
+ * Sin DELETE físico (RNF-L01).
  *
  * @author Santiago Castillo
  */

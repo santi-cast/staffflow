@@ -26,8 +26,7 @@ import java.util.List;
 /**
  * Proceso nocturno automatico de cierre de jornada.
  *
- * <p>Se ejecuta cada dia a las 23:55 mediante @Scheduled (decision n8,
- * cron definido en sesion 16). Es el unico proceso que permanece
+ * <p>Se ejecuta cada dia a las 23:55 mediante @Scheduled. Es el unico proceso que permanece
  * automatico: su fallo deja el dia entero mal registrado antes de que
  * lleguen los empleados al dia siguiente.</p>
  *
@@ -56,8 +55,7 @@ import java.util.List;
  * reprocesar planificaciones ya materializadas.</p>
  *
  * <p>CierreDiario y CierreAnual son botones manuales (E40, E41)
- * gestionados por SaldoService. No son @Scheduled (decisiones n11
- * y n12).</p>
+ * gestionados por SaldoService. No son @Scheduled.</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.service.SaldoService#recalcularParaProceso(Long, int)

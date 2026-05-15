@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * (Spring Security, @PreAuthorize en el controller).
  *
  * Decisiones de diseño aplicadas:
- *   - Baja lógica (decisión nº4): E12 ejecuta activo=false, nunca
+ *   - Baja lógica: E12 ejecuta activo=false, nunca
  *     SQL DELETE. El historial de auditoría en fichajes, pausas y
  *     ausencias queda intacto porque usuario_id sigue siendo válido.
  *   - BCrypt (RNF-S01): la contraseña se cifra con PasswordEncoder
@@ -237,8 +237,6 @@ public class UsuarioService {
      * El usuario desactivado no puede hacer login: UserDetailsServiceImpl
      * verifica el campo activo al cargar el usuario para Spring Security
      * y lanza excepción si activo=false, lo que produce HTTP 401.
-     *
-     * Decisión nº4: baja lógica en lugar de DELETE físico en usuarios.
      *
      * Códigos HTTP producidos:
      *   200 OK          → usuario desactivado correctamente

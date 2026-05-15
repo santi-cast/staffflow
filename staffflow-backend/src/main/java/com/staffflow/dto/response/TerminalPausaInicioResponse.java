@@ -11,11 +11,11 @@ import java.time.LocalDateTime;
  * Respuesta del servidor tras registrar el inicio de una pausa
  * desde el terminal compartido con PIN.
  * Usado en E50 (POST /api/v1/terminal/pausa/iniciar), endpoint público sin JWT
- * porque el terminal no tiene sesión de usuario (decisión nº21).
+ * porque el terminal no tiene sesión de usuario.
  *
  * La pausa queda activa (hora_fin = NULL) hasta que el empleado
  * la finalice con E51. El terminal puede detectar una pausa activa
- * comprobando WHERE hora_fin IS NULL (decisión nº1, D-004).
+ * comprobando WHERE hora_fin IS NULL (D-004).
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).

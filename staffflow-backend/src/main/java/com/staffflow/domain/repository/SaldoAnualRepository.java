@@ -19,7 +19,7 @@ import java.util.Optional;
  *
  * <p>Los saldos los actualiza el proceso nocturno @Scheduled (ProcesoCierreDiario,
  * Tarea 4 del Bloque 6) y manualmente E40 recalcular (solo ADMIN).
- * El cierre anual (boton manual ADMIN, decision n12) crea el registro
+ * El cierre anual (boton manual ADMIN) crea el registro
  * del año siguiente con los pendientes arrastrados.</p>
  *
  * @author Santiago Castillo
@@ -53,7 +53,7 @@ public interface SaldoAnualRepository extends JpaRepository<SaldoAnual, Long> {
      * <p>Lo usa SaldoService para mostrar el historial de años anteriores
      * si el cliente lo solicita. Tambien lo usa CierreAnual para obtener
      * el saldo del año que cierra y calcular los pendientes a arrastrar
-     * al año nuevo (decision n12).</p>
+     * al año nuevo.</p>
      *
      * @param empleadoId id del empleado
      * @return lista de saldos anuales del empleado (puede ser vacia)

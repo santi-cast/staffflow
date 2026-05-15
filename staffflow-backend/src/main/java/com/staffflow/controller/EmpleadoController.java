@@ -32,7 +32,7 @@ import java.util.List;
  *     porque no tiene perfil de empleado asociado.
  *   - E65 (/{id}/regenerar-pin): ADMIN y ENCARGADO. Genera un PIN
  *     nuevo de 4 dígitos para el terminal físico. El PIN nunca se
- *     expone en otros endpoints (decisión nº21, D-018).
+ *    expone en otros endpoints (D-018).
  *
  * El controller extrae del JWT (objeto Authentication de Spring Security)
  * el usuarioId del usuario autenticado para identificar al empleado en E21.

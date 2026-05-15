@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Representación de un usuario del sistema.
  * Usado en E08 (POST crear), E09 (GET lista), E10 (GET por id),
  * E11 (PATCH modificar) y E12 (DELETE lógico desactivar).
- * Solo ADMIN accede a E08-E12 (decisión nº14).
+ * Solo ADMIN accede a E08-E12.
  * E02 (GET /auth/me) devuelve también UsuarioResponse para cualquier rol autenticado.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
@@ -30,10 +30,10 @@ public class UsuarioResponse {
 
     private String email;
 
-    // Determina los permisos de acceso del usuario en la app (decisión nº14).
+    // Determina los permisos de acceso del usuario en la app.
     private Rol rol;
 
-    // Baja lógica: activo=false. Nunca DELETE físico (decisión nº4).
+    // Baja lógica: activo=false. Nunca DELETE físico.
     private Boolean activo;
 
     private LocalDateTime fechaCreacion;

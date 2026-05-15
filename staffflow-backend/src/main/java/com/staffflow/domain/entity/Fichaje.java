@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Registro diario de jornada laboral de un empleado.
  * Un único fichaje por empleado por día (RNF-I02, RD-ley 8/2019).
  * Inmutable tras su creación: sin DELETE físico ni modificación
- * de datos de jornada una vez cerrada (RNF-L01, decisión nº1).
+ * de datos de jornada una vez cerrada (RNF-L01).
  *
  * @author Santiago Castillo
  */
@@ -41,7 +41,7 @@ public class Fichaje {
     @Column(name = "tipo", nullable = false, length = 30)
     private TipoFichaje tipo;
 
-    // nullable: ausencias planificadas generan fichaje sin hora de entrada (decisión nº7).
+    // nullable: ausencias planificadas generan fichaje sin hora de entrada.
     @Column(name = "hora_entrada")
     private LocalDateTime horaEntrada;
 

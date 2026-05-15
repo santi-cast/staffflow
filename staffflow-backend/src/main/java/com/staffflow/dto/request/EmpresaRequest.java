@@ -7,7 +7,7 @@ import lombok.Data;
 
 /**
  * Datos para actualizar la configuración global de la empresa.
- * Usado en E07 (PUT /api/v1/empresa), solo accesible por ADMIN (decisión nº14).
+ * Usado en E07 (PUT /api/v1/empresa), solo accesible por ADMIN.
  * La tabla es singleton (id = 1 siempre). E06 (GET) no usa ningún DTO
  * de request al ser solo lectura.
  *

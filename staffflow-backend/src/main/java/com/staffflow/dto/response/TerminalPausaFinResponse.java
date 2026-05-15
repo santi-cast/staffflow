@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Respuesta del servidor tras registrar el fin de una pausa
  * desde el terminal compartido con PIN.
  * Usado en E51 (POST /api/v1/terminal/pausa/finalizar), endpoint público sin JWT
- * porque el terminal no tiene sesión de usuario (decisión nº21).
+ * porque el terminal no tiene sesión de usuario.
  *
  * Al finalizar la pausa el servicio calcula duracionMinutos con Math.floor
  * (redondeo a la baja, beneficia al empleado) y actualiza

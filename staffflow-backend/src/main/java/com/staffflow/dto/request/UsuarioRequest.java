@@ -9,7 +9,7 @@ import lombok.Data;
 
 /**
  * Datos para crear un nuevo usuario del sistema.
- * Usado en E08 (POST /api/v1/usuarios), solo accesible por ADMIN (decisión nº14).
+ * Usado en E08 (POST /api/v1/usuarios), solo accesible por ADMIN.
  * La contraseña se recibe en claro y se hashea con BCrypt en el servicio
  * antes de persistir. Nunca se almacena ni se devuelve en claro (RNF-S01).
  *
@@ -34,7 +34,7 @@ public class UsuarioRequest {
     private String email;
 
     // @NotNull permite enviar cualquier valor del enum Rol pero no null.
-    // El rol determina los permisos de acceso (decisión nº14).
+    // El rol determina los permisos de acceso.
     @NotNull
     private Rol rol;
 }

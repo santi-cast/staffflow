@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
  * Usado en E30 (POST crear), E31 (PATCH modificar), E32 (DELETE eliminar),
  * E33 (GET lista con filtros) y E34 (GET /me ausencias propias).
  * ADMIN y ENCARGADO acceden a todas las ausencias.
- * EMPLEADO solo puede consultar las suyas (decisión nº10 y nº14).
+ * EMPLEADO solo puede consultar las suyas.
  *
  * Si empleadoId es NULL el registro es un festivo global que
- * aplica a todos los empleados activos ese día (RF-26, decisión nº7).
- * Solo se permite DELETE si procesado = false (decisión nº2).
+ * aplica a todos los empleados activos ese día (RF-26).
+ * Solo se permite DELETE si procesado = false.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).
@@ -42,7 +42,7 @@ public class AusenciaResponse {
 
     // false = pendiente de procesar por ProcesoCierreDiario @Scheduled 23:55.
     // true = fichaje ya generado. Una vez procesado no se puede eliminar
-    // ni modificar el tipo (decisión nº2, RNF-L01).
+    // ni modificar el tipo (RNF-L01).
     private Boolean procesado;
 
     // ID del usuario que planificó la ausencia (RNF-L01).

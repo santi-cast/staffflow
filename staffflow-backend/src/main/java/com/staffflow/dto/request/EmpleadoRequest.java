@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Datos para crear la ficha de un nuevo empleado.
- * Usado en E13 (POST /api/v1/empleados), solo accesible por ADMIN (decisión nº14).
+ * Usado en E13 (POST /api/v1/empleados), solo accesible por ADMIN.
  * El usuario asociado debe existir previamente (E08). La relación es 1:1:
  * un usuario solo puede tener una ficha de empleado (RF-07).
  *
@@ -43,11 +43,11 @@ public class EmpleadoRequest {
     @Size(max = 9)
     private String dni;
 
-    // Informativa: no determina permisos ni acceso (decisión nº19).
+    // Informativa: no determina permisos ni acceso.
     @NotNull
     private CategoriaEmpleado categoria;
 
-    // Horas semanales contractuales. Rango 0-40h (decisión nº22).
+    // Horas semanales contractuales. Rango 0-40h.
     @NotNull
     @DecimalMin("0.0")
     @DecimalMax("40.0")

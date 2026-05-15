@@ -10,7 +10,7 @@ import lombok.Data;
 /**
  * PIN, tipo de pausa e identificador de dispositivo para E50.
  * Usado en E50 (POST /api/v1/terminal/pausa/iniciar), endpoint público
- * sin JWT porque el terminal no tiene sesión de usuario (decisión nº21).
+ * sin JWT porque el terminal no tiene sesión de usuario.
  *
  * El tipo de pausa determina cómo se contabiliza en SaldoAnual (RF-35):
  * las pausas AUSENCIA_RETRIBUIDA no descuentan de jornadaEfectivaMinutos.

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
  * Representación de un empleado sin justificación de presencia para un día dado.
  *
  * Usado en E36 (GET /api/v1/presencia/sin-justificar, RF-31).
- * Accesible por ADMIN y ENCARGADO (decisión nº14).
+ * Accesible por ADMIN y ENCARGADO.
  *
  * Un empleado aparece en esta lista cuando no tiene ningún registro
  * para la fecha indicada: ni fichaje, ni ausencia registrada en la

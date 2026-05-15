@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   E51 POST /api/v1/terminal/pausa/finalizar → finalizarPausa()
  *
  * Todos los endpoints son PÚBLICOS: no usan JWT. La autenticación se
- * realiza exclusivamente por PIN de 4 dígitos (decisión nº21).
+ * realiza exclusivamente por PIN de 4 dígitos.
  *
  * Bloqueo por dispositivo (RNF-S05, D-016, Opción A):
  *   Los intentos fallidos de PIN se acumulan en memoria (ConcurrentHashMap).
@@ -123,7 +123,7 @@ public class TerminalService {
         Empleado empleado = buscarEmpleadoPorPin(request.getPin(), request.getDispositivoId());
 
         // Verificar que el empleado está activo
-        // Baja lógica: activo=false impide fichar (decisión nº4)
+        // Baja lógica: activo=false impide fichar
         if (!Boolean.TRUE.equals(empleado.getActivo())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "El empleado está de baja y no puede fichar");

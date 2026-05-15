@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * Representación de la configuración global de la empresa.
  * Usado en E06 (GET /api/v1/empresa) y E07 (PUT /api/v1/empresa).
- * Solo accesible por ADMIN (decisión nº14).
+ * Solo accesible por ADMIN.
  *
  * La tabla configuracion_empresa es singleton (id = 1 siempre).
  * Los datos de esta respuesta aparecen en cabeceras de informes

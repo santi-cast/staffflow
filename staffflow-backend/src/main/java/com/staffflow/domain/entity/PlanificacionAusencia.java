@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
  * consulta WHERE fecha = HOY AND procesado = FALSE y convierte
  * cada registro en un {@link Fichaje} del tipo correspondiente (RF-26).
  * Si empleado = NULL el registro es un festivo global que aplica
- * a todos los empleados activos (RF-26, decisión nº7).
- * Solo se permite DELETE si procesado = FALSE (decisión nº2).
+ * a todos los empleados activos (RF-26).
+ * Solo se permite DELETE si procesado = FALSE.
  *
  * @author Santiago Castillo
  */

@@ -11,8 +11,8 @@ import java.time.LocalDate;
  * Usado en E30 (POST /api/v1/ausencias), accesible por ADMIN y ENCARGADO.
  * Si empleadoId es null el registro se trata como festivo global:
  * el proceso nocturno generará un fichaje del tipo indicado para
- * todos los empleados activos ese día (RF-26, decisión nº7).
- * Solo se permite DELETE si procesado = false (decisión nº2).
+ * todos los empleados activos ese día (RF-26).
+ * Solo se permite DELETE si procesado = false.
  *
  * @author Santiago Castillo
  */
@@ -24,7 +24,7 @@ public class AusenciaRequest {
     private Long empleadoId;
 
     // Un registro por día. El modelo de rango fue descartado por complicar
-    // innecesariamente el proceso nocturno (decisión nº7).
+    // innecesariamente el proceso nocturno.
     @NotNull
     private LocalDate fecha;
 

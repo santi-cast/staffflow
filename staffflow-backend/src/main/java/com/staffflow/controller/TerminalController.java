@@ -22,7 +22,7 @@ import java.util.Map;
  * Ruta base: /api/v1/terminal
  * Seguridad: SIN JWT. Todos los endpoints son PÚBLICOS (rol PÚBLICO).
  *   El terminal físico no tiene sesión de usuario. La autenticación se
- *   realiza exclusivamente por PIN de 4 dígitos (decisión nº21).
+ *   realiza exclusivamente por PIN de 4 dígitos.
  *   La cadena de seguridad de Spring Security debe permitir estos
  *   endpoints sin autenticación (SecurityConfig).
  *

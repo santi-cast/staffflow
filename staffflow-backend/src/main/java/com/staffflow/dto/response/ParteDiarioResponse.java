@@ -13,7 +13,7 @@ import java.util.List;
  * individual de cada empleado activo.
  *
  * Usado en E35 (GET /api/v1/presencia/parte-diario).
- * Accesible por ADMIN y ENCARGADO (RF-30, decisión nº14).
+ * Accesible por ADMIN y ENCARGADO (RF-30).
  *
  * Los contadores globales (fichados, enPausa, ausencias, sinJustificar)
  * permiten al encargado ver el resumen del día de un vistazo.

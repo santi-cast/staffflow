@@ -17,12 +17,12 @@ import java.util.Optional;
  *
  * Restricciones de tabla relevantes:
  *   - usuario_id UNIQUE: un usuario solo puede tener un perfil de empleado.
- *     La relación usuario-empleado es 1:1 e inmutable (decisión nº22).
+ *     La relación usuario-empleado es 1:1 e inmutable.
  *   - pin_terminal UNIQUE CHAR(4): el PIN identifica al empleado en el
  *     terminal físico. Único en toda la tabla (RNF-R03: búsqueda < 100ms).
  *   - codigo_nfc UNIQUE nullable: alternativa al PIN. NULL si no se usa.
  *   - Bajas lógicas: activo=false impide el acceso al terminal pero
- *     conserva el historial de fichajes y saldos (decisión nº4).
+ *     conserva el historial de fichajes y saldos.
  *   - El rol ADMIN nunca tiene perfil de empleado: no ficha ni tiene
  *     jornada que registrar.
  *

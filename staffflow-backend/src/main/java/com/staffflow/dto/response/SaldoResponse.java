@@ -66,7 +66,7 @@ public class SaldoResponse {
      * <p>La formula de disponibles es:
      *   disponibles = derechoAnio + pendientesAnterior - consumidos
      * El campo pendientesAnterior se arrastra desde el cierre del año
-     * anterior (decision n12).</p>
+     * anterior.</p>
      */
     @Data
     @AllArgsConstructor
@@ -80,7 +80,7 @@ public class SaldoResponse {
 
         /**
          * Dias de vacaciones no disfrutados del año anterior
-         * y trasladados a este. Los genera el cierre anual (decision n12).
+         * y trasladados a este. Los genera el cierre anual.
          */
         private Integer pendientesAnterior;
 
@@ -119,7 +119,7 @@ public class SaldoResponse {
 
         /**
          * Dias de asuntos propios no disfrutados del año anterior
-         * y trasladados a este. Los genera el cierre anual (decision n12).
+         * y trasladados a este. Los genera el cierre anual.
          */
         private Integer pendientesAnterior;
 
@@ -147,7 +147,7 @@ public class SaldoResponse {
      * adicional a FichajeRepository:
      *   esperadas  = diasTrabajados * jornadaDiariaMinutos / 60.0
      *   trabajadas = esperadas + saldoHoras
-     * BigDecimal para mantener la precision decimal del calculo (decision n22).</p>
+     * BigDecimal para mantener la precision decimal del calculo.</p>
      */
     @Data
     @AllArgsConstructor

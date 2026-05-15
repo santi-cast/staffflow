@@ -9,13 +9,13 @@ import lombok.Data;
  * PIN e identificador de dispositivo introducidos en el terminal compartido.
  * Usado en E48 (POST /api/v1/terminal/entrada) y
  * E49 (POST /api/v1/terminal/salida), endpoints públicos sin JWT
- * porque el terminal no tiene sesión de usuario (decisión nº21).
+ * porque el terminal no tiene sesión de usuario.
  *
  * El campo dispositivoId identifica el terminal físico desde el que se
  * realiza la operación. Es necesario para el bloqueo por dispositivo
  * (RNF-S05, D-021): tras 5 intentos fallidos el dispositivo queda
  * bloqueado y devuelve HTTP 423 hasta que se reinicia el contador.
- * El bloqueo es por dispositivo, no por empleado (decisión nº16).
+ * El bloqueo es por dispositivo, no por empleado.
  *
  * @author Santiago Castillo
  */

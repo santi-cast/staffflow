@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * (@Scheduled) de forma incremental e idempotente: calculadoHastaFecha
  * evita reprocesar días ya contabilizados (RF-35, RF-36, RF-53).
  * El desglose completo (derecho + pendientes anterior + consumidos)
- * es necesario para el cálculo correcto al cambio de año (decisión nº12).
+ * es necesario para el cálculo correcto al cambio de año.
  *
  * @author Santiago Castillo
  */
@@ -91,7 +91,7 @@ public class SaldoAnual {
     // --- Horas ---
 
     // Horas de ausencia retribuida acumuladas (pausas AUSENCIA_RETRIBUIDA).
-    // BigDecimal por precisión decimal en el cálculo (decisión nº22).
+    // BigDecimal por precisión decimal en el cálculo.
     @Column(name = "horas_ausencia_retribuida", nullable = false, precision = 10, scale = 2)
     private BigDecimal horasAusenciaRetribuida = BigDecimal.ZERO;
 

@@ -393,7 +393,7 @@ public class SaldoService {
      * toman del contrato del empleado en el momento de la creacion.
      * Pendientes del año anterior = 0 porque este metodo solo actua
      * cuando no existe el registro previo (el cierre anual se encarga
-     * de arrastrar pendientes, decision n12).</p>
+ *  de arrastrar pendientes).</p>
      *
      * @param empleado empleado para el que se crea el saldo
      * @param anio     año del nuevo registro
@@ -448,7 +448,7 @@ public class SaldoService {
      * Convierte minutos a horas con dos decimales.
      *
      * BigDecimal para mantener la precision decimal del calculo
-     * de saldo de horas (decision n22). RoundingMode.HALF_UP
+     * de saldo de horas. RoundingMode.HALF_UP
      * es el redondeo estandar para valores monetarios y temporales.
      *
      * @param minutos minutos a convertir (puede ser negativo)
@@ -465,7 +465,7 @@ public class SaldoService {
      * <p>Calcula los campos de horas en memoria sin query adicional:
      *   esperadas  = diasTrabajados * jornadaDiariaMinutos / 60.0
      *   trabajadas = esperadas + saldoHoras
-     * Ambos valores se redondean a 2 decimales (decision n22).</p>
+     * Ambos valores se redondean a 2 decimales.</p>
      *
      * @param saldo    entidad con los datos persistidos
      * @param empleado entidad con los datos contractuales (jornadaDiariaMinutos)
