@@ -9,6 +9,8 @@ import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.TerminalApiService
 import com.staffflow.android.data.remote.dto.TerminalPinRequest
 import com.staffflow.android.data.remote.repository.TerminalRepository
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -144,16 +146,26 @@ class TerminalViewModel(application: Application) : AndroidViewModel(application
                     )
                 },
                 onFailure = { error ->
-                    val esBloqueado = error.message?.contains("bloqueado", ignoreCase = true) == true
-                    when {
-                        error.message == "Sin conexion con el servidor" -> {
+                    val apiError = (error as? ApiException)?.error
+                    when (apiError) {
+                        is ApiError.Network, ApiError.Timeout -> {
                             _uiState.value = TerminalUiState.ErrorConexion(pin)
                         }
-                        esBloqueado -> {
-                            _uiState.value = TerminalUiState.Bloqueado(error.message!!)
+                        is ApiError.PinBloqueado -> {
+                            _uiState.value = TerminalUiState.Bloqueado(apiError.mensaje ?: "")
+                        }
+                        is ApiError.NotFound, is ApiError.Validation -> {
+                            _uiState.value = TerminalUiState.Error("PIN incorrecto")
+                            delay(2000)
+                            resetEstado()
+                        }
+                        is ApiError.Server -> {
+                            _uiState.value = TerminalUiState.Error("Error del servidor (${apiError.code})")
+                            delay(2000)
+                            resetEstado()
                         }
                         else -> {
-                            _uiState.value = TerminalUiState.Error("PIN incorrecto")
+                            _uiState.value = TerminalUiState.Error("Error inesperado")
                             delay(2000)
                             resetEstado()
                         }
