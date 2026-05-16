@@ -64,7 +64,7 @@ interface AusenciaApiService {
      * Solo disponible si procesado=false.
      */
     @DELETE("ausencias/{id}")
-    suspend fun eliminarAusencia(@Path("id") id: Long): Response<Void>
+    suspend fun eliminarAusencia(@Path("id") id: Long): Response<Unit>
 
     /**
      * E33 - Lista ausencias con filtros opcionales.
