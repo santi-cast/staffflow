@@ -1,18 +1,15 @@
 package com.staffflow.android.data.remote.repository
 
-import com.google.gson.Gson
 import com.staffflow.android.data.remote.api.AusenciaApiService
 import com.staffflow.android.data.remote.dto.AusenciaPatchRequest
 import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.AusenciaResponse
-import com.staffflow.android.data.remote.dto.ErrorResponse
-import com.staffflow.android.data.remote.dto.MensajeResponse
 import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
-import com.staffflow.android.data.remote.dto.RangoConflictResponse
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import com.staffflow.android.util.safeApiCall
 import okhttp3.ResponseBody
-import java.io.IOException
 
 /** Lanzada por crearAusenciaRango cuando el backend devuelve 409 con fechas conflictivas. */
 class RangoConflictException(val fechas: List<String>) : Exception("Conflicto en rango")
@@ -39,28 +36,21 @@ class AusenciaRepository(private val api: AusenciaApiService) {
 
     /**
      * E63 - Crea ausencias planificadas en un rango de fechas.
-     * Devuelve RangoConflictException si el backend responde 409.
+     *
+     * Compatibilidad transitoria: cuando el backend responde 409 con fechas
+     * conflictivas (ApiError.RangoConflicto), se reenvuelve como
+     * [RangoConflictException] para preservar el contrato actual de
+     * FormAusenciaViewModel. El resto de fallos viajan como
+     * ApiException(ApiError) tal como produce safeApiCall.
      */
-    suspend fun crearAusenciaRango(request: AusenciaRangoRequest): Result<List<AusenciaResponse>> {
-        return try {
-            val response = api.crearAusenciaRango(request)
-            if (response.isSuccessful) {
-                Result.success(response.body()!!)
-            } else if (response.code() == 409) {
-                val body = response.errorBody()?.string()
-                val conflict = try { Gson().fromJson(body, RangoConflictResponse::class.java) } catch (e: Exception) { null }
-                Result.failure(RangoConflictException(conflict?.fechasConflictivas ?: emptyList()))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                val mensaje = try { Gson().fromJson(errorBody, ErrorResponse::class.java).error ?: "Error ${response.code()}" } catch (e: Exception) { "Error ${response.code()}" }
-                Result.failure(Exception(mensaje))
+    suspend fun crearAusenciaRango(request: AusenciaRangoRequest): Result<List<AusenciaResponse>> =
+        safeApiCall { api.crearAusenciaRango(request) }
+            .recoverCatching { throwable ->
+                if (throwable is ApiException && throwable.error is ApiError.RangoConflicto) {
+                    throw RangoConflictException(throwable.error.fechas)
+                }
+                throw throwable
             }
-        } catch (e: IOException) {
-            Result.failure(Exception("Sin conexion con el servidor"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     /**
      * E31 - Actualiza parcialmente una ausencia no procesada.
@@ -75,25 +65,8 @@ class AusenciaRepository(private val api: AusenciaApiService) {
      * P24 (FormAusenciaFragment) llama a este metodo tras confirmacion del dialogo.
      * Error 409 si procesado=true.
      */
-    suspend fun eliminarAusencia(id: Long): Result<Unit> {
-        return try {
-            val response = api.eliminarAusencia(id)
-            if (response.isSuccessful) {
-                Result.success(Unit)
-            } else {
-                val errorBody = response.errorBody()?.string()
-                val mensaje = try {
-                    com.google.gson.Gson().fromJson(errorBody, ErrorResponse::class.java).error
-                        ?: "Error ${response.code()}"
-                } catch (e: Exception) { "Error ${response.code()}" }
-                Result.failure(Exception(mensaje))
-            }
-        } catch (e: java.io.IOException) {
-            Result.failure(Exception("Sin conexion con el servidor"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    suspend fun eliminarAusencia(id: Long): Result<Unit> =
+        safeApiCall { api.eliminarAusencia(id) }
 
     /**
      * E33 - Lista ausencias con filtros opcionales.
