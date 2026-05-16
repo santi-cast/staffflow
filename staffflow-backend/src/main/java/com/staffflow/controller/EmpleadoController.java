@@ -311,12 +311,15 @@ public class EmpleadoController {
     // ----------------------------------------------------------------
 
     /**
-     * Regenera el PIN de terminal de un empleado y lo devuelve UNA sola vez.
+     * Regenera el PIN de terminal de un empleado y lo devuelve en la respuesta.
      *
      * El servidor genera un nuevo PIN de 4 dígitos único mediante
-     * {@code generarPinUnico()}, lo persiste en BD y lo devuelve en la respuesta.
-     * Una vez entregado, el PIN no puede volver a consultarse por API:
-     * el ADMIN o ENCARGADO debe entregarlo al empleado en persona.
+     * {@code generarPinUnico()}, lo persiste en BD (columna
+     * {@code empleados.pin_terminal}, consumida por el flujo de fichaje
+     * de {@code TerminalService}) y lo devuelve en la respuesta. Tras la
+     * regeneración, el PIN debe transmitirse al empleado por un canal
+     * humano seguro; posteriormente solo es re-consultable por ADMIN
+     * vía E15 (Opción A: ENCARGADO recibe {@code pinTerminal = null}).
      *
      * La modificación del PIN de terminal se realiza EXCLUSIVAMENTE por este
      * endpoint (E65). El endpoint E16 (PATCH /{id}) ya NO acepta ni procesa

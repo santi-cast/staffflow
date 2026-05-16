@@ -130,7 +130,10 @@ Características principales:
 
 - API REST **stateless** con autenticación **JWT**
 - Control de acceso basado en **roles** con Spring Security (`@PreAuthorize`)
-- Roles acumulativos: EMPLEADO ⊂ ENCARGADO ⊂ ADMIN
+- Roles con reparto matricial por módulo (no jerarquía estricta):
+  - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
+  - **ENCARGADO**: mismos permisos que ADMIN sobre los módulos operativos (empleados, fichajes, pausas, ausencias, presencia, saldos sin recálculo, informes, desbloqueo del terminal E53/E54), pero SIN acceso a empresa, usuarios ni recálculo. Tiene perfil de empleado: usa `/me` y ficha por PIN.
+  - **EMPLEADO**: acceso exclusivo a sus propios datos vía endpoints `/me`. Tiene perfil de empleado: ficha por PIN.
 - Separación entre **entidades de dominio y DTOs** (nunca se exponen entidades directamente)
 - Persistencia mediante **JPA / Hibernate**
 - Sin stored procedures ni triggers: toda la lógica de negocio en la capa service

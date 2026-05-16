@@ -8,37 +8,62 @@ package com.staffflow.domain.enums;
  * restricciones de autorización correspondientes (HTTP 403 si el rol es
  * insuficiente para el endpoint solicitado).
  *
- * Separación de conceptos (decisión de diseño nº19):
+ * Separación de conceptos:
  * El Rol es distinto de la CategoriaEmpleado. El Rol define permisos en la app;
  * la CategoriaEmpleado describe el puesto laboral. Un encargado de equipo puede
  * tener rol EMPLEADO, y un técnico puede tener rol ENCARGADO. Son dimensiones
  * independientes.
  *
- * Referencia: RNF-S03, RF-03, decisión de diseño nº10, nº14.
+ * El reparto exacto de permisos por endpoint vive en {@code SecurityConfig}
+ * (capa URL) y en las anotaciones {@code @PreAuthorize} de cada controller
+ * (capa método). Cualquier divergencia entre este Javadoc y esos dos sitios
+ * es un bug del Javadoc, no de la configuración.
+ *
+ * Referencia: RNF-S03, RF-03.
  */
 public enum Rol {
 
     /**
-     * Acceso total al sistema. Gestiona la configuración de empresa, usuarios
-     * y toda la operativa (fichajes, ausencias, saldos, informes).
-     * ADMIN no tiene perfil de empleado y nunca ficha desde el terminal
-     * (decisión de diseño nº8): sus credenciales son de gestión, no de presencia.
+     * Acceso total a la gestión del sistema. Es el único rol con acceso
+     * a la configuración de empresa ({@literal /api/v1/empresa/**}, E06-E07),
+     * a la gestión de usuarios ({@literal /api/v1/usuarios/**}, E08-E12) y
+     * al recálculo forzado de saldos (E40, POST sobre
+     * /api/v1/saldos/{empleadoId}/recalcular). Comparte con ENCARGADO
+     * el resto de módulos operativos
+     * (empleados, fichajes, pausas, ausencias, presencia, saldos, informes
+     * y desbloqueo del terminal E53-E54).
+     *
+     * ADMIN no tiene perfil de empleado y, por tanto, no puede invocar
+     * los endpoints {@code /me} ni fichar desde el terminal por PIN:
+     * sus credenciales son de gestión, no de presencia.
      */
     ADMIN,
 
     /**
-     * Gestión de la operativa diaria. Hereda todos los RF de ADMIN excepto
-     * la gestión de empresa y usuarios (RF-01..RF-07).
-     * SÍ tiene perfil de empleado: ficha con PIN desde el terminal (RF-46..RF-49).
+     * Rol operativo del día a día. Tiene los mismos permisos que ADMIN
+     * sobre los módulos operativos (empleados, fichajes, pausas,
+     * ausencias, presencia, saldos —sin recálculo—, informes y
+     * desbloqueo del terminal), pero NO accede a la configuración de
+     * empresa, a la gestión de usuarios ni al recálculo forzado de
+     * saldos. La separación es matricial por módulo, no una jerarquía
+     * estricta.
+     *
+     * SÍ tiene perfil de empleado: puede consultar sus propios datos
+     * vía endpoints {@code /me} y fichar con PIN desde el terminal
+     * (RF-46..RF-49).
      */
     ENCARGADO,
 
     /**
-     * Acceso exclusivo a los propios datos. Solo puede consultar su perfil,
-     * historial de fichajes, ausencias planificadas y saldo anual.
-     * Spring Security devuelve HTTP 403 si intenta acceder a datos de otro
-     * empleado (decisión de diseño nº10 y nº14).
-     * SÍ tiene perfil de empleado: ficha con PIN desde el terminal (RF-46..RF-49).
+     * Acceso exclusivo a sus propios datos a través de los endpoints
+     * {@code /me} (perfil E21, fichajes E26, pausas E55, ausencias E34
+     * + informe E61, parte diario E37, saldo E41 e informes propios
+     * E58). No tiene acceso a ningún endpoint de gestión: Spring
+     * Security devuelve HTTP 403 ante cualquier intento de consultar
+     * datos de otro empleado.
+     *
+     * SÍ tiene perfil de empleado: ficha con PIN desde el terminal
+     * (RF-46..RF-49).
      */
     EMPLEADO
 }
