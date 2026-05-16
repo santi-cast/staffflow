@@ -9,6 +9,8 @@ import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.data.remote.repository.EmpleadoRepository
 import com.staffflow.android.domain.model.Rol
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -100,8 +102,8 @@ class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(appl
      *
      * Emite Cargando -> Exito(pin) en 2xx; en error mapea el throwable
      * a un codigo simple ("404" | "red" | "generico") que el Fragment
-     * resuelve a string. Se basa en el mensaje del throwable porque
-     * safeApiCall ya colapsa HttpException/IOException a Exception plana.
+     * resuelve a string. El mapeo consume el ApiError tipado expuesto
+     * por ApiException.error; ya no se hace string matching del mensaje.
      *
      * En exito tambien actualiza _uiState con el PIN nuevo (copy del
      * EmpleadoResponse actual) para que P14 refleje el cambio sin tener
@@ -127,10 +129,10 @@ class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(appl
     }
 
     private fun mapearError(t: Throwable): String {
-        val msg = t.message.orEmpty()
-        return when {
-            msg.contains("Sin conexion", ignoreCase = true) -> "red"
-            msg.contains("404") || msg.contains("no encontrado", ignoreCase = true) -> "404"
+        val error = (t as? ApiException)?.error
+        return when (error) {
+            is ApiError.Network, ApiError.Timeout -> "red"
+            is ApiError.NotFound -> "404"
             else -> "generico"
         }
     }
