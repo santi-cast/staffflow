@@ -43,10 +43,14 @@ public class EmpresaController {
      * <p>Solo el rol ADMIN puede consultar la configuración de empresa.
      * ENCARGADO y EMPLEADO reciben 403 Forbidden si intentan acceder.
      *
-     * <p>El registro devuelto siempre tiene id=1 (singleton).
-     * Si el sistema no ha sido configurado aún, devuelve 500.
+     * <p>El registro devuelto siempre tiene id=1 (singleton). Si el
+     * sistema no ha sido configurado aún (el singleton no existe en
+     * BD), el service lanza {@link com.staffflow.exception.NotFoundException}
+     * y el cliente recibe 404 Not Found a través de
+     * {@code GlobalExceptionHandler}.
      *
-     * @return 200 OK con EmpresaResponse | 403 si rol insuficiente
+     * @return 200 OK con EmpresaResponse | 403 si rol insuficiente |
+     *         404 si el singleton no existe todavía
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
