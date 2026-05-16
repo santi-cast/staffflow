@@ -10,8 +10,9 @@ import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
 import com.staffflow.android.data.remote.repository.AusenciaRepository
-import com.staffflow.android.data.remote.repository.RangoConflictException
 import com.staffflow.android.domain.model.TipoAusencia
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -168,7 +169,8 @@ class FormAusenciaViewModel(application: Application) : AndroidViewModel(applica
             repository.crearAusenciaRango(request).fold(
                 onSuccess = { _uiState.value = UiState.Success },
                 onFailure = {
-                    if (it is RangoConflictException) _uiState.value = UiState.Conflicto(it.fechas)
+                    val error = (it as? ApiException)?.error
+                    if (error is ApiError.RangoConflicto) _uiState.value = UiState.Conflicto(error.fechas)
                     else _uiState.value = UiState.Error(it.message ?: "Error al crear rango")
                 }
             )

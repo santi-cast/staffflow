@@ -6,13 +6,8 @@ import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.AusenciaResponse
 import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
-import com.staffflow.android.util.ApiError
-import com.staffflow.android.util.ApiException
 import com.staffflow.android.util.safeApiCall
 import okhttp3.ResponseBody
-
-/** Lanzada por crearAusenciaRango cuando el backend devuelve 409 con fechas conflictivas. */
-class RangoConflictException(val fechas: List<String>) : Exception("Conflicto en rango")
 
 /**
  * Repositorio para los endpoints de ausencias planificadas (E30-E34).
@@ -39,20 +34,12 @@ class AusenciaRepository(private val api: AusenciaApiService) {
     /**
      * E63 - Crea ausencias planificadas en un rango de fechas.
      *
-     * Compatibilidad transitoria: cuando el backend responde 409 con fechas
-     * conflictivas (ApiError.RangoConflicto), se reenvuelve como
-     * [RangoConflictException] para preservar el contrato actual de
-     * FormAusenciaViewModel. El resto de fallos viajan como
-     * ApiException(ApiError) tal como produce safeApiCall.
+     * Cuando el backend responde 409 con fechas conflictivas, el fallo viaja
+     * como `ApiException` cuyo `error: ApiError.RangoConflicto` contiene la
+     * lista de fechas. El ViewModel decide cómo presentarlo.
      */
     suspend fun crearAusenciaRango(request: AusenciaRangoRequest): Result<List<AusenciaResponse>> =
         safeApiCall { api.crearAusenciaRango(request) }
-            .recoverCatching { throwable ->
-                if (throwable is ApiException && throwable.error is ApiError.RangoConflicto) {
-                    throw RangoConflictException(throwable.error.fechas)
-                }
-                throw throwable
-            }
 
     /**
      * E31 - Actualiza parcialmente una ausencia no procesada.
