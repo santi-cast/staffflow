@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.InformeApiService
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.repository.InformeRepository
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -60,7 +62,7 @@ class SaldosGlobalesViewModel(application: Application) : AndroidViewModel(appli
             repository.getInformeSaldosHtml(_anio.value).fold(
                 onSuccess = { body -> _uiState.value = UiState.Success(body.string()) },
                 onFailure = {
-                    if (it.message?.startsWith("No hay datos de saldo") == true) {
+                    if ((it as? ApiException)?.error is ApiError.NotFound) {
                         _uiState.value = UiState.Empty(_anio.value)
                     } else {
                         _uiState.value = UiState.Error(it.message ?: "Error al cargar los saldos")

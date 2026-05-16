@@ -7,6 +7,8 @@ import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.SaldoApiService
 import com.staffflow.android.data.remote.dto.SaldoResponse
 import com.staffflow.android.data.remote.repository.SaldoRepository
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -106,7 +108,7 @@ class SaldoViewModel(application: Application) : AndroidViewModel(application) {
             repository.getSaldoEmpleado(empleadoId, _anio.value).fold(
                 onSuccess = { _uiState.value = UiState.Success(it) },
                 onFailure = {
-                    if (it.message?.startsWith("No hay datos de saldo") == true) {
+                    if ((it as? ApiException)?.error is ApiError.NotFound) {
                         _uiState.value = UiState.Empty(_anio.value)
                     } else {
                         _uiState.value = UiState.Error(it.message ?: "Error al cargar el saldo")
