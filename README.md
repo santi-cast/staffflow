@@ -193,13 +193,13 @@ Convenciones de la tabla:
 |----|--------------|-------|-------------|--------------|
 | E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos | P15, P29 |
 | E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría) | P13 |
-| E15 | GET /{id} | ADMIN, ENCARGADO | Detalle completo de un empleado | P14, P15 |
+| E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal` y `email`; ENCARGADO los recibe a `null` (Opción A) | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado (PIN de terminal NO se modifica aquí — usar E65) | P15 |
 | E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
 | E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja | — |
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
-| E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve UNA sola vez | P14 |
+| E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve en la respuesta. El PIN queda persistido; tras la regeneración solo es re-consultable por ADMIN vía E15 | P14 |
 | E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
 
 #### Fichajes (`/api/v1/fichajes`)
