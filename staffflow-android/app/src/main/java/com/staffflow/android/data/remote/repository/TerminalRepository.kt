@@ -13,14 +13,17 @@ import com.staffflow.android.util.safeApiCall
 /**
  * Repositorio para los endpoints del terminal de fichaje (E48-E51).
  *
- * Todos los metodos son suspendibles y devuelven Result<T>.
- * El ViewModel consume Result.onSuccess / Result.onFailure.
+ * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
+ * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
+ * (ver util/ApiError.kt). ApiException.message preserva los mensajes
+ * historicos para consumidores que aun leen el string crudo.
  *
- * Los errores HTTP se parsean como ErrorResponse via Gson en safeApiCall.
- * Errores frecuentes:
- *   404 -> PIN no reconocido
- *   409 -> estado incompatible (ya ficho, pausa activa, sin entrada abierta)
- *   423 -> dispositivo bloqueado
+ * Los errores HTTP se mapean a ApiError via mapToApiError dentro de
+ * safeApiCall. Errores frecuentes:
+ *   404 -> ApiError.NotFound  (PIN no reconocido)
+ *   409 -> ApiError.Conflict  (estado incompatible: ya ficho, pausa
+ *          activa, sin entrada abierta)
+ *   423 -> ApiError.PinBloqueado (dispositivo bloqueado)
  *
  * @param api Instancia de TerminalApiService creada por NetworkModule.retrofit.
  */

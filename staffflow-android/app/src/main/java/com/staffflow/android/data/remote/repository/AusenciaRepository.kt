@@ -17,8 +17,10 @@ class RangoConflictException(val fechas: List<String>) : Exception("Conflicto en
 /**
  * Repositorio para los endpoints de ausencias planificadas (E30-E34).
  *
- * Todos los metodos son suspendibles y devuelven Result<T>.
- * El ViewModel consume Result.onSuccess / Result.onFailure.
+ * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
+ * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
+ * (ver util/ApiError.kt). ApiException.message preserva los mensajes
+ * historicos para consumidores que aun leen el string crudo.
  *
  * Requiere JWT con rol ADMIN o ENCARGADO (excepto getMisAusencias que requiere EMPLEADO).
  * El AuthInterceptor adjunta el token automaticamente.

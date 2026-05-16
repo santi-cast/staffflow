@@ -9,7 +9,10 @@ import com.staffflow.android.util.safeApiCall
  * Repositorio para los endpoints de configuracion de empresa (E06-E07).
  *
  * Solo accesible con rol ADMIN.
- * Todos los metodos son suspendibles y devuelven Result<T>.
+ * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
+ * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
+ * (ver util/ApiError.kt). ApiException.message preserva los mensajes
+ * historicos para consumidores que aun leen el string crudo.
  *
  * @param api Instancia de EmpresaApiService creada por NetworkModule.retrofit.
  */

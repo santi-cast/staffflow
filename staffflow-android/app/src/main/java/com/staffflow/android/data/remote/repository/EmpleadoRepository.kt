@@ -11,8 +11,10 @@ import com.staffflow.android.util.safeApiCall
 /**
  * Repositorio para los endpoints de empleados (E13-E18, E21).
  *
- * Todos los metodos son suspendibles y devuelven Result<T>.
- * El ViewModel consume Result.onSuccess / Result.onFailure.
+ * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
+ * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
+ * (ver util/ApiError.kt). ApiException.message preserva los mensajes
+ * historicos para consumidores que aun leen el string crudo.
  *
  * Requiere JWT con rol ADMIN o ENCARGADO (excepto getMiPerfil que requiere EMPLEADO).
  * El AuthInterceptor adjunta el token automaticamente.

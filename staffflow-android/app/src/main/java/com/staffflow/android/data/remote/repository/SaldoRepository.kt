@@ -8,8 +8,10 @@ import com.staffflow.android.util.safeApiCall
 /**
  * Repositorio para los endpoints de saldos anuales.
  *
- * Todos los metodos son suspendibles y devuelven Result<T>.
- * El ViewModel consume Result.onSuccess / Result.onFailure.
+ * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
+ * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
+ * (ver util/ApiError.kt). ApiException.message preserva los mensajes
+ * historicos para consumidores que aun leen el string crudo.
  *
  * E41 requiere JWT con rol EMPLEADO.
  * E38 y E39 requieren JWT con rol ADMIN o ENCARGADO.
