@@ -9,6 +9,8 @@ import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.dto.LoginRequest
 import com.staffflow.android.data.remote.repository.AuthRepository
 import com.staffflow.android.domain.model.Rol
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,10 +84,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     _uiState.value = LoginUiState.Exito(resp.rol)
                 },
                 onFailure = { e ->
-                    if (e.message == "Sin conexion con el servidor") {
-                        _uiState.value = LoginUiState.ErrorConexion(username, password)
-                    } else {
-                        _uiState.value = LoginUiState.Error(e.message ?: "Error de autenticacion")
+                    val error = (e as? ApiException)?.error
+                    _uiState.value = when (error) {
+                        is ApiError.Network, ApiError.Timeout -> LoginUiState.ErrorConexion(username, password)
+                        else -> LoginUiState.Error(e.message ?: "Error de autenticacion")
                     }
                 }
             )
