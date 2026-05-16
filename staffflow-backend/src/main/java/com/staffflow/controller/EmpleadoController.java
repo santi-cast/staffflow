@@ -124,10 +124,10 @@ public class EmpleadoController {
     /**
      * Devuelve el perfil completo de un empleado.
      *
-     * Extrae el rol del JWT y lo pasa al service para que filtre
-     * pinTerminal según la Opción A acordada:
-     *   - ADMIN     → pinTerminal con valor real
-     *   - ENCARGADO → pinTerminal = null
+     * Extrae el rol del JWT (objeto Authentication) y lo pasa al service
+     * para que filtre pinTerminal y email según la Opción A acordada:
+     *   - ADMIN     → pinTerminal y email con valor real
+     *   - ENCARGADO → pinTerminal = null y email = null
      *
      * Códigos HTTP:
      *   200 OK          → empleado encontrado y devuelto
@@ -136,13 +136,14 @@ public class EmpleadoController {
      *
      * @param id             ID del empleado (path variable)
      * @param authentication objeto Authentication inyectado por Spring Security
-     * @return 200 OK con EmpleadoResponse (pinTerminal según rol)
+     * @return 200 OK con EmpleadoResponse (pinTerminal y email según rol)
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
     public ResponseEntity<EmpleadoResponse> obtenerPorId(
-            @PathVariable Long id) {
-        return ResponseEntity.ok(empleadoService.obtenerPorId(id));
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(empleadoService.obtenerPorId(id, authentication));
     }
 
     // ----------------------------------------------------------------

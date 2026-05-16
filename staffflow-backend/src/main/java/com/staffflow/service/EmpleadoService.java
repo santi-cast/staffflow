@@ -14,6 +14,8 @@ import com.staffflow.dto.response.RegenerarPinResponse;
 import com.staffflow.exception.ConflictException;
 import com.staffflow.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +42,11 @@ import java.util.stream.Collectors;
  *     futuro se autorizase ADMIN en method security, el service responderia
  *     HTTP 404 via NotFoundException porque ADMIN no tiene perfil de
  *     empleado. Comportamiento esperado en ambos casos.
- *   - pinTerminal nunca expuesto por API: EmpleadoResponse no tiene el
- *     campo pinTerminal. El PIN no tiene uso legitimo fuera del terminal físico.
+ *   - pinTerminal y email se exponen en E15 (GET /empleados/{id}) SOLO
+ *     al rol ADMIN. ENCARGADO recibe null en ambos campos (Opción A
+ *     acordada con Android). El resto de endpoints de listado y edición
+ *     nunca exponen el PIN. E65 (regenerar-pin) sí lo devuelve a ambos
+ *     roles porque su propósito es entregarlo al empleado en mano.
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
    *   - HTTP 409 preventivo para DNI, numero_empleado o NFC duplicados
@@ -224,24 +229,53 @@ public class EmpleadoService {
     /**
      * Devuelve el perfil completo de un empleado.
      *
+     * Aplica la Opción A acordada con Android:
+     *   - ADMIN     → pinTerminal y email con valor real.
+     *   - ENCARGADO → pinTerminal y email a null (la UI nunca los muestra).
+     *
      * Códigos HTTP producidos:
      *   200 OK          → empleado encontrado y devuelto
      *   403 Forbidden   → rol insuficiente (EMPLEADO bloqueado por Spring Security)
      *   404 Not Found   → empleado con el id indicado no existe
      *
-     * @param id  ID del empleado a consultar
+     * @param id             ID del empleado a consultar
+     * @param authentication objeto Authentication del usuario llamante;
+     *                       de él se extrae si tiene el rol ADMIN para
+     *                       decidir si se expone el PIN y el email
      * @return EmpleadoResponse con los datos del empleado
      */
     @Transactional(readOnly = true)
-    public EmpleadoResponse obtenerPorId(Long id) {
+    public EmpleadoResponse obtenerPorId(Long id, Authentication authentication) {
         Empleado empleado = empleadoRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
-        // PIN y email incluidos en el detalle individual (solo ADMIN los consume en Android)
         EmpleadoResponse response = toEmpleadoResponse(empleado);
-        response.setPinTerminal(empleado.getPinTerminal());
-        response.setEmail(empleado.getUsuario().getEmail());
+        // Opción A: PIN y email se exponen únicamente al rol ADMIN.
+        // ENCARGADO recibe null en ambos campos (la UI Android ya filtra por rol).
+        if (esAdmin(authentication)) {
+            response.setPinTerminal(empleado.getPinTerminal());
+            response.setEmail(empleado.getUsuario().getEmail());
+        }
         return response;
+    }
+
+    /**
+     * Comprueba si el {@link Authentication} dado tiene el rol ADMIN.
+     *
+     * Spring Security expone los roles como autoridades con prefijo
+     * {@code ROLE_}, por eso se compara contra {@code ROLE_ADMIN}.
+     *
+     * @param authentication objeto de autenticación; puede ser null en
+     *                       contextos de test sin SecurityContext
+     * @return true si la autenticación existe y contiene ROLE_ADMIN
+     */
+    private boolean esAdmin(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
     }
 
     // ----------------------------------------------------------------
@@ -540,7 +574,9 @@ public class EmpleadoService {
         response.setJornadaDiariaMinutos(empleado.getJornadaDiariaMinutos());
         response.setDiasVacacionesAnuales(empleado.getDiasVacacionesAnuales());
         response.setDiasAsuntosPropiosAnuales(empleado.getDiasAsuntosPropiosAnuales());
-        // pinTerminal nunca se expone en ningún DTO de respuesta
+        // pinTerminal y email se rellenan aparte en obtenerPorId() solo si
+        // el llamante es ADMIN (Opción A). El resto de consumidores deja
+        // ambos campos a null en el DTO base.
         response.setCodigoNfc(empleado.getCodigoNfc());
         response.setActivo(empleado.getActivo());
         return response;

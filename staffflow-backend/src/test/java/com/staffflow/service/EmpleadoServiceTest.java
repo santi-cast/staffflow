@@ -1,19 +1,26 @@
 package com.staffflow.service;
 
 import com.staffflow.domain.entity.Empleado;
+import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
+import com.staffflow.dto.response.EmpleadoResponse;
 import com.staffflow.dto.response.RegenerarPinResponse;
 import com.staffflow.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -113,5 +120,88 @@ class EmpleadoServiceTest {
         assertThat(response.getPinTerminal())
                 .isNotNull()
                 .matches("\\d{4}");
+    }
+
+    // ---------------------------------------------------------------
+    // obtenerPorId (E15) — Opción A: PIN y email solo a ADMIN
+    // ---------------------------------------------------------------
+
+    /**
+     * Cubre el contrato E15 (GET /api/v1/empleados/{id}) tras aplicar la
+     * Opción A: ADMIN recibe pinTerminal y email con valor; ENCARGADO los
+     * recibe a null. El UI Android ya asume este comportamiento al
+     * renderizar el detalle del empleado.
+     */
+    @Nested
+    @DisplayName("obtenerPorId (E15) — filtrado de PIN y email por rol")
+    class ObtenerPorId {
+
+        private static final String PIN = "1234";
+        private static final String EMAIL = "empleado@staffflow.local";
+
+        private Empleado empleadoConDatosSensibles() {
+            Usuario usuario = new Usuario();
+            usuario.setId(10L);
+            usuario.setEmail(EMAIL);
+
+            Empleado emp = new Empleado();
+            emp.setId(EMPLEADO_ID);
+            emp.setPinTerminal(PIN);
+            emp.setUsuario(usuario);
+            return emp;
+        }
+
+        private Authentication authConRol(String rol) {
+            return new UsernamePasswordAuthenticationToken(
+                    "test-user",
+                    "n/a",
+                    List.of(new SimpleGrantedAuthority(rol)));
+        }
+
+        @Test
+        @DisplayName("ADMIN — recibe pinTerminal y email con valor real")
+        void obtenerPorId_admin_devuelvePinYEmail() {
+            // Arrange
+            when(empleadoRepository.findById(EMPLEADO_ID))
+                    .thenReturn(Optional.of(empleadoConDatosSensibles()));
+
+            // Act
+            EmpleadoResponse response = empleadoService.obtenerPorId(
+                    EMPLEADO_ID, authConRol("ROLE_ADMIN"));
+
+            // Assert
+            assertThat(response.getPinTerminal()).isEqualTo(PIN);
+            assertThat(response.getEmail()).isEqualTo(EMAIL);
+        }
+
+        @Test
+        @DisplayName("ENCARGADO — recibe pinTerminal y email a null (Opción A)")
+        void obtenerPorId_encargado_devuelvePinYEmailNull() {
+            // Arrange
+            when(empleadoRepository.findById(EMPLEADO_ID))
+                    .thenReturn(Optional.of(empleadoConDatosSensibles()));
+
+            // Act
+            EmpleadoResponse response = empleadoService.obtenerPorId(
+                    EMPLEADO_ID, authConRol("ROLE_ENCARGADO"));
+
+            // Assert
+            assertThat(response.getPinTerminal()).isNull();
+            assertThat(response.getEmail()).isNull();
+            // El resto del DTO sigue rellenándose con normalidad
+            assertThat(response.getId()).isEqualTo(EMPLEADO_ID);
+        }
+
+        @Test
+        @DisplayName("Empleado inexistente — lanza NotFoundException independientemente del rol")
+        void obtenerPorId_idInexistente_lanzaNotFoundException() {
+            // Arrange
+            when(empleadoRepository.findById(99999L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            assertThatThrownBy(() -> empleadoService.obtenerPorId(
+                    99999L, authConRol("ROLE_ADMIN")))
+                    .isInstanceOf(NotFoundException.class);
+        }
     }
 }
