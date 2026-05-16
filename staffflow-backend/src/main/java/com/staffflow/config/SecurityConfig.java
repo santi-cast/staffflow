@@ -21,10 +21,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *
  * <p>Define dos cadenas de seguridad independientes con prioridades distintas:
  * <ul>
- *   <li>{@code terminalFilterChain} (Order=1): cubre los 4 endpoints de terminal PIN
- *       ({@code /api/v1/terminal/**}). Sin JWT, sin sesion, totalmente publica.
- *       Tiene su propia cadena para que el bloqueo por dispositivo (RNF-S05)
- *       y la autenticacion por PIN no interfieran con el resto de la API.</li>
+ *   <li>{@code terminalFilterChain} (Order=1): cubre los 5 endpoints de terminal PIN
+ *       (E48-E52: entrada, salida, pausa/iniciar, pausa/finalizar, estado).
+ *       Sin JWT, sin sesion, totalmente publica. Tiene su propia cadena para
+ *       que el bloqueo por dispositivo (RNF-S05) y la autenticacion por PIN
+ *       no interfieran con el resto de la API. Los endpoints de gestion del
+ *       bloqueo (E53 GET y E54 DELETE sobre {@code /api/v1/terminal/bloqueo})
+ *       quedan FUERA de esta cadena y caen en {@code apiFilterChain}.</li>
  *   <li>{@code apiFilterChain} (Order=2): cubre el resto de la API. Stateless con JWT.
  *       Las rutas publicas (login, recuperacion de contrasena, health) no requieren token.
  *       El resto exige JWT valido y rol suficiente segun Endpoints_v3.</li>
@@ -53,8 +56,10 @@ public class SecurityConfig {
 
     // =========================================================================
     // CADENA 1 — TERMINAL PIN (Order=1, mayor prioridad)
-    // Cubre exclusivamente /api/v1/terminal/**
-    // Sin JWT. Los 4 endpoints (E48-E51) se autentican por PIN de 4 digitos.
+    // Cubre los 5 paths explicitos del fichaje por PIN (E48-E52).
+    // /api/v1/terminal/bloqueo (E53-E54) NO entra aqui: cae en apiFilterChain
+    // con JWT y rol ADMIN/ENCARGADO.
+    // Sin JWT. Autenticacion por PIN de 4 digitos.
     // =========================================================================
 
     /**

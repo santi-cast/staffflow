@@ -20,25 +20,32 @@ import java.util.Map;
  * Controller del terminal de fichaje por PIN.
  *
  * Ruta base: /api/v1/terminal
- * Seguridad: SIN JWT. Todos los endpoints son PÚBLICOS (rol PÚBLICO).
- *   El terminal físico no tiene sesión de usuario. La autenticación se
- *   realiza exclusivamente por PIN de 4 dígitos.
- *   La cadena de seguridad de Spring Security debe permitir estos
- *   endpoints sin autenticación (SecurityConfig).
  *
- * Endpoints implementados:
+ * Seguridad: los endpoints se reparten entre las dos cadenas de
+ * Spring Security definidas en {@code SecurityConfig}:
+ *   - 5 endpoints PÚBLICOS (sin JWT) que viajan por {@code terminalFilterChain}.
+ *     Autenticación por PIN de 4 dígitos. Pensados para el terminal
+ *     físico, que no tiene sesión de usuario.
+ *   - 2 endpoints PRIVADOS (con JWT, rol ADMIN o ENCARGADO) que viajan
+ *     por {@code apiFilterChain}. Pensados para la app de gestión.
+ *
+ * Endpoints públicos (sin JWT, autenticación por PIN):
  *   E48 POST /api/v1/terminal/entrada         → registrar entrada  (RF-46)
  *   E49 POST /api/v1/terminal/salida          → registrar salida   (RF-47)
  *   E50 POST /api/v1/terminal/pausa/iniciar   → iniciar pausa      (RF-48)
  *   E51 POST /api/v1/terminal/pausa/finalizar → finalizar pausa    (RF-49)
  *   E52 POST /api/v1/terminal/estado          → consultar estado del día (P06 bienvenida)
  *
+ * Endpoints privados (JWT, ADMIN o ENCARGADO):
+ *   E53 GET    /api/v1/terminal/bloqueo       → consultar bloqueo del terminal
+ *   E54 DELETE /api/v1/terminal/bloqueo       → desbloquear el terminal
+ *
  * El bloqueo por dispositivo (RNF-S05) se gestiona en TerminalService:
  *   HTTP 423 tras 5 intentos fallidos de PIN desde el mismo dispositivoId.
  *
  * El controller no contiene lógica de negocio (RNF-M01).
  */
-@Tag(name = "Terminal", description = "Fichaje por PIN desde terminal f\u00edsico. Sin JWT.")
+@Tag(name = "Terminal", description = "Fichaje por PIN desde terminal f\u00edsico (sin JWT) y gesti\u00f3n del bloqueo por dispositivo (con JWT).")
 @RestController
 @RequestMapping("/api/v1/terminal")
 @RequiredArgsConstructor
