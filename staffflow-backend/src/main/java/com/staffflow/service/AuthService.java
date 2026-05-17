@@ -12,6 +12,7 @@ import com.staffflow.dto.response.LoginResponse;
 import com.staffflow.dto.response.MensajeResponse;
 import com.staffflow.dto.response.UsuarioResponse;
 import com.staffflow.security.JwtTokenProvider;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -158,7 +159,7 @@ public class AuthService {
 
         // Buscar el usuario en BD por username
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + username));
 
         // Construir el DTO de respuesta sin exponer password_hash
         return toUsuarioResponse(usuario);
@@ -194,7 +195,7 @@ public class AuthService {
                 .getName();
 
         Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado: " + username));
 
         // 2. Verificar que la contraseña actual es correcta
         // passwordEncoder.matches() compara en texto plano con el hash almacenado
