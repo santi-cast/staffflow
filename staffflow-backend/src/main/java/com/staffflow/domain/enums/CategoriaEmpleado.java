@@ -7,7 +7,7 @@ package com.staffflow.domain.enums;
  * (que dependen del campo Rol en la tabla usuarios). Útil para filtros,
  * exportaciones y agrupaciones en informes. Extensible en versiones futuras.
  *
- * Decisión de diseño nº19: CategoriaEmpleado es informativo, no operativo.
+ * Decisión de diseño: CategoriaEmpleado es informativo, no operativo.
  * La alternativa —usar la categoría para determinar permisos— se descartó
  * porque duplicaría la lógica de autorización ya resuelta por Spring Security
  * con Rol. Dos conceptos distintos: qué hace el empleado (categoría)
