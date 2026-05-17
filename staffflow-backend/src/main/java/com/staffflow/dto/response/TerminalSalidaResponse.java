@@ -11,8 +11,11 @@ import java.time.LocalDateTime;
  * Incluye el resumen completo de la jornada para que el empleado pueda
  * verificar entrada, salida, pausas y tiempo trabajado antes de irse.
  *
- * jornadaEfectivaMinutos = Math.ceil(minutos_brutos - totalPausasMinutos).
- * El cálculo se realiza en TerminalService al registrar la salida.
+ * El campo jornadaEfectivaSegundos se calcula con precisión de segundos solo
+ * para el resumen del terminal: ChronoUnit.SECONDS(horaSalida - horaEntrada)
+ * - totalPausasSegundos, acotado con Math.max(0, ...). El cálculo se realiza
+ * en TerminalService al registrar la salida. La entidad Fichaje sigue
+ * almacenando jornadaEfectivaMinutos (con Math.ceil) para SaldoService.
  *
  * @author Santiago Castillo
  */

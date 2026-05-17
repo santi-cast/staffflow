@@ -51,7 +51,7 @@ public class FichajeResponse {
     // Se actualiza al cerrar cada pausa (E28).
     private Integer totalPausasMinutos;
 
-    // (horaSalida - horaEntrada) - totalPausasMinutos. Math.floor.
+    // (horaSalida - horaEntrada) - totalPausasMinutos. Math.ceil (redondeo al alza, beneficia al empleado).
     // 0 si la jornada no tiene horas registradas (ausencias).
     private Integer jornadaEfectivaMinutos;
 
