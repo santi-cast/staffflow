@@ -25,11 +25,14 @@ import java.util.Optional;
  *   - codigo_nfc UNIQUE nullable: alternativa al PIN. NULL si no se usa.
  *   - Bajas lógicas: activo=false impide el acceso al terminal pero
  *     conserva el historial de fichajes y saldos.
- *   - El rol ADMIN nunca tiene perfil de empleado: no ficha ni tiene
- *     jornada que registrar.
+ *   - Por convención el rol ADMIN no tiene perfil de empleado (no ficha
+ *     ni tiene jornada que registrar). NO está impuesto a nivel de BD
+ *     ni de validación en EmpleadoService.crear(): es una invariante
+ *     operativa que respeta la seed (data.sql) pero el modelo permite
+ *     la combinación.
  *
  * Métodos heredados de JpaRepository más usados:
- *   - save()       → crear y actualizar empleado (E13, E16, E17, E18)
+ *   - save()       → crear y actualizar empleado (E13, E16, E17, E18, E65)
  *   - findById()   → obtener detalle (E15) y consumido por múltiples
  *                    services para resolver referencias por id.
  *
@@ -111,6 +114,10 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el DNI indicado, excluyendo
      * al empleado con el id especificado.
      *
+     * <p>NO CONSUMIDO en v1: el DNI es inmutable en EmpleadoService.actualizar()
+     * (E16) y EmpleadoPatchRequest no lo expone. Método mantenido como
+     * andamiaje por simetría con el bloque de validaciones de unicidad.</p>
+     *
      * @param dni DNI a verificar
      * @param id  ID del empleado que se está editando (se excluye)
      * @return true si otro empleado distinto ya tiene ese DNI
@@ -121,7 +128,9 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el número de empleado indicado,
      * excluyendo al empleado con el id especificado.
      *
-     * Renombrado desde existsByNssAndIdNot (v1.0 → campo numero_empleado).
+     * <p>NO CONSUMIDO en v1: numeroEmpleado se autogenera EMP-XXX en
+     * EmpleadoService.crear() y no se edita por E16. Método mantenido como
+     * andamiaje por simetría con el bloque de validaciones de unicidad.</p>
      *
      * @param numeroEmpleado número de empleado a verificar
      * @param id             ID del empleado que se está editando (se excluye)
@@ -132,6 +141,11 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Comprueba si existe otro empleado con el PIN indicado, excluyendo
      * al empleado con el id especificado.
+     *
+     * <p>NO CONSUMIDO en v1: el PIN se regenera aleatoriamente en
+     * EmpleadoService.regenerarPin() (E65) usando existsByPinTerminal sin
+     * exclusión (la unicidad global incluye al propio empleado, que ya tiene
+     * un PIN distinto al candidato). Método mantenido como andamiaje.</p>
      *
      * @param pinTerminal PIN a verificar
      * @param id          ID del empleado que se está editando (se excluye)

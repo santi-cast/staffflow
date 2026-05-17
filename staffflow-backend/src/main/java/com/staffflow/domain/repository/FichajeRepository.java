@@ -15,8 +15,10 @@ import java.util.Optional;
  * Repositorio para los fichajes.
  *
  * <p>Los fichajes son inmutables por mandato del RD-ley 8/2019 (RNF-L01):
- * no existe DELETE ni modificación de campos de registro. Solo se permite
- * PATCH en observaciones y horas (E23). Este repositorio no expone
+ * no existe DELETE ni modificación retroactiva de la identidad del registro
+ * (empleado_id, fecha). E23 (PATCH /fichajes/{id}) permite actualizar
+ * únicamente tipo, horaEntrada, horaSalida y observaciones (esta última
+ * obligatoria, RNF-L02). Este repositorio no expone
  * ningún método de eliminación más allá del heredado de JpaRepository,
  * que nunca debe llamarse desde FichajeService.</p>
  *
@@ -33,10 +35,12 @@ import java.util.Optional;
 public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
 
     /**
-     * Devuelve todos los fichajes de un empleado.
+     * Devuelve todos los fichajes de un empleado, sin filtros adicionales.
      *
-     * <p>Lo usa FichajeService en E24 (GET /fichajes) cuando el filtro
-     * incluye solo empleadoId sin rango de fechas.</p>
+     * <p>Actualmente sin consumidores en producción: E24 (GET /fichajes) y
+     * E26 (GET /fichajes/me) usan {@link #findByFiltros} para soportar la
+     * combinación opcional de empleado, rango y tipo. Se mantiene por
+     * simetría con el resto de derivados.</p>
      *
      * @param empleadoId id del empleado
      * @return lista de fichajes del empleado
@@ -46,11 +50,21 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
     /**
      * Busca el fichaje de un empleado en una fecha concreta.
      *
-     * <p>Lo usan FichajeService y TerminalService para:
-     * 1) Validar el UNIQUE(empleado_id, fecha) antes de crear un fichaje nuevo.
-     *    FichajeService usa .isPresent() para lanzar ConflictException (E22).
-     * 2) Detectar si el empleado ya fichó hoy antes de registrar entrada (E48).
-     * 3) Completar horaEntrada o horaSalida en los endpoints de terminal.</p>
+     * <p>Consumidores principales:
+     * <ul>
+     *   <li>FichajeService (E22): valida el UNIQUE(empleado_id, fecha) con
+     *       .isPresent() antes de crear un fichaje nuevo y lanza
+     *       ConflictException si ya existe.</li>
+     *   <li>TerminalService (E48 y endpoints de terminal): detecta si el
+     *       empleado ya fichó hoy antes de registrar entrada y completa
+     *       horaEntrada/horaSalida.</li>
+     *   <li>PausaService: localiza el fichaje del día al iniciar o finalizar
+     *       una pausa.</li>
+     *   <li>PresenciaService (E37): obtiene el fichaje del empleado
+     *       autenticado para construir su parte propio.</li>
+     *   <li>ProcesoCierreDiario (cron 23:55): recorre los fichajes del día
+     *       para auto-cerrar jornadas y generar días libres.</li>
+     * </ul></p>
      *
      * @param empleadoId id del empleado
      * @param fecha      fecha del fichaje
@@ -61,9 +75,16 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
     /**
      * Devuelve los fichajes de un empleado en un rango de fechas.
      *
-     * <p>Lo usa FichajeService en E24 (GET /fichajes) cuando el filtro
-     * incluye desde y hasta. También lo usa SaldoService para calcular
-     * el saldo anual de un periodo concreto.</p>
+     * <p>Consumidores:
+     * <ul>
+     *   <li>SaldoService: calcula el saldo anual de un periodo concreto.</li>
+     *   <li>AusenciaService: localiza los fichajes asociados a una ausencia
+     *       en su rango de fechas.</li>
+     *   <li>InformeService: agrega fichajes por empleado en los informes de
+     *       horas trabajadas y resumen anual.</li>
+     * </ul>
+     * E24 (GET /fichajes) NO usa este método: se apoya en
+     * {@link #findByFiltros} para soportar filtros opcionales combinables.</p>
      *
      * @param empleadoId id del empleado
      * @param desde      fecha de inicio del rango (inclusive)
@@ -91,11 +112,17 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
     /**
      * Busca fichajes aplicando filtros opcionales y combinables.
      *
-     * <p>Lo usan FichajeService en:
-     *   E24 (GET /fichajes, RF-19 y RF-20): ADMIN y ENCARGADO con cualquier
-     *       combinación de filtros, incluyendo sin filtros para obtener todos.
-     *   E26 (GET /fichajes/me, RF-51): empleadoId obligatorio (el del token JWT),
-     *       filtros de fecha y tipo opcionales.</p>
+     * <p>Consumidores:
+     * <ul>
+     *   <li>FichajeService (E24, RF-19/RF-20): ADMIN y ENCARGADO con cualquier
+     *       combinación de filtros, incluyendo sin filtros para obtener todos.</li>
+     *   <li>FichajeService (E26, RF-51): empleadoId obligatorio (el del token JWT),
+     *       filtros de fecha y tipo opcionales.</li>
+     *   <li>PausaService: listado de pausas con filtros equivalentes.</li>
+     *   <li>PdfService: extracción de vacaciones y asuntos propios para los PDF anuales.</li>
+     *   <li>InformeService: agregaciones por rango y tipo para los informes (E29-E33).</li>
+     *   <li>AusenciaService: detección de fichajes con procesado=false o true en un rango.</li>
+     * </ul></p>
      *
      * <p>El patrón (:param IS NULL OR campo = :param) hace que cada filtro sea
      * opcional: si llega null, la condición siempre es verdadera y no filtra.
@@ -123,7 +150,7 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
             @Param("tipo") TipoFichaje tipo);
 
     // ---------------------------------------------------------------
-    // Métodos para PresenciaService (E35-E37)
+    // Métodos para PresenciaService (E35 directo, E36 transitivo)
     // ---------------------------------------------------------------
 
     /**

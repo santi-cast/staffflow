@@ -29,23 +29,14 @@ import java.util.Optional;
 public interface PausaRepository extends JpaRepository<Pausa, Long> {
 
     /**
-     * Devuelve todas las pausas de un empleado.
-     *
-     * <p>Lo usa PausaService en E29 (GET /pausas) cuando el filtro
-     * incluye solo empleadoId sin filtro de fecha.</p>
-     *
-     * @param empleadoId id del empleado
-     * @return lista de todas las pausas del empleado
-     */
-    List<Pausa> findByEmpleadoId(Long empleadoId);
-
-    /**
      * Devuelve todas las pausas de un empleado en una fecha concreta.
      *
-     * <p>Lo usan PausaService y FichajeService para calcular
-     * totalPausasMinutos al cerrar la jornada. También lo usa
-     * PresenciaService para incluir el detalle de pausas del día
-     * en ParteDiarioResponse.</p>
+     * <p>Lo usa TerminalService en E49 (POST /api/v1/terminal/salida)
+     * para sumar los segundos de las pausas cerradas no retribuidas y
+     * mostrar totalPausasSegundos en el resumen de salida. También lo
+     * usa PresenciaService en E37 (GET /api/v1/presencia/parte-diario/me)
+     * para rellenar el detalle de pausas del día del empleado autenticado
+     * (PausaResumen dentro de DetallePresenciaResponse).</p>
      *
      * @param empleadoId id del empleado
      * @param fecha      fecha de las pausas
@@ -61,13 +52,15 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
      *
      * <ul>
      *   <li>Uso negativo (HTTP 409 si existe): PausaService.crear (E27),
-     *       TerminalService.entrada (E49) — para evitar que un empleado
+     *       TerminalService.registrarSalida (E49) — para evitar que un empleado
      *       abra una segunda pausa o ficha salida con pausa abierta —
      *       y TerminalService.iniciarPausa (E50).</li>
      *   <li>Uso positivo (la pausa activa es el objetivo): TerminalService
-     *       .finalizarPausa (E51) la localiza para cerrarla, y
-     *       PresenciaService la consulta para marcar el estado EN_PAUSA
-     *       del empleado en el parte diario (E35).</li>
+     *       .finalizarPausa (E51) la localiza para cerrarla,
+     *       TerminalService.obtenerEstado (E52) la consulta para devolver
+     *       EstadoTerminal.EN_PAUSA con horaInicioPausa y tipoPausa, y
+     *       PresenciaService.obtenerMiPresencia (E37) la consulta para
+     *       marcar el booleano enPausa del empleado autenticado.</li>
      * </ul>
      *
      * @param empleadoId id del empleado

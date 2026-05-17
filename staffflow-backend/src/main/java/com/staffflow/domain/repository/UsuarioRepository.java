@@ -46,9 +46,22 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     /**
      * Busca un usuario por su nombre de usuario.
      *
-     * Usado por UserDetailsServiceImpl durante el login: Spring Security
-     * llama a loadUserByUsername() que delega en este método.
-     * Si no existe, Spring Security lanza BadCredentialsException → HTTP 401.
+     * <p>Dos usos transversales:</p>
+     * <ol>
+     *   <li>Login (UserDetailsServiceImpl): Spring Security llama a
+     *       loadUserByUsername() que delega en este método. Si no existe
+     *       o el usuario está inactivo, UserDetailsServiceImpl lanza
+     *       UsernameNotFoundException; el DaoAuthenticationProvider de
+     *       Spring Security la traduce internamente a
+     *       BadCredentialsException (hideUserNotFoundExceptions=true)
+     *       para evitar enumeración de cuentas, y GlobalExceptionHandler
+     *       responde HTTP 401.</li>
+     *   <li>Resolución del usuario autenticado en los services: la mayoría
+     *       de los services (Auth, Empleado, Fichaje, Pausa, Ausencia,
+     *       Informe, Terminal, ProcesoCierreDiario) lo invocan para
+     *       cargar la entidad Usuario a partir del username extraído del
+     *       SecurityContext, y filtrar después por usuario propietario.</li>
+     * </ol>
      *
      * @param username nombre de usuario (campo UNIQUE en BD)
      * @return Optional con el usuario si existe
@@ -119,9 +132,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * Comprueba si existe otro usuario con el username indicado, excluyendo
      * al usuario con el id especificado.
      *
-     * Usado en UsuarioService.actualizar() (E11) para validar unicidad
-     * de username en edición sin producir falso positivo cuando el usuario
-     * mantiene su propio username sin cambiarlo.
+     * <p>Actualmente sin consumidores: E11 (PATCH /api/v1/usuarios/{id}) no
+     * permite modificar el username (ver {@link com.staffflow.dto.request.UsuarioPatchRequest}),
+     * por lo que la validación de unicidad en edición no es necesaria. Se
+     * conserva por simetría con {@link #existsByEmailAndIdNot(String, Long)}
+     * y como base de un futuro endpoint de cambio de username si se decide
+     * habilitarlo.</p>
      *
      * @param username nombre de usuario a verificar
      * @param id       ID del usuario que se está editando (se excluye de la búsqueda)

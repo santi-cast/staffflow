@@ -17,9 +17,13 @@ import java.util.Optional;
  * con un patron findOrCreate: si no existe el registro para el año en curso
  * lo crea con los valores iniciales antes de actualizar.</p>
  *
- * <p>Los saldos los actualiza el proceso nocturno @Scheduled (ProcesoCierreDiario)
- * y manualmente E40 recalcular (solo ADMIN). El cierre anual (boton manual ADMIN)
- * crea el registro del año siguiente con los pendientes arrastrados.</p>
+ * <p>Los saldos los actualiza el proceso nocturno @Scheduled (ProcesoCierreDiario,
+ * 23:55) llamando a SaldoService.recalcularParaProceso(), y manualmente E40
+ * (POST /api/v1/saldos/{empleadoId}/recalcular, solo ADMIN) llamando a
+ * SaldoService.recalcular(). El flujo de cierre anual con arrastre de pendientes
+ * a un nuevo registro del año siguiente esta previsto en el modelo (campos
+ * pendientesVacaciones y pendientesAsuntosPropios en SaldoAnual) pero todavia
+ * no esta implementado como endpoint ni como proceso programado.</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.entity.SaldoAnual
@@ -47,15 +51,17 @@ public interface SaldoAnualRepository extends JpaRepository<SaldoAnual, Long> {
     Optional<SaldoAnual> findByEmpleadoIdAndAnio(Long empleadoId, Integer anio);
 
     /**
-     * Devuelve el historico completo de saldos de un empleado.
+     * Devuelve el historico completo de saldos de un empleado, sin filtrar
+     * por año.
      *
-     * <p>Lo usa SaldoService para mostrar el historial de años anteriores
-     * si el cliente lo solicita. Tambien lo usa CierreAnual para obtener
-     * el saldo del año que cierra y calcular los pendientes a arrastrar
-     * al año nuevo.</p>
+     * <p>Actualmente no tiene consumidores en produccion. Se mantiene como
+     * utilidad para futuros endpoints de historial por empleado o para el
+     * proceso de cierre anual (todavia no implementado) cuando necesite
+     * leer el saldo del año que cierra para arrastrar pendientes al nuevo.</p>
      *
      * @param empleadoId id del empleado
-     * @return lista de saldos anuales del empleado (puede ser vacia)
+     * @return lista de saldos anuales del empleado, sin orden garantizado
+     *         (puede ser vacia)
      */
     List<SaldoAnual> findByEmpleadoId(Long empleadoId);
 
@@ -76,15 +82,15 @@ public interface SaldoAnualRepository extends JpaRepository<SaldoAnual, Long> {
     List<SaldoAnual> findByAnio(Integer anio);
 
     /**
-     * Devuelve todos los saldos anuales de un año concreto con el empleado cargado en la misma query.
+     * Devuelve todos los saldos anuales de un año concreto con el empleado
+     * cargado en la misma query mediante JOIN FETCH.
      *
-     * <p>JOIN FETCH s.empleado evita el problema N+1 al acceder a s.getEmpleado()
-     * fuera de una sesion Hibernate (por ejemplo, en metodos de servicio sin
-     * {@code @Transactional}). Usar este metodo cuando el contexto de llamada
-     * no garantiza una sesion abierta.</p>
-     *
-     * <p>Alternativa a {@link #findByAnio} cuando se necesita que el empleado
-     * este disponible sin lazy loading adicional.</p>
+     * <p>Actualmente no tiene consumidores en produccion: SaldoService.listarTodos()
+     * opera con @Transactional(readOnly = true), de modo que la sesion Hibernate
+     * permanece abierta durante el mapeo y se puede resolver SaldoAnual#empleado
+     * por lazy loading dentro de la misma transaccion. Se conserva este metodo
+     * como alternativa lista para contextos sin transaccion abierta o si el
+     * volumen de empleados (hoy &le; 50, PYME) crece y aparece un N+1 medible.</p>
      *
      * @param anio año a consultar (ej: 2026)
      * @return lista de saldos de ese año con empleado cargado (puede ser vacia)
