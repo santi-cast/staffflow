@@ -30,7 +30,8 @@ import java.util.List;
  * automatico: su fallo deja el dia entero mal registrado antes de que
  * lleguen los empleados al dia siguiente.</p>
  *
- * <p>Ejecuta tres tareas en secuencia dentro de una sola transaccion:\n *
+ * <p>Ejecuta tres tareas en secuencia dentro de una sola transaccion:</p>
+ *
  * <ul>
  *   <li>Tarea A: cierra la jornada del dia. Los empleados activos sin fichaje
  *       a las 23:55 reciben: AUSENCIA_INJUSTIFICADA si es dia laborable
@@ -53,9 +54,6 @@ import java.util.List;
  * mismo dia el segundo ciclo no genera duplicados porque verifica
  * existencia de fichaje antes de crear, y procesado=true evita
  * reprocesar planificaciones ya materializadas.</p>
- *
- * <p>CierreDiario y CierreAnual son botones manuales (E40, E41)
- * gestionados por SaldoService. No son @Scheduled.</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.service.SaldoService#recalcularParaProceso(Long, int)
