@@ -50,7 +50,8 @@ import java.util.stream.Collectors;
  *   - Búsqueda unificada (RF-14): el parámetro q busca simultáneamente
  *     en nombre, apellido1, apellido2 y dni en una sola consulta.
    *   - HTTP 409 preventivo para DNI, numero_empleado o NFC duplicados
- *     antes de que explote la BD con DataIntegrityViolationException.
+ *     antes de que explote la BD con DataIntegrityViolationException
+ *     (NFC: validación preventiva, fichaje por NFC reservado para v2).
  *   - Baja lógica: activo=false, nunca SQL DELETE.
  *     El historial de fichajes, pausas y saldos queda intacto.
  *   - E19 (estado tiempo real) y E20 (export CSV/PDF) están fuera del
@@ -94,7 +95,9 @@ public class EmpleadoService {
      *   201 Created      → perfil creado correctamente
      *   400 Bad Request  → datos de entrada inválidos (@Valid en controller)
      *   404 Not Found    → usuarioId no existe en la tabla usuarios
-     *   409 Conflict     → DNI, numero_empleado, PIN o NFC ya registrados
+     *   409 Conflict     → DNI, numero_empleado o NFC ya registrados
+     *                      (PIN se autogenera en el service, no proviene del
+     *                      request; NFC: feature reservada para v2)
      *
      * @param request datos del perfil laboral del empleado
      * @return EmpleadoResponse con los datos del perfil creado
@@ -301,6 +304,8 @@ public class EmpleadoService {
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
      *   409 Conflict    → NFC duplicado en otro empleado
+     *                     (NFC: feature reservada para v2; DNI y
+     *                     numeroEmpleado son inmutables, no aplican aquí)
      *
      * @param id      ID del empleado a actualizar
      * @param request campos a actualizar (todos opcionales)
