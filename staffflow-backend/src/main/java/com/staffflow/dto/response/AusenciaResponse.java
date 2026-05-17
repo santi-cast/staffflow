@@ -10,8 +10,10 @@ import java.time.LocalDateTime;
 
 /**
  * Representación de una ausencia planificada.
- * Usado en E30 (POST crear), E31 (PATCH modificar), E32 (DELETE eliminar),
- * E33 (GET lista con filtros) y E34 (GET /me ausencias propias).
+ * Usado en E30 (POST crear), E31 (PATCH modificar),
+ * E33 (GET lista con filtros), E34 (GET /me ausencias propias)
+ * y E63 (POST /rango crear ausencias en bloque).
+ * E32 (DELETE) NO devuelve este DTO: responde 204 No Content (ResponseEntity&lt;Void&gt;).
  * ADMIN y ENCARGADO acceden a todas las ausencias.
  * EMPLEADO solo puede consultar las suyas.
  *
