@@ -21,7 +21,11 @@ import java.util.Date;
  *
  * <p>Estructura del token generado:
  * <ul>
- *   <li>Header: algoritmo HS384 (HMAC-SHA384).</li>
+ *   <li>Header: algoritmo HMAC-SHA seleccionado por jjwt segun la longitud
+ *       de la clave (HS256 para 32-47 bytes, HS384 para 48-63 bytes,
+ *       HS512 para 64 o mas bytes). En este proyecto no se fija el
+ *       algoritmo explicitamente en {@code signWith}: depende del valor
+ *       real de {@code staffflow.jwt.secret} en cada entorno.</li>
  *   <li>Claims estandar: {@code sub} (username), {@code iat} (emision), {@code exp} (expiracion).</li>
  *   <li>Claims personalizados: {@code rol} (ADMIN|ENCARGADO|EMPLEADO),
  *       {@code empleadoId} (null para ADMIN, Long para ENCARGADO/EMPLEADO).</li>
@@ -31,9 +35,10 @@ import java.util.Date;
  * <ul>
  *   <li>Sin refresh token en v1.0. Validez de 12h cubre una jornada laboral
  *       con descanso de comida. Refresh token queda como mejora para v2.0.</li>
- *   <li>Algoritmo HS384: firma simetrica con clave secreta. Suficiente para una API monolitica
- *       donde el mismo servidor genera y valida los tokens. Alternativa descartada: RS256
- *       (asimetrico) — solo necesario si otros servicios externos validan el token.</li>
+ *   <li>Firma simetrica HMAC-SHA con clave secreta. Suficiente para una API
+ *       monolitica donde el mismo servidor genera y valida los tokens.
+ *       Alternativa descartada: RS256 (asimetrico) — solo necesario si otros
+ *       servicios externos validan el token.</li>
  * </ul>
  *
  * @author Santiago Castillo
@@ -44,7 +49,9 @@ public class JwtTokenProvider {
 
     /**
      * Clave secreta leida de application.yml (propiedad {@code staffflow.jwt.secret}).
-     * Debe tener al menos 48 caracteres para HS384 (384 bits).
+     * Debe tener al menos 32 caracteres (256 bits): es el minimo que exige
+     * {@code Keys.hmacShaKeyFor}. Con 32-47 caracteres jjwt firma con HS256;
+     * con 48-63 caracteres con HS384; con 64 o mas con HS512.
      * En produccion se inyecta como variable de entorno, nunca en texto plano en el repo.
      */
     @Value("${staffflow.jwt.secret}")
@@ -69,8 +76,9 @@ public class JwtTokenProvider {
      * {@code @Value} se inyectan despues de la construccion del bean. Si se intentara
      * inicializar secretKey en el constructor, jwtSecret todavia seria null.
      *
-     * <p>{@link Keys#hmacShaKeyFor} deriva una {@link SecretKey} valida para HS384
-     * a partir de los bytes de la cadena configurada.
+     * <p>{@link Keys#hmacShaKeyFor} deriva una {@link SecretKey} valida para HMAC-SHA
+     * a partir de los bytes de la cadena configurada. El algoritmo concreto
+     * (HS256/HS384/HS512) lo decide jjwt en tiempo de firma segun la longitud.
      */
     @PostConstruct
     public void init() {
@@ -110,7 +118,8 @@ public class JwtTokenProvider {
                 .issuedAt(ahora)
                 // exp: fecha de expiracion (12h por defecto)
                 .expiration(expiracion)
-                // Firmar con HS384 y la clave simetrica inicializada en @PostConstruct
+                // Firmar con la clave simetrica inicializada en @PostConstruct.
+                // jjwt selecciona HS256/HS384/HS512 segun la longitud de la clave.
                 .signWith(secretKey)
                 // Serializar a formato compacto: header.payload.signature en Base64url
                 .compact();

@@ -117,11 +117,15 @@ public class SecurityConfig {
      *
      * <p>Configuracion de rutas segun Endpoints_v3:
      * <ul>
-     *   <li>PUBLICAS (sin JWT): login, recuperacion/reset de contrasena, health check.</li>
-     *   <li>SOLO ADMIN: gestion de empresa (/empresa/**) y usuarios (/usuarios/**).</li>
+     *   <li>PUBLICAS (sin JWT): login, recuperacion/reset de contrasena, health check,
+     *       swagger-ui, v3/api-docs, h2-console.</li>
+     *   <li>SOLO ADMIN: gestion de empresa (/empresa/**), usuarios (/usuarios/**) y
+     *       recalculo de saldos (/saldos/&#42;/recalcular, E40).</li>
      *   <li>ADMIN o ENCARGADO: empleados, fichajes, pausas, ausencias, presencia,
-     *       saldos (sin /me), informes y PDFs.</li>
-     *   <li>TODOS los roles autenticados: logout y cambio de contrasena.</li>
+     *       saldos (sin /me), informes y PDFs. Tambien bloqueo del terminal
+     *       (/terminal/bloqueo, E53-E54).</li>
+     *   <li>TODOS los roles autenticados: datos del usuario autenticado (E02) y
+     *       cambio de contrasena propia (E03).</li>
      *   <li>EMPLEADO o ENCARGADO: endpoints /me de cada recurso (ADMIN excluido).</li>
      * </ul>
      *
@@ -180,7 +184,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/empleados/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E26: fichajes propios
                 .requestMatchers("/api/v1/fichajes/me").hasAnyRole("EMPLEADO", "ENCARGADO")
-                // E34: ausencias propias | E-ausencias: informe HTML de ausencias
+                // E34: ausencias propias | E61: informe HTML de ausencias propias
                 .requestMatchers("/api/v1/ausencias/me/informe").hasAnyRole("EMPLEADO", "ENCARGADO")
                 .requestMatchers("/api/v1/ausencias/me").hasAnyRole("EMPLEADO", "ENCARGADO")
                 // E41: saldo propio
@@ -193,23 +197,23 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/informes/me/**").hasAnyRole("EMPLEADO", "ENCARGADO")
 
                 // --- ADMIN o ENCARGADO ---
-                // E13-E20: gestion de empleados (sin /me, ya cubierto arriba)
+                // E13-E20 + E65: gestion de empleados (sin /me, ya cubierto arriba)
                 .requestMatchers("/api/v1/empleados/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E22-E25: fichajes (sin /me)
                 .requestMatchers("/api/v1/fichajes/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E27-E29: pausas (sin /me, ya cubierto arriba)
                 .requestMatchers("/api/v1/pausas/**").hasAnyRole("ADMIN", "ENCARGADO")
-                // E30-E33: ausencias (sin /me)
+                // E30-E33 + E62-E64: ausencias (sin /me ni su informe en /me/informe)
                 .requestMatchers("/api/v1/ausencias/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E35-E36: presencia (sin /me)
                 .requestMatchers("/api/v1/presencia/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E38-E39: saldos (sin /me ni /recalcular, ya cubiertos)
                 .requestMatchers("/api/v1/saldos/**").hasAnyRole("ADMIN", "ENCARGADO")
-                // E42-E47: informes JSON/HTML y PDFs
+                // E42-E47, E57, E59-E60: informes JSON/HTML y PDFs (E58 es /me, ya cubierto)
                 .requestMatchers("/api/v1/informes/**").hasAnyRole("ADMIN", "ENCARGADO")
 
                 // --- TODOS LOS ROLES AUTENTICADOS ---
-                // E02: logout
+                // E02: datos del usuario autenticado (GET /me)
                 // E03: cambiar contrasena propia
                 .requestMatchers("/api/v1/auth/**").authenticated()
 

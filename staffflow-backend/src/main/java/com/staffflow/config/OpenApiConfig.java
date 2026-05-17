@@ -41,9 +41,10 @@ public class OpenApiConfig {
                         .title("StaffFlow API")
                         .description("API REST para control de presencia laboral — TFG DAM 2025/2026")
                         .version("1.0.0"))
-                // Requisito de seguridad global: se aplica a todos los endpoints por defecto
-                // Los endpoints publicos (login, recovery, reset) lo ignoran en la practica
-                // porque SecurityConfig los declara como permitAll()
+                // Requisito de seguridad global: se aplica a todos los endpoints por defecto.
+                // Los endpoints publicos lo ignoran en la practica porque SecurityConfig los
+                // declara permitAll (login, recuperacion/reset de contrasena, health, swagger,
+                // h2-console) o los aisla en terminalFilterChain (E48-E52, terminal por PIN).
                 .addSecurityItem(new SecurityRequirement()
                         .addList(securitySchemeName))
                 .components(new Components()
