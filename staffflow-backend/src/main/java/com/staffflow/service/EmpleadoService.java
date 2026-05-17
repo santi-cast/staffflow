@@ -218,7 +218,8 @@ public class EmpleadoService {
             empleados = empleadoRepository.findByActivo(true);
         }
 
-        // PIN nunca se devuelve en listados (incluirPin = false)
+        // PIN nunca se devuelve en listados: toEmpleadoResponse() omite
+        // pinTerminal por defecto, solo obtenerPorId() lo rellena si ADMIN.
         return empleados.stream()
                 .map(this::toEmpleadoResponse)
                 .collect(Collectors.toList());
@@ -293,10 +294,11 @@ public class EmpleadoService {
      * El campo usuarioId nunca se modifica: la vinculación usuario-empleado
      * es permanente.
      *
-     * Valida unicidad de PIN y DNI excluyendo al propio empleado que
-     * se está editando (puede conservar sus propios valores sin conflicto).
-     * dni, numeroEmpleado y fechaAlta son inmutables —
-     * no existen en EmpleadoPatchRequest.
+     * Valida unicidad de codigoNfc excluyendo al propio empleado
+     * (puede conservar su propio valor sin conflicto). PIN, DNI,
+     * numeroEmpleado y fechaAlta no se modifican por este endpoint:
+     * el PIN se regenera vía E65 (POST /{id}/regenerar-pin) y los
+     * otros tres son inmutables (no existen en EmpleadoPatchRequest).
      *
      * Códigos HTTP producidos:
      *   200 OK          → perfil actualizado correctamente
@@ -352,7 +354,8 @@ public class EmpleadoService {
             empleado.setCodigoNfc(request.getCodigoNfc());
         }
 
-        // PIN no se devuelve en edición
+        // toEmpleadoResponse() nunca rellena pinTerminal; solo obtenerPorId()
+        // lo expone si el llamante es ADMIN (Opción A).
         return toEmpleadoResponse(empleadoRepository.save(empleado));
     }
 
