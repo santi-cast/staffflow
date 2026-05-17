@@ -74,8 +74,10 @@ public class DetallePresenciaResponse {
     private TipoFichaje fichajeTipo;
 
     /**
-     * Pausas del dia. Solo se rellena en E37 (presencia/me).
-     * En E35 (parte diario) siempre es null para evitar N+1 queries.
+     * Pausas del dia. Se rellena tanto en E35 (parte diario, una sola
+     * query plana agrupada por empleado en PresenciaService) como en
+     * E37 (presencia/me). Nunca es null: si el empleado no tiene pausas
+     * llega como lista vacia.
      */
     private List<PausaResumen> pausas;
 
@@ -95,7 +97,8 @@ public class DetallePresenciaResponse {
     /**
      * Resumen de una pausa del dia para mostrar en P12 (Mi hoy).
      *
-     * horaInicio y horaFin vienen formateadas como "HH:mm".
+     * horaInicio y horaFin vienen formateadas como "HH:mm:ss"
+     * (DateTimeFormatter.ofPattern("HH:mm:ss") en PresenciaService).
      * horaFin es null si la pausa sigue activa.
      * duracionMinutos es null si la pausa sigue activa.
      */
