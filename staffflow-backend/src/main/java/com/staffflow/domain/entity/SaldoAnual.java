@@ -12,8 +12,11 @@ import java.time.LocalDateTime;
  * Un registro por empleado por año. Lo actualiza el proceso nocturno
  * (@Scheduled) de forma incremental e idempotente: calculadoHastaFecha
  * evita reprocesar días ya contabilizados (RF-35, RF-36, RF-53).
- * El desglose completo (derecho + pendientes anterior + consumidos)
- * es necesario para el cálculo correcto al cambio de año.
+ *
+ * <p>El modelo incluye los campos pendientesAnioAnterior (vacaciones y
+ * asuntos propios) previstos para el cierre anual con arrastre de saldos
+ * de v2.0. En v1 esos campos son siempre 0 porque el cierre anual no
+ * esta implementado.</p>
  *
  * @author Santiago Castillo
  */
@@ -60,7 +63,9 @@ public class SaldoAnual {
     @Column(name = "dias_vacaciones_derecho_anio", nullable = false)
     private Integer diasVacacionesDerechoAnio;
 
-    // Días no disfrutados del año anterior y trasladados a este (cierre anual).
+    // Reservado para el cierre anual con arrastre de saldos (no implementado
+    // en v1, previsto para v2.0). Siempre 0 en v1; la columna existe en BD
+    // para no requerir migracion cuando v2 lo active.
     @Column(name = "dias_vacaciones_pendientes_anio_anterior", nullable = false)
     private Integer diasVacacionesPendientesAnioAnterior = 0;
 
@@ -77,7 +82,9 @@ public class SaldoAnual {
     @Column(name = "dias_asuntos_propios_derecho_anio", nullable = false)
     private Integer diasAsuntosPropiosDerechoAnio;
 
-    // Días no disfrutados del año anterior y trasladados a este (cierre anual).
+    // Reservado para el cierre anual con arrastre de saldos (no implementado
+    // en v1, previsto para v2.0). Siempre 0 en v1; la columna existe en BD
+    // para no requerir migracion cuando v2 lo active.
     @Column(name = "dias_asuntos_propios_pendientes_anterior", nullable = false)
     private Integer diasAsuntosPropiosPendientesAnterior = 0;
 
