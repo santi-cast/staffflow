@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 61 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 64 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (61 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura) + 1 smoke test (@SpringBootTest)
+- JUnit 5 + Mockito (64 tests unitarios) + ArchUnit 1.4.0 (1 test de arquitectura) + 1 smoke test (@SpringBootTest)
 
 ### Cliente Android
 
@@ -88,12 +88,12 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 El backend soporta dos perfiles Spring:
 
-### Perfil `mysql` (por defecto en producción)
+### Perfil `mysql` (despliegue en producción)
 
 Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
 
 ```
-Documentos/Memoria final/Diagramas/staffflow_v7_ddl_mysql.sql
+Memoria final/Diagramas/staffflow_v8_ddl_mysql.sql
 ```
 
 Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
@@ -106,13 +106,13 @@ Base de datos en memoria. No requiere instalación de MySQL. Los datos de prueba
 - 5 usuarios: admin, encargado01, emp01, emp02, terminal\_service
 - 3 empleados con PIN asignado: Ana García (1111), Carlos López (2222), Laura Fernández (3333)
 
-Para arrancar con perfil dev:
+El perfil `dev` es el activo por defecto (fijado en `application.yaml`), así que basta con:
 
 ```
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+./mvnw spring-boot:run
 ```
 
-El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
+Para forzar el perfil `mysql` en producción se usa `-Dspring-boot.run.profiles=mysql` o la variable de entorno `SPRING_PROFILES_ACTIVE=mysql`. El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
 
 Adicionalmente, el perfil `dev` expone un endpoint auxiliar **`POST /api/v1/test/cierre-diario`** (`TestProcesoCierreDiarioController`, anotado con `@Profile("dev")`) que permite disparar manualmente el proceso nocturno de cierre de jornada sin esperar al cron de las 23:55. **Este endpoint NO se registra en el perfil `mysql`** — Spring lo excluye del contexto y por tanto no existe en producción.
 
@@ -167,7 +167,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E01 | POST /login | público | Autentica con email y password, devuelve un JWT con rol y empleadoId | P02 |
+| E01 | POST /login | público | Autentica con username y password, devuelve un JWT con rol y empleadoId | P02 |
 | E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual | — |
 | E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado | P04 |
 | E04 | POST /password/recovery | público | Solicita recuperación: genera contraseña temporal y la envía por email | P03 |
@@ -251,11 +251,13 @@ Convenciones de la tabla:
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
 | E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P25 |
-| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados activos en formato JSON | — |
-| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P24, P25 |
+| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados con registro en ese año (incluye inactivos con histórico) en formato JSON | — |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P25 |
 | E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
 
 #### Informes HTML (`/api/v1/informes`)
+
+Endpoints dual-format: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML".
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
@@ -353,7 +355,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (65 endpoints, JWT, iText 7) | ✅ Completada — 65/65 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 61 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) + matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 64 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
@@ -434,7 +436,7 @@ En el primer arranque la app sondea una lista de hosts candidatos hasta encontra
 Sobre la base funcional se aplicó una capa adicional de hardening centrada en seguridad y resiliencia:
 
 - **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado". `IllegalStateException` queda reservada para errores internos genuinos (5xx).
-- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 54 anotaciones `@PreAuthorize` de la capa controller del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
+- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 55 anotaciones `@PreAuthorize` de la capa controller del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
 - **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
 - **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize`) y `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
