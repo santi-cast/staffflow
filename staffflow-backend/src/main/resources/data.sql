@@ -736,7 +736,7 @@ VALUES (3, '2026-04-21',
 -- 8. PLANIFICACION DE AUSENCIAS
 --
 -- Festivos globales: empleado_id=NULL → proceso nocturno crea fichaje
--- para todos los empleados activos (RF-26, decisión nº7).
+-- para todos los empleados activos (RF-26).
 --
 -- Festivos nacionales España 2026:
 --   01/01 (jue) Año Nuevo            — pasado, procesado=TRUE

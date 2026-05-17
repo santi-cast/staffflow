@@ -7,8 +7,7 @@ package com.staffflow.exception;
  * <p>HTTP 423 Locked: el recurso (el terminal/dispositivo) está
  * bloqueado. El bloqueo es por dispositivoId y persiste hasta que un ADMIN/ENCARGADO
  * lo libera vía E54 (DELETE /api/v1/terminal/bloqueo), un PIN exitoso reinicia el
- * contador o el servidor se reinicia. El bloqueo es por dispositivo, no por empleado
- * (decisión de diseño nº16).
+ * contador o el servidor se reinicia. El bloqueo es por dispositivo, no por empleado.
  *
  * <p>GlobalExceptionHandler captura esta excepción y devuelve
  * la respuesta 423 con el mensaje correspondiente.

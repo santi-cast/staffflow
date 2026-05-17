@@ -42,7 +42,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * Carga un usuario por su nombre de usuario para el proceso de autenticacion.
      *
      * <p>Solo los usuarios con {@code activo = true} pueden autenticarse.
-     * Un usuario desactivado (baja logica, decision de diseno 4) recibe
+     * Un usuario desactivado (baja logica) recibe
      * {@code UsernameNotFoundException} con el mismo mensaje que un usuario
      * inexistente para evitar enumeracion de cuentas activas/inactivas.
      *

@@ -279,8 +279,7 @@ public class GlobalExceptionHandler {
      *
      * <p>HTTP 423 Locked se usa cuando un dispositivo ha superado
      * los 5 intentos fallidos de PIN y está bloqueado hasta desbloqueo manual (E54),
-     * PIN exitoso o reinicio del servidor (RNF-S05). El bloqueo es por dispositivo, no por empleado
-     * (decisión de diseño nº16).
+     * PIN exitoso o reinicio del servidor (RNF-S05). El bloqueo es por dispositivo, no por empleado.
      *
      * @param ex excepción de PIN bloqueado
      * @param request información de la petición HTTP
