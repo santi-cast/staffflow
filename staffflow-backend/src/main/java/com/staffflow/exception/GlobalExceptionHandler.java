@@ -199,10 +199,13 @@ public class GlobalExceptionHandler {
      * {@link #handleGenericException} → HTTP 500, lo que es la semántica
      * correcta para errores de estado interno.</p>
      *
-     * <p>jakarta.persistence.EntityNotFoundException la lanza TerminalService
-     * cuando el PIN introducido no corresponde a ningun empleado registrado.
-     * Se mapea a 404 para que el terminal pueda distinguir PIN incorrecto
-     * de bloqueo (423) o error interno (500).
+     * <p>jakarta.persistence.EntityNotFoundException es el patron estandar
+     * para lookups fallidos en la capa de servicio (orElseThrow tras un
+     * findById/findByX). La lanzan FichajeService, PausaService,
+     * InformeService y TerminalService al resolver entidades que no
+     * existen (fichaje/pausa/empleado/usuario por id, empleado por PIN
+     * del terminal, etc.). Se mapea a 404 con el mensaje descriptivo
+     * que el servicio incluya al construirla.
      *
      * @param ex excepcion con el mensaje descriptivo
      * @param request informacion de la peticion HTTP
