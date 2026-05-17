@@ -12,8 +12,7 @@ package com.staffflow.exception;
  *
  * <p>Ejemplos de uso:
  *   - Empleado no encontrado con id: 42 (E13, E14, E15, E16, E17, E18)
- *   - Ausencia no encontrada con id: 99 (E22, E23, E24, E25)
- *   - Fichaje no encontrado con id: 7 (E27, E28, E29)
+ *   - Ausencia no encontrada con id: 99 (E30, E31, E32, E33, E34)
  *   - Configuración de empresa no encontrada (E07)
  *   - Saldo anual no encontrado para empleado: 5, año: 2025 (E42, E43)
  *

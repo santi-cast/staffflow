@@ -193,19 +193,20 @@ public class GlobalExceptionHandler {
      *
      * <p>Nota: el handler de {@link IllegalStateException} fue eliminado en
      * la tarea de hardening ISE-01 (SDD backend-hardening-high-issues).
-     * Las 9 ISE intencionales que permanecen en el código (7 en PdfService
-     * por errores de iText7, 2 en SaldoService por años fuera del rango
-     * valido del empleado) caen al manejador genérico
+     * Las 7 ISE intencionales que permanecen en el código (todas en
+     * PdfService, como envoltura de fallos de generación de PDF en
+     * bloques {@code catch (Exception e)} de los endpoints E45, E46,
+     * E47, E57 y E20) caen al manejador genérico
      * {@link #handleGenericException} → HTTP 500, lo que es la semántica
      * correcta para errores de estado interno.</p>
      *
      * <p>jakarta.persistence.EntityNotFoundException es el patron estandar
      * para lookups fallidos en la capa de servicio (orElseThrow tras un
-     * findById/findByX). La lanzan FichajeService, PausaService,
+     * findById/findByX). La lanzan AuthService, FichajeService, PausaService,
      * InformeService y TerminalService al resolver entidades que no
-     * existen (fichaje/pausa/empleado/usuario por id, empleado por PIN
-     * del terminal, etc.). Se mapea a 404 con el mensaje descriptivo
-     * que el servicio incluya al construirla.
+     * existen (usuario por username, fichaje/pausa/empleado por id,
+     * empleado por PIN del terminal, etc.). Se mapea a 404 con el mensaje
+     * descriptivo que el servicio incluya al construirla.
      *
      * @param ex excepcion con el mensaje descriptivo
      * @param request informacion de la peticion HTTP
@@ -298,13 +299,23 @@ public class GlobalExceptionHandler {
     // ─── 501 NOT IMPLEMENTED ─────────────────────────────────────────────────
 
     /**
-     * Maneja funcionalidades no implementadas en v1.0 (501).
+     * Maneja UnsupportedOperationException (501).
      *
-     * <p>UnsupportedOperationException se usa en los servicios para marcar
-     * endpoints definidos en el contrato pero pendientes de implementación
-     * en versiones futuras (E19, E20).</p>
+     * <p>Handler defensivo: actualmente ningún servicio del backend lanza
+     * UnsupportedOperationException de forma intencional. Queda activo
+     * para capturar casos no controlados que puedan provenir de:</p>
+     * <ul>
+     *   <li>Mutaciones sobre colecciones inmutables ({@code List.of},
+     *       {@code Collections.unmodifiable*}).</li>
+     *   <li>Librerías de terceros (iText, drivers JDBC, etc.) que
+     *       documentan "optional operation".</li>
+     * </ul>
      *
-     * @param ex excepción con el mensaje descriptivo de la feature
+     * <p>Sin este handler estos casos caerían al manejador genérico
+     * → HTTP 500 y se loguearían como error grave. 501 es la semántica
+     * correcta.</p>
+     *
+     * @param ex excepción con el mensaje descriptivo
      * @param request información de la petición HTTP
      * @return 501 con { error, timestamp, path }
      */

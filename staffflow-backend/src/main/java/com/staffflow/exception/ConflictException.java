@@ -11,8 +11,8 @@ package com.staffflow.exception;
  *   - Username duplicado al crear usuario (E08)
  *   - Email duplicado al crear o editar usuario (E08, E11)
  *   - DNI duplicado al crear empleado (E13)
- *   - PIN duplicado al crear empleado (E13)
- *   - CIF duplicado al editar empresa (E07)
+ *   - Código NFC duplicado al crear o editar empleado (E13, E16)
+ *   - Solapamiento al crear o modificar fichaje (E22, E23)
  *   - Reactivar empleado que ya está activo (E18)
  *
  * <p>Se implementa como RuntimeException para no obligar a los
