@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Campos modificables de una ficha de empleado mediante actualización parcial.
- * Usado en E21 (PATCH /api/v1/empleados/{id}), accesible por ADMIN y ENCARGADO.
+ * Usado en E16 (PATCH /api/v1/empleados/{id}), accesible por ADMIN y ENCARGADO.
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH).
  * usuarioId, dni, numeroEmpleado y fechaAlta no son modificables por este endpoint:

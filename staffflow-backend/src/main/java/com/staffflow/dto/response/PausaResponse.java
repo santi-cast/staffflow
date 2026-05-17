@@ -38,7 +38,8 @@ public class PausaResponse {
 
     private LocalDateTime horaInicio;
 
-    // NULL = pausa activa en curso. Se rellena al finalizar (E28).
+    // NULL = pausa activa en curso. Se rellena al crear ya cerrada (E27)
+    // o al cerrar una pausa activa (E28).
     // El cliente Android usa este campo para detectar si hay pausa activa.
     private LocalDateTime horaFin;
 
