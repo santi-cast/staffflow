@@ -13,7 +13,9 @@ import java.util.Optional;
  * Repositorio JPA para la entidad Empleado.
  *
  * Tabla: empleados
- * Usado por: EmpleadoService, PresenciaService, TerminalService
+ * Usado por: AusenciaService, AuthService, EmpleadoService, FichajeService,
+ *            InformeService, PausaService, PdfService, PresenciaService,
+ *            SaldoService, TerminalService, ProcesoCierreDiario.
  *
  * Restricciones de tabla relevantes:
  *   - usuario_id UNIQUE: un usuario solo puede tener un perfil de empleado.
@@ -26,14 +28,13 @@ import java.util.Optional;
  *   - El rol ADMIN nunca tiene perfil de empleado: no ficha ni tiene
  *     jornada que registrar.
  *
- * Métodos heredados de JpaRepository usados:
+ * Métodos heredados de JpaRepository más usados:
  *   - save()       → crear y actualizar empleado (E13, E16, E17, E18)
- *   - findById()   → obtener detalle (E15)
+ *   - findById()   → obtener detalle (E15) y consumido por múltiples
+ *                    services para resolver referencias por id.
  *
- * Métodos custom — usados por PresenciaService, TerminalService:
- *   - findByUsuarioId, findByActivo, findByPinTerminal
- *
- * Métodos custom — usados por EmpleadoService:
+ * Métodos custom (consumidos transversalmente, no solo en EmpleadoService):
+ *   - findByUsuarioId, findByUsuarioUsername, findByActivo, findByPinTerminal
  *   - existsByDni, existsByNumeroEmpleado, existsByPinTerminal, existsByCodigoNfc
  *   - existsByDniAndIdNot, existsByNumeroEmpleadoAndIdNot,
  *     existsByPinTerminalAndIdNot, existsByCodigoNfcAndIdNot
@@ -45,9 +46,6 @@ import java.util.Optional;
  */
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
-    // ----------------------------------------------------------------
-    // Usados por: EmpleadoService (/me), PresenciaService, TerminalService
-    // ----------------------------------------------------------------
 
     /**
      * Busca el perfil de empleado vinculado a un usuario.
@@ -72,10 +70,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * @return Optional con el empleado si el PIN existe
      */
     Optional<Empleado> findByPinTerminal(String pinTerminal);
-
-    // ----------------------------------------------------------------
-    // Usados por: EmpleadoService (E13, E14, E16)
-    // ----------------------------------------------------------------
 
     /**
      * Comprueba si existe un empleado con el DNI indicado.

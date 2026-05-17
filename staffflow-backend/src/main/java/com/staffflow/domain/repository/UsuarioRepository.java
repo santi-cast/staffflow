@@ -11,7 +11,9 @@ import java.util.Optional;
  * Repositorio JPA para la entidad Usuario.
  *
  * Tabla: usuarios
- * Usado por: AuthService, UsuarioService, UserDetailsServiceImpl
+ * Usado por: AusenciaService, AuthService, EmpleadoService, FichajeService,
+ *            InformeService, PausaService, TerminalService, UsuarioService,
+ *            ProcesoCierreDiario, UserDetailsServiceImpl.
  *
  * Restricciones de tabla relevantes:
  *   - username UNIQUE: dos usuarios no pueden tener el mismo nombre de usuario.
@@ -22,15 +24,15 @@ import java.util.Optional;
  *     antes de llegar a BD y devuelven HTTP 409 con mensaje claro.
  *   - Bajas lógicas: activo=false, nunca DELETE físico.
  *
- * Métodos heredados de JpaRepository usados:
+ * Métodos heredados de JpaRepository más usados:
  *   - save()       → crear y actualizar usuario (E08, E11, E12)
- *   - findById()   → obtener detalle (E10)
+ *   - findById()   → obtener detalle (E10) y resolver referencias por id
+ *                    desde múltiples services.
  *   - findAll()    → listar sin filtros (E09)
  *
- * Métodos custom — usados por AuthService, UserDetailsServiceImpl:
+ * Métodos custom (consumidos transversalmente, no solo en AuthService o
+ * UsuarioService):
  *   - findByUsername, findByEmail, findByResetToken
- *
- * Métodos custom — usados por UsuarioService:
  *   - existsByUsername, existsByEmail
  *   - existsByUsernameAndIdNot, existsByEmailAndIdNot
  *   - findByRol, findByActivo, findByRolAndActivo
@@ -40,9 +42,6 @@ import java.util.Optional;
  */
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
-    // ----------------------------------------------------------------
-    // Usados por: AuthService, UserDetailsServiceImpl
-    // ----------------------------------------------------------------
 
     /**
      * Busca un usuario por su nombre de usuario.
@@ -91,10 +90,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      *         (en v1 siempre vacío)
      */
     Optional<Usuario> findByResetToken(String resetToken);
-
-    // ----------------------------------------------------------------
-    // Usados por: UsuarioService (E08, E09, E11)
-    // ----------------------------------------------------------------
 
     /**
      * Comprueba si existe un usuario con el username indicado.

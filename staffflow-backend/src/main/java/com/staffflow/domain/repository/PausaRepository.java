@@ -56,11 +56,19 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
     /**
      * Busca la pausa activa de un empleado en una fecha concreta.
      *
-     * <p>Una pausa activa es aquella con horaFin=null. Lo usa TerminalService
-     * en E49 (salida) para verificar que no hay pausa activa antes de
-     * registrar la salida, y en E50 (inicio pausa) para evitar que
-     * un empleado abra dos pausas simultáneas. Si existe pausa activa
-     * → HTTP 409 Conflict.</p>
+     * <p>Una pausa activa es aquella con horaFin=null. Tiene consumidores
+     * con dos semánticas distintas:</p>
+     *
+     * <ul>
+     *   <li>Uso negativo (HTTP 409 si existe): PausaService.crear (E27),
+     *       TerminalService.entrada (E49) — para evitar que un empleado
+     *       abra una segunda pausa o ficha salida con pausa abierta —
+     *       y TerminalService.iniciarPausa (E50).</li>
+     *   <li>Uso positivo (la pausa activa es el objetivo): TerminalService
+     *       .finalizarPausa (E51) la localiza para cerrarla, y
+     *       PresenciaService la consulta para marcar el estado EN_PAUSA
+     *       del empleado en el parte diario (E35).</li>
+     * </ul>
      *
      * @param empleadoId id del empleado
      * @param fecha      fecha de la pausa
