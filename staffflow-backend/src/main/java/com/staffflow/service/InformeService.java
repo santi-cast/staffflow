@@ -164,23 +164,6 @@ public class InformeService {
     // =========================================================================
 
     /**
-     * Genera el informe de horas de un empleado en un periodo (E42).
-     *
-     * <p>Detalla los días con jornada NORMAL, días de ausencia por tipo,
-     * pausas del día y el total de horas efectivas. Si formato=html devuelve
-     * HTML imprimible; si formato=json devuelve Map estructurado.</p>
-     *
-     * <p>El parámetro tipos filtra el detalle por tipo de jornada.
-     * null o vacío devuelve todos los días del período.</p>
-     *
-     * @param empleadoId id del empleado
-     * @param desde      fecha de inicio del período (inclusive)
-     * @param hasta      fecha de fin del período (inclusive)
-     * @param formato    "json" o "html" (defecto: json)
-     * @param tipos      lista de tipos a incluir (null = todos)
-     * @return informe de horas del empleado en el formato solicitado
-     */
-    /**
      * Informe de horas del empleado autenticado (E58).
      *
      * Resuelve username → usuario → empleado y delega en informeHorasEmpleado()
@@ -205,6 +188,23 @@ public class InformeService {
         return informeHorasEmpleado(empleado.getId(), desde, hasta, "html", null);
     }
 
+    /**
+     * Genera el informe de horas de un empleado en un periodo (E42).
+     *
+     * <p>Detalla los días con jornada NORMAL, días de ausencia por tipo,
+     * pausas del día y el total de horas efectivas. Si formato=html devuelve
+     * HTML imprimible; si formato=json devuelve Map estructurado.</p>
+     *
+     * <p>El parámetro tipos filtra el detalle por tipo de jornada.
+     * null o vacío devuelve todos los días del período.</p>
+     *
+     * @param empleadoId id del empleado
+     * @param desde      fecha de inicio del período (inclusive)
+     * @param hasta      fecha de fin del período (inclusive)
+     * @param formato    "json" o "html" (defecto: json)
+     * @param tipos      lista de tipos a incluir (null = todos)
+     * @return informe de horas del empleado en el formato solicitado
+     */
     @Transactional(readOnly = true)
     public Object informeHorasEmpleado(Long empleadoId, LocalDate desde,
                                         LocalDate hasta, String formato,
@@ -1084,24 +1084,7 @@ public class InformeService {
     // =========================================================================
 
     /**
-     * Genera el informe HTML de ausencias del empleado autenticado.
-     *
-     * Combina dos fuentes:
-     *   - planificacion_ausencias: ausencias planificadas (procesado=false) y ejecutadas vía flujo normal (procesado=true)
-     *   - fichajes tipo != NORMAL: ausencias registradas directamente sin planificación
-     * Para una misma fecha, el fichaje tiene prioridad (es el dato ejecutado real).
-     *
-     * Excluye siempre NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL, DIA_LIBRE.
-     * filtro=VACACIONES_AP muestra solo VACACIONES y ASUNTO_PROPIO.
-     *
-     * @param username username del empleado autenticado
-     * @param desde    fecha de inicio del periodo
-     * @param hasta    fecha de fin del periodo
-     * @param filtro   "TODAS" o "VACACIONES_AP"
-     * @return HTML del informe de ausencias
-     */
-    /**
-     * Informe HTML de ausencias de un empleado por id (ADMIN/ENCARGADO).
+     * Informe HTML de ausencias de un empleado por id (E62, ADMIN/ENCARGADO).
      * Misma lógica que informeAusenciasMe pero resolviendo por empleadoId.
      *
      * @param empleadoId id del empleado
@@ -1151,6 +1134,23 @@ public class InformeService {
         return generarHtmlAusencias(empleado, desde, hasta, filas, nombreEmpresa, soloVacAp);
     }
 
+    /**
+     * Genera el informe HTML de ausencias del empleado autenticado (E61).
+     *
+     * Combina dos fuentes:
+     *   - planificacion_ausencias: ausencias planificadas (procesado=false) y ejecutadas vía flujo normal (procesado=true)
+     *   - fichajes tipo != NORMAL: ausencias registradas directamente sin planificación
+     * Para una misma fecha, el fichaje tiene prioridad (es el dato ejecutado real).
+     *
+     * Excluye siempre NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL, DIA_LIBRE.
+     * filtro=VACACIONES_AP muestra solo VACACIONES y ASUNTO_PROPIO.
+     *
+     * @param username username del empleado autenticado
+     * @param desde    fecha de inicio del periodo
+     * @param hasta    fecha de fin del periodo
+     * @param filtro   "TODAS" o "VACACIONES_AP"
+     * @return HTML del informe de ausencias
+     */
     @Transactional(readOnly = true)
     public String informeAusenciasMe(String username, LocalDate desde, LocalDate hasta, String filtro) {
 
