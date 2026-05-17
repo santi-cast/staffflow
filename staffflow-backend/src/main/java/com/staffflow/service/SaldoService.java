@@ -397,9 +397,9 @@ public class SaldoService {
      * <p>Se usa en el patron findOrCreate de recalcularParaProceso() cuando
      * no existe aun el registro para ese año. Los valores de derecho se
      * toman del contrato del empleado en el momento de la creacion.
-     * Pendientes del año anterior = 0 porque este metodo solo actua
-     * cuando no existe el registro previo (el cierre anual se encarga
- *  de arrastrar pendientes).</p>
+     * Pendientes del año anterior = 0 siempre: el cierre anual con arrastre
+     * de saldos no esta implementado en v1, solo previsto en el modelo
+     * para v2.0.</p>
      *
      * @param empleado empleado para el que se crea el saldo
      * @param anio     año del nuevo registro

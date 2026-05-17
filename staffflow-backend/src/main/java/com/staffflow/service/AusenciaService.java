@@ -400,9 +400,11 @@ public class AusenciaService {
      *
      * <p>Si no existe SaldoAnual para ese año, lo crea on-demand con
      * derechoAnio del empleado y pendientesAnterior=0. Esto permite
-     * planificar el año siguiente antes del cierre anual. El flag
-     * anioFuturoSinCierre=true avisa al cliente de que los pendientes
-     * del año actual aún no están incluidos.</p>
+     * planificar un año futuro antes de que existan fichajes en él.
+     * El flag anioFuturoSinCierre=true se devuelve cuando el año
+     * consultado es posterior al año actual; avisa al cliente de que
+     * el saldo es una proyeccion inicial (sin consumo registrado) y
+     * puede variar a medida que el empleado fiche en el año en curso.</p>
      *
      * @param empleadoId id del empleado
      * @param anio       año a consultar
