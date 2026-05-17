@@ -27,11 +27,18 @@ import java.util.List;
  * <p>Cubre los endpoints E38-E41 (Grupo 9). Todos son de consulta excepto
  * E40 (recalcular) que es la unica operacion de escritura del grupo.</p>
  *
- * <p>Calculo de horas en E38, E39 y E41 (sin query adicional):
+ * <p>Calculo de horas en E38, E39 y E41 en memoria desde diasTrabajados
+ * y jornadaDiariaMinutos:
  *   esperadas  = diasTrabajados * jornadaDiariaMinutos / 60.0
  *   trabajadas = esperadas + saldoHoras
  * saldoHoras acumula la diferencia real fichada por el proceso nocturno.
  * E40 (recalcular) si usa FichajeRepository para recalcular desde cero.</p>
+ *
+ * <p>El mapeo a {@code SaldoResponse} (utilizado por E38, E39 y E41) lanza
+ * adicionalmente dos {@code count()} contra {@code PlanificacionAusenciaRepository}
+ * (VACACIONES y ASUNTO_PROPIO) por cada SaldoAnual mapeado, para el
+ * desglose de planificadas frente a disponibles. Es un N+1 acotado por el
+ * número de empleados consultados, aceptable para volúmenes PYME.</p>
  *
  * <p>Patron findOrCreate en E40: si no existe el registro de saldo para
  * el año solicitado se crea con los valores iniciales del contrato del
@@ -265,8 +272,8 @@ public class SaldoService {
                             saldo.getDiasAsuntosPropiosConsumidos() + 1);
                 }
                 case PERMISO_RETRIBUIDO -> {
-                    // Cuenta como día trabajado pero neutro en saldo:
-                    // jornada efectiva = jornada teórica, ni suma ni resta.
+                    // Cuenta como día trabajado, no contribuye a saldoHoras:
+                    // la rama de cálculo de diferencia solo aplica a NORMAL.
                     saldo.setDiasPermisoRetribuido(
                             saldo.getDiasPermisoRetribuido() + 1);
                     saldo.setDiasTrabajados(saldo.getDiasTrabajados() + 1);

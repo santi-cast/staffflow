@@ -54,9 +54,9 @@ import java.util.stream.Collectors;
  *     (NFC: validación preventiva, fichaje por NFC reservado para v2).
  *   - Baja lógica: activo=false, nunca SQL DELETE.
  *     El historial de fichajes, pausas y saldos queda intacto.
- *   - E19 (estado tiempo real) y E20 (export CSV/PDF) están fuera del
- *     alcance de v1.0. Sus métodos lanzan UnsupportedOperationException
- *     de forma deliberada y quedan documentados como mejoras en v2.0.
+ *   - E19 (estado tiempo real): delega en PresenciaService.obtenerParteDiario.
+ *   - E20 (export CSV/PDF): genera el archivo en este service (CSV) o lo
+ *     delega en PdfService.exportarEmpleados (PDF).
  *
  * RF cubiertos: RF-08 a RF-16, RF-50.
  * RNF aplicados: RNF-M01 (sin lógica en controller), RNF-R03 (PIN único).
