@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
  *   patrón usado en EmpleadoService.obtenerMiPerfil() (E21).
  *
  * Roles:
- *   ADMIN y ENCARGADO → E22, E23, E24, E25
- *   EMPLEADO          → E26 (solo sus propios fichajes)
+ *   ADMIN y ENCARGADO    → E22, E23, E24, E25
+ *   EMPLEADO y ENCARGADO → E26 (solo sus propios fichajes)
  */
 @Service
 @RequiredArgsConstructor
@@ -395,7 +395,8 @@ public class FichajeService {
         // FichajeResponse usa @AllArgsConstructor sin @Builder.
         // Orden de campos según declaración en FichajeResponse.java:
         // id, empleadoId, fecha, tipo, horaEntrada, horaSalida,
-        // totalPausasMinutos, jornadaEfectivaMinutos, usuarioId, observaciones, fechaCreacion
+        // totalPausasMinutos, jornadaEfectivaMinutos, usuarioId, observaciones,
+        // fechaCreacion, nombreCompleto
         String nombreCompleto = empleado.getNombre() + " " + empleado.getApellido1()
                 + (empleado.getApellido2() != null ? " " + empleado.getApellido2() : "");
 

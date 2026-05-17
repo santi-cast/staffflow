@@ -35,12 +35,15 @@ import java.util.stream.Collectors;
  * que agrega información de tres tablas en un único DTO.
  *
  * Patrón de carga de datos (antiN+1):
- *   Se ejecutan exactamente 4 queries planas al inicio de cada método
+ *   Se ejecutan exactamente 5 queries planas al inicio de cada método
  *   principal, independientemente del número de empleados:
- *     1. findByActivo(true)               → todos los empleados activos
- *     2. findByFechaWithEmpleado(fecha)    → todos los fichajes del día
- *     3. findPausasActivasByFecha(fecha)   → todas las pausas activas del día
- *     4. findByFechaAndProcesadoFalse(fecha) → ausencias planificadas del día
+ *     1. findByActivo(true)                   → todos los empleados activos
+ *     2. findByFechaWithEmpleado(fecha)       → todos los fichajes del día
+ *     3. findPausasActivasByFecha(fecha)      → todas las pausas activas del día
+ *     4. findByFechaAndProcesadoFalse(fecha)  → ausencias planificadas del día
+ *     5. findByFechaWithEmpleado(fecha) en PausaRepository → todas las pausas
+ *        del día agrupadas por empleado (activas y completadas), para el
+ *        campo pausas del DTO.
  *   A partir de ahí la clasificación se hace en memoria con Maps y Sets,
  *   sin lanzar ninguna query adicional.
  *
@@ -79,7 +82,7 @@ public class PresenciaService {
     /**
      * Devuelve el parte diario completo de una fecha.
      *
-     * Carga 4 colecciones en memoria y clasifica a cada empleado activo
+     * Carga 5 colecciones en memoria y clasifica a cada empleado activo
      * en uno de los 6 estados de EstadoPresencia. Calcula los contadores
      * globales (fichados, enPausa, ausencias, sinJustificar) y devuelve
      * el listado de detalle ordenado alfabéticamente por apellido1.
@@ -299,7 +302,7 @@ public class PresenciaService {
      *   1. EN_PAUSA           (pausa activa en este momento)
      *   2. JORNADA_COMPLETADA (fichaje cerrado: entrada + salida)
      *   3. JORNADA_INICIADA   (fichaje abierto: entrada sin salida)
-     *   4. AUSENCIA_REGISTRADA (fichaje sin horaEntrada ni horaSalida)
+     *   4. AUSENCIA_REGISTRADA (fichaje sin horaEntrada — VACACIONES o BAJA_MEDICA generadas por ProcesoCierreDiario)
      *   5. AUSENCIA_PLANIFICADA (ausencia en planificacion_ausencias)
      *   6. SIN_JUSTIFICAR     (ninguno de los anteriores)
      *
@@ -358,7 +361,7 @@ public class PresenciaService {
                 fichaje != null ? fichaje.getHoraSalida() : null,
                 pausaActiva,
                 fichaje != null ? fichaje.getTipo() : null,
-                null,                                                        // pausas: solo en E37
+                null,                                                        // pausas: las rellena el caller (E35 y E37)
                 fichaje != null ? fichaje.getId() : null,                    // fichajeId
                 ausenciaId,                                                  // ausenciaId
                 fichaje != null ? fichaje.getJornadaEfectivaMinutos() : null // jornadaEfectivaMinutos

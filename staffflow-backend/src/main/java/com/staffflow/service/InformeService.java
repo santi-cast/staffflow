@@ -32,9 +32,10 @@ import java.util.stream.Collectors;
 /**
  * Servicio de informes de horas, saldos anuales y vacaciones en formato JSON o HTML.
  *
- * <p>Cubre los endpoints E42-E44 (Grupo 10). Devuelve datos estructurados
- * como Map o HTML imprimible según el parámetro ?formato= de la petición.
- * El formato HTML está diseñado para PrintManager + WebView en Android.</p>
+ * <p>Cubre los endpoints E42-E44 (Grupo 10) y E58-E62 (informes /me, semanal
+ * y de ausencias). Devuelve datos estructurados como Map o HTML imprimible
+ * según el parámetro ?formato= de la petición. El formato HTML está diseñado
+ * para PrintManager + WebView en Android.</p>
  *
  * <p>E42 y E43 aceptan el parámetro opcional ?tipo= que filtra
  * el detalle por uno o varios tipos de jornada. Valores válidos: cualquier
@@ -46,7 +47,8 @@ import java.util.stream.Collectors;
  * activos con saldo en ese año y todos los campos.</p>
  *
  * <p>Lógica de construcción del detalle de jornada:
- * Para cada día del período se itera LocalDate.from(desde) hasta hasta.
+ * Para cada día del período se itera desde {@code desde} hasta {@code hasta}
+ * (ambos inclusive) con {@code cursor.plusDays(1)}.
  * Cada día puede ser:
  *   - Con fichaje en BD: se muestran los datos del fichaje y sus pausas.
  *   - Sin fichaje, fin de semana: DIA_LIBRE.
@@ -55,11 +57,15 @@ import java.util.stream.Collectors;
  * entrada/salida ni pausas — todas las columnas muestran guión.</p>
  *
  * <p>Lógica del asterisco de intervención manual (M-007, M-008):
- * Un fichaje es manual si usuario.rol != EMPLEADO y
- * usuario.username != "terminal_service".
+ * Un fichaje es manual si usuario.rol != EMPLEADO, usuario.username !=
+ * "terminal_service" Y además NO existe planificación de ausencia para
+ * (empleado, fecha) — esta última condición descarta los fichajes
+ * generados por ProcesoCierreDiario a partir de una planificación previa.
+ * Solución definitiva en M-012 (planificacion_id en Fichaje).
  * En v1.0 el asterisco aparece en entrada Y salida cuando el fichaje
  * completo fue creado manualmente (no se puede distinguir qué hora
- * fue tocada — ver L-005). Mismo criterio para pausas (L-006).</p>
+ * fue tocada — ver L-005). Para pausas se mantiene el criterio simple
+ * (sin chequeo de planificación, ver L-006).</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.repository.FichajeRepository
@@ -1072,8 +1078,9 @@ public class InformeService {
     }
 
     // =========================================================================
-    // E-ausencias — GET /api/v1/ausencias/me/informe
-    // Informe HTML de ausencias del empleado autenticado (ejecutadas + planificadas)
+    // E61 / E62 — informes HTML de ausencias (propio y por empleado)
+    // E61 GET /api/v1/ausencias/me/informe          → informeAusenciasMe
+    // E62 GET /api/v1/ausencias/{empleadoId}/informe → informeAusenciasEmpleado
     // =========================================================================
 
     /**
@@ -1263,7 +1270,7 @@ public class InformeService {
     }
 
     // =========================================================================
-    // E-semana — GET /api/v1/informes/semana
+    // E59 — GET /api/v1/informes/semana
     // Resumen semanal de todos los empleados activos (fichajes + pausas + ausencias)
     // =========================================================================
 

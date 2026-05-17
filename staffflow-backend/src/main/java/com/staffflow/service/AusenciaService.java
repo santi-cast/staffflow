@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 /**
  * Servicio de planificación de ausencias.
  *
- * <p>Cubre los endpoints E30-E34 (Grupo 7). Gestiona las ausencias
- * planificadas con antelación. El único DELETE real del sistema (E32)
- * solo opera sobre ausencias con procesado=false.</p>
+ * <p>Cubre los endpoints E30-E34, E63 y E64 (Grupo 7). Gestiona las
+ * ausencias planificadas con antelación. El único DELETE real del sistema
+ * (E32) solo opera sobre ausencias con procesado=false.</p>
  *
  * <p>Si empleadoId es null en la creación, la ausencia es un festivo global
  * que ProcesoCierreDiario aplicará a todos los empleados activos ese día (RF-26).</p>
@@ -128,12 +128,12 @@ public class AusenciaService {
     }
 
     // ------------------------------------------------------------------
-    // E30b — POST /api/v1/ausencias/rango
+    // E63 — POST /api/v1/ausencias/rango
     // Conveniencia: crea un registro por cada día del rango [desde, hasta]
     // ------------------------------------------------------------------
 
     /**
-     * Planifica un rango de ausencias consecutivas para un empleado (E30b).
+     * Planifica un rango de ausencias consecutivas para un empleado (E63).
      *
      * <p>Crea un registro de PlanificacionAusencia por cada día del rango
      * [fechaDesde, fechaHasta] inclusive. El modelo de datos no cambia

@@ -36,11 +36,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Servicio de terminal de fichaje por PIN.
  *
- * Cubre los endpoints E48-E51:
- *   E48 POST /api/v1/terminal/entrada         → registrarEntrada()
- *   E49 POST /api/v1/terminal/salida          → registrarSalida()
- *   E50 POST /api/v1/terminal/pausa/iniciar   → iniciarPausa()
- *   E51 POST /api/v1/terminal/pausa/finalizar → finalizarPausa()
+ * Cubre los endpoints E48-E54:
+ *   E48 POST   /api/v1/terminal/entrada         → registrarEntrada()
+ *   E49 POST   /api/v1/terminal/salida          → registrarSalida()
+ *   E50 POST   /api/v1/terminal/pausa/iniciar   → iniciarPausa()
+ *   E51 POST   /api/v1/terminal/pausa/finalizar → finalizarPausa()
+ *   E52 POST   /api/v1/terminal/estado          → obtenerEstado()
+ *   E53 GET    /api/v1/terminal/bloqueo         → hayTerminalBloqueado()
+ *   E54 DELETE /api/v1/terminal/bloqueo         → desbloquearTerminal()
  *
  * Todos los endpoints son PÚBLICOS: no usan JWT. La autenticación se
  * realiza exclusivamente por PIN de 4 dígitos.

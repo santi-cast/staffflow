@@ -95,9 +95,9 @@ public class EmpleadoService {
      *   201 Created      → perfil creado correctamente
      *   400 Bad Request  → datos de entrada inválidos (@Valid en controller)
      *   404 Not Found    → usuarioId no existe en la tabla usuarios
-     *   409 Conflict     → DNI, numero_empleado o NFC ya registrados
-     *                      (PIN se autogenera en el service, no proviene del
-     *                      request; NFC: feature reservada para v2)
+     *   409 Conflict     → DNI o NFC ya registrados
+     *                      (PIN y numero_empleado se autogeneran en el service,
+     *                      no provienen del request)
      *
      * @param request datos del perfil laboral del empleado
      * @return EmpleadoResponse con los datos del perfil creado
@@ -582,9 +582,10 @@ public class EmpleadoService {
         response.setJornadaDiariaMinutos(empleado.getJornadaDiariaMinutos());
         response.setDiasVacacionesAnuales(empleado.getDiasVacacionesAnuales());
         response.setDiasAsuntosPropiosAnuales(empleado.getDiasAsuntosPropiosAnuales());
-        // pinTerminal y email se rellenan aparte en obtenerPorId() solo si
-        // el llamante es ADMIN (Opción A). El resto de consumidores deja
-        // ambos campos a null en el DTO base.
+        // pinTerminal y email se rellenan aparte en dos vías:
+        //   - obtenerPorId(): solo si el llamante es ADMIN (Opción A).
+        //   - crear(): siempre rellena pinTerminal para entregar el PIN inicial.
+        // El resto de consumidores deja ambos campos a null en el DTO base.
         response.setCodigoNfc(empleado.getCodigoNfc());
         response.setActivo(empleado.getActivo());
         return response;

@@ -186,6 +186,8 @@ public class AuthService {
      * @param request DTO con currentPassword y newPassword
      * @return MensajeResponse confirmando el cambio
      * @throws IllegalArgumentException si la contraseña actual no coincide
+     * @throws jakarta.persistence.EntityNotFoundException si el username del
+     *         token no existe en BD (no debería ocurrir en condiciones normales)
      */
     @Transactional
     public MensajeResponse cambiarPassword(PasswordChangeRequest request) {

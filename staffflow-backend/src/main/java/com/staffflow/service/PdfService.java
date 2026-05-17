@@ -50,10 +50,11 @@ import java.util.Map;
 /**
  * Servicio de generacion de informes PDF firmables con iText 7.
  *
- * <p>Cubre los endpoints E45-E47 (Grupo 11). Genera documentos PDF
- * binarios que incluyen espacio para firma fisica del empleado, requisito
- * para la documentacion oficial ante la Inspeccion de Trabajo
- * (RD-ley 8/2019, RF-38, RF-39, RF-40).</p>
+ * <p>Cubre los endpoints E45-E47 (Grupo 11) y los endpoints PDF auxiliares
+ * E20 (exportación de empleados) y E57 (vacaciones y asuntos propios).
+ * Genera documentos PDF binarios que incluyen espacio para firma física del
+ * empleado, requisito para la documentación oficial ante la Inspección de
+ * Trabajo (RD-ley 8/2019, RF-38, RF-39, RF-40).</p>
  *
  * <p>Estrategia de reutilizacion (Opcion C): PdfService delega la
  * construccion de datos en InformeService llamando a sus metodos publicos
