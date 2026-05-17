@@ -17,11 +17,6 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controlador REST para autenticación y gestión de credenciales.
  *
- * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
- * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
- * descrito a continuación pertenece al andamiaje reservado para v2.0
- * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
- *
  * <p>Cubre el grupo /api/v1/auth con cinco endpoints:</p>
  * <ul>
  *   <li>E01 POST /login         — login público, devuelve JWT</li>

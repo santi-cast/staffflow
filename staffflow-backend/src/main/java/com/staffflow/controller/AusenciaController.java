@@ -29,11 +29,15 @@ import java.util.List;
  * Seguridad: JWT requerido en todos los endpoints.
  *
  * Endpoints implementados:
- *   E30 POST   /api/v1/ausencias       → crear ausencia planificada (ADMIN, ENCARGADO)
- *   E31 PATCH  /api/v1/ausencias/{id}  → modificar ausencia         (ADMIN, ENCARGADO)
- *   E32 DELETE /api/v1/ausencias/{id}  → eliminar ausencia          (ADMIN, ENCARGADO)
- *   E33 GET    /api/v1/ausencias       → listar con filtros         (ADMIN, ENCARGADO)
- *   E34 GET    /api/v1/ausencias/me    → ausencias propias          (EMPLEADO, ENCARGADO)
+ *   E30 POST   /api/v1/ausencias                       → crear ausencia planificada (ADMIN, ENCARGADO)
+ *   E31 PATCH  /api/v1/ausencias/{id}                  → modificar ausencia         (ADMIN, ENCARGADO)
+ *   E32 DELETE /api/v1/ausencias/{id}                  → eliminar ausencia          (ADMIN, ENCARGADO)
+ *   E33 GET    /api/v1/ausencias                       → listar con filtros         (ADMIN, ENCARGADO)
+ *   E34 GET    /api/v1/ausencias/me                    → ausencias propias          (EMPLEADO, ENCARGADO)
+ *   E61 GET    /api/v1/ausencias/me/informe            → informe HTML propio        (EMPLEADO, ENCARGADO)
+ *   E62 GET    /api/v1/ausencias/{empleadoId}/informe  → informe HTML por empleado  (ADMIN, ENCARGADO)
+ *   E63 POST   /api/v1/ausencias/rango                 → listar ausencias por rango (ADMIN, ENCARGADO)
+ *   E64 GET    /api/v1/ausencias/planificacion-vac-ap  → planificación vac. y AP    (ADMIN, ENCARGADO)
  *
  * Patrón /me: igual que FichajeController (E26).
  *   authentication.getName() devuelve el username del JWT.
@@ -103,19 +107,6 @@ public class AusenciaController {
     // NOTA: declarado ANTES de /me y /{id} para evitar conflictos de ruta
     // ------------------------------------------------------------------
 
-    /**
-     * Devuelve el informe HTML de ausencias del empleado autenticado.
-     *
-     * Combina planificacion_ausencias y fichajes tipo ausencia.
-     * Por defecto muestra el año en curso completo.
-     * filtro=VACACIONES_AP muestra solo vacaciones y asuntos propios.
-     *
-     * @param desde  fecha de inicio (defecto: 1 enero del año actual)
-     * @param hasta  fecha de fin (defecto: 31 diciembre del año actual)
-     * @param filtro "TODAS" (defecto) o "VACACIONES_AP"
-     * @param authentication objeto de seguridad para extraer el username
-     * @return 200 con HTML del informe de ausencias
-     */
     // ------------------------------------------------------------------
     // E61 — GET /api/v1/ausencias/me/informe
     // Informe HTML de ausencias del empleado autenticado

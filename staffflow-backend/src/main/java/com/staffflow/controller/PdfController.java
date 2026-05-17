@@ -20,8 +20,8 @@ import java.util.List;
  * en PdfService. Devuelve siempre ResponseEntity<byte[]> con
  * Content-Type application/pdf y Content-Disposition attachment.</p>
  *
- * <p>Separado de InformeController (E42-E44) por el Principio de
- * Responsabilidad Unica: InformeController devuelve vistas de datos
+ * <p>Separado de InformeController (E42-E44, E58, E59, E60) por el Principio
+ * de Responsabilidad Unica: InformeController devuelve vistas de datos
  * (JSON/HTML); PdfController devuelve documentos binarios firmables
  * (RF-38, RF-39, RF-40, RD-ley 8/2019).</p>
  *

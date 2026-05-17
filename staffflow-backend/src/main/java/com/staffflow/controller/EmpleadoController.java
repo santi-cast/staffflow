@@ -70,8 +70,8 @@ public class EmpleadoController {
      *   400 Bad Request  → datos de entrada inválidos (Bean Validation)
      *   403 Forbidden    → rol insuficiente
      *   404 Not Found    → usuarioId no existe
-     *   409 Conflict     → DNI, número de empleado o NFC duplicados
-     *                      (PIN se autogenera en el service; NFC reservado para v2)
+     *   409 Conflict     → DNI o NFC duplicados
+     *                      (PIN y número de empleado se autogeneran en el service)
      *
      * @param request body JSON con los datos del perfil laboral
      * @return 201 Created con EmpleadoResponse

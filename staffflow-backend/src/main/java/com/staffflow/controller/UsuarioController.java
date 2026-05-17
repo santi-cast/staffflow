@@ -126,17 +126,18 @@ public class UsuarioController {
     // ----------------------------------------------------------------
 
     /**
-     * Actualiza los datos editables de un usuario: username, email y rol.
+     * Actualiza los datos editables de un usuario: email y rol.
      *
-     * La contraseña y el campo activo no se modifican por este endpoint.
-     * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
+     * El username y la contraseña no son modificables por este endpoint.
+     * El campo activo tampoco se toca aquí. Solo actualiza los campos
+     * enviados con valor no nulo (PATCH semántico).
      *
      * Códigos HTTP:
      *   200 OK          → usuario actualizado correctamente
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → usuario no encontrado
-     *   409 Conflict    → username o email ya existen en otro usuario
+     *   409 Conflict    → email ya existe en otro usuario
      *
      * @param id      ID del usuario a actualizar (path variable)
      * @param request body JSON con los campos a actualizar (todos opcionales)

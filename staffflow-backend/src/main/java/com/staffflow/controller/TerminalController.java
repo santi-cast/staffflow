@@ -174,6 +174,7 @@ public class TerminalController {
      * Códigos HTTP:
      *   200 OK  → salida registrada con jornada efectiva calculada
      *   400     → no hay entrada registrada hoy
+     *   404     → PIN no encontrado
      *   409     → ya hay salida registrada / pausa activa pendiente
      *   423     → dispositivo bloqueado
      *
@@ -203,6 +204,7 @@ public class TerminalController {
      * Códigos HTTP:
      *   200 OK  → pausa iniciada
      *   400     → no hay entrada registrada hoy
+     *   404     → PIN no encontrado
      *   409     → ya hay pausa activa
      *   423     → dispositivo bloqueado
      *
@@ -232,6 +234,7 @@ public class TerminalController {
      * Códigos HTTP:
      *   200 OK  → pausa finalizada con duración calculada
      *   400     → no hay pausa activa para finalizar
+     *   404     → PIN no encontrado
      *   423     → dispositivo bloqueado
      *
      * @param request pin + dispositivoId

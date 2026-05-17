@@ -15,9 +15,9 @@ import java.util.List;
 /**
  * Controlador de informes de horas y saldos anuales.
  *
- * <p>Cubre los endpoints E42-E44 (Grupo 10). Delega toda la logica
- * en InformeService. Devuelve ResponseEntity con Content-Type dinamico
- * segun el parametro ?formato=json|html.</p>
+ * <p>Cubre los endpoints E42, E43, E44, E58, E59 y E60 (Grupo 10). Delega
+ * toda la logica en InformeService. Devuelve ResponseEntity con Content-Type
+ * dinamico segun el parametro ?formato=json|html.</p>
  *
  * <p>Los informes PDF firmables (E45-E47) se gestionan en PdfController,
  * bajo la ruta base /api/v1/informes/pdf.</p>
