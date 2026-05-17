@@ -9,11 +9,19 @@ import java.time.LocalDate;
 
 /**
  * Representación de la ficha laboral de un empleado.
- * Usado en E13 (POST crear), E14 (GET lista), E15 (GET por id),
- * E16 (PATCH modificar), E17 (baja lógica), E18 (reactivar)
- * y E21 (GET /me perfil propio).
- * Solo ADMIN accede a E13, E14, E16.
- * EMPLEADO solo puede consultar su propio perfil (E21).
+ *
+ * Endpoints que devuelven este DTO (verificado en EmpleadoController):
+ *   - E13 (POST  /api/v1/empleados)        → ADMIN, ENCARGADO
+ *   - E14 (GET   /api/v1/empleados)        → ADMIN, ENCARGADO
+ *   - E15 (GET   /api/v1/empleados/{id})   → ADMIN, ENCARGADO
+ *   - E16 (PATCH /api/v1/empleados/{id})   → ADMIN, ENCARGADO
+ *   - E21 (GET   /api/v1/empleados/me)     → EMPLEADO, ENCARGADO
+ *
+ * E17 (baja) y E18 (reactivar) devuelven {@link MensajeResponse}, NO este DTO.
+ * E65 (regenerar PIN) devuelve {@link RegenerarPinResponse}.
+ *
+ * EMPLEADO solo accede al perfil propio vía E21; ningún otro endpoint
+ * del grupo de empleados le está abierto.
  *
  * Nunca se expone la entidad directamente: siempre se mapea
  * a este DTO en la capa service (regla de arquitectura).
@@ -66,9 +74,14 @@ public class EmpleadoResponse {
     // Baja lógica: activo=false. Nunca DELETE físico.
     private Boolean activo;
 
-    // PIN del terminal. Solo se devuelve en E13 (crear) y E15 (detalle por id).
-    // Null en E14 (listado), E16 (patch) y E21 (/me) para no exponer el PIN
-    // al empleado ni en listados masivos.
+    // PIN del terminal. Se rellena con valor real SOLO en:
+    //   - E13 (crear): se devuelve UNA vez al ADMIN/ENCARGADO que crea el
+    //     empleado para que entregue el PIN por canal humano seguro.
+    //   - E15 (detalle por id) Y SOLO si el llamante tiene rol ADMIN
+    //     (Opción A: ENCARGADO recibe pinTerminal = null).
+    // Null en E14 (listado), E16 (patch), E21 (/me) y en E15 cuando el
+    // llamante es ENCARGADO. E65 lo regenera y lo devuelve en
+    // {@link RegenerarPinResponse}, no en este DTO.
     private String pinTerminal;
 
     // Email del usuario asociado. Solo se devuelve en E15 (detalle por id) para ADMIN.

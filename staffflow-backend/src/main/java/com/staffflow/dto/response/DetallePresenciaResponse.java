@@ -89,8 +89,17 @@ public class DetallePresenciaResponse {
     // Usado en Android para navegar directamente al formulario de edicion de ausencia.
     private Long ausenciaId;
 
-    // Tiempo efectivo de jornada en minutos (horaSalida - horaEntrada - totalPausasMinutos).
-    // Solo presente cuando la jornada esta completada (horaSalida != null).
+    // Tiempo efectivo de jornada en minutos: (horaSalida - horaEntrada - totalPausasMinutos).
+    // Presente con valor numerico siempre que exista fichaje del dia:
+    // Fichaje.jornadaEfectivaMinutos se inicializa a 0 y se actualiza al cerrar la
+    // jornada en FichajeService / PausaService / TerminalService, o se fija en 0
+    // cuando el fichaje representa una ausencia (AUSENCIA_REGISTRADA).
+    // Valor tipico:
+    //   - JORNADA_COMPLETADA   -> duracion neta del dia
+    //   - JORNADA_INICIADA     -> 0 hasta que se cierre la jornada
+    //   - AUSENCIA_REGISTRADA  -> 0 (no hay jornada efectiva)
+    //   - AUSENCIA_PLANIFICADA -> null (no existe fichaje)
+    //   - SIN_JUSTIFICAR       -> null (no existe fichaje)
     // Usado en el parte diario para mostrar la duracion neta al encargado.
     private Integer jornadaEfectivaMinutos;
 
