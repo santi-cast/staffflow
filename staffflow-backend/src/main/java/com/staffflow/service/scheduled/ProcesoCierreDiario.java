@@ -100,9 +100,7 @@ public class ProcesoCierreDiario {
         // Cargar empleados activos una sola vez — se reutiliza en las tres tareas
         List<Empleado> empleadosActivos = empleadoRepository.findByActivo(true);
 
-        // -------------------------------------------------------------------
         // TAREA A — Cierre ausencias injustificadas
-        // -------------------------------------------------------------------
         // Empleados activos sin fichaje a las 23:55 reciben:
         //   - AUSENCIA_INJUSTIFICADA si es dia laborable (lunes a viernes).
         //   - DIA_LIBRE si es sabado o domingo.
@@ -112,7 +110,6 @@ public class ProcesoCierreDiario {
         // Registrar explicitamente los dias de fin de semana garantiza ademas
         // que aparecen en BD sin depender de la logica de InformeService para
         // deducirlos, lo que evita que cualquier dia desaparezca de BD sin rastro.
-        // -------------------------------------------------------------------
         log.info("Tarea A iniciada: cierre ausencias injustificadas para {}", hoy);
         int fichajesInjustificados = 0;
 
@@ -152,14 +149,11 @@ public class ProcesoCierreDiario {
         log.info("Tarea A completada: {} fichajes {} creados",
                 fichajesInjustificados, tipoTareaA);
 
-        // -------------------------------------------------------------------
         // TAREA B — Procesado planificaciones pendientes
-        // -------------------------------------------------------------------
         // Convierte ausencias planificadas (procesado=false) con fecha <= manana
         // en fichajes del tipo correspondiente. Usar plusDays(1) permite procesar
         // los festivos globales la noche anterior, de forma que el dia del festivo
         // todos los empleados ya tienen fichaje y Tarea A no genera injustificadas.
-        // -------------------------------------------------------------------
         log.info("Tarea B iniciada: procesado planificaciones pendientes hasta {}",
                 hoy.plusDays(1));
         int planificacionesProcesadas = 0;
@@ -235,14 +229,11 @@ public class ProcesoCierreDiario {
             log.info("DIA_LIBRE creado para {} empleados el {}", diasLibresCreados, manana);
         }
 
-        // -------------------------------------------------------------------
         // TAREA C — Actualizacion saldos anuales
-        // -------------------------------------------------------------------
         // Se ejecuta siempre despues de A y B para que el recalculo incluya
         // todos los fichajes del dia recien cerrado. Llama a
         // SaldoService.recalcularParaProceso() que hace el recalculo completo
         // desde cero sin construir DTO.
-        // -------------------------------------------------------------------
         log.info("Tarea C iniciada: recalculo saldos anuales para {} empleados activos",
                 empleadosActivos.size());
         int anioActual = Year.now().getValue();
@@ -259,9 +250,7 @@ public class ProcesoCierreDiario {
                 hoy, fichajesInjustificados, planificacionesProcesadas, saldosRecalculados);
     }
 
-    // -------------------------------------------------------------------
     // Metodos auxiliares privados
-    // -------------------------------------------------------------------
 
     /**
      * Crea un fichaje de ausencia para un empleado y fecha si no existe ya.

@@ -50,17 +50,13 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class FichajeController {
 
-    // ---------------------------------------------------------------
     // Dependencias
-    // ---------------------------------------------------------------
 
     /** Servicio que contiene toda la lógica de negocio de fichajes. */
     private final FichajeService fichajeService;
 
-    // ---------------------------------------------------------------
     // E22 — POST /api/v1/fichajes
     // RF-17: Registrar fichaje manual
-    // ---------------------------------------------------------------
 
     /**
      * Registra un fichaje manual para un empleado (RF-17).
@@ -98,10 +94,8 @@ public class FichajeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ---------------------------------------------------------------
     // E23 — PATCH /api/v1/fichajes/{id}
     // RF-18: Modificar fichaje
-    // ---------------------------------------------------------------
 
     /**
      * Modifica un fichaje existente (RF-18).
@@ -138,10 +132,8 @@ public class FichajeController {
         return ResponseEntity.ok(response);
     }
 
-    // ---------------------------------------------------------------
     // E24 — GET /api/v1/fichajes
     // RF-19, RF-20: Listar fichajes con filtros
-    // ---------------------------------------------------------------
 
     /**
      * Lista fichajes con filtros opcionales y combinables (RF-19, RF-20).
@@ -179,12 +171,10 @@ public class FichajeController {
         return ResponseEntity.ok(fichajeService.listar(empleadoId, desde, hasta, tipo));
     }
 
-    // ---------------------------------------------------------------
     // E25 — GET /api/v1/fichajes/incompletos
     // RF-21: Fichajes sin hora de salida
     // NOTA: declarado antes de /{id} para que Spring MVC no confunda
     //       "incompletos" como valor de la variable {id}.
-    // ---------------------------------------------------------------
 
     /**
      * Lista fichajes con entrada registrada pero sin salida (RF-21).
@@ -212,12 +202,10 @@ public class FichajeController {
         return ResponseEntity.ok(fichajeService.listarIncompletos(fecha));
     }
 
-    // ---------------------------------------------------------------
     // E26 — GET /api/v1/fichajes/me
     // RF-51: Historial de fichajes del empleado autenticado
     // NOTA: declarado antes de /{id} para que Spring MVC no confunda
     //       "me" como valor de la variable {id}.
-    // ---------------------------------------------------------------
 
     /**
      * Lista los fichajes del empleado autenticado (RF-51).

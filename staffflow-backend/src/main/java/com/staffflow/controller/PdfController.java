@@ -42,10 +42,8 @@ public class PdfController {
     private static final DateTimeFormatter FMT_NOMBRE =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    // =========================================================================
     // E45 — GET /api/v1/informes/pdf/horas/{empleadoId}
     // RF-38: informe de horas de un empleado en un periodo, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de horas de un empleado en un periodo (E45).
@@ -83,10 +81,8 @@ public class PdfController {
                 .body(pdf);
     }
 
-    // =========================================================================
     // E46 — GET /api/v1/informes/pdf/horas
     // RF-39: informe global de horas de todos los empleados, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe global de horas de todos los empleados (E46).
@@ -121,10 +117,8 @@ public class PdfController {
                 .body(pdf);
     }
 
-    // =========================================================================
     // E47 — GET /api/v1/informes/pdf/saldos
     // RF-40: informe de saldos anuales firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de saldos anuales (E47).
@@ -161,10 +155,8 @@ public class PdfController {
                 .body(pdf);
     }
 
-    // =========================================================================
     // E57 — GET /api/v1/informes/pdf/vacaciones
     // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados

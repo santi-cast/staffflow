@@ -73,11 +73,9 @@ public class PresenciaService {
     private final PausaRepository pausaRepository;
     private final PlanificacionAusenciaRepository ausenciaRepository;
 
-    // ================================================================
     // E35 — GET /api/v1/presencia/parte-diario
     // RF-30 — Parte diario completo
     // Roles: ADMIN, ENCARGADO
-    // ================================================================
 
     /**
      * Devuelve el parte diario completo de una fecha.
@@ -189,11 +187,9 @@ public class PresenciaService {
                 detalle);
     }
 
-    // ================================================================
     // E36 — GET /api/v1/presencia/sin-justificar
     // RF-31 — Empleados sin justificación
     // Roles: ADMIN, ENCARGADO
-    // ================================================================
 
     /**
      * Devuelve la lista de empleados sin ningún registro para la fecha indicada.
@@ -222,11 +218,9 @@ public class PresenciaService {
                 .collect(Collectors.toList());
     }
 
-    // ================================================================
     // E37 — GET /api/v1/presencia/parte-diario/me
     // RF-54 — Estado propio del empleado autenticado
     // Roles: EMPLEADO y ENCARGADO (ambos son trabajadores con perfil propio)
-    // ================================================================
 
     /**
      * Devuelve el estado de presencia del empleado autenticado para la fecha indicada.
@@ -291,9 +285,7 @@ public class PresenciaService {
         return response;
     }
 
-    // ================================================================
     // MÉTODO PRIVADO — Lógica de clasificación compartida
-    // ================================================================
 
     /**
      * Clasifica el estado de presencia de un empleado para un día dado.

@@ -60,10 +60,8 @@ public class AusenciaService {
     private final UsuarioRepository               usuarioRepository;
     private final SaldoAnualRepository            saldoAnualRepository;
 
-    // ------------------------------------------------------------------
     // E30 — POST /api/v1/ausencias
     // RF-25 ausencia individual | RF-26 festivo global (empleadoId null)
-    // ------------------------------------------------------------------
 
     /**
      * Planifica una ausencia futura para un empleado (E30).
@@ -127,10 +125,8 @@ public class AusenciaService {
         return toAusenciaResponse(guardada);
     }
 
-    // ------------------------------------------------------------------
     // E63 — POST /api/v1/ausencias/rango
     // Conveniencia: crea un registro por cada día del rango [desde, hasta]
-    // ------------------------------------------------------------------
 
     /**
      * Planifica un rango de ausencias consecutivas para un empleado (E63).
@@ -237,10 +233,8 @@ public class AusenciaService {
         return creadas;
     }
 
-    // ------------------------------------------------------------------
     // E31 — PATCH /api/v1/ausencias/{id}
     // RF-27: modificar ausencia planificada
-    // ------------------------------------------------------------------
 
     /**
      * Modifica una ausencia planificada (E31).
@@ -295,10 +289,8 @@ public class AusenciaService {
         return toAusenciaResponse(ausenciaRepository.save(ausencia));
     }
 
-    // ------------------------------------------------------------------
     // E32 — DELETE /api/v1/ausencias/{id}
     // RF-28: único DELETE real del sistema
-    // ------------------------------------------------------------------
 
     /**
      * Elimina una ausencia planificada (E32 — único DELETE real del sistema).
@@ -330,10 +322,8 @@ public class AusenciaService {
         ausenciaRepository.delete(ausencia);
     }
 
-    // ------------------------------------------------------------------
     // E33 — GET /api/v1/ausencias
     // RF-29: listar con filtros opcionales
-    // ------------------------------------------------------------------
 
     /**
      * Lista ausencias planificadas con filtros opcionales (E33).
@@ -357,10 +347,8 @@ public class AusenciaService {
                 .toList();
     }
 
-    // ------------------------------------------------------------------
     // E34 — GET /api/v1/ausencias/me
     // RF-52: ausencias propias del empleado autenticado
-    // ------------------------------------------------------------------
 
     /**
      * Lista las ausencias planificadas del empleado autenticado (E34 — /me).
@@ -389,10 +377,8 @@ public class AusenciaService {
                 .toList();
     }
 
-    // ------------------------------------------------------------------
     // E64 — GET /api/v1/ausencias/planificacion-vac-ap
     // Días pendientes de planificar para vacaciones y asuntos propios
-    // ------------------------------------------------------------------
 
     /**
      * Calcula los días pendientes de planificar para vacaciones y asuntos
@@ -459,9 +445,7 @@ public class AusenciaService {
         );
     }
 
-    // ------------------------------------------------------------------
     // Mapeo entidad → DTO
-    // ------------------------------------------------------------------
 
     /**
      * Convierte una entidad PlanificacionAusencia en su DTO response.

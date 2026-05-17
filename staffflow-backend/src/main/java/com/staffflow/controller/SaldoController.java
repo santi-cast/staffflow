@@ -40,10 +40,8 @@ public class SaldoController {
 
     private final SaldoService saldoService;
 
-    // ----------------------------------------------------------------
     // E41 — GET /api/v1/saldos/me
     // DECLARADO ANTES de /{empleadoId} para evitar conflicto de path
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual del empleado autenticado (E41).
@@ -71,9 +69,7 @@ public class SaldoController {
                 saldoService.obtenerMiSaldo(authentication.getName(), anio));
     }
 
-    // ----------------------------------------------------------------
     // E38 — GET /api/v1/saldos/{empleadoId}
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual de un empleado concreto (E38).
@@ -97,9 +93,7 @@ public class SaldoController {
         return ResponseEntity.ok(saldoService.obtenerPorEmpleado(empleadoId, anio));
     }
 
-    // ----------------------------------------------------------------
     // E39 — GET /api/v1/saldos
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual de todos los empleados para un año (E39).
@@ -121,9 +115,7 @@ public class SaldoController {
         return ResponseEntity.ok(saldoService.listarTodos(anio));
     }
 
-    // ----------------------------------------------------------------
     // E40 — POST /api/v1/saldos/{empleadoId}/recalcular
-    // ----------------------------------------------------------------
 
     /**
      * Fuerza el recalculo completo del saldo anual de un empleado (E40).

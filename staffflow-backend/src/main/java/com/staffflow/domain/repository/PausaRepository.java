@@ -113,9 +113,7 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
             @Param("hasta") LocalDate hasta,
             @Param("tipoPausa") TipoPausa tipoPausa);
 
-    // ---------------------------------------------------------------
     // Métodos para PresenciaService (E35-E37)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todas las pausas activas de una fecha concreta con su empleado cargado.
@@ -151,9 +149,7 @@ public interface PausaRepository extends JpaRepository<Pausa, Long> {
     @Query("SELECT p FROM Pausa p JOIN FETCH p.empleado WHERE p.fecha = :fecha")
     List<Pausa> findByFechaWithEmpleado(@Param("fecha") LocalDate fecha);
 
-    // ---------------------------------------------------------------
     // Métodos para InformeService (E42/E43)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todas las pausas de un empleado en un rango de fechas,

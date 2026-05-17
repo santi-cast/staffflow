@@ -158,10 +158,8 @@ public class InformeService {
         BLOQUES.put("CONTROL",             List.of("CALCULADO_HASTA", "ULTIMA_MODIFICACION"));
     }
 
-    // =========================================================================
     // E42 — GET /api/v1/informes/horas/{empleadoId}
     // RF-32: informe de horas de un empleado en un período
-    // =========================================================================
 
     /**
      * Informe de horas del empleado autenticado (E58).
@@ -227,10 +225,8 @@ public class InformeService {
         return construirJsonEmpleado(empleado, desde, hasta, dias, resumen);
     }
 
-    // =========================================================================
     // E43 — GET /api/v1/informes/horas
     // RF-33: informe global de horas de todos los empleados
-    // =========================================================================
 
     /**
      * Genera el informe global de horas de todos los empleados activos (E43).
@@ -270,10 +266,8 @@ public class InformeService {
         return filas;
     }
 
-    // =========================================================================
     // E44 — GET /api/v1/informes/saldos
     // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
-    // =========================================================================
 
     /**
      * Genera el informe de saldos anuales por empleado (E44).
@@ -345,9 +339,7 @@ public class InformeService {
         return construirJsonSaldos(anio, saldos, camposActivos);
     }
 
-    // =========================================================================
     // E44 — Construcción JSON de saldos
-    // =========================================================================
 
     /**
      * Construye la respuesta JSON del informe de saldos (E44).
@@ -409,9 +401,7 @@ public class InformeService {
                     ? s.getFechaUltimaModificacion().format(FMT_FECHA) : null);
     }
 
-    // =========================================================================
     // E44 — Generación HTML de saldos
-    // =========================================================================
 
     /**
      * Genera el HTML del informe de saldos anuales (E44).
@@ -580,9 +570,7 @@ public class InformeService {
         return sb.toString();
     }
 
-    // =========================================================================
     // Construcción del listado de días del período
-    // =========================================================================
 
     /**
      * Construye la lista de DiaInforme para cada día del período.
@@ -710,9 +698,7 @@ public class InformeService {
         return dia;
     }
 
-    // =========================================================================
     // Cálculo del resumen
-    // =========================================================================
 
     /**
      * Calcula el resumen del informe a partir de la lista de días construida.
@@ -753,9 +739,7 @@ public class InformeService {
         return r;
     }
 
-    // =========================================================================
     // Construcción JSON (E42/E43)
-    // =========================================================================
 
     private Map<String, Object> construirJsonEmpleado(Empleado empleado,
                                                        LocalDate desde, LocalDate hasta,
@@ -835,9 +819,7 @@ public class InformeService {
         return m;
     }
 
-    // =========================================================================
     // Generación HTML (E42/E43) — cabecera y estilos
-    // =========================================================================
 
     private String generarHtmlEmpleado(Empleado empleado, LocalDate desde, LocalDate hasta,
                                         List<DiaInforme> dias, ResumenInforme resumen,
@@ -1077,11 +1059,9 @@ public class InformeService {
         return sb.toString();
     }
 
-    // =========================================================================
     // E61 / E62 — informes HTML de ausencias (propio y por empleado)
     // E61 GET /api/v1/ausencias/me/informe          → informeAusenciasMe
     // E62 GET /api/v1/ausencias/{empleadoId}/informe → informeAusenciasEmpleado
-    // =========================================================================
 
     /**
      * Informe HTML de ausencias de un empleado por id (E62, ADMIN/ENCARGADO).
@@ -1269,10 +1249,8 @@ public class InformeService {
         return sb.toString();
     }
 
-    // =========================================================================
     // E59 — GET /api/v1/informes/semana
     // Resumen semanal de todos los empleados activos (fichajes + pausas + ausencias)
-    // =========================================================================
 
     /**
      * Genera el HTML del resumen semanal de todos los empleados activos.
@@ -1602,10 +1580,8 @@ public class InformeService {
                 + (empleadoId == null ? "&esFestivo=true" : "");
     }
 
-    // =========================================================================
     // E60 — GET /api/v1/informes/ausencias
     // Resumen de ausencias globales de todos los empleados activos
-    // =========================================================================
 
     /**
      * Genera el HTML del resumen de ausencias de todos los empleados activos.
@@ -1817,9 +1793,7 @@ public class InformeService {
         return sb.toString();
     }
 
-    // =========================================================================
     // CSS compartido para todos los informes HTML
-    // =========================================================================
 
     private String htmlCabeceraInforme() {
         return """
@@ -2007,9 +1981,7 @@ public class InformeService {
                 """;
     }
 
-    // =========================================================================
     // Utilidades privadas
-    // =========================================================================
 
     /** Normaliza el filtro de tipos: null o vacío → Set vacío (sin filtro). */
     private Set<String> normalizarFiltro(List<String> tipos) {
@@ -2138,9 +2110,7 @@ public class InformeService {
         }
     }
 
-    // =========================================================================
     // Clases internas de modelo de informe (solo uso interno del service)
-    // =========================================================================
 
     /** Representa un día del período en el informe. */
     private static class DiaInforme {
@@ -2191,9 +2161,7 @@ public class InformeService {
         Map<String, Integer> ausenciasPorTipo = new LinkedHashMap<>();
     }
 
-    // =========================================================================
     // Helpers de saldo semanal
-    // =========================================================================
 
     /**
      * Calcula el saldo acumulado (en horas, BigDecimal) por empleado

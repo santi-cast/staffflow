@@ -56,9 +56,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PausaService {
 
-    // ---------------------------------------------------------------
     // Dependencias
-    // ---------------------------------------------------------------
 
     /** Repositorio de pausas. */
     private final PausaRepository pausaRepository;
@@ -80,9 +78,7 @@ public class PausaService {
      */
     private final UsuarioRepository usuarioRepository;
 
-    // ---------------------------------------------------------------
     // E27 — POST /api/v1/pausas
-    // ---------------------------------------------------------------
 
     /**
      * Registra una pausa manual para un empleado.
@@ -166,9 +162,7 @@ public class PausaService {
         return toPausaResponse(guardada, empleado);
     }
 
-    // ---------------------------------------------------------------
     // E28 — PATCH /api/v1/pausas/{id}
-    // ---------------------------------------------------------------
 
     /**
      * Cierra o modifica una pausa existente.
@@ -256,9 +250,7 @@ public class PausaService {
         return toPausaResponse(actualizada, actualizada.getEmpleado());
     }
 
-    // ---------------------------------------------------------------
     // E29 — GET /api/v1/pausas
-    // ---------------------------------------------------------------
 
     /**
      * Lista pausas con filtros opcionales y combinables (RF-24).
@@ -287,9 +279,7 @@ public class PausaService {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------------
     // E55 — GET /api/v1/pausas/me
-    // ---------------------------------------------------------------
 
     /**
      * Lista las pausas del empleado autenticado en un rango de fechas.
@@ -325,9 +315,7 @@ public class PausaService {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------------
     // Método auxiliar: actualizar fichaje al cerrar pausa
-    // ---------------------------------------------------------------
 
     /**
      * Actualiza totalPausasMinutos y recalcula jornadaEfectivaMinutos
@@ -371,9 +359,7 @@ public class PausaService {
                 });
     }
 
-    // ---------------------------------------------------------------
     // Método auxiliar de conversión entidad → DTO
-    // ---------------------------------------------------------------
 
     /**
      * Convierte una entidad Pausa en PausaResponse.

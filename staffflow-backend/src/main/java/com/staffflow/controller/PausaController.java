@@ -49,10 +49,8 @@ public class PausaController {
     /** Servicio que contiene toda la lógica de negocio de pausas. */
     private final PausaService pausaService;
 
-    // ---------------------------------------------------------------
     // E27 — POST /api/v1/pausas
     // RF-22: Registrar pausa manual
-    // ---------------------------------------------------------------
 
     /**
      * Registra una pausa manual para un empleado (RF-22).
@@ -89,10 +87,8 @@ public class PausaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ---------------------------------------------------------------
     // E28 — PATCH /api/v1/pausas/{id}
     // RF-23: Cerrar o modificar pausa
-    // ---------------------------------------------------------------
 
     /**
      * Cierra o modifica una pausa existente (RF-23).
@@ -131,12 +127,10 @@ public class PausaController {
         return ResponseEntity.ok(response);
     }
 
-    // ---------------------------------------------------------------
     // E55 — GET /api/v1/pausas/me
     // RF: Pausas propias del empleado autenticado
     // NOTA: declarado ANTES de GET / para que Spring MVC no trate
     //       "me" como parámetro de query.
-    // ---------------------------------------------------------------
 
     /**
      * Lista las pausas del empleado autenticado en un rango de fechas.
@@ -168,10 +162,8 @@ public class PausaController {
         return ResponseEntity.ok(pausaService.listarPropios(username, desde, hasta));
     }
 
-    // ---------------------------------------------------------------
     // E29 — GET /api/v1/pausas
     // RF-24: Listar pausas con filtros
-    // ---------------------------------------------------------------
 
     /**
      * Lista pausas con filtros opcionales y combinables (RF-24).

@@ -59,10 +59,8 @@ public class PresenciaController {
         this.presenciaService = presenciaService;
     }
 
-    // ----------------------------------------------------------------
     // E37 — GET /api/v1/presencia/parte-diario/me
     // Declarado PRIMERO por convención /me antes de rutas parametrizadas
-    // ----------------------------------------------------------------
 
     /**
      * E37 — Devuelve el estado de presencia del empleado autenticado.
@@ -97,9 +95,7 @@ public class PresenciaController {
         return ResponseEntity.ok(presenciaService.obtenerMiPresencia(username, fechaConsulta));
     }
 
-    // ----------------------------------------------------------------
     // E35 — GET /api/v1/presencia/parte-diario
-    // ----------------------------------------------------------------
 
     /**
      * E35 — Devuelve el parte diario completo de una fecha.
@@ -131,9 +127,7 @@ public class PresenciaController {
         return ResponseEntity.ok(presenciaService.obtenerParteDiario(fechaConsulta));
     }
 
-    // ----------------------------------------------------------------
     // E36 — GET /api/v1/presencia/sin-justificar
-    // ----------------------------------------------------------------
 
     /**
      * E36 — Devuelve los empleados sin justificación de presencia para una fecha.

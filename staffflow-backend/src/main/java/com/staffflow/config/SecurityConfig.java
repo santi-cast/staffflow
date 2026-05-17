@@ -54,13 +54,11 @@ public class SecurityConfig {
     // Filtro JWT inyectado — se aplica solo en apiFilterChain, nunca en terminalFilterChain
     private final JwtAuthFilter jwtAuthFilter;
 
-    // =========================================================================
     // CADENA 1 — TERMINAL PIN (Order=1, mayor prioridad)
     // Cubre los 5 paths explicitos del fichaje por PIN (E48-E52).
     // /api/v1/terminal/bloqueo (E53-E54) NO entra aqui: cae en apiFilterChain
     // con JWT y rol ADMIN/ENCARGADO.
     // Sin JWT. Autenticacion por PIN de 4 digitos.
-    // =========================================================================
 
     /**
      * Cadena de seguridad para los endpoints de terminal de fichaje PIN.
@@ -106,11 +104,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // =========================================================================
     // CADENA 2 — API REST GENERAL (Order=2)
     // Cubre toda la API excepto /api/v1/terminal/**
     // Stateless con JWT. Rutas publicas explicitamente declaradas.
-    // =========================================================================
 
     /**
      * Cadena de seguridad principal para la API REST de StaffFlow.
@@ -229,9 +225,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // =========================================================================
     // BEANS DE INFRAESTRUCTURA DE SEGURIDAD
-    // =========================================================================
 
     /**
      * Encoder de contrasenas con BCrypt.

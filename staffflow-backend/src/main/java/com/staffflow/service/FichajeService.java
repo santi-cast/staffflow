@@ -57,9 +57,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FichajeService {
 
-    // ---------------------------------------------------------------
     // Dependencias inyectadas por constructor (Lombok @RequiredArgsConstructor)
-    // ---------------------------------------------------------------
 
     /** Repositorio de fichajes. Contiene métodos custom para filtros y búsquedas. */
     private final FichajeRepository fichajeRepository;
@@ -75,9 +73,7 @@ public class FichajeService {
      */
     private final UsuarioRepository usuarioRepository;
 
-    // ---------------------------------------------------------------
     // E22 — POST /api/v1/fichajes
-    // ---------------------------------------------------------------
 
     /**
      * Registra un fichaje manual para un empleado.
@@ -182,9 +178,7 @@ public class FichajeService {
         return toFichajeResponse(guardado, empleado);
     }
 
-    // ---------------------------------------------------------------
     // E23 — PATCH /api/v1/fichajes/{id}
-    // ---------------------------------------------------------------
 
     /**
      * Modifica un fichaje existente.
@@ -274,9 +268,7 @@ public class FichajeService {
         return toFichajeResponse(actualizado, actualizado.getEmpleado());
     }
 
-    // ---------------------------------------------------------------
     // E24 — GET /api/v1/fichajes
-    // ---------------------------------------------------------------
 
     /**
      * Lista fichajes con filtros opcionales y combinables.
@@ -304,9 +296,7 @@ public class FichajeService {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------------
     // E25 — GET /api/v1/fichajes/incompletos
-    // ---------------------------------------------------------------
 
     /**
      * Lista fichajes con hora_entrada registrada pero sin hora_salida (RF-21).
@@ -332,9 +322,7 @@ public class FichajeService {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------------
     // E26 — GET /api/v1/fichajes/me
-    // ---------------------------------------------------------------
 
     /**
      * Lista los fichajes del empleado autenticado (RF-51).
@@ -376,9 +364,7 @@ public class FichajeService {
                 .collect(Collectors.toList());
     }
 
-    // ---------------------------------------------------------------
     // Método auxiliar de conversión entidad → DTO
-    // ---------------------------------------------------------------
 
     /**
      * Convierte una entidad Fichaje en FichajeResponse.

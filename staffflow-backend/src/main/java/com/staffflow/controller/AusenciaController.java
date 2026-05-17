@@ -61,12 +61,10 @@ public class AusenciaController {
     /** Servicio de informes para generación del HTML de ausencias (E-ausencias). */
     private final InformeService informeService;
 
-    // ------------------------------------------------------------------
     // E34 — GET /api/v1/ausencias/me
     // NOTA: declarado ANTES de /{id} para que Spring MVC no confunda
     //       "me" como valor de la variable de ruta {id}.
     // RF-52: ausencias propias del empleado autenticado
-    // ------------------------------------------------------------------
 
     /**
      * Devuelve las ausencias planificadas del empleado autenticado (RF-52).
@@ -101,16 +99,12 @@ public class AusenciaController {
         return ResponseEntity.ok(ausenciaService.listarMias(username, desde, hasta));
     }
 
-    // ------------------------------------------------------------------
     // E-ausencias — GET /api/v1/ausencias/me/informe
     // Informe HTML de ausencias propias (ejecutadas + planificadas)
     // NOTA: declarado ANTES de /me y /{id} para evitar conflictos de ruta
-    // ------------------------------------------------------------------
 
-    // ------------------------------------------------------------------
     // E61 — GET /api/v1/ausencias/me/informe
     // Informe HTML de ausencias del empleado autenticado
-    // ------------------------------------------------------------------
 
     @Operation(summary = "Informe HTML de mis ausencias (E61)",
                description = "Genera el informe HTML de ausencias del empleado autenticado. Combina planificadas y ejecutadas.")
@@ -136,10 +130,8 @@ public class AusenciaController {
                 .body(html);
     }
 
-    // ------------------------------------------------------------------
     // E62 — GET /api/v1/ausencias/{empleadoId}/informe
     // Informe HTML de ausencias de un empleado por id (ADMIN/ENCARGADO)
-    // ------------------------------------------------------------------
 
     /**
      * Devuelve el informe HTML de ausencias de un empleado concreto (E62).
@@ -173,10 +165,8 @@ public class AusenciaController {
                 .body(html);
     }
 
-    // ------------------------------------------------------------------
     // E63 — POST /api/v1/ausencias/rango
     // RF-25b: planificar varias ausencias consecutivas en una sola llamada
-    // ------------------------------------------------------------------
 
     /**
      * Planifica una ausencia para cada día del rango [fechaDesde, fechaHasta] (E63).
@@ -209,10 +199,8 @@ public class AusenciaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creadas);
     }
 
-    // ------------------------------------------------------------------
     // E30 — POST /api/v1/ausencias
     // RF-25: ausencia individual | RF-26: festivo global (empleadoId null)
-    // ------------------------------------------------------------------
 
     /**
      * Planifica una ausencia futura para un empleado (E30, RF-25, RF-26).
@@ -244,10 +232,8 @@ public class AusenciaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ------------------------------------------------------------------
     // E33 — GET /api/v1/ausencias
     // RF-29: listar con filtros opcionales
-    // ------------------------------------------------------------------
 
     /**
      * Lista ausencias planificadas con filtros opcionales y combinables (RF-29).
@@ -280,11 +266,9 @@ public class AusenciaController {
         return ResponseEntity.ok(ausenciaService.listar(empleadoId, desde, hasta, procesado));
     }
 
-    // ------------------------------------------------------------------
     // E64 — GET /api/v1/ausencias/planificacion-vac-ap
     // Días pendientes de planificar para vacaciones y asuntos propios
     // NOTA: declarado ANTES de /{id} para evitar conflicto de ruta
-    // ------------------------------------------------------------------
 
     /**
      * Devuelve los días pendientes de planificar para vacaciones y asuntos
@@ -311,10 +295,8 @@ public class AusenciaController {
         return ResponseEntity.ok(ausenciaService.getPlanificacionVacAp(empleadoId, anioConsulta));
     }
 
-    // ------------------------------------------------------------------
     // E31 — PATCH /api/v1/ausencias/{id}
     // RF-27: modificar ausencia planificada
-    // ------------------------------------------------------------------
 
     /**
      * Modifica una ausencia planificada (RF-27).
@@ -348,10 +330,8 @@ public class AusenciaController {
         return ResponseEntity.ok(ausenciaService.actualizar(id, request, username));
     }
 
-    // ------------------------------------------------------------------
     // E32 — DELETE /api/v1/ausencias/{id}
     // RF-28: único DELETE real del sistema
-    // ------------------------------------------------------------------
 
     /**
      * Elimina una ausencia planificada (RF-28).

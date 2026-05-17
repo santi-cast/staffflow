@@ -39,10 +39,8 @@ public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    // ----------------------------------------------------------------
     // E08 — POST /api/v1/usuarios
     // RF-03: Crear usuario
-    // ----------------------------------------------------------------
 
     /**
      * Crea un nuevo usuario en el sistema.
@@ -66,10 +64,8 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ----------------------------------------------------------------
     // E09 — GET /api/v1/usuarios
     // RF-04: Listar usuarios con filtros opcionales
-    // ----------------------------------------------------------------
 
     /**
      * Lista todos los usuarios del sistema con filtros opcionales y combinables.
@@ -96,10 +92,8 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listar(rol, activo));
     }
 
-    // ----------------------------------------------------------------
     // E10 — GET /api/v1/usuarios/{id}
     // RF-05: Consultar detalle de usuario
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el detalle completo de un usuario concreto.
@@ -120,10 +114,8 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
-    // ----------------------------------------------------------------
     // E11 — PATCH /api/v1/usuarios/{id}
     // RF-06: Editar usuario
-    // ----------------------------------------------------------------
 
     /**
      * Actualiza los datos editables de un usuario: email y rol.
@@ -151,10 +143,8 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
 
-    // ----------------------------------------------------------------
     // E12 — DELETE /api/v1/usuarios/{id}
     // RF-07: Desactivar usuario (baja lógica)
-    // ----------------------------------------------------------------
 
     /**
      * Desactiva un usuario aplicando baja lógica (activo = false).

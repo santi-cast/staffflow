@@ -116,10 +116,8 @@ public class PdfService {
     private static final DateTimeFormatter FMT_GENERA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
     private static final DateTimeFormatter FMT_DIA_SEM = DateTimeFormatter.ofPattern("EEE", new java.util.Locale("es", "ES"));
 
-    // =========================================================================
     // E45 — GET /api/v1/informes/horas/{empleadoId}/pdf
     // RF-38: informe de horas de un empleado, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de horas de un empleado en un periodo (E45).
@@ -191,10 +189,8 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // E46 — GET /api/v1/informes/horas/pdf
     // RF-39: informe global de horas de todos los empleados, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe global de horas de todos los empleados (E46).
@@ -238,10 +234,8 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // E47 — GET /api/v1/informes/saldos/pdf
     // RF-40: informe de saldos anuales firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de saldos anuales (E47).
@@ -321,10 +315,8 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // E57 — GET /api/v1/informes/pdf/vacaciones
     // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
-    // =========================================================================
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados
@@ -647,9 +639,7 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // Manejador de pie por pagina (E47)
-    // =========================================================================
 
     /**
      * Handler de pie de pagina para E47. Patron identico a CabeceraPieHandler
@@ -710,9 +700,7 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // Bloques de contenido reutilizables
-    // =========================================================================
 
     /** Agrega el bloque de resumen (dias trabajados, horas, ausencias). */
     private void agregarResumen(Document doc, Map<String, Object> resumen) throws Exception {
@@ -1301,9 +1289,7 @@ public class PdfService {
         tabla.addCell(cell);
     }
 
-    // =========================================================================
     // Manejador de cabecera/pie por pagina (E45)
-    // =========================================================================
 
     private class CabeceraPieHandler implements IEventHandler {
         private final EmpresaResponse empresa;
@@ -1423,9 +1409,7 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // Escritura de numeracion final (requiere segunda pasada)
-    // =========================================================================
 
     /**
      * Segunda pasada sobre el PDF ya generado para sobreescribir la numeracion
@@ -1475,9 +1459,7 @@ public class PdfService {
         }
     }
 
-    // =========================================================================
     // Utilidades privadas
-    // =========================================================================
 
     /**
      * Carga el logo desde el classpath. Devuelve null si no existe o hay error.
@@ -1588,10 +1570,8 @@ public class PdfService {
         return String.format("%.2f", bd).replace('.', ',');
     }
 
-    // =========================================================================
     // E20 — GET /api/v1/empleados/export?formato=pdf
     // RF-16: Exportar listado de empleados en PDF
-    // =========================================================================
 
     /**
      * Genera el PDF del listado de empleados (E20).

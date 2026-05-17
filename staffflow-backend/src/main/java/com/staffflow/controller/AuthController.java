@@ -42,9 +42,7 @@ public class AuthController {
     /** Servicio que contiene toda la lógica de autenticación. */
     private final AuthService authService;
 
-    // =========================================================================
     // E01 — POST /api/v1/auth/login
-    // =========================================================================
 
     /**
      * Autentica al usuario y devuelve un JWT válido.
@@ -63,9 +61,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    // =========================================================================
     // E02 — GET /api/v1/auth/me
-    // =========================================================================
 
     /**
      * Devuelve los datos del usuario que realiza la petición.
@@ -84,9 +80,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.obtenerUsuarioAutenticado());
     }
 
-    // =========================================================================
     // E03 — PUT /api/v1/auth/password
-    // =========================================================================
 
     /**
      * Cambia la contraseña del usuario autenticado.
@@ -111,9 +105,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.cambiarPassword(request));
     }
 
-    // =========================================================================
     // E04 — POST /api/v1/auth/password/recovery
-    // =========================================================================
 
     /**
      * Solicita la recuperación de contraseña por email.
@@ -145,9 +137,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.solicitarRecuperacion(request));
     }
 
-    // =========================================================================
     // E05 — POST /api/v1/auth/password/reset
-    // =========================================================================
 
     /**
      * Restablece la contraseña usando el token de recuperación.

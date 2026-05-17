@@ -88,9 +88,7 @@ public class AuthService {
     /** Servicio de email: envía el correo de recuperación de contraseña (E04). */
     private final EmailService emailService;
 
-    // =========================================================================
     // E01 — POST /api/v1/auth/login
-    // =========================================================================
 
     /**
      * Autentica al usuario y devuelve un JWT válido.
@@ -133,9 +131,7 @@ public class AuthService {
         return new LoginResponse(token, usuario.getRol(), usuario.getUsername(), empleadoId, nombre);
     }
 
-    // =========================================================================
     // E02 — GET /api/v1/auth/me
-    // =========================================================================
 
     /**
      * Devuelve los datos del usuario autenticado a partir del JWT.
@@ -165,9 +161,7 @@ public class AuthService {
         return toUsuarioResponse(usuario);
     }
 
-    // =========================================================================
     // E03 — PUT /api/v1/auth/password
-    // =========================================================================
 
     /**
      * Cambia la contraseña del usuario autenticado.
@@ -212,9 +206,7 @@ public class AuthService {
         return new MensajeResponse("Contraseña actualizada correctamente");
     }
 
-    // =========================================================================
     // E04 — POST /api/v1/auth/password/recovery
-    // =========================================================================
 
     /**
      * Solicita la recuperación de contraseña por email (E04).
@@ -273,9 +265,7 @@ public class AuthService {
         return sb.toString();
     }
 
-    // =========================================================================
     // E05 — POST /api/v1/auth/password/reset
-    // =========================================================================
 
     /**
      * Restablece la contraseña usando el token de recuperación (E05).
@@ -336,9 +326,7 @@ public class AuthService {
         return new MensajeResponse("Contraseña restablecida correctamente");
     }
 
-    // =========================================================================
     // Métodos privados de apoyo
-    // =========================================================================
 
     /**
      * Convierte la entidad Usuario en UsuarioResponse para la capa de presentación.

@@ -149,9 +149,7 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
             @Param("hasta") LocalDate hasta,
             @Param("tipo") TipoFichaje tipo);
 
-    // ---------------------------------------------------------------
     // Métodos para PresenciaService (E35 directo, E36 transitivo)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todos los fichajes de una fecha concreta con su empleado cargado.

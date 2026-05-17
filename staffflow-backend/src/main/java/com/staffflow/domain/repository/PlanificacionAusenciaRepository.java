@@ -29,9 +29,7 @@ import java.util.List;
 @Repository
 public interface PlanificacionAusenciaRepository extends JpaRepository<PlanificacionAusencia, Long> {
 
-    // ------------------------------------------------------------------
     // E30 — validación UNIQUE antes de insertar
-    // ------------------------------------------------------------------
 
     /**
      * Comprueba si ya existe una ausencia para un empleado en una fecha.
@@ -44,9 +42,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
      */
     boolean existsByEmpleadoIdAndFecha(Long empleadoId, LocalDate fecha);
 
-    // ------------------------------------------------------------------
     // E30b — crearRango: detectar conflictos en el rango solicitado
-    // ------------------------------------------------------------------
 
     /**
      * Devuelve las ausencias de un empleado en un rango de fechas.
@@ -60,9 +56,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
     List<PlanificacionAusencia> findByEmpleadoIdAndFechaBetween(
             Long empleadoId, LocalDate desde, LocalDate hasta);
 
-    // ------------------------------------------------------------------
     // E33 — listar con 4 filtros opcionales
-    // ------------------------------------------------------------------
 
     /**
      * Lista ausencias con filtros opcionales y combinables (E33).
@@ -96,9 +90,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
             @Param("hasta")      LocalDate hasta,
             @Param("procesado")  Boolean procesado);
 
-    // ------------------------------------------------------------------
     // E34 — ausencias propias del empleado autenticado (/me)
-    // ------------------------------------------------------------------
 
     /**
      * Lista las ausencias de un empleado concreto en un rango de fechas
@@ -124,9 +116,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
             @Param("desde")      LocalDate desde,
             @Param("hasta")      LocalDate hasta);
 
-    // ------------------------------------------------------------------
     // Usado por ProcesoCierreDiario
-    // ------------------------------------------------------------------
 
     /**
      * Busca ausencias pendientes de procesar cuya fecha sea igual o
@@ -146,9 +136,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
     List<PlanificacionAusencia> findPendientesByFechaLessThanEqual(
             @Param("fecha") LocalDate fecha);
 
-    // ---------------------------------------------------------------
     // Método para PresenciaService (E35-E37)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve todas las ausencias planificadas de una fecha concreta
@@ -176,9 +164,7 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
            "WHERE a.fecha = :fecha AND a.procesado = false")
     List<PlanificacionAusencia> findByFechaAndProcesadoFalse(@Param("fecha") LocalDate fecha);
 
-    // ------------------------------------------------------------------
     // E64 — conteo de planificadas por tipo y rango
-    // ------------------------------------------------------------------
 
     /**
      * Cuenta ausencias planificadas (procesado=false) de un empleado

@@ -33,11 +33,9 @@ public class InformeController {
 
     private final InformeService informeService;
 
-    // =========================================================================
     // E58 — GET /api/v1/informes/me/horas
     // Informe de horas del empleado autenticado en HTML
     // NOTA: declarado ANTES de /horas/{empleadoId} por convención /me primero.
-    // =========================================================================
 
     /**
      * Informe de horas del empleado autenticado en HTML (E58).
@@ -61,10 +59,8 @@ public class InformeController {
         return construirRespuesta(resultado, "html");
     }
 
-    // =========================================================================
     // E42 — GET /api/v1/informes/horas/{empleadoId}
     // RF-32: informe de horas de un empleado en un periodo
-    // =========================================================================
 
     /**
      * Informe de horas trabajadas de un empleado en un periodo (E42).
@@ -100,10 +96,8 @@ public class InformeController {
         return construirRespuesta(resultado, formato);
     }
 
-    // =========================================================================
     // E43 — GET /api/v1/informes/horas
     // RF-33: informe global de horas de todos los empleados
-    // =========================================================================
 
     /**
      * Informe global de horas de todos los empleados activos en un periodo (E43).
@@ -134,10 +128,8 @@ public class InformeController {
         return construirRespuesta(resultado, formato);
     }
 
-    // =========================================================================
     // E59 — GET /api/v1/informes/semana
     // Tabla HTML semanal con fichajes, pausas y ausencias de todos los empleados
-    // =========================================================================
 
     /**
      * Tabla HTML semanal de presencia de todos los empleados activos (E59).
@@ -162,10 +154,8 @@ public class InformeController {
         return construirRespuesta(html, "html");
     }
 
-    // =========================================================================
     // E44 — GET /api/v1/informes/saldos
     // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
-    // =========================================================================
 
     /**
      * Informe de saldos anuales de empleados (E44).
@@ -199,10 +189,8 @@ public class InformeController {
         return construirRespuesta(resultado, formato);
     }
 
-    // =========================================================================
     // E60 — GET /api/v1/informes/ausencias
     // Resumen HTML de ausencias de todos los empleados activos en un rango
-    // =========================================================================
 
     /**
      * Resumen de ausencias globales de todos los empleados activos (E60).
@@ -227,9 +215,7 @@ public class InformeController {
         return construirRespuesta(html, "html");
     }
 
-    // =========================================================================
     // Utilidad privada: construir ResponseEntity con Content-Type correcto
-    // =========================================================================
 
     /**
      * Construye la ResponseEntity con el Content-Type adecuado segun el formato.

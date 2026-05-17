@@ -56,9 +56,7 @@ public class SaldoResponse {
      */
     private LocalDate calculadoHastaFecha;
 
-    // ----------------------------------------------------------------
     // Clases internas de desglose
-    // ----------------------------------------------------------------
 
     /**
      * Desglose de dias de vacaciones del empleado para el año.

@@ -62,18 +62,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class TerminalService {
 
-    // ---------------------------------------------------------------
     // Constantes de bloqueo (RNF-S05)
-    // ---------------------------------------------------------------
 
     /** Número máximo de intentos fallidos antes de bloquear el dispositivo. */
     private static final int MAX_INTENTOS = 5;
 
-    // ---------------------------------------------------------------
     // Bloqueo en memoria por dispositivo.
     // ConcurrentHashMap: seguro para acceso concurrente desde múltiples
     // peticiones simultáneas sin sincronización manual.
-    // ---------------------------------------------------------------
 
     /**
      * Mapa de intentos fallidos acumulados por dispositivoId.
@@ -83,19 +79,15 @@ public class TerminalService {
     private final ConcurrentHashMap<String, AtomicInteger> intentosFallidos =
             new ConcurrentHashMap<>();
 
-    // ---------------------------------------------------------------
     // Dependencias
-    // ---------------------------------------------------------------
 
     private final EmpleadoRepository empleadoRepository;
     private final FichajeRepository fichajeRepository;
     private final PausaRepository pausaRepository;
     private final UsuarioRepository usuarioRepository;
 
-    // ---------------------------------------------------------------
     // E48 — POST /api/v1/terminal/entrada
     // RF-46: Registrar entrada desde terminal
-    // ---------------------------------------------------------------
 
     /**
      * Registra la entrada del empleado desde el terminal físico (RF-46).
@@ -168,10 +160,8 @@ public class TerminalService {
         );
     }
 
-    // ---------------------------------------------------------------
     // E49 — POST /api/v1/terminal/salida
     // RF-47: Registrar salida desde terminal
-    // ---------------------------------------------------------------
 
     /**
      * Registra la salida del empleado y calcula la jornada efectiva (RF-47).
@@ -267,10 +257,8 @@ public class TerminalService {
         );
     }
 
-    // ---------------------------------------------------------------
     // E50 — POST /api/v1/terminal/pausa/iniciar
     // RF-48: Iniciar pausa desde terminal
-    // ---------------------------------------------------------------
 
     /**
      * Inicia una pausa desde el terminal físico (RF-48).
@@ -337,10 +325,8 @@ public class TerminalService {
         );
     }
 
-    // ---------------------------------------------------------------
     // E51 — POST /api/v1/terminal/pausa/finalizar
     // RF-49: Finalizar pausa desde terminal
-    // ---------------------------------------------------------------
 
     /**
      * Finaliza la pausa activa del empleado desde el terminal (RF-49).
@@ -409,10 +395,8 @@ public class TerminalService {
         );
     }
 
-    // ---------------------------------------------------------------
     // E52 — POST /api/v1/terminal/estado
     // Consultar estado del dia para la pantalla de bienvenida (P06)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve el estado de la jornada del empleado para el día actual (E52).
@@ -487,9 +471,7 @@ public class TerminalService {
                 horaEntrada, null, null, null);
     }
 
-    // ---------------------------------------------------------------
     // Métodos auxiliares privados
-    // ---------------------------------------------------------------
 
     /**
      * Obtiene el usuario de servicio predefinido para auditoría de terminal.
@@ -547,9 +529,7 @@ public class TerminalService {
                 });
     }
 
-    // ---------------------------------------------------------------
     // Bloqueo — consulta y desbloqueo manual (para ENCARGADO/ADMIN)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve true si algún dispositivo supero el limite de intentos fallidos.

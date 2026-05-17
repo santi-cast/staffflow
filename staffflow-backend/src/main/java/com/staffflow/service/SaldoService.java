@@ -60,9 +60,7 @@ public class SaldoService {
     private final FichajeRepository fichajeRepository;
     private final PlanificacionAusenciaRepository planificacionRepository;
 
-    // ----------------------------------------------------------------
     // E38 — GET /api/v1/saldos/{empleadoId}
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual de un empleado concreto para un año (E38).
@@ -98,9 +96,7 @@ public class SaldoService {
         return toSaldoResponse(saldo, empleado);
     }
 
-    // ----------------------------------------------------------------
     // E39 — GET /api/v1/saldos
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual de todos los empleados para un año (E39).
@@ -140,9 +136,7 @@ public class SaldoService {
                 .toList();
     }
 
-    // ----------------------------------------------------------------
     // E40 — POST /api/v1/saldos/{empleadoId}/recalcular
-    // ----------------------------------------------------------------
 
     /**
      * Fuerza el recalculo completo del saldo anual de un empleado (E40).
@@ -187,9 +181,7 @@ public class SaldoService {
         return toSaldoResponse(saldo, empleado);
     }
 
-    // ----------------------------------------------------------------
     // Metodo interno compartido — usado por E40 y ProcesoCierreDiario
-    // ----------------------------------------------------------------
 
     /**
      * Recalcula y persiste el saldo anual de un empleado sin construir DTO.
@@ -310,9 +302,7 @@ public class SaldoService {
         saldoRepository.save(saldo);
     }
 
-    // ----------------------------------------------------------------
     // E41 — GET /api/v1/saldos/me
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el saldo anual del empleado autenticado (E41 -- /me).
@@ -374,9 +364,7 @@ public class SaldoService {
         return toSaldoResponse(saldo, empleado);
     }
 
-    // ----------------------------------------------------------------
     // Metodos privados
-    // ----------------------------------------------------------------
 
     /**
      * Resuelve el año de consulta.

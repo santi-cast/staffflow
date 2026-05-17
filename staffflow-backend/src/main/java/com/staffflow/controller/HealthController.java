@@ -35,10 +35,8 @@ import java.util.Map;
 @RequestMapping("/api")
 public class HealthController {
 
-    // =========================================================================
     // E56 — GET /api/health
     // RF-45: Comprobacion de disponibilidad del servicio
-    // =========================================================================
 
     /**
      * Devuelve el estado actual del servidor (E56).

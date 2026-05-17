@@ -52,10 +52,8 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // ----------------------------------------------------------------
     // E08 — POST /api/v1/usuarios
     // RF-03: Crear usuario
-    // ----------------------------------------------------------------
 
     /**
      * Crea un nuevo usuario en el sistema.
@@ -101,10 +99,8 @@ public class UsuarioService {
         return toUsuarioResponse(guardado);
     }
 
-    // ----------------------------------------------------------------
     // E09 — GET /api/v1/usuarios
     // RF-04: Listar usuarios con filtros opcionales
-    // ----------------------------------------------------------------
 
     /**
      * Lista todos los usuarios del sistema con filtros opcionales y combinables.
@@ -141,10 +137,8 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
-    // ----------------------------------------------------------------
     // E10 — GET /api/v1/usuarios/{id}
     // RF-05: Consultar detalle de usuario
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el detalle completo de un usuario concreto.
@@ -167,10 +161,8 @@ public class UsuarioService {
         return toUsuarioResponse(usuario);
     }
 
-    // ----------------------------------------------------------------
     // E11 — PATCH /api/v1/usuarios/{id}
     // RF-06: Editar usuario
-    // ----------------------------------------------------------------
 
     /**
      * Actualiza los datos editables de un usuario: email y rol.
@@ -220,10 +212,8 @@ public class UsuarioService {
         return toUsuarioResponse(usuarioRepository.save(usuario));
     }
 
-    // ----------------------------------------------------------------
     // E12 — DELETE /api/v1/usuarios/{id}
     // RF-07: Desactivar usuario (baja lógica)
-    // ----------------------------------------------------------------
 
     /**
      * Desactiva un usuario aplicando baja lógica (activo = false).
@@ -258,9 +248,7 @@ public class UsuarioService {
         return new MensajeResponse("Usuario desactivado correctamente");
     }
 
-    // ----------------------------------------------------------------
     // Conversión entidad → DTO (uso interno)
-    // ----------------------------------------------------------------
 
     /**
      * Convierte una entidad Usuario en su DTO de respuesta.

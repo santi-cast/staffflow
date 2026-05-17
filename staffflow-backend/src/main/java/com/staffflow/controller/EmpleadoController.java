@@ -57,10 +57,8 @@ public class EmpleadoController {
 
     private final EmpleadoService empleadoService;
 
-    // ----------------------------------------------------------------
     // E13 — POST /api/v1/empleados
     // RF-08: Crear perfil de empleado
-    // ----------------------------------------------------------------
 
     /**
      * Crea el perfil laboral de un empleado vinculándolo a un usuario existente.
@@ -83,10 +81,8 @@ public class EmpleadoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ----------------------------------------------------------------
     // E14 — GET /api/v1/empleados
     // RF-12, RF-14: Listar empleados con filtros
-    // ----------------------------------------------------------------
 
     /**
      * Lista empleados con filtros opcionales y combinables.
@@ -115,10 +111,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.listar(activo, q, categoria));
     }
 
-    // ----------------------------------------------------------------
     // E15 — GET /api/v1/empleados/{id}
     // RF-13: Perfil completo de empleado
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el perfil completo de un empleado.
@@ -145,10 +139,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.obtenerPorId(id, authentication));
     }
 
-    // ----------------------------------------------------------------
     // E16 — PATCH /api/v1/empleados/{id}
     // RF-09: Editar perfil laboral
-    // ----------------------------------------------------------------
 
     /**
      * Actualiza el perfil laboral de un empleado.
@@ -176,10 +168,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.actualizar(id, request));
     }
 
-    // ----------------------------------------------------------------
     // E17 — PATCH /api/v1/empleados/{id}/baja
     // RF-10: Dar de baja empleado
-    // ----------------------------------------------------------------
 
     /**
      * Desactiva un empleado (baja lógica: activo = false).
@@ -198,10 +188,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.darDeBaja(id));
     }
 
-    // ----------------------------------------------------------------
     // E18 — PATCH /api/v1/empleados/{id}/reactivar
     // RF-11: Reactivar empleado
-    // ----------------------------------------------------------------
 
     /**
      * Reactiva un empleado previamente desactivado (activo = true).
@@ -221,10 +209,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.reactivar(id));
     }
 
-    // ----------------------------------------------------------------
     // E19 — GET /api/v1/empleados/estado
     // RF-15: Estado en tiempo real de los empleados
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el estado en tiempo real de todos los empleados activos
@@ -246,10 +232,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.obtenerEstado(fechaConsulta));
     }
 
-    // ----------------------------------------------------------------
     // E20 — GET /api/v1/empleados/export
     // RF-16: Exportar listado de empleados
-    // ----------------------------------------------------------------
 
     /**
      * Exporta el listado de empleados activos en formato CSV o PDF.
@@ -272,10 +256,8 @@ public class EmpleadoController {
                 .body(contenido);
     }
 
-    // ----------------------------------------------------------------
     // E21 — GET /api/v1/empleados/me
     // RF-50: Perfil propio del empleado autenticado
-    // ----------------------------------------------------------------
 
     /**
      * Devuelve el perfil del empleado autenticado.
@@ -305,10 +287,8 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleadoService.obtenerMiPerfil(username));
     }
 
-    // ----------------------------------------------------------------
     // E65 — POST /api/v1/empleados/{id}/regenerar-pin
     // Regenerar PIN de terminal del empleado
-    // ----------------------------------------------------------------
 
     /**
      * Regenera el PIN de terminal de un empleado y lo devuelve en la respuesta.

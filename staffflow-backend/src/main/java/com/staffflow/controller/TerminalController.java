@@ -53,10 +53,8 @@ public class TerminalController {
 
     private final TerminalService terminalService;
 
-    // ---------------------------------------------------------------
     // E53 — GET /api/v1/terminal/bloqueo
     // Consultar si hay terminal bloqueado (ENCARGADO/ADMIN, con JWT)
-    // ---------------------------------------------------------------
 
     /**
      * Devuelve si hay algún dispositivo de terminal bloqueado por exceso
@@ -77,10 +75,8 @@ public class TerminalController {
         return ResponseEntity.ok(Map.of("bloqueado", terminalService.hayTerminalBloqueado()));
     }
 
-    // ---------------------------------------------------------------
     // E54 — DELETE /api/v1/terminal/bloqueo
     // Desbloquear terminal (ENCARGADO/ADMIN, con JWT)
-    // ---------------------------------------------------------------
 
     /**
      * Desbloquea el terminal reseteando todos los contadores de intentos
@@ -102,10 +98,8 @@ public class TerminalController {
         return ResponseEntity.ok(Map.of("bloqueado", false));
     }
 
-    // ---------------------------------------------------------------
     // E52 — POST /api/v1/terminal/estado
     // Consultar estado del dia para la pantalla de bienvenida (P06)
-    // ---------------------------------------------------------------
 
     /**
      * Consulta el estado de la jornada del empleado para el dia actual (E52).
@@ -130,10 +124,8 @@ public class TerminalController {
         return ResponseEntity.ok(terminalService.obtenerEstado(request));
     }
 
-    // ---------------------------------------------------------------
     // E48 — POST /api/v1/terminal/entrada
     // RF-46: Registrar entrada
-    // ---------------------------------------------------------------
 
     /**
      * Registra la entrada del empleado desde el terminal físico (RF-46).
@@ -160,10 +152,8 @@ public class TerminalController {
         return ResponseEntity.ok(terminalService.registrarEntrada(request));
     }
 
-    // ---------------------------------------------------------------
     // E49 — POST /api/v1/terminal/salida
     // RF-47: Registrar salida
-    // ---------------------------------------------------------------
 
     /**
      * Registra la salida del empleado y calcula la jornada efectiva (RF-47).
@@ -189,10 +179,8 @@ public class TerminalController {
         return ResponseEntity.ok(terminalService.registrarSalida(request));
     }
 
-    // ---------------------------------------------------------------
     // E50 — POST /api/v1/terminal/pausa/iniciar
     // RF-48: Iniciar pausa
-    // ---------------------------------------------------------------
 
     /**
      * Inicia una pausa desde el terminal físico (RF-48).
@@ -219,10 +207,8 @@ public class TerminalController {
         return ResponseEntity.ok(terminalService.iniciarPausa(request));
     }
 
-    // ---------------------------------------------------------------
     // E51 — POST /api/v1/terminal/pausa/finalizar
     // RF-49: Finalizar pausa
-    // ---------------------------------------------------------------
 
     /**
      * Finaliza la pausa activa del empleado desde el terminal (RF-49).
