@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  *   1. EN_PAUSA           → empleado tiene pausa con horaFin = null hoy
  *   2. JORNADA_COMPLETADA → fichaje con horaEntrada != null y horaSalida != null
  *   3. JORNADA_INICIADA   → fichaje con horaEntrada != null y horaSalida = null
- *   4. AUSENCIA_REGISTRADA → fichaje con tipo != NORMAL
+ *   4. AUSENCIA_REGISTRADA → fichaje con horaEntrada = null y horaSalida = null
  *   5. AUSENCIA_PLANIFICADA → ausencia en planificacion_ausencias con procesado=false
  *   6. SIN_JUSTIFICAR     → ninguno de los anteriores
  *
@@ -196,8 +196,8 @@ public class PresenciaService {
      * Devuelve la lista de empleados sin ningún registro para la fecha indicada.
      *
      * Un empleado está sin justificar cuando no tiene fichaje, ni ausencia
-     * registrada (fichajes con tipo != NORMAL), ni ausencia planificada
-     * (planificacion_ausencias con procesado=false) para ese día.
+     * registrada (fichajes sin horaEntrada ni horaSalida), ni ausencia
+     * planificada (planificacion_ausencias con procesado=false) para ese día.
      * Es un subconjunto del parte diario filtrado por SIN_JUSTIFICAR.
      *
      * Los festivos globales evitan que todos los empleados sin fichaje aparezcan
@@ -299,7 +299,7 @@ public class PresenciaService {
      *   1. EN_PAUSA           (pausa activa en este momento)
      *   2. JORNADA_COMPLETADA (fichaje cerrado: entrada + salida)
      *   3. JORNADA_INICIADA   (fichaje abierto: entrada sin salida)
-     *   4. AUSENCIA_REGISTRADA (fichaje con tipo != NORMAL)
+     *   4. AUSENCIA_REGISTRADA (fichaje sin horaEntrada ni horaSalida)
      *   5. AUSENCIA_PLANIFICADA (ausencia en planificacion_ausencias)
      *   6. SIN_JUSTIFICAR     (ninguno de los anteriores)
      *

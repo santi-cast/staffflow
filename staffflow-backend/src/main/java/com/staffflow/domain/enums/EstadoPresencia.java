@@ -16,7 +16,7 @@ package com.staffflow.domain.enums;
  *   1. Si tiene pausa con hora_fin = NULL → EN_PAUSA
  *   2. Si tiene fichaje con hora_entrada y hora_salida → JORNADA_COMPLETADA
  *   3. Si tiene fichaje con hora_entrada y sin hora_salida → JORNADA_INICIADA
- *   4. Si tiene fichaje de tipo != NORMAL → AUSENCIA_REGISTRADA
+ *   4. Si tiene fichaje sin hora_entrada → AUSENCIA_REGISTRADA
  *   5. Si tiene planificacion_ausencias con procesado = false → AUSENCIA_PLANIFICADA
  *   6. Sin ninguno de los anteriores → SIN_JUSTIFICAR
  *
@@ -46,7 +46,11 @@ public enum EstadoPresencia {
 
     /** El empleado tiene registrada una ausencia para hoy
      *  (VACACIONES, BAJA_MEDICA, ASUNTO_PROPIO, etc.).
-     *  Condición: fichaje con tipo != NORMAL. */
+     *  Condición real: fichaje con hora_entrada = NULL y hora_salida = NULL.
+     *  En la práctica coincide con los fichajes generados por
+     *  ProcesoCierreDiario para ausencias (tipo != NORMAL), pero el
+     *  criterio efectivo en PresenciaService.clasificarEmpleado es la
+     *  ausencia de horas, no el valor de {@link TipoFichaje}. */
     AUSENCIA_REGISTRADA,
 
     /** El empleado tiene planificada una ausencia para hoy pero el

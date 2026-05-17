@@ -24,7 +24,7 @@ import java.util.List;
  *   1. Pausa con horaFin = null        → EN_PAUSA
  *   2. Fichaje con horaSalida != null  → JORNADA_COMPLETADA
  *   3. Fichaje con horaSalida = null   → JORNADA_INICIADA
- *   4. Fichaje con tipo != NORMAL      → AUSENCIA_REGISTRADA
+ *   4. Fichaje sin horaEntrada         → AUSENCIA_REGISTRADA
  *   5. Ausencia planificada procesado=false → AUSENCIA_PLANIFICADA
  *   6. Ninguno de los anteriores       → SIN_JUSTIFICAR
  *
