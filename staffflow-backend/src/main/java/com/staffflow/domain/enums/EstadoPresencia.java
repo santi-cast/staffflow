@@ -3,9 +3,11 @@ package com.staffflow.domain.enums;
 /**
  * Estado de presencia de un empleado en un momento dado del día.
  *
- * Usado en {@link com.staffflow.dto.response.ParteDiarioResponse} para
- * representar la situación actual de cada empleado en el parte diario
- * de presencia (E35-E37, RF-30, RF-31).
+ * Usado dentro de {@link com.staffflow.dto.response.DetallePresenciaResponse}
+ * (cada fila del array {@code detalle[]} de
+ * {@link com.staffflow.dto.response.ParteDiarioResponse}) para representar
+ * la situación de cada empleado en el parte diario de presencia
+ * (E35-E37, RF-30, RF-31).
  *
  * El estado se calcula en PresenciaService consultando fichajes,
  * pausas y planificacion_ausencias para la fecha actual.
@@ -41,7 +43,12 @@ public enum EstadoPresencia {
     EN_PAUSA,
 
     /** El empleado ha completado su jornada del día.
-     *  Condición: fichaje con hora_entrada != NULL y hora_salida != NULL. */
+     *  Condición efectiva en PresenciaService.clasificarEmpleado:
+     *  fichaje con hora_salida != NULL (la rama no comprueba
+     *  hora_entrada). En la práctica hora_entrada también != NULL
+     *  porque los fichajes con horas parciales sólo se generan vía
+     *  ProcesoCierreDiario para ausencias, y en ese caso ambas horas
+     *  llegan a NULL → AUSENCIA_REGISTRADA. */
     JORNADA_COMPLETADA,
 
     /** El empleado tiene registrada una ausencia para hoy
@@ -53,13 +60,14 @@ public enum EstadoPresencia {
      *  ausencia de horas, no el valor de {@link TipoFichaje}. */
     AUSENCIA_REGISTRADA,
 
-    /** El empleado tiene planificada una ausencia para hoy pero el
-     *  proceso nocturno aún no la ha convertido en fichaje.
-     *  Condición: registro en planificacion_ausencias con
-     *  fecha = HOY y procesado = false. */
+    /** El empleado tiene planificada una ausencia para la fecha
+     *  consultada pero el proceso nocturno aún no la ha convertido
+     *  en fichaje. Condición: registro en planificacion_ausencias
+     *  con fecha = fecha_consulta y procesado = false. */
     AUSENCIA_PLANIFICADA,
 
-    /** El empleado no tiene fichaje ni ausencia registrada para hoy.
-     *  Requiere atención del ENCARGADO o ADMIN (RF-31). */
+    /** El empleado no tiene fichaje ni ausencia registrada para la
+     *  fecha consultada. Requiere atención del ENCARGADO o ADMIN
+     *  (RF-31). */
     SIN_JUSTIFICAR
 }
