@@ -14,11 +14,11 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN/NFC, login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 61 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 61 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
-- Fichaje de entrada y salida (desde app o terminal con PIN/NFC)
+- Fichaje de entrada y salida (desde app o terminal con PIN)
 - Registro y gestión de pausas durante la jornada
 - Planificación de ausencias (vacaciones, permisos, festivos nacionales y locales)
 - Cálculo automático de saldos de horas y días disponibles
@@ -33,7 +33,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 - Autenticación con JWT (12h) y control de acceso por roles (ADMIN, ENCARGADO, EMPLEADO). El JWT no afecta al fichaje, que siempre se realiza por PIN. Afecta a la app de gestión: el ENCARGADO hace login una vez al día y el token persiste en DataStore, evitando reautenticaciones mientras dure la jornada. Un token más corto obligaría a hacer login repetidamente cada vez que se consulta o gestiona algo. La solución para combinar tokens cortos con buena usabilidad es el refresh token, documentado como mejora para v2.0
 - Registro de jornada laboral mediante fichaje de entrada y salida
-- Terminal de fichaje con PIN de 4 dígitos y NFC para dispositivo compartido (los 5 endpoints públicos del flujo de fichaje no requieren JWT; el bloqueo del terminal sí lo requiere)
+- Terminal de fichaje con PIN de 4 dígitos para dispositivo compartido (los 5 endpoints públicos del flujo de fichaje no requieren JWT; el bloqueo del terminal sí lo requiere). El esquema de BD reserva el campo `codigo_nfc` por empleado para una ampliación futura de fichaje por NFC, no implementada en v1.
 - Gestión de pausas durante la jornada
 - Planificación de ausencias individuales y festivos globales
 - Proceso diario automático que convierte ausencias planificadas en fichajes
@@ -150,7 +150,7 @@ La especificación incluye:
 
 - **65 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
-- Terminal de fichaje con PIN/NFC en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
+- Terminal de fichaje con PIN en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN desde el mismo dispositivoId → HTTP 423. El bloqueo persiste hasta que un ADMIN/ENCARGADO desbloquea el terminal vía E54 (DELETE /api/v1/terminal/bloqueo), un PIN exitoso reinicia el contador o el servidor se reinicia (contador in-memory).
 
 ### Catálogo de endpoints
@@ -275,7 +275,7 @@ Convenciones de la tabla:
 | E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P27 |
 | E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P27 |
 
-#### Terminal PIN/NFC (`/api/v1/terminal`)
+#### Terminal PIN (`/api/v1/terminal`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
