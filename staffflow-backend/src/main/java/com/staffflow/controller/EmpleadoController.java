@@ -117,8 +117,6 @@ public class EmpleadoController {
     // ----------------------------------------------------------------
     // E15 — GET /api/v1/empleados/{id}
     // RF-13: Perfil completo de empleado
-    // IMPORTANTE: esta ruta debe declararse ANTES de /estado, /export y /me
-    // para evitar que Spring confunda "{id}" con esos literales.
     // ----------------------------------------------------------------
 
     /**
