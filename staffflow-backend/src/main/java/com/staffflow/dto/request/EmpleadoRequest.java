@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Datos para crear la ficha de un nuevo empleado.
- * Usado en E13 (POST /api/v1/empleados), solo accesible por ADMIN.
+ * Usado en E13 (POST /api/v1/empleados), accesible por ADMIN y ENCARGADO.
  * El usuario asociado debe existir previamente (E08). La relación es 1:1:
  * un usuario solo puede tener una ficha de empleado (RF-07).
  *

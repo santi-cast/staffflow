@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 /**
  * Campos modificables de una pausa existente mediante actualización parcial.
- * Usado en E29 (PATCH /api/v1/pausas/{id}), accesible por ADMIN y ENCARGADO.
+ * Usado en E28 (PATCH /api/v1/pausas/{id}), accesible por ADMIN y ENCARGADO.
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH).
  * empleadoId y fecha no son modificables: identifican la pausa dentro

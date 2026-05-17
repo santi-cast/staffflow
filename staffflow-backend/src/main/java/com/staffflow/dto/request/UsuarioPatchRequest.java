@@ -7,7 +7,7 @@ import lombok.Data;
 
 /**
  * Campos modificables de un usuario existente mediante actualización parcial.
- * Usado en E12 (PATCH /api/v1/usuarios/{id}), solo accesible por ADMIN.
+ * Usado en E11 (PATCH /api/v1/usuarios/{id}), solo accesible por ADMIN.
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH).
  * El username y la contraseña no son modificables por este endpoint.

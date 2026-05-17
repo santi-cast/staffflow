@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Datos necesarios para que un usuario autenticado cambie su contraseña.
- * Usado en E03 (POST /api/v1/auth/password/change), requiere JWT válido.
+ * Usado en E03 (PUT /api/v1/auth/password), requiere JWT válido.
  * Se exige la contraseña actual para evitar cambios no autorizados
  * en sesiones robadas (RNF-S01).
  *
