@@ -26,9 +26,9 @@ import java.util.List;
 /**
  * Proceso nocturno automatico de cierre de jornada.
  *
- * <p>Se ejecuta cada dia a las 23:55 mediante @Scheduled. Es el unico proceso que permanece
- * automatico: su fallo deja el dia entero mal registrado antes de que
- * lleguen los empleados al dia siguiente.</p>
+ * <p>Se ejecuta cada dia a las 23:55 mediante @Scheduled. Es el unico proceso
+ * automatico del sistema y su fallo deja el dia entero mal registrado antes
+ * de que lleguen los empleados al dia siguiente.</p>
  *
  * <p>Ejecuta tres tareas en secuencia dentro de una sola transaccion:</p>
  *
@@ -321,6 +321,7 @@ public class ProcesoCierreDiario {
      *   ASUNTO_PROPIO           → TipoFichaje.ASUNTO_PROPIO
      *   PERMISO_RETRIBUIDO      → TipoFichaje.PERMISO_RETRIBUIDO
      *   DIA_LIBRE_COMPENSATORIO → TipoFichaje.DIA_LIBRE_COMPENSATORIO
+     *   DIA_LIBRE               → TipoFichaje.DIA_LIBRE
      * </p>
      *
      * @param tipoAusencia tipo de ausencia planificada
