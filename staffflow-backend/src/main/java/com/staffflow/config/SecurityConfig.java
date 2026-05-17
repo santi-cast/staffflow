@@ -39,7 +39,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>Sin refresh token en v1.0: el JWT de 12h cubre una jornada laboral con descanso de comida.</li>
  *   <li>RNF-S05: el bloqueo por dispositivo se gestiona en TerminalController, no aqui.</li>
  *   <li>{@code @EnableMethodSecurity} activa la evaluacion de {@code @PreAuthorize}
- *       en tiempo de ejecucion. Sin esta anotacion, las 53 anotaciones {@code @PreAuthorize}
+ *       en tiempo de ejecucion. Sin esta anotacion, las anotaciones {@code @PreAuthorize}
  *       de los controllers son decorativas y la seguridad opera solo en la capa URL.</li>
  * </ul>
  *
