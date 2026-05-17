@@ -6,10 +6,11 @@ package com.staffflow.dto.response;
  * Endpoint: GET /api/v1/ausencias/planificacion-vac-ap?empleadoId=&anio=
  * Accesible por ADMIN y ENCARGADO.
  *
- * anioFuturoSinCierre=true indica que el saldo fue creado on-demand
- * porque aún no se hizo el cierre anual. En ese caso, pendientesPlanificar
- * refleja solo el derecho del año — los pendientes del año anterior
- * se añadirán automáticamente al hacer el cierre anual.
+ * anioFuturoSinCierre=true cuando el año consultado es posterior al año
+ * actual: en ese caso el saldo se crea on-demand como proyeccion inicial
+ * (derechoAnio del empleado, sin consumo ni pendientes anteriores). El
+ * cliente debe interpretar el desglose como estimacion susceptible de
+ * variar a medida que el empleado fiche en el año en curso.
  *
  * @author Santiago Castillo
  */

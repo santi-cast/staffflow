@@ -291,8 +291,9 @@ public class AusenciaController {
      * propios de un empleado en un año concreto (E64).
      *
      * Si no existe SaldoAnual para ese año, lo crea on-demand con el derecho
-     * del empleado. El flag anioFuturoSinCierre=true indica que los pendientes
-     * del año anterior aún no están incluidos (cierre anual no ejecutado).
+     * del empleado. El flag anioFuturoSinCierre=true indica que el año
+     * consultado es posterior al año actual y el saldo es una proyeccion
+     * inicial sin consumo registrado.
      *
      * @param empleadoId id del empleado
      * @param anio       año a consultar (defecto: año actual)

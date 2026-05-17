@@ -65,8 +65,8 @@ public class SaldoResponse {
      *
      * <p>La formula de disponibles es:
      *   disponibles = derechoAnio + pendientesAnterior - consumidos
-     * El campo pendientesAnterior se arrastra desde el cierre del año
-     * anterior.</p>
+     * En v1 el campo pendientesAnterior es siempre 0 porque el cierre
+     * anual con arrastre de saldos no esta implementado (previsto para v2.0).</p>
      */
     @Data
     @AllArgsConstructor
@@ -80,7 +80,8 @@ public class SaldoResponse {
 
         /**
          * Dias de vacaciones no disfrutados del año anterior
-         * y trasladados a este. Los genera el cierre anual.
+         * y trasladados a este. Reservado para el cierre anual con
+         * arrastre de saldos, no implementado en v1 — siempre 0.
          */
         private Integer pendientesAnterior;
 
@@ -119,7 +120,8 @@ public class SaldoResponse {
 
         /**
          * Dias de asuntos propios no disfrutados del año anterior
-         * y trasladados a este. Los genera el cierre anual.
+         * y trasladados a este. Reservado para el cierre anual con
+         * arrastre de saldos, no implementado en v1 — siempre 0.
          */
         private Integer pendientesAnterior;
 
