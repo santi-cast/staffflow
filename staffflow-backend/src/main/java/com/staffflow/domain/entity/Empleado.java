@@ -76,7 +76,10 @@ public class Empleado {
     @Column(name = "pin_terminal", nullable = false, unique = true, length = 4, columnDefinition = "CHAR(4)")
     private String pinTerminal;
 
-    // Alternativa al PIN para fichaje por NFC (RF-48). Opcional.
+    // Campo de soporte para fichaje por NFC: aceptado en alta/edición y
+    // expuesto en EmpleadoResponse, pero NO consumido por ningún flujo de
+    // fichaje en v1 (TerminalService usa solo PIN, no consulta codigo_nfc).
+    // Queda como esqueleto de feature futura, no asociada a ningún RF activo.
     @Column(name = "codigo_nfc", unique = true, length = 50)
     private String codigoNfc;
 

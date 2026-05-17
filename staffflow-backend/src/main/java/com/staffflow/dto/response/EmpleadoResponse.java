@@ -59,7 +59,8 @@ public class EmpleadoResponse {
 
     private Integer diasAsuntosPropiosAnuales;
 
-    // NULL si el empleado no tiene NFC configurado (RF-48).
+    // NULL si el empleado no tiene NFC configurado. Campo de soporte para
+    // fichaje por NFC (feature futura): no lo consume ningún endpoint en v1.
     private String codigoNfc;
 
     // Baja lógica: activo=false. Nunca DELETE físico.

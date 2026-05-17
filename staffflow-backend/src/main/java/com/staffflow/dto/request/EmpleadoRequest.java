@@ -61,7 +61,8 @@ public class EmpleadoRequest {
     @Min(0)
     private Integer diasAsuntosPropiosAnuales;
 
-    // Alternativa al PIN para fichaje por NFC (RF-48). Opcional.
+    // Campo de soporte para fichaje por NFC (feature futura). Se persiste
+    // y se valida, pero ningún endpoint de fichaje lo consume en v1.
     @Size(max = 100)
     private String codigoNfc;
 }
