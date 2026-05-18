@@ -429,6 +429,10 @@ Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo
 
 En el primer arranque la app sondea una lista de hosts candidatos hasta encontrar el backend activo, eliminando la necesidad de configurar manualmente la URL. La dirección detectada se persiste en `DataStore` y sobrevive a los cierres de sesión (`SessionManager.clear()` la preserva intencionalmente). Si la detección automática falla, el usuario puede introducir la URL manualmente desde la pantalla de configuración de la app.
 
+### 8. Cierre nocturno automático como única tarea programada
+
+`ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. La Tarea A cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado sin fichaje. La Tarea B materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior y dejar sembrado el `DIA_LIBRE` del sábado/domingo siguientes. La Tarea C recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo viven en B7 §7.1 y §7.3.
+
 ---
 
 ## Endurecimiento de seguridad y robustez
