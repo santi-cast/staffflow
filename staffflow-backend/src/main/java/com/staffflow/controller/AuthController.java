@@ -119,12 +119,17 @@ public class AuthController {
      * si ha olvidado su contraseña).</p>
      *
      * <p>Siempre devuelve 200 con el mismo mensaje, exista o no el email en
-     * la BD. Esto impide la enumeración de usuarios registrados (RNF-S04).</p>
+     * la BD. Esto impide la enumeración de usuarios registrados (RNF-S04):
+     * el cliente nunca puede distinguir un email registrado de uno que no
+     * lo está a partir de la respuesta del endpoint.</p>
      *
      * <p>Comportamiento real en v1: si el email existe, AuthService genera
      * una contraseña temporal de 8 caracteres alfanuméricos, sobrescribe el
-     * passwordHash del usuario y envía la contraseña en claro por correo
-     * a través de EmailService (Gmail SMTP). Los campos resetToken y
+     * passwordHash del usuario y envía la contraseña en claro al correo
+     * registrado de ese mismo usuario en la entidad Usuario, no al texto
+     * tipeado por quien solicita la recuperación (el campo del DTO solo
+     * actúa como identificador para localizar al usuario). El envío se
+     * realiza a través de EmailService (Gmail SMTP). Los campos resetToken y
      * resetTokenExpiry de la entidad Usuario no se tocan; quedan reservados
      * para el flujo de token UUID previsto en v2.0.</p>
      *

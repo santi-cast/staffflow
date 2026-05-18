@@ -43,7 +43,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E57)
 - Informes HTML interactivos para WebView Android: horas individuales (E58), tabla semanal global (E59), ausencias globales (E60), informes individuales por empleado (E61, E62) y planificación de vacaciones/asuntos propios (E64)
 - Creación de ausencias por rango de fechas en una sola llamada (E63), con detección de conflictos y opción de sobrescritura
-- Recuperación de contraseña por email: se genera una contraseña temporal de 8 caracteres y se envía al email registrado via Gmail SMTP. El usuario inicia sesión con ella y la cambia desde la aplicación (E03). La recuperación por token de un solo uso está documentada como mejora para v2.0
+- Recuperación de contraseña por email: se genera una contraseña temporal de 8 caracteres y se envía vía Gmail SMTP al email que el usuario tenga registrado en la base de datos (no al texto introducido en la pantalla, que solo sirve para identificar al usuario). Por seguridad anti-enumeración (RNF-S04), la API siempre devuelve la misma respuesta genérica exista o no el email solicitado, por lo que la pantalla no revela si la cuenta está registrada. El usuario inicia sesión con la contraseña temporal y la cambia desde la aplicación (E03). La recuperación por token de un solo uso está documentada como mejora para v2.0
 
 ---
 
