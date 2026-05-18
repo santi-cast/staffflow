@@ -2,13 +2,13 @@
 <!--
     Layout de la lista de usuarios del sistema (P28). Solo ADMIN.
 
-    Patron E - lista con 4 estados + FAB:
+    Patron E - lista con 4 estados + ExtendedFAB:
       CARGANDO: layoutSkeleton
       ERROR:    layoutError (nube + mensaje + Reintentar)
       VACIO:    layoutVacio (icono + mensaje)
       EXITO:    SwipeRefreshLayout > RecyclerView
 
-    FAB (+): navega a P29 (FormUsuarioFragment) en modo alta.
+    ExtendedFAB (+ Anadir usuario): navega a P29 (FormUsuarioFragment) en modo alta.
     Tap en fila -> P29 en modo edicion.
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -119,14 +119,15 @@
 
     </FrameLayout>
 
-    <!-- FAB: navega a P29 modo alta -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <!-- ExtendedFAB: navega a P29 modo alta -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:contentDescription="@string/usuarios_fab_desc"
-        android:src="@android:drawable/ic_input_add" />
+        android:text="@string/usuarios_fab_texto"
+        app:icon="@android:drawable/ic_input_add" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

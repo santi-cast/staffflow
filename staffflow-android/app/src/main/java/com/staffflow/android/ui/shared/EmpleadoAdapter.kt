@@ -15,6 +15,8 @@ import com.staffflow.android.domain.model.CategoriaEmpleado
  *
  * Usa ListAdapter con DiffUtil para actualizaciones eficientes.
  * Cada item muestra nombre completo, numero de empleado y categoria.
+ * El nombre lleva el lapiz de affordance (tap en la fila navega a P14
+ * detalle, donde un chip lleva a P15 edicion).
  *
  * Color del borde izquierdo segun el campo activo:
  *   activo=true  -> colorPrimary del tema (#6750A4 en Material3 predeterminado)
@@ -25,6 +27,18 @@ import com.staffflow.android.domain.model.CategoriaEmpleado
 class EmpleadoAdapter(
     private val onClick: (EmpleadoResponse) -> Unit
 ) : ListAdapter<EmpleadoResponse, EmpleadoAdapter.ViewHolder>(DiffCallback()) {
+
+    private companion object {
+        /**
+         * Lapiz (U+270E) usado como affordance de "tocar para editar".
+         * Mismo caracter que usan UsuarioAdapter y PresenciaAdapter.
+         *
+         * Nota: en empleados el tap no abre la edicion directamente; navega
+         * primero a P14 (detalle), que contiene el chip "Editar empleado"
+         * para llegar a P15 (form de edicion).
+         */
+        const val LAPIZ = "\u270E"
+    }
 
     class ViewHolder(val binding: ItemEmpleadoBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -43,6 +57,8 @@ class EmpleadoAdapter(
             append(" ")
             append(item.apellido1)
             item.apellido2?.let { append(" $it") }
+            append(" ")
+            append(LAPIZ)
         }
         holder.binding.tvNumeroEmpleado.text = item.numeroEmpleado
         holder.binding.tvCategoria.text = nombreCategoria(item.categoria)

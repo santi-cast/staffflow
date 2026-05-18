@@ -15,13 +15,24 @@ import com.staffflow.android.domain.model.Rol
  * Adapter del RecyclerView de lista de usuarios (P28).
  *
  * Cada item muestra username, email, rol legible y estado activo/inactivo.
- * El borde izquierdo indica el estado: activo (#4CAF50) / inactivo (#9E9E9E).
+ * El username lleva el lapiz de affordance (tap en la fila navega a P29
+ * en modo edicion). El borde izquierdo indica el estado: activo
+ * (#4CAF50) / inactivo (#9E9E9E).
  *
  * @param onClick Callback llamado al pulsar un item. UsuariosFragment navega a P29 edicion.
  */
 class UsuarioAdapter(
     private val onClick: (UsuarioResponse) -> Unit
 ) : ListAdapter<UsuarioResponse, UsuarioAdapter.ViewHolder>(DiffCallback()) {
+
+    private companion object {
+        /**
+         * Lapiz (U+270E) usado como affordance de "tocar para editar". Mismo
+         * caracter que usa PresenciaAdapter y el informe semanal del backend
+         * (InformeService) para indicar que la celda es editable.
+         */
+        const val LAPIZ = "\u270E"
+    }
 
     class ViewHolder(val binding: ItemUsuarioBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -35,7 +46,7 @@ class UsuarioAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
         with(holder.binding) {
-            tvUsername.text  = item.username
+            tvUsername.text  = "${item.username} $LAPIZ"
             tvEmail.text     = item.email
             tvRol.text       = rolLegible(item.rol)
             tvEstado.text    = if (item.activo) "Activo" else "Inactivo"

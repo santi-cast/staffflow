@@ -39,6 +39,16 @@ class PresenciaAdapter(
     private val onRegistrarSalidaClick: (fichajeId: Long, empleadoId: Long, tipo: TipoFichaje, horaEntrada: String?, pausaActiva: Boolean) -> Unit
 ) : ListAdapter<DetallePresenciaResponse, PresenciaAdapter.ViewHolder>(DiffCallback()) {
 
+    private companion object {
+        /**
+         * Lapiz (U+270E) usado como affordance de "tocar para editar". Mismo
+         * caracter que el informe semanal del backend (InformeService) usa
+         * en las celdas editables del HTML, manteniendo coherencia visual
+         * entre el cliente Android y el informe impreso.
+         */
+        const val LAPIZ = "\u270E"
+    }
+
     class ViewHolder(val binding: ItemPresenciaBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -82,12 +92,12 @@ class PresenciaAdapter(
                 val duracion = formatearSegundos(
                     maxOf(0L, calcularSegundos(horaEntrada, horaSalida) - pausasSeg))
                 agregarEvento(holder, "Jornada · ${tipoFichajeNombre(tipo)}",
-                    "$horaEntrada → $horaSalida", duracion, colorFichaje(tipo, completada = true)) {
+                    "$horaEntrada → $horaSalida $LAPIZ", duracion, colorFichaje(tipo, completada = true)) {
                     onFichajeClick(item.fichajeId, item.empleadoId, tipo, horaEntrada, horaSalida)
                 }
             } else if (horaEntrada != null) {
                 agregarEvento(holder, "Inicio jornada · ${tipoFichajeNombre(tipo)}",
-                    horaEntrada, "", colorFichaje(tipo, completada = false)) {
+                    "$horaEntrada $LAPIZ", "", colorFichaje(tipo, completada = false)) {
                     onFichajeClick(item.fichajeId, item.empleadoId, tipo, horaEntrada, null)
                 }
                 agregarAccion(holder, "+ Registrar salida", Color.parseColor("#FFC107")) {
@@ -96,7 +106,7 @@ class PresenciaAdapter(
             } else {
                 // Ausencia de día entero: sin horas, solo el tipo
                 agregarEvento(holder, tipoFichajeNombre(tipo),
-                    "Día completo", "", colorFichaje(tipo, completada = true)) {
+                    "Día completo $LAPIZ", "", colorFichaje(tipo, completada = true)) {
                     onFichajeClick(item.fichajeId, item.empleadoId, tipo, null, null)
                 }
             }
@@ -112,12 +122,12 @@ class PresenciaAdapter(
                 if (!activa) {
                     val duracion = formatearSegundos(calcularSegundos(pausa.horaInicio, pausa.horaFin))
                     agregarEvento(holder, "Pausa · ${tipoPausaNombre(pausa.tipoPausa)}",
-                        "${pausa.horaInicio ?: "--"} → ${pausa.horaFin}", duracion, colorPausa) {
+                        "${pausa.horaInicio ?: "--"} → ${pausa.horaFin} $LAPIZ", duracion, colorPausa) {
                         onPausaClick(pausa.id, item.empleadoId, pausa.tipoPausa ?: "", pausa.horaInicio, pausa.horaFin)
                     }
                 } else {
                     agregarEvento(holder, "Inicio pausa · ${tipoPausaNombre(pausa.tipoPausa)}",
-                        pausa.horaInicio ?: "--", "", colorPausa) {
+                        "${pausa.horaInicio ?: "--"} $LAPIZ", "", colorPausa) {
                         onPausaClick(pausa.id, item.empleadoId, pausa.tipoPausa ?: "", pausa.horaInicio, null)
                     }
                     agregarAccion(holder, "+ Registrar fin de pausa", Color.parseColor("#FFC107")) {
@@ -130,7 +140,7 @@ class PresenciaAdapter(
         // Ausencia planificada
         if (item.ausenciaId != null && item.estado == EstadoPresencia.AUSENCIA_PLANIFICADA) {
             hayEventos = true
-            agregarEvento(holder, "Ausencia planificada", "Pendiente de procesar",
+            agregarEvento(holder, "Ausencia planificada", "Pendiente de procesar $LAPIZ",
                 "", Color.parseColor("#9C27B0")) {
                 onAusenciaClick(item.ausenciaId, item.empleadoId)
             }
@@ -198,13 +208,23 @@ class PresenciaAdapter(
         else       -> Color.parseColor("#FFC107")
     }
 
+    /**
+     * Semantica de la paleta:
+     *
+     *   Verde (#4CAF50) -> jornada cerrada / sin pendientes.
+     *   Rojo  (#F44336) -> falta cerrar algo (jornada abierta, pausa abierta
+     *                      o ni siquiera empezo).
+     *
+     * El parte diario muestra siempre el dia actual, asi que cualquier
+     * jornada o pausa abierta es accion pendiente del encargado.
+     */
     private fun colorParaEstado(estado: EstadoPresencia): Int = when (estado) {
-        EstadoPresencia.JORNADA_INICIADA      -> Color.parseColor("#FFC107")
-        EstadoPresencia.EN_PAUSA              -> Color.parseColor("#FFC107")
+        EstadoPresencia.JORNADA_INICIADA      -> Color.parseColor("#F44336")
+        EstadoPresencia.EN_PAUSA              -> Color.parseColor("#F44336")
+        EstadoPresencia.SIN_JUSTIFICAR        -> Color.parseColor("#F44336")
         EstadoPresencia.JORNADA_COMPLETADA    -> Color.parseColor("#4CAF50")
         EstadoPresencia.AUSENCIA_REGISTRADA,
         EstadoPresencia.AUSENCIA_PLANIFICADA  -> Color.parseColor("#4CAF50")
-        EstadoPresencia.SIN_JUSTIFICAR        -> Color.parseColor("#F44336")
     }
 
     private fun nombreEstado(estado: EstadoPresencia): String = when (estado) {

@@ -238,7 +238,8 @@
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
-    <string name="usuarios_fab_desc">Nuevo usuario</string>
+    <string name="usuarios_fab_desc">Añadir usuario</string>
+    <string name="usuarios_fab_texto">Añadir usuario</string>
 
     <!-- P11 Mis ausencias (empleado) -->
     <string name="mis_ausencias_vacio">No hay ausencias en este periodo</string>
