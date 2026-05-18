@@ -46,7 +46,6 @@ import java.net.Socket
  *
  * Errores:
  *   401 -> mensaje inline en tilPassword.error
- *   423 -> "Demasiados intentos. Espera 30 segundos." en tilPassword.error
  *   Red  -> mensaje de sin conexion en tilPassword.error
  *
  * Decision 25: btnLogin queda deshabilitado durante la llamada de red.

@@ -14,7 +14,6 @@
 
     Errores:
       401 -> tilPassword.error = "Credenciales incorrectas"
-      423 -> tilPassword.error = "Demasiados intentos. Espera 30 segundos."
       Otros -> tilPassword.error = mensaje del backend
 -->
 <ScrollView

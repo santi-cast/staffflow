@@ -276,7 +276,7 @@ public class GlobalExceptionHandler {
     // ─── 423 LOCKED ──────────────────────────────────────────────────────────
 
     /**
-     * Maneja el bloqueo temporal del PIN del terminal (423).
+     * Maneja el bloqueo del PIN del terminal (423).
      *
      * <p>HTTP 423 Locked se usa cuando un dispositivo ha superado
      * los 5 intentos fallidos de PIN y está bloqueado hasta desbloqueo manual (E54),
