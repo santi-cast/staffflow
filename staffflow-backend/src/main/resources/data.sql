@@ -1,14 +1,58 @@
 -- =============================================================================
 -- StaffFlow — Datos iniciales para perfil dev (H2 en memoria)
--- Versión: v4 (22/04/2026)
--- Cambios respecto a v3:
---   - fecha_alta de todos los empleados movida a 2026-03-30 para probar
---     el prorrateo de saldos desde cero.
---   - Fichajes y pausas de prueba: 30/03 al 21/04 (22/04 sin fichajes).
---   - Festivos nacionales España 2026 y locales Madrid añadidos en
---     planificacion_ausencias (empleado_id=NULL = festivo global).
---   - Festivos 02/04 y 03/04 (Semana Santa) incluidos con fichaje.
---   - Redondeo asuntos propios cambiado a Math.round en SaldoService.
+-- Versión: v5 (18/05/2026)
+-- Cambios respecto a v4:
+--   - Rango de datos extendido: 30/03 → 17/05/2026 (antes 30/03 → 21/04).
+--   - "Hoy" simulado: lun 18/05/2026 sin fichajes (antes 22/04). Esto deja
+--     el día abierto para fichar en vivo durante la grabación de la demo.
+--   - Añadidos 17 días laborables nuevos por empleado (22/04 → 15/05) con
+--     mezcla de NORMAL, BAJA_MEDICA, ASUNTO_PROPIO, PERMISO_RETRIBUIDO,
+--     VACACIONES, DIA_LIBRE y horas extra que recuperan parte del saldo
+--     negativo acumulado.
+--   - Añadidos 24 fichajes DIA_LIBRE de fin de semana (sáb+dom × 3 empleados
+--     × 4 fines de semana del rango nuevo + 16/05 cerrado): simulan el
+--     descanso semanal que ProcesoCierreDiario crea cada noche del viernes
+--     y del sábado.
+--   - Festivos 01/05 (Día del Trabajo, nacional) y 15/05 (San Isidro, local
+--     Madrid) procesados: 6 fichajes nuevos + procesado=TRUE en las dos
+--     planificaciones existentes.
+--   - Planificación nueva Laura 04/05 DIA_LIBRE (puente empresa, procesado=TRUE)
+--     + fichaje correspondiente.
+--   - Planificación existente Carlos 08/05 ASUNTO_PROPIO marcada como
+--     procesado=TRUE + fichaje correspondiente.
+--   - Saldos recalculados a mano con calculado_hasta_fecha='2026-05-17'
+--     siguiendo SaldoService.recalcularParaProceso().
+--   - FIX: 20 fichajes históricos del rango 30/03→21/04 corregidos para
+--     reflejar la política real del scheduler. ProcesoCierreDiario pone
+--     siempre usuario_id=5 (terminal_service) en los fichajes que genera
+--     automáticamente (festivos globales, ausencias, vacaciones procesadas,
+--     baja médica procesada, etc.). Antes estos fichajes tenían el
+--     usuario_id del humano que los planificó, lo que es semánticamente
+--     incorrecto (ese usuario_id solo debe vivir en planificacion_ausencias).
+--     El bug visualmente no se nota porque InformeService filtra los
+--     "candidatos manuales" comprobando si existe planificación previa
+--     (existsByEmpleadoIdAndFecha), pero el dato en BD ahora es coherente.
+-- =============================================================================
+-- POLÍTICA DE usuario_id EN FICHAJES (importante para entender los datos)
+-- ---------------------------------------------------------------------------
+-- usuario_id en `fichajes` identifica al AUTOR TÉCNICO del registro:
+--   - El propio empleado (3 Ana, 4 Carlos, 2 Laura) para fichajes NORMAL
+--     hechos por PIN en el terminal.
+--   - 1 (admin) o 2 (encargado01) para fichajes creados/corregidos manualmente
+--     desde la app de gestión, con observaciones obligatorias.
+--   - 5 (terminal_service) para TODO fichaje generado por ProcesoCierreDiario:
+--       · AUSENCIA_INJUSTIFICADA del cierre nocturno de un día laborable sin
+--         fichaje (Tarea A).
+--       · DIA_LIBRE de sábado/domingo creado por Tarea A o Tarea B.
+--       · Cualquier fichaje materializado desde planificacion_ausencias por
+--         Tarea B (FESTIVO_*, VACACIONES, ASUNTO_PROPIO, PERMISO_RETRIBUIDO,
+--         BAJA_MEDICA, DIA_LIBRE_COMPENSATORIO, DIA_LIBRE planificado).
+--
+-- El autor humano de la decisión (quien planificó el festivo o las vacaciones)
+-- vive en `planificacion_ausencias.usuario_id`, NO en `fichajes.usuario_id`.
+-- Esta separación permite que InformeService detecte intervenciones manuales
+-- reales sin confundirlas con planificaciones procesadas. Detalle técnico
+-- completo en B7 §7.1 (Tareas A/B/C) y B12 Anexo 2 (DDL).
 -- =============================================================================
 -- Se ejecuta automáticamente al arrancar con perfil 'dev' gracias a:
 --   spring.jpa.defer-datasource-initialization: true
@@ -25,10 +69,10 @@
 --   emp02        → EMPLEADO    (PIN terminal: 2222)
 --   terminal_service → solo para auditoría interna, nunca para login
 --
--- Fichajes y pausas: Ana García (emp01, empleadoId=1) y Carlos López
--- (emp02, empleadoId=2), del 30/03 al 21/04/2026.
--- Laura Fernández (encargado01, empleadoId=3) sin fichajes.
--- Hoy (22/04) sin fichajes para probar estado "en curso".
+-- Fichajes y pausas: Ana García (emp01, empleadoId=1), Carlos López
+-- (emp02, empleadoId=2) y Laura Fernández (encargado01, empleadoId=3),
+-- del 30/03 al 17/05/2026.
+-- Hoy (18/05) sin fichajes para fichar en vivo durante la grabación.
 --
 -- Saldos: fecha_alta=30/03 → prorrateo automático en crearSaldoInicial():
 --   - Vacaciones: ceil(22 × 277/365) = 17 días
@@ -178,7 +222,7 @@ INSERT INTO empleados (
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-03-30', 'DIA_LIBRE_COMPENSATORIO',
-    NULL, NULL, 0, 0, 2, 'Dia libre compensatorio por acuerdo con encargado.', '2026-03-30 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Dia libre compensatorio por acuerdo con encargado.', '2026-03-30 00:01:00');
 
 -- 31/03 mar — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -198,13 +242,13 @@ VALUES (1, '2026-04-01', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-02', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 2, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
 
 -- 03/04 vie — FESTIVO_NACIONAL (Viernes Santo)
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-03', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 2, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
 
 -- 06/04 lun — NORMAL, MANUAL: empleada olvidó fichar entrada, corregido por encargado
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -217,13 +261,13 @@ VALUES (1, '2026-04-06', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-07', 'BAJA_MEDICA',
-    NULL, NULL, 0, 480, 2, 'Baja medica tramitada por encargado.', '2026-04-07 09:00:00');
+    NULL, NULL, 0, 480, 5, 'Baja medica tramitada por encargado.', '2026-04-07 09:00:00');
 
 -- 08/04 mié — BAJA_MEDICA
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-08', 'BAJA_MEDICA',
-    NULL, NULL, 0, 480, 2, 'Continuacion baja medica.', '2026-04-08 09:00:00');
+    NULL, NULL, 0, 480, 5, 'Continuacion baja medica.', '2026-04-08 09:00:00');
 
 -- 09/04 jue — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -257,7 +301,7 @@ VALUES (1, '2026-04-14', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-15', 'PERMISO_RETRIBUIDO',
-    NULL, NULL, 0, 480, 2, 'Permiso retribuido por gestion personal. Aprobado por encargado.', '2026-04-15 00:01:00');
+    NULL, NULL, 0, 480, 5, 'Permiso retribuido por gestion personal. Aprobado por encargado.', '2026-04-15 00:01:00');
 
 -- 16/04 jue — NORMAL (pausa con intervención manual)
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -277,13 +321,139 @@ VALUES (1, '2026-04-17', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-20', 'VACACIONES',
-    NULL, NULL, 0, 0, 2, NULL, '2026-04-20 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-20 00:01:00');
 
 -- 21/04 mar — VACACIONES
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-04-21', 'VACACIONES',
-    NULL, NULL, 0, 0, 2, NULL, '2026-04-21 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-21 00:01:00');
+
+-- ===== ANA GARCÍA — bloque 22/04 → 17/05 (v5) =====
+-- Estrategia: recuperar saldo negativo (-8.25h) con varias jornadas extra.
+-- Cierre estimado al 17/05: -3.25h (suma de +300 min extras sobre 13 NORMAL).
+
+-- 22/04 mié — NORMAL con horas extra (08:00-18:00, +90 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-22', 'NORMAL',
+    '2026-04-22 08:00:00', '2026-04-22 18:00:00',
+    30, 570, 3, NULL, '2026-04-22 18:00:00');
+
+-- 23/04 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-23', 'NORMAL',
+    '2026-04-23 09:00:00', '2026-04-23 17:30:00',
+    30, 480, 3, NULL, '2026-04-23 17:30:00');
+
+-- 24/04 vie — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-24', 'NORMAL',
+    '2026-04-24 09:00:00', '2026-04-24 17:30:00',
+    30, 480, 3, NULL, '2026-04-24 17:30:00');
+
+-- 27/04 lun — NORMAL con horas extra (09:00-18:00, +30 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-27', 'NORMAL',
+    '2026-04-27 09:00:00', '2026-04-27 18:00:00',
+    30, 510, 3, NULL, '2026-04-27 18:00:00');
+
+-- 28/04 mar — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-28', 'NORMAL',
+    '2026-04-28 09:00:00', '2026-04-28 17:30:00',
+    30, 480, 3, NULL, '2026-04-28 17:30:00');
+
+-- 29/04 mié — ASUNTO_PROPIO
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-29', 'ASUNTO_PROPIO',
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-29 00:01:00');
+
+-- 30/04 jue — NORMAL con horas extra (08:30-18:00, +90 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-30', 'NORMAL',
+    '2026-04-30 08:30:00', '2026-04-30 18:00:00',
+    30, 540, 3, NULL, '2026-04-30 18:00:00');
+
+-- 01/05 vie — FESTIVO_NACIONAL (Día del Trabajo)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-01', 'FESTIVO_NACIONAL',
+    NULL, NULL, 0, 0, 5, 'Dia del Trabajo — festivo nacional.', '2026-04-30 23:55:00');
+
+-- 04/05 lun — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-04', 'NORMAL',
+    '2026-05-04 09:00:00', '2026-05-04 17:30:00',
+    30, 480, 3, NULL, '2026-05-04 17:30:00');
+
+-- 05/05 mar — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-05', 'NORMAL',
+    '2026-05-05 09:00:00', '2026-05-05 17:30:00',
+    30, 480, 3, NULL, '2026-05-05 17:30:00');
+
+-- 06/05 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-06', 'NORMAL',
+    '2026-05-06 09:00:00', '2026-05-06 17:30:00',
+    30, 480, 3, NULL, '2026-05-06 17:30:00');
+
+-- 07/05 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-07', 'NORMAL',
+    '2026-05-07 09:00:00', '2026-05-07 17:30:00',
+    30, 480, 3, NULL, '2026-05-07 17:30:00');
+
+-- 08/05 vie — NORMAL con horas extra (09:00-18:00, +30 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-08', 'NORMAL',
+    '2026-05-08 09:00:00', '2026-05-08 18:00:00',
+    30, 510, 3, NULL, '2026-05-08 18:00:00');
+
+-- 11/05 lun — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-11', 'NORMAL',
+    '2026-05-11 09:00:00', '2026-05-11 17:30:00',
+    30, 480, 3, NULL, '2026-05-11 17:30:00');
+
+-- 12/05 mar — PERMISO_RETRIBUIDO (gestión personal)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-12', 'PERMISO_RETRIBUIDO',
+    NULL, NULL, 0, 480, 5, 'Permiso retribuido por gestion personal.', '2026-05-12 00:01:00');
+
+-- 13/05 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-13', 'NORMAL',
+    '2026-05-13 09:00:00', '2026-05-13 17:30:00',
+    30, 480, 3, NULL, '2026-05-13 17:30:00');
+
+-- 14/05 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-14', 'NORMAL',
+    '2026-05-14 09:00:00', '2026-05-14 17:30:00',
+    30, 480, 3, NULL, '2026-05-14 17:30:00');
+
+-- 15/05 vie — FESTIVO_LOCAL (San Isidro, Madrid)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-15', 'FESTIVO_LOCAL',
+    NULL, NULL, 0, 0, 5, 'San Isidro — festivo local Madrid.', '2026-05-14 23:55:00');
 
 
 -- ===== CARLOS LÓPEZ (empleado_id=2) =====
@@ -312,13 +482,13 @@ VALUES (2, '2026-04-01', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (2, '2026-04-02', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 2, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
 
 -- 03/04 vie — FESTIVO_NACIONAL (Viernes Santo)
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (2, '2026-04-03', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 2, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
 
 -- 06/04 lun — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -331,7 +501,7 @@ VALUES (2, '2026-04-06', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (2, '2026-04-07', 'ASUNTO_PROPIO',
-    NULL, NULL, 0, 0, 2, NULL, '2026-04-07 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-07 00:01:00');
 
 -- 08/04 mié — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -379,7 +549,7 @@ VALUES (2, '2026-04-15', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (2, '2026-04-16', 'PERMISO_RETRIBUIDO',
-    NULL, NULL, 0, 480, 2, 'Permiso retribuido por cita medica con especialista.', '2026-04-16 00:01:00');
+    NULL, NULL, 0, 480, 5, 'Permiso retribuido por cita medica con especialista.', '2026-04-16 00:01:00');
 
 -- 17/04 vie — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -401,6 +571,129 @@ INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
 VALUES (2, '2026-04-21', 'NORMAL',
     '2026-04-21 08:00:00', '2026-04-21 16:30:00',
     30, 480, 2, 'Salida ajustada por encargado.', '2026-04-21 16:45:00');
+
+-- ===== CARLOS LÓPEZ — bloque 22/04 → 17/05 (v5) =====
+-- Estrategia: recuperar saldo negativo (-8.25h) con +4h extra antes de
+-- las vacaciones. Bloque de vacaciones 11-14/05 (lun-jue) + festivo local
+-- 15/05 = semana entera fuera. Cierre estimado al 17/05: -4.25h.
+
+-- 22/04 mié — NORMAL con horas extra (08:00-17:00, +60 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-22', 'NORMAL',
+    '2026-04-22 08:00:00', '2026-04-22 17:00:00',
+    30, 510, 4, NULL, '2026-04-22 17:00:00');
+
+-- 23/04 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-23', 'NORMAL',
+    '2026-04-23 08:00:00', '2026-04-23 16:30:00',
+    30, 480, 4, NULL, '2026-04-23 16:30:00');
+
+-- 24/04 vie — NORMAL con horas extra (08:00-18:00, +90 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-24', 'NORMAL',
+    '2026-04-24 08:00:00', '2026-04-24 18:00:00',
+    30, 570, 4, NULL, '2026-04-24 18:00:00');
+
+-- 27/04 lun — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-27', 'NORMAL',
+    '2026-04-27 08:00:00', '2026-04-27 16:30:00',
+    30, 480, 4, NULL, '2026-04-27 16:30:00');
+
+-- 28/04 mar — BAJA_MEDICA (un día)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-28', 'BAJA_MEDICA',
+    NULL, NULL, 0, 480, 5, 'Baja medica de un dia. Parte tramitado por encargado.', '2026-04-28 09:00:00');
+
+-- 29/04 mié — NORMAL (reincorporación)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-29', 'NORMAL',
+    '2026-04-29 08:00:00', '2026-04-29 16:30:00',
+    30, 480, 4, NULL, '2026-04-29 16:30:00');
+
+-- 30/04 jue — NORMAL con horas extra (08:00-17:00, +60 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-30', 'NORMAL',
+    '2026-04-30 08:00:00', '2026-04-30 17:00:00',
+    30, 510, 4, NULL, '2026-04-30 17:00:00');
+
+-- 01/05 vie — FESTIVO_NACIONAL (Día del Trabajo)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-01', 'FESTIVO_NACIONAL',
+    NULL, NULL, 0, 0, 5, 'Dia del Trabajo — festivo nacional.', '2026-04-30 23:55:00');
+
+-- 04/05 lun — NORMAL, olvido de salida corregido por encargado
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-04', 'NORMAL',
+    '2026-05-04 08:00:00', '2026-05-04 16:30:00',
+    30, 480, 2, 'Empleado olvido fichar salida. Corregido por encargado.', '2026-05-04 17:15:00');
+
+-- 05/05 mar — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-05', 'NORMAL',
+    '2026-05-05 08:00:00', '2026-05-05 16:30:00',
+    30, 480, 4, NULL, '2026-05-05 16:30:00');
+
+-- 06/05 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-06', 'NORMAL',
+    '2026-05-06 08:00:00', '2026-05-06 16:30:00',
+    30, 480, 4, NULL, '2026-05-06 16:30:00');
+
+-- 07/05 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-07', 'NORMAL',
+    '2026-05-07 08:00:00', '2026-05-07 16:30:00',
+    30, 480, 4, NULL, '2026-05-07 16:30:00');
+
+-- 08/05 vie — ASUNTO_PROPIO (planificación previa procesada)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-08', 'ASUNTO_PROPIO',
+    NULL, NULL, 0, 0, 5, NULL, '2026-05-08 00:01:00');
+
+-- 11/05 lun — VACACIONES (1/4 del bloque)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-11', 'VACACIONES',
+    NULL, NULL, 0, 0, 5, 'Vacaciones — bloque 11-14/05.', '2026-05-11 00:01:00');
+
+-- 12/05 mar — VACACIONES (2/4)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-12', 'VACACIONES',
+    NULL, NULL, 0, 0, 5, 'Vacaciones — bloque 11-14/05.', '2026-05-12 00:01:00');
+
+-- 13/05 mié — VACACIONES (3/4)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-13', 'VACACIONES',
+    NULL, NULL, 0, 0, 5, 'Vacaciones — bloque 11-14/05.', '2026-05-13 00:01:00');
+
+-- 14/05 jue — VACACIONES (4/4)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-14', 'VACACIONES',
+    NULL, NULL, 0, 0, 5, 'Vacaciones — bloque 11-14/05.', '2026-05-14 00:01:00');
+
+-- 15/05 vie — FESTIVO_LOCAL (San Isidro, Madrid)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-15', 'FESTIVO_LOCAL',
+    NULL, NULL, 0, 0, 5, 'San Isidro — festivo local Madrid.', '2026-05-14 23:55:00');
 
 
 -- ===== LAURA FERNÁNDEZ (empleado_id=3) =====
@@ -434,13 +727,13 @@ VALUES (3, '2026-04-01', 'AUSENCIA_INJUSTIFICADA',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-02', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 1, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Jueves Santo — festivo nacional.', '2026-04-02 00:01:00');
 
 -- 03/04 vie — FESTIVO_NACIONAL (Viernes Santo)
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-03', 'FESTIVO_NACIONAL',
-    NULL, NULL, 0, 0, 1, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Viernes Santo — festivo nacional.', '2026-04-03 00:01:00');
 
 -- 06/04 lun — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -453,7 +746,7 @@ VALUES (3, '2026-04-06', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-07', 'BAJA_MEDICA',
-    NULL, NULL, 0, 480, 1, 'Baja medica tramitada por admin.', '2026-04-07 09:00:00');
+    NULL, NULL, 0, 480, 5, 'Baja medica tramitada por admin.', '2026-04-07 09:00:00');
 
 -- 08/04 mié — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -480,19 +773,19 @@ VALUES (3, '2026-04-10', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-13', 'VACACIONES',
-    NULL, NULL, 0, 0, 1, NULL, '2026-04-13 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-13 00:01:00');
 
 -- 14/04 mar — VACACIONES
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-14', 'VACACIONES',
-    NULL, NULL, 0, 0, 1, NULL, '2026-04-14 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-14 00:01:00');
 
 -- 15/04 mié — PERMISO_RETRIBUIDO
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-15', 'PERMISO_RETRIBUIDO',
-    NULL, NULL, 0, 480, 1, 'Permiso retribuido por asunto familiar.', '2026-04-15 00:01:00');
+    NULL, NULL, 0, 480, 5, 'Permiso retribuido por asunto familiar.', '2026-04-15 00:01:00');
 
 -- 16/04 jue — NORMAL con horas extra (08:00-18:00, dos pausas, +75 min saldo)
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -505,13 +798,13 @@ VALUES (3, '2026-04-16', 'NORMAL',
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-17', 'DIA_LIBRE_COMPENSATORIO',
-    NULL, NULL, 0, 0, 1, 'Dia libre compensatorio por horas extra del 16/04.', '2026-04-17 00:01:00');
+    NULL, NULL, 0, 0, 5, 'Dia libre compensatorio por horas extra del 16/04.', '2026-04-17 00:01:00');
 
 -- 20/04 lun — ASUNTO_PROPIO
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
     total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
 VALUES (3, '2026-04-20', 'ASUNTO_PROPIO',
-    NULL, NULL, 0, 0, 1, NULL, '2026-04-20 00:01:00');
+    NULL, NULL, 0, 0, 5, NULL, '2026-04-20 00:01:00');
 
 -- 21/04 mar — NORMAL
 INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
@@ -519,6 +812,337 @@ INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
 VALUES (3, '2026-04-21', 'NORMAL',
     '2026-04-21 09:00:00', '2026-04-21 17:30:00',
     30, 480, 2, NULL, '2026-04-21 17:30:00');
+
+-- ===== LAURA FERNÁNDEZ — bloque 22/04 → 17/05 (v5) =====
+-- Estrategia: recuperar saldo negativo (-14h) con muchas horas extra.
+-- Incluye un caso particular: día 24/04 con 3 pausas (DESCANSO+COMIDA+DESCANSO)
+-- y un día 04/05 como DIA_LIBRE planificado por encargada (puente de empresa).
+-- Cierre estimado al 17/05: -3h (suma +660 min sobre saldo previo).
+
+-- 22/04 mié — NORMAL con horas extra (08:30-19:00, +120 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-22', 'NORMAL',
+    '2026-04-22 08:30:00', '2026-04-22 19:00:00',
+    30, 600, 2, NULL, '2026-04-22 19:00:00');
+
+-- 23/04 jue — NORMAL con horas extra (08:30-19:00, +120 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-23', 'NORMAL',
+    '2026-04-23 08:30:00', '2026-04-23 19:00:00',
+    30, 600, 2, NULL, '2026-04-23 19:00:00');
+
+-- 24/04 vie — NORMAL (09:00-18:00 = 540 totales, 3 pausas: 15+30+15=60min, 480 efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-24', 'NORMAL',
+    '2026-04-24 09:00:00', '2026-04-24 18:00:00',
+    60, 480, 2, NULL, '2026-04-24 18:00:00');
+
+-- 27/04 lun — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-27', 'NORMAL',
+    '2026-04-27 09:00:00', '2026-04-27 17:30:00',
+    30, 480, 2, NULL, '2026-04-27 17:30:00');
+
+-- 28/04 mar — NORMAL con horas extra (08:30-18:30, +90 min)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-28', 'NORMAL',
+    '2026-04-28 08:30:00', '2026-04-28 18:30:00',
+    30, 570, 2, NULL, '2026-04-28 18:30:00');
+
+-- 29/04 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-29', 'NORMAL',
+    '2026-04-29 09:00:00', '2026-04-29 17:30:00',
+    30, 480, 2, NULL, '2026-04-29 17:30:00');
+
+-- 30/04 jue — NORMAL (09:00-18:00 = 540 totales, +30 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-30', 'NORMAL',
+    '2026-04-30 09:00:00', '2026-04-30 18:00:00',
+    30, 510, 2, NULL, '2026-04-30 18:00:00');
+
+-- 01/05 vie — FESTIVO_NACIONAL (Día del Trabajo)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-01', 'FESTIVO_NACIONAL',
+    NULL, NULL, 0, 0, 5, 'Dia del Trabajo — festivo nacional.', '2026-04-30 23:55:00');
+
+-- 04/05 lun — DIA_LIBRE (puente empresa, planificado por encargada)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-04', 'DIA_LIBRE',
+    NULL, NULL, 0, 0, 5, 'Dia libre por puente de empresa. Planificado por encargada.', '2026-05-04 00:01:00');
+
+-- 05/05 mar — NORMAL (09:00-18:00 = 540 totales, +30 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-05', 'NORMAL',
+    '2026-05-05 09:00:00', '2026-05-05 18:00:00',
+    30, 510, 2, NULL, '2026-05-05 18:00:00');
+
+-- 06/05 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-06', 'NORMAL',
+    '2026-05-06 09:00:00', '2026-05-06 17:30:00',
+    30, 480, 2, NULL, '2026-05-06 17:30:00');
+
+-- 07/05 jue — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-07', 'NORMAL',
+    '2026-05-07 09:00:00', '2026-05-07 17:30:00',
+    30, 480, 2, NULL, '2026-05-07 17:30:00');
+
+-- 08/05 vie — NORMAL (09:00-18:30 = 570 totales, +60 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-08', 'NORMAL',
+    '2026-05-08 09:00:00', '2026-05-08 18:30:00',
+    30, 540, 2, NULL, '2026-05-08 18:30:00');
+
+-- 11/05 lun — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-11', 'NORMAL',
+    '2026-05-11 09:00:00', '2026-05-11 17:30:00',
+    30, 480, 2, NULL, '2026-05-11 17:30:00');
+
+-- 12/05 mar — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-12', 'NORMAL',
+    '2026-05-12 09:00:00', '2026-05-12 17:30:00',
+    30, 480, 2, NULL, '2026-05-12 17:30:00');
+
+-- 13/05 mié — NORMAL
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-13', 'NORMAL',
+    '2026-05-13 09:00:00', '2026-05-13 17:30:00',
+    30, 480, 2, NULL, '2026-05-13 17:30:00');
+
+-- 14/05 jue — NORMAL (09:00-18:00 = 540 totales, +30 min efectivos)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-14', 'NORMAL',
+    '2026-05-14 09:00:00', '2026-05-14 18:00:00',
+    30, 510, 2, NULL, '2026-05-14 18:00:00');
+
+-- 15/05 vie — FESTIVO_LOCAL (San Isidro, Madrid)
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-15', 'FESTIVO_LOCAL',
+    NULL, NULL, 0, 0, 5, 'San Isidro — festivo local Madrid.', '2026-05-14 23:55:00');
+
+-- ===== DIA_LIBRE DE FIN DE SEMANA (cierre nocturno preventivo) =====
+-- Generados por ProcesoCierreDiario Tarea B cada viernes/sábado a las 23:55.
+-- Cubre todo el rango 30/03 → 17/05: 7 fines de semana = 14 días × 3 empleados
+-- = 42 fichajes (incluye también los 6 días del rango histórico 04-05/04,
+-- 11-12/04, 18-19/04 que el data.sql v4 había dejado sin DIA_LIBRE).
+
+-- Sáb 04/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-04', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-03 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-04', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-03 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-04', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-03 23:55:00');
+
+-- Dom 05/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-05', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-04 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-05', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-04 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-05', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-04 23:55:00');
+
+-- Sáb 11/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-11', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-10 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-11', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-10 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-11', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-10 23:55:00');
+
+-- Dom 12/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-12', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-11 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-12', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-11 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-12', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-11 23:55:00');
+
+-- Sáb 18/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-18', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-17 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-18', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-17 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-18', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-17 23:55:00');
+
+-- Dom 19/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-19', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-18 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-19', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-18 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-19', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-18 23:55:00');
+
+-- Sáb 25/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-25', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-24 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-25', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-24 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-25', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-04-24 23:55:00');
+
+-- Dom 26/04
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-26', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-25 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-26', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-25 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-26', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-04-25 23:55:00');
+
+-- Sáb 02/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-02', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-01 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-02', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-01 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-02', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-01 23:55:00');
+
+-- Dom 03/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-03', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-02 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-03', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-02 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-03', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-02 23:55:00');
+
+-- Sáb 09/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-09', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-08 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-09', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-08 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-09', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-08 23:55:00');
+
+-- Dom 10/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-10', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-09 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-10', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-09 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-10', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-09 23:55:00');
+
+-- Sáb 16/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-16', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-15 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-16', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-15 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-16', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SATURDAY)', '2026-05-15 23:55:00');
+
+-- Dom 17/05
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-17', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-16 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-17', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-16 23:55:00');
+INSERT INTO fichajes (empleado_id, fecha, tipo, hora_entrada, hora_salida,
+    total_pausas_minutos, jornada_efectiva_minutos, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-17', 'DIA_LIBRE', NULL, NULL, 0, 0, 5,
+    'Dia libre generado automaticamente por ProcesoCierreDiario (SUNDAY)', '2026-05-16 23:55:00');
 
 
 -- -----------------------------------------------------------------------------
@@ -586,6 +1210,92 @@ INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
 VALUES (1, '2026-04-17',
     '2026-04-17 13:30:00', '2026-04-17 14:00:00', 30,
     'COMIDA', 3, NULL, '2026-04-17 14:00:00');
+
+-- Bloque 22/04 → 14/05 — 1 COMIDA por dia NORMAL
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-22',
+    '2026-04-22 13:30:00', '2026-04-22 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-04-22 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-23',
+    '2026-04-23 13:30:00', '2026-04-23 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-04-23 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-24',
+    '2026-04-24 13:30:00', '2026-04-24 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-04-24 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-27',
+    '2026-04-27 13:30:00', '2026-04-27 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-04-27 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-28',
+    '2026-04-28 13:30:00', '2026-04-28 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-04-28 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-04-30',
+    '2026-04-30 13:00:00', '2026-04-30 13:30:00', 30,
+    'COMIDA', 3, NULL, '2026-04-30 13:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-04',
+    '2026-05-04 13:30:00', '2026-05-04 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-04 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-05',
+    '2026-05-05 13:30:00', '2026-05-05 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-05 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-06',
+    '2026-05-06 13:30:00', '2026-05-06 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-06 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-07',
+    '2026-05-07 13:30:00', '2026-05-07 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-07 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-08',
+    '2026-05-08 13:30:00', '2026-05-08 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-08 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-11',
+    '2026-05-11 13:30:00', '2026-05-11 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-11 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-13',
+    '2026-05-13 13:30:00', '2026-05-13 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-13 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (1, '2026-05-14',
+    '2026-05-14 13:30:00', '2026-05-14 14:00:00', 30,
+    'COMIDA', 3, NULL, '2026-05-14 14:00:00');
 
 
 -- -----------------------------------------------------------------------------
@@ -671,6 +1381,69 @@ VALUES (2, '2026-04-21',
     '2026-04-21 14:00:00', '2026-04-21 14:30:00', 30,
     'COMIDA', 4, NULL, '2026-04-21 14:30:00');
 
+-- Bloque 22/04 → 14/05 — 1 COMIDA por dia NORMAL
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-22',
+    '2026-04-22 14:00:00', '2026-04-22 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-22 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-23',
+    '2026-04-23 14:00:00', '2026-04-23 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-23 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-24',
+    '2026-04-24 14:00:00', '2026-04-24 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-24 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-27',
+    '2026-04-27 14:00:00', '2026-04-27 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-27 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-29',
+    '2026-04-29 14:00:00', '2026-04-29 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-29 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-04-30',
+    '2026-04-30 14:00:00', '2026-04-30 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-04-30 14:30:00');
+
+-- 04/05 — pausa con hora_fin corregida por encargado (mismo dia que olvido de salida)
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-04',
+    '2026-05-04 14:00:00', '2026-05-04 14:30:00', 30,
+    'COMIDA', 2, 'Hora de fin de pausa corregida por encargado.', '2026-05-04 17:15:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-05',
+    '2026-05-05 14:00:00', '2026-05-05 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-05-05 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-06',
+    '2026-05-06 14:00:00', '2026-05-06 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-05-06 14:30:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (2, '2026-05-07',
+    '2026-05-07 14:00:00', '2026-05-07 14:30:00', 30,
+    'COMIDA', 4, NULL, '2026-05-07 14:30:00');
+
 
 -- -----------------------------------------------------------------------------
 -- 7. PAUSAS DE PRUEBA — LAURA FERNÁNDEZ (empleado_id=3)
@@ -730,6 +1503,111 @@ INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
 VALUES (3, '2026-04-21',
     '2026-04-21 13:30:00', '2026-04-21 14:00:00', 30,
     'COMIDA', 2, NULL, '2026-04-21 14:00:00');
+
+-- Bloque 22/04 → 14/05
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-22',
+    '2026-04-22 13:30:00', '2026-04-22 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-22 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-23',
+    '2026-04-23 13:30:00', '2026-04-23 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-23 14:00:00');
+
+-- 24/04 — tres pausas: DESCANSO + COMIDA + DESCANSO (caso especial)
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-24',
+    '2026-04-24 10:30:00', '2026-04-24 10:45:00', 15,
+    'DESCANSO', 2, NULL, '2026-04-24 10:45:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-24',
+    '2026-04-24 13:30:00', '2026-04-24 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-24 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-24',
+    '2026-04-24 16:30:00', '2026-04-24 16:45:00', 15,
+    'DESCANSO', 2, NULL, '2026-04-24 16:45:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-27',
+    '2026-04-27 13:30:00', '2026-04-27 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-27 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-28',
+    '2026-04-28 13:30:00', '2026-04-28 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-28 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-29',
+    '2026-04-29 13:30:00', '2026-04-29 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-29 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-04-30',
+    '2026-04-30 13:30:00', '2026-04-30 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-04-30 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-05',
+    '2026-05-05 13:30:00', '2026-05-05 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-05 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-06',
+    '2026-05-06 13:30:00', '2026-05-06 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-06 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-07',
+    '2026-05-07 13:30:00', '2026-05-07 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-07 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-08',
+    '2026-05-08 13:30:00', '2026-05-08 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-08 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-11',
+    '2026-05-11 13:30:00', '2026-05-11 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-11 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-12',
+    '2026-05-12 13:30:00', '2026-05-12 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-12 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-13',
+    '2026-05-13 13:30:00', '2026-05-13 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-13 14:00:00');
+
+INSERT INTO pausas (empleado_id, fecha, hora_inicio, hora_fin, duracion_minutos,
+    tipo_pausa, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-14',
+    '2026-05-14 13:30:00', '2026-05-14 14:00:00', 30,
+    'COMIDA', 2, NULL, '2026-05-14 14:00:00');
 
 
 -- -----------------------------------------------------------------------------
@@ -854,16 +1732,16 @@ VALUES (3, '2026-04-20', 'ASUNTO_PROPIO', TRUE, 1, NULL, '2026-04-18 09:00:00');
 
 -- ── FESTIVOS FUTUROS (procesado=FALSE) ────────────────────────────────────
 
--- 01/05 Día del Trabajo (nacional)
+-- 01/05 Día del Trabajo (nacional) — procesado en cierre del 30/04
 INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado,
     usuario_id, observaciones, fecha_creacion)
-VALUES (NULL, '2026-05-01', 'FESTIVO_NACIONAL', FALSE,
+VALUES (NULL, '2026-05-01', 'FESTIVO_NACIONAL', TRUE,
     1, 'Día del Trabajo — festivo nacional.', '2026-01-10 09:00:00');
 
--- 15/05 San Isidro (local Madrid)
+-- 15/05 San Isidro (local Madrid) — procesado en cierre del 14/05
 INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado,
     usuario_id, observaciones, fecha_creacion)
-VALUES (NULL, '2026-05-15', 'FESTIVO_LOCAL', FALSE,
+VALUES (NULL, '2026-05-15', 'FESTIVO_LOCAL', TRUE,
     1, 'San Isidro — festivo local Madrid.', '2026-01-10 09:00:00');
 
 -- 12/10 Fiesta Nacional de España
@@ -900,29 +1778,46 @@ VALUES (NULL, '2026-12-25', 'FESTIVO_NACIONAL', FALSE,
 -- 9. SALDOS ANUALES 2026
 --
 -- Calculados a mano siguiendo recalcularParaProceso() sobre los fichajes
--- de la sección 4. calculado_hasta_fecha = 21/04/2026 (último fichaje).
+-- de la sección 4. calculado_hasta_fecha = 17/05/2026 (último día cerrado
+-- por el scheduler nocturno simulado antes del "hoy" 18/05).
 --
 -- Prorrateo (fecha_alta=30/03, diasRestantes=277, diasAnio=365):
 --   Vacaciones: ceil(22×277/365) = 17
 --   Asuntos propios: round(3×277/365) = 2
 --
+-- Reglas de SaldoService.recalcularParaProceso() aplicadas:
+--   NORMAL: dias_trab+1, saldo += (efectivos - 480 jornadaDiaria).
+--   FESTIVO_NACIONAL / FESTIVO_LOCAL / DIA_LIBRE: totalmente neutro.
+--   BAJA_MEDICA: dias_trab+1, dias_baja+1, saldo neutro.
+--   PERMISO_RETRIBUIDO: dias_trab+1, dias_permiso+1, saldo neutro.
+--   VACACIONES: vac_consum+1, saldo neutro.
+--   ASUNTO_PROPIO: ap_consum+1, saldo neutro.
+--   DIA_LIBRE_COMPENSATORIO: saldo -= 480 (consume horas acumuladas).
+--   AUSENCIA_INJUSTIFICADA: dias_aus_inj+1, saldo -= 480.
+--
 -- Ana García (emp_id=1):
---   NORMAL×9 (480 min c/u)=0, NORMAL×1 (465 min)=-15 min, DLC×1=-480 min
---   BAJA_MEDICA×2, PERMISO_RETRIBUIDO×1, VACACIONES×2
---   saldo_horas = (-480-15)/60 = -8.25 h
+--   Hasta 21/04: NORMAL×10 (9×480 + 1×465) = -15, DLC×1 = -480, total -495 min.
+--   22/04→14/05: NORMAL×13 con extras 22/04 +90, 27/04 +30, 30/04 +60,
+--                08/05 +30. Total +210 min. ASUNTO_PROPIO×1, PERMISO×1.
+--   Festivos 01/05 NAC + 15/05 LOC: neutros.
+--   DIA_LIBRE finde × 8: neutros.
+--   Total: -495 + 210 = -285 min = -4.75 h.
 --
 -- Carlos López (emp_id=2):
---   NORMAL×10 (480 min c/u salvo 09/04 465 min), AUSENCIA_INJUSTIFICADA×1
---   PERMISO_RETRIBUIDO×1, ASUNTO_PROPIO×1
---   saldo_horas = (-480-15)/60 = -8.25 h
+--   Hasta 21/04: NORMAL×10 (9×480 + 1×465) = -15, AUSENCIA_INJ×1 = -480, total -495.
+--   22/04→07/05: NORMAL×10 con extras 22/04 +30, 24/04 +90, 30/04 +30.
+--                Total +150 min. BAJA_MEDICA×1.
+--   ASUNTO_PROPIO 08/05 + VACACIONES×4 (11-14/05) + festivos: neutros.
+--   DIA_LIBRE finde × 8: neutros.
+--   Total: -495 + 150 = -345 min = -5.75 h.
 --
 -- Laura Fernández (emp_id=3):
---   NORMAL×6 (480×4, 570 31/03, 555 16/04, 465 09/04, 450 10/04)
---   AUSENCIA_INJUSTIFICADA×1, BAJA_MEDICA×1, PERMISO_RETRIBUIDO×1
---   DLC×1, VACACIONES×2, ASUNTO_PROPIO×1
---   saldo_horas = (90-480-15-30+75-480)/60 = -840/60 = -14.00 h
---   (nota: comentario anterior "+2h" era incorrecto, calculado antes
---    de definir la lógica final de recalcularParaProceso)
+--   Hasta 21/04: saldo previo -840 min (NORMAL×6 con 31/03 +90, 09/04 -15,
+--                10/04 -30, 16/04 +75; AUSENCIA_INJ×1 -480; DLC×1 -480).
+--   22/04→14/05: NORMAL×15 con extras 22/04 +120, 23/04 +120, 28/04 +90,
+--                30/04 +30, 05/05 +30, 08/05 +60, 14/05 +30. Total +480.
+--   DIA_LIBRE planificado 04/05, festivos 01/05+15/05, finde × 8: neutros.
+--   Total: -840 + 480 = -360 min = -6.00 h.
 -- -----------------------------------------------------------------------------
 
 INSERT INTO saldos_anuales (
@@ -937,25 +1832,25 @@ INSERT INTO saldos_anuales (
 ) VALUES
 -- Ana García
 (1, 2026,
- 12, 2, 1, 0,
+ 27, 2, 2, 0,
  17, 0, 2, 15,
- 2, 0, 0, 2,
- 0.00, -8.25,
- '2026-04-21', '2026-04-21 17:30:00'),
+ 2, 0, 1, 1,
+ 0.00, -4.75,
+ '2026-05-17', '2026-05-17 23:55:00'),
 -- Carlos López
 (2, 2026,
- 13, 0, 1, 1,
- 17, 0, 0, 17,
- 2, 0, 1, 1,
- 0.00, -8.25,
- '2026-04-21', '2026-04-21 16:30:00'),
+ 24, 1, 1, 1,
+ 17, 0, 4, 13,
+ 2, 0, 2, 0,
+ 0.00, -5.75,
+ '2026-05-17', '2026-05-17 23:55:00'),
 -- Laura Fernández
 (3, 2026,
- 10, 1, 1, 1,
+ 25, 1, 1, 1,
  17, 0, 2, 15,
  2, 0, 1, 1,
- 0.00, -14.00,
- '2026-04-21', '2026-04-21 17:30:00');
+ 0.00, -6.00,
+ '2026-05-17', '2026-05-17 23:55:00');
 
 
 -- ── AUSENCIAS FUTURAS INDIVIDUALES ────────────────────────────────────────
@@ -966,9 +1861,16 @@ VALUES (1, '2026-05-22', 'ASUNTO_PROPIO', FALSE, 2, NULL, '2026-04-18 09:00:00')
 INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado, usuario_id, observaciones, fecha_creacion)
 VALUES (1, '2026-06-12', 'ASUNTO_PROPIO', FALSE, 2, NULL, '2026-04-18 09:00:00');
 
--- CARLOS LOPEZ — asunto propio (mayo)
+-- CARLOS LOPEZ — asunto propio (mayo) — procesado en cierre del 07/05
 INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado, usuario_id, observaciones, fecha_creacion)
-VALUES (2, '2026-05-08', 'ASUNTO_PROPIO', FALSE, 2, NULL, '2026-04-18 09:00:00');
+VALUES (2, '2026-05-08', 'ASUNTO_PROPIO', TRUE, 2, NULL, '2026-04-18 09:00:00');
+
+-- LAURA FERNANDEZ — dia libre puente empresa (mayo) — planificado por encargada
+-- y procesado en cierre del 03/05. Es la unica planificacion de tipo DIA_LIBRE
+-- individual del rango: muestra que la empresa puede planificar un dia
+-- de cierre puntual (puente) para un empleado concreto.
+INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado, usuario_id, observaciones, fecha_creacion)
+VALUES (3, '2026-05-04', 'DIA_LIBRE', TRUE, 2, 'Dia libre por puente de empresa. Planificado por encargada.', '2026-04-25 10:00:00');
 
 -- LAURA FERNANDEZ — asunto propio (junio)
 INSERT INTO planificacion_ausencias (empleado_id, fecha, tipo_ausencia, procesado, usuario_id, observaciones, fecha_creacion)
