@@ -197,16 +197,20 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
 
     /**
      * Actualiza un usuario existente (E11 PATCH /usuarios/{id}).
-     * Solo permite cambiar email, rol y activo (no username ni password).
+     * Solo permite cambiar email y rol (no username, password ni activo).
+     *
+     * El estado activo no se modifica por esta via: el backend ignora el campo
+     * `activo` en PATCH (ver UsuarioController E11). Para desactivar se usa
+     * E12 DELETE (metodo `desactivar()`). Reactivar no esta soportado en v1.
      */
-    fun actualizar(email: String, rol: Rol, activo: Boolean) {
+    fun actualizar(email: String, rol: Rol) {
         if (email.isBlank()) {
             _uiState.value = UiState.Error("El email es obligatorio")
             return
         }
         viewModelScope.launch {
             _uiState.value = UiState.Loading
-            val request = UsuarioPatchRequest(email = email, rol = rol, activo = activo)
+            val request = UsuarioPatchRequest(email = email, rol = rol)
             repository.actualizarUsuario(usuarioId, request).fold(
                 onSuccess = { _uiState.value = UiState.Success },
                 onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al guardar") }

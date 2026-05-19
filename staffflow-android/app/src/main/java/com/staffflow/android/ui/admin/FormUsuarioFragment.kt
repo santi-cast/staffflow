@@ -25,9 +25,11 @@ import kotlinx.coroutines.launch
  *
  * Modo alta   (usuarioId = -1): E08 POST /usuarios.
  *   Al crear EMPLEADO o ENCARGADO: Snackbar con accion "Crear perfil" -> P15.
- * Modo edicion (usuarioId > 0): E11 PATCH (email, rol, activo).
+ * Modo edicion (usuarioId > 0): E11 PATCH (email, rol).
  *   Username y password no son editables en modo edicion.
- * Desactivar (modoEdicion && activo=true): E12 DELETE (baja logica) con dialogo.
+ *   El estado activo NO se edita aqui (el backend ignora el campo en PATCH):
+ *   para desactivar se usa el boton "Desactivar" (E12 DELETE) con confirmacion.
+ *   Reactivar usuarios desactivados no esta soportado en v1.0 (no hay endpoint).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -94,8 +96,9 @@ class FormUsuarioFragment : Fragment() {
         val esEdicion = viewModel.modoEdicion
         binding.tilPassword.isVisible = !esEdicion
         binding.etUsername.isEnabled = !esEdicion
-        binding.tilActivo.isVisible = esEdicion
-        binding.btnDesactivar.isVisible = esEdicion
+        // btnDesactivar arranca oculto y se hace visible solo si el usuario cargado
+        // resulta estar activo (ver observarEstado()). En modo alta nunca se muestra.
+        binding.btnDesactivar.isVisible = false
         // En edicion: el perfil de empleado se gestiona desde P14/P15, no aqui
         binding.layoutPerfilEmpleado.isVisible = !esEdicion
     }
@@ -115,8 +118,7 @@ class FormUsuarioFragment : Fragment() {
                 if (viewModel.modoEdicion) {
                     viewModel.actualizar(
                         email = binding.etEmail.text.toString().trim(),
-                        rol = rol,
-                        activo = binding.switchActivo.isChecked
+                        rol = rol
                     )
                 } else {
                     viewModel.crear(
@@ -197,11 +199,12 @@ class FormUsuarioFragment : Fragment() {
             is FormUsuarioViewModel.UiState.Desactivado  -> findNavController().popBackStack()
 
             is FormUsuarioViewModel.UiState.SuccessAlta  -> {
-                // Solo se emite en modo edicion: pre-rellenar campos al cargar
+                // Solo se emite en modo edicion: pre-rellenar campos al cargar.
+                // btnDesactivar solo visible si el usuario esta activo (si ya esta
+                // inactivo no hay accion posible: reactivar no esta soportado en v1).
                 binding.etUsername.setText(estado.usuario.username)
                 binding.etEmail.setText(estado.usuario.email)
                 binding.actvRol.setText(rolLabel(estado.usuario.rol), false)
-                binding.switchActivo.isChecked = estado.usuario.activo
                 binding.btnDesactivar.isVisible = estado.usuario.activo
             }
 

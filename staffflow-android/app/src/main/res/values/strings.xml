@@ -230,7 +230,6 @@
     <string name="form_usuario_hint_password">Contraseña</string>
     <string name="form_usuario_hint_email">Email</string>
     <string name="form_usuario_hint_rol">Rol</string>
-    <string name="form_usuario_hint_activo">Estado</string>
     <string name="form_usuario_guardar">Guardar</string>
     <string name="form_usuario_desactivar">Desactivar usuario</string>
     <string name="form_usuario_seccion_perfil">Perfil de empleado</string>

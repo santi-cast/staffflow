@@ -187,7 +187,7 @@ Convenciones de la tabla:
 | E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol) | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email, rol o estado activo de un usuario | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12) | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
 
 #### Empleados (`/api/v1/empleados`)

@@ -2,13 +2,17 @@
 <!--
     Layout del formulario de usuario (P29). Solo ADMIN.
 
-    Modo alta   (usuarioId=-1): tilUsername, tilPassword, tilEmail, tilRol, btnGuardar.
+    Modo alta   (usuarioId=-1): tilUsername, tilPassword, tilEmail, tilRol,
+                                seccion perfil empleado, btnGuardar.
     Modo edicion (usuarioId>0): tilUsername (disabled), tilEmail, tilRol,
-                                tilActivo (Switch), btnGuardar, btnDesactivar.
+                                btnGuardar, btnDesactivar.
 
     tilPassword solo visible en modo alta.
-    tilActivo solo visible en modo edicion.
-    btnDesactivar solo visible en modo edicion.
+    Seccion perfil empleado solo visible en modo alta (en edicion se gestiona desde P14/P15).
+    btnDesactivar solo visible en modo edicion Y cuando el usuario esta activo.
+    El estado activo NO se edita desde este formulario: para desactivar se usa
+    btnDesactivar (E12 DELETE, con confirmacion). Reactivar no esta soportado
+    en v1.0 (no hay endpoint).
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -250,25 +254,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
-
-        <!-- Activo (Switch, solo en modo edicion) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilActivo"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:hint="@string/form_usuario_hint_activo"
-            android:visibility="gone">
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchActivo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:checked="true" />
-
-        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Boton guardar -->
         <com.google.android.material.button.MaterialButton
