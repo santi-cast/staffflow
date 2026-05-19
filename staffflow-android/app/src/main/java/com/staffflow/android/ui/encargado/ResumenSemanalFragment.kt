@@ -3,11 +3,16 @@ package com.staffflow.android.ui.encargado
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -15,6 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.staffflow.android.MainActivity
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentResumenSemanalBinding
 import kotlinx.coroutines.launch
@@ -24,6 +30,11 @@ import kotlinx.coroutines.launch
  *
  * Patron WebView con navegacion « ‹ ... › » (mes/semana anterior, semana/mes siguiente).
  * Endpoint: E59 GET /api/v1/informes/semana?desde=&hasta=
+ *
+ * Toolbar: menu_resumen_semanal.xml con un unico item action_imprimir
+ * (icono impresora) que delega en `MainActivity.imprimirWebView` para lanzar
+ * el dialogo nativo de impresion del sistema con el contenido actual del
+ * WebView. La logica vive en la Activity por requisitos de PrintManager.
  *
  * Intercepta URLs staffflow:// generadas por InformeService para
  * navegar a los formularios de edicion:
@@ -62,7 +73,34 @@ class ResumenSemanalFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         configurarWebView()
         configurarListeners()
+        configurarMenu()
         observarViewModel()
+    }
+
+    /**
+     * Anade el item "Imprimir" a la toolbar de la actividad. Solo habilitado
+     * cuando el WebView muestra contenido (uiState = Success); en Loading o
+     * Error el icono se mantiene visible pero no hace nada.
+     */
+    private fun configurarMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+                inflater.inflate(R.menu.menu_resumen_semanal, menu)
+            }
+            override fun onMenuItemSelected(item: MenuItem): Boolean {
+                if (item.itemId == R.id.action_imprimir) {
+                    if (viewModel.uiState.value is ResumenSemanalViewModel.UiState.Success) {
+                        (requireActivity() as MainActivity).imprimirWebView(
+                            binding.webView,
+                            getString(R.string.imprimir_doc_fichajes)
+                        )
+                    }
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
     override fun onResume() {

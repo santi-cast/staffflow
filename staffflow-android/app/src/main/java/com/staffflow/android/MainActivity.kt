@@ -1,7 +1,10 @@
 package com.staffflow.android
 
 import android.os.Bundle
+import android.print.PrintAttributes
+import android.print.PrintManager
 import android.view.View
+import android.webkit.WebView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -115,12 +118,27 @@ class MainActivity : AppCompatActivity() {
     override fun attachBaseContext(newBase: android.content.Context) {
         // Forzar locale español independientemente del idioma del dispositivo.
         // MaterialDatePicker, AlertDialog y cualquier recurso de sistema usan
-        // este contexto para resolver cadenas de idioma.
+        // los Resources de esta Activity para resolver cadenas de idioma.
+        //
+        // NO usar `newBase.createConfigurationContext(config)` aqui: esa API
+        // crea un ContextImpl nuevo cuyo `outerContext` se queda apuntando a
+        // si mismo en lugar de a la Activity. Cuando luego se invoca
+        // `getSystemService(PRINT_SERVICE)`, el `PrintManager` queda
+        // construido con `mContext` no-Activity y `PrintManager.print` lanza
+        // `IllegalStateException: Can print only from an activity` (ver
+        // `imprimirWebView` mas abajo).
+        //
+        // La API correcta es `applyOverrideConfiguration`: aplica el locale
+        // a los Resources de la propia Activity sin envolver el base
+        // context, asi `outerContext` sigue siendo la Activity y los
+        // servicios de sistema con check de Activity (PrintManager,
+        // WindowManager visual, etc.) funcionan bien.
         val locale = java.util.Locale("es", "ES")
         java.util.Locale.setDefault(locale)
-        val config = newBase.resources.configuration
-        config.setLocale(locale)
-        super.attachBaseContext(newBase.createConfigurationContext(config))
+        super.attachBaseContext(newBase)
+        val overrideConfig = android.content.res.Configuration(newBase.resources.configuration)
+        overrideConfig.setLocale(locale)
+        applyOverrideConfiguration(overrideConfig)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -377,6 +395,55 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Impresion nativa
+    // ------------------------------------------------------------------
+
+    /**
+     * Lanza el dialogo nativo de impresion del sistema para el contenido
+     * actual de un WebView.
+     *
+     * Llamado desde Fragments que muestran informes en WebView (P22 Fichajes
+     * globales, P23 Ausencias globales) via:
+     * `(requireActivity() as MainActivity).imprimirWebView(webView, nombre)`.
+     *
+     * Vive aqui en la Activity y no en una utilidad estatica porque
+     * `PrintManager.print` valida internamente que su Context sea una
+     * Activity real (`mContext instanceof Activity`). El `mContext` se fija
+     * en el constructor del `PrintManager` con el Context que invoca
+     * `getSystemService`.
+     *
+     * Detalle critico: esta Activity sobreescribe `attachBaseContext` para
+     * forzar locale español (ver mas arriba). Eso envuelve el base context
+     * con `createConfigurationContext`, que devuelve un `ContextImpl` plano
+     * (no una Activity). La forma con `String` constante,
+     * `getSystemService(Context.PRINT_SERVICE)`, resuelve el servicio a
+     * traves del base context decorado y construye el `PrintManager` con
+     * `mContext` NO-Activity, haciendo fallar el check con
+     * `IllegalStateException: Can print only from an activity`.
+     *
+     * La forma tipada `getSystemService(PrintManager::class.java)` fuerza el
+     * lookup desde `this` (la Activity, via `ContextThemeWrapper`),
+     * garantizando que `mContext` sea la Activity y el check pase.
+     *
+     * El sistema renderiza el mismo HTML que se ve en pantalla, asi que
+     * cualquier cambio visual del informe se imprime automaticamente sin
+     * tocar este metodo.
+     *
+     * @param webView         WebView ya cargado con el HTML a imprimir
+     * @param nombreDocumento titulo del documento (sin extension); se usa
+     *                        como nombre por defecto si el usuario elige
+     *                        "Guardar como PDF"
+     */
+    fun imprimirWebView(webView: WebView, nombreDocumento: String) {
+        val printManager = getSystemService(PrintManager::class.java)
+        val adapter = webView.createPrintDocumentAdapter(nombreDocumento)
+        val attributes = PrintAttributes.Builder()
+            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+            .build()
+        printManager.print(nombreDocumento, adapter, attributes)
     }
 
     // ------------------------------------------------------------------

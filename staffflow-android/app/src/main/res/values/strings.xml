@@ -184,8 +184,11 @@
     <string name="ausencias_seleccion_no_consecutiva">Los días deben ser consecutivos</string>
     <string name="ausencias_mes_anterior">Mes anterior</string>
     <string name="ausencias_mes_siguiente">Mes siguiente</string>
-    <string name="ausencias_selector_rango_titulo">Selecciona el periodo</string>
-    <string name="ausencias_menu_rango_fechas">Periodo</string>
+
+    <!-- Accion de imprimir (toolbar P22 y P23) -->
+    <string name="accion_imprimir">Imprimir</string>
+    <string name="imprimir_doc_fichajes">Fichajes</string>
+    <string name="imprimir_doc_ausencias">Ausencias</string>
 
     <!-- P20 Formulario fichaje/pausa -->
     <string name="form_fichaje_hint_empleado_id">ID de empleado</string>

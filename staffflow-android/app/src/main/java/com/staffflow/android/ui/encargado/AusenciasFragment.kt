@@ -4,11 +4,16 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -16,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.staffflow.android.MainActivity
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentAusenciasBinding
 import kotlinx.coroutines.launch
@@ -23,11 +29,16 @@ import kotlinx.coroutines.launch
 /**
  * Resumen de ausencias de todos los empleados activos (P23). Accesible para ENCARGADO y ADMIN.
  *
- * Patron WebView con navegacion semanal < / >.
+ * Patron WebView con navegacion « ‹ ... › » (mes/semana anterior, semana/mes siguiente).
  * Endpoint: E60 GET /api/v1/informes/ausencias?desde=&hasta=
  *
  * Intercepta URLs staffflow://ausencia/{id} generadas por InformeService para
  * navegar al formulario de edicion de ausencias (P24).
+ *
+ * Toolbar: menu_ausencias.xml con un unico item action_imprimir, que delega
+ * en `MainActivity.imprimirWebView` para lanzar el dialogo nativo de
+ * impresion del sistema con el contenido actual del WebView. La logica vive
+ * en la Activity por requisitos de PrintManager.
  *
  * FAB (+) navega a P24 en modo alta.
  */
@@ -59,7 +70,32 @@ class AusenciasFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         configurarWebView()
         configurarListeners()
+        configurarMenu()
         observarViewModel()
+    }
+
+    /**
+     * Anade el item action_imprimir a la toolbar (menu_ausencias.xml).
+     */
+    private fun configurarMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+                inflater.inflate(R.menu.menu_ausencias, menu)
+            }
+            override fun onMenuItemSelected(item: MenuItem): Boolean {
+                if (item.itemId == R.id.action_imprimir) {
+                    if (viewModel.uiState.value is AusenciasViewModel.UiState.Success) {
+                        (requireActivity() as MainActivity).imprimirWebView(
+                            binding.webView,
+                            getString(R.string.imprimir_doc_ausencias)
+                        )
+                    }
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
     override fun onResume() {
