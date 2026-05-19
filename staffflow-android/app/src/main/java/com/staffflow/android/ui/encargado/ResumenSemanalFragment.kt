@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 /**
  * Resumen semanal de todos los empleados activos (P19 rediseñado).
  *
- * Patron WebView con navegacion semanal < / >.
+ * Patron WebView con navegacion « ‹ ... › » (mes/semana anterior, semana/mes siguiente).
  * Endpoint: E59 GET /api/v1/informes/semana?desde=&hasta=
  *
  * Intercepta URLs staffflow:// generadas por InformeService para
@@ -102,8 +102,10 @@ class ResumenSemanalFragment : Fragment() {
     }
 
     private fun configurarListeners() {
+        binding.btnMesAnterior.setOnClickListener { viewModel.mesAnterior() }
         binding.btnSemanaAnterior.setOnClickListener { viewModel.semanaAnterior() }
         binding.btnSemanaSiguiente.setOnClickListener { viewModel.semanaSiguiente() }
+        binding.btnMesSiguiente.setOnClickListener { viewModel.mesSiguiente() }
         binding.btnReintentar.setOnClickListener { viewModel.reintentar() }
     }
 

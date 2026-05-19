@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 /**
@@ -22,7 +23,9 @@ import java.util.Locale
  * Accesible por ADMIN y ENCARGADO. Destino del drawer en group_encargado.
  *
  * Rango por defecto: semana actual de lunes a domingo.
- * El usuario puede navegar con los botones < semana anterior / semana siguiente >.
+ * El usuario puede navegar con los botones « mes anterior / ‹ semana anterior /
+ * semana siguiente › / mes siguiente ». El salto de mes posiciona la semana en
+ * el primer lunes del mes destino (mismo comportamiento que P23 Ausencias).
  */
 class ResumenSemanalViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -75,6 +78,22 @@ class ResumenSemanalViewModel(application: Application) : AndroidViewModel(appli
     fun semanaAnterior() {
         desde = desde.minusWeeks(1)
         hasta = hasta.minusWeeks(1)
+        _semanaLabel.value = calcularLabel()
+        cargar()
+    }
+
+    fun mesSiguiente() {
+        val primerDiaMesSiguiente = desde.withDayOfMonth(1).plusMonths(1)
+        desde = primerDiaMesSiguiente.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
+        hasta = desde.plusDays(6)
+        _semanaLabel.value = calcularLabel()
+        cargar()
+    }
+
+    fun mesAnterior() {
+        val primerDiaMesAnterior = desde.withDayOfMonth(1).minusMonths(1)
+        desde = primerDiaMesAnterior.with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
+        hasta = desde.plusDays(6)
         _semanaLabel.value = calcularLabel()
         cargar()
     }

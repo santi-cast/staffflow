@@ -3,7 +3,7 @@
     Layout del resumen semanal de todos los empleados activos (P19 rediseñado).
 
     Estructura:
-      - Fila de navegacion: boton < | label semana | boton >
+      - Fila de navegacion: « mes anterior | ‹ semana anterior | label semana | semana siguiente › | mes siguiente »
       - FrameLayout con tres estados:
           CARGANDO: CircularProgressIndicator centrado
           ERROR:    nube + mensaje + boton Reintentar
@@ -15,7 +15,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!-- Fila de navegacion de semana -->
+    <!-- Fila de navegacion: « mes ant | ‹ semana ant | label | semana sig › | mes sig » -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -25,12 +25,25 @@
         android:paddingBottom="4dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSemanaAnterior"
+            android:id="@+id/btnMesAnterior"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:minWidth="0dp"
             android:paddingStart="4dp"
+            android:paddingEnd="0dp"
+            android:layout_marginEnd="12dp"
+            android:text="&#171;"
+            android:textSize="32sp"
+            android:contentDescription="@string/ausencias_mes_anterior" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSemanaAnterior"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:paddingStart="2dp"
             android:paddingEnd="4dp"
             android:text="&#8249;"
             android:textSize="32sp"
@@ -51,10 +64,23 @@
             android:layout_height="wrap_content"
             android:minWidth="0dp"
             android:paddingStart="4dp"
-            android:paddingEnd="4dp"
+            android:paddingEnd="2dp"
             android:text="&#8250;"
             android:textSize="32sp"
             android:contentDescription="Semana siguiente" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMesSiguiente"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="0dp"
+            android:paddingStart="0dp"
+            android:paddingEnd="4dp"
+            android:layout_marginStart="12dp"
+            android:text="&#187;"
+            android:textSize="32sp"
+            android:contentDescription="@string/ausencias_mes_siguiente" />
 
     </LinearLayout>
 
