@@ -193,4 +193,39 @@ public interface PlanificacionAusenciaRepository extends JpaRepository<Planifica
             @Param("desde")      LocalDate desde,
             @Param("hasta")      LocalDate hasta);
 
+    // E44 — conteo agregado para informe de saldos
+
+    /**
+     * Conteo agregado de planificaciones VACACIONES / ASUNTO_PROPIO con
+     * procesado=false para todos los empleados en un rango de fechas.
+     *
+     * <p>Usado por {@code InformeService.informeSaldos} (E44) para incluir
+     * las columnas "Pendientes por planificar" de vacaciones y asuntos
+     * propios sin disparar N+1: una sola query agregada en lugar de dos
+     * llamadas por empleado.</p>
+     *
+     * <p>Devuelve filas {@code [empleadoId (Long), tipoAusencia (TipoAusencia),
+     * total (Long)]}. Festivos globales (empleado IS NULL) quedan excluidos
+     * por el filtro tipoAusencia IN (VACACIONES, ASUNTO_PROPIO) ya que esos
+     * tipos siempre son individuales.</p>
+     *
+     * @param desde primer día del año (1 enero)
+     * @param hasta último día del año (31 diciembre)
+     * @return filas con [empleadoId, TipoAusencia, count]
+     */
+    @Query("""
+            SELECT a.empleado.id, a.tipoAusencia, COUNT(a)
+            FROM PlanificacionAusencia a
+            WHERE a.procesado = false
+              AND a.tipoAusencia IN (
+                  com.staffflow.domain.enums.TipoAusencia.VACACIONES,
+                  com.staffflow.domain.enums.TipoAusencia.ASUNTO_PROPIO)
+              AND a.fecha >= :desde
+              AND a.fecha <= :hasta
+            GROUP BY a.empleado.id, a.tipoAusencia
+            """)
+    List<Object[]> countPlanificadasVacApPorEmpleadoEnRango(
+            @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta);
+
 }

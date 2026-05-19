@@ -11,6 +11,7 @@ import com.staffflow.domain.enums.TipoFichaje;
 import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.FichajeRepository;
 import com.staffflow.domain.repository.PausaRepository;
+import com.staffflow.domain.enums.TipoAusencia;
 import com.staffflow.domain.repository.PlanificacionAusenciaRepository;
 import com.staffflow.domain.repository.SaldoAnualRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
@@ -139,9 +140,12 @@ public class InformeService {
     );
 
     // Campos individuales válidos para E44 (?campos=)
+    // VAC_PENDIENTE_PLANIF y AP_PENDIENTE_PLANIF se calculan en tiempo de
+    // ejecución a partir de SaldoAnual.disponibles y conteos de
+    // PlanificacionAusencia con procesado=false, no son atributos persistidos.
     private static final List<String> CAMPOS_VALIDOS = List.of(
-            "VAC_PENDIENTE_ANT", "VAC_DERECHO", "VAC_CONSUMIDOS", "VAC_DISPONIBLES",
-            "AP_PENDIENTE_ANT",  "AP_DERECHO",  "AP_CONSUMIDOS",  "AP_DISPONIBLES",
+            "VAC_PENDIENTE_ANT", "VAC_DERECHO", "VAC_CONSUMIDOS", "VAC_DISPONIBLES", "VAC_PENDIENTE_PLANIF",
+            "AP_PENDIENTE_ANT",  "AP_DERECHO",  "AP_CONSUMIDOS",  "AP_DISPONIBLES",  "AP_PENDIENTE_PLANIF",
             "DIAS_TRABAJADOS", "DIAS_BAJA_MEDICA", "DIAS_PERMISO_RETRIBUIDO",
             "DIAS_AUSENCIA_INJUSTIFICADA",
             "HORAS_AUSENCIA_RETRIBUIDA", "SALDO_HORAS",
@@ -151,8 +155,8 @@ public class InformeService {
     // Expansión de bloques a campos individuales
     private static final Map<String, List<String>> BLOQUES = new LinkedHashMap<>();
     static {
-        BLOQUES.put("DIAS_VACACIONES",     List.of("VAC_PENDIENTE_ANT", "VAC_DERECHO", "VAC_CONSUMIDOS", "VAC_DISPONIBLES"));
-        BLOQUES.put("DIAS_ASUNTOS_PROPIOS",List.of("AP_PENDIENTE_ANT",  "AP_DERECHO",  "AP_CONSUMIDOS",  "AP_DISPONIBLES"));
+        BLOQUES.put("DIAS_VACACIONES",     List.of("VAC_PENDIENTE_ANT", "VAC_DERECHO", "VAC_CONSUMIDOS", "VAC_DISPONIBLES", "VAC_PENDIENTE_PLANIF"));
+        BLOQUES.put("DIAS_ASUNTOS_PROPIOS",List.of("AP_PENDIENTE_ANT",  "AP_DERECHO",  "AP_CONSUMIDOS",  "AP_DISPONIBLES",  "AP_PENDIENTE_PLANIF"));
         BLOQUES.put("RESTO_DIAS",          List.of("DIAS_TRABAJADOS", "DIAS_BAJA_MEDICA", "DIAS_PERMISO_RETRIBUIDO", "DIAS_AUSENCIA_INJUSTIFICADA"));
         BLOQUES.put("HORAS",               List.of("HORAS_AUSENCIA_RETRIBUIDA", "SALDO_HORAS"));
         BLOQUES.put("CONTROL",             List.of("CALCULADO_HASTA", "ULTIMA_MODIFICACION"));
@@ -272,10 +276,18 @@ public class InformeService {
     /**
      * Genera el informe de saldos anuales por empleado (E44).
      *
-     * <p>Devuelve el saldo anual de cada empleado: días vacaciones, días asuntos
-     * propios, resto de días (trabajados, baja médica, permiso retribuido,
-     * ausencia injustificada), horas de ausencia retribuida, saldo de horas,
-     * fecha calculado hasta y fecha de última modificación.</p>
+     * <p>Devuelve el saldo anual de cada empleado: días vacaciones (incluyendo
+     * pendientes por planificar), días asuntos propios (incluyendo pendientes
+     * por planificar), resto de días (trabajados, baja médica, permiso
+     * retribuido, ausencia injustificada), horas de ausencia retribuida, saldo
+     * de horas, fecha calculado hasta y fecha de última modificación.</p>
+     *
+     * <p>Los campos VAC_PENDIENTE_PLANIF y AP_PENDIENTE_PLANIF se calculan en
+     * tiempo de ejecución como {@code max(0, disponibles - count(planificacion
+     * procesado=false))}. La query agregada
+     * {@code PlanificacionAusenciaRepository.countPlanificadasVacApPorEmpleadoEnRango}
+     * carga ambos conteos para todos los empleados en una sola consulta, sin
+     * disparar N+1.</p>
      *
      * <p>Parámetro ?empleadoId= opcional. Sin parámetro devuelve todos
      * los empleados activos con saldo en ese año. Con uno o varios ids separados
@@ -332,11 +344,72 @@ public class InformeService {
             saldos.sort(Comparator.comparing(s -> nombreCompleto(s.getEmpleado())));
         }
 
-        if ("html".equalsIgnoreCase(formato)) {
-            return generarHtmlSaldos(anio, saldos, camposActivos);
+        // Pre-cargar los dias pendientes por planificar (vac y AP) de TODOS
+        // los empleados en una sola query agregada. Mapa empleadoId -> [vac, ap].
+        // Si el campo correspondiente no esta activo se omite la carga.
+        Map<Long, int[]> pendientesPorEmpleado;
+        boolean necesitaPendientes = camposActivos.contains("VAC_PENDIENTE_PLANIF")
+                                  || camposActivos.contains("AP_PENDIENTE_PLANIF");
+        if (necesitaPendientes) {
+            pendientesPorEmpleado = cargarPendientesPlanificar(anio, saldos);
+        } else {
+            pendientesPorEmpleado = Map.of();
         }
 
-        return construirJsonSaldos(anio, saldos, camposActivos);
+        if ("html".equalsIgnoreCase(formato)) {
+            return generarHtmlSaldos(anio, saldos, camposActivos, pendientesPorEmpleado);
+        }
+
+        return construirJsonSaldos(anio, saldos, camposActivos, pendientesPorEmpleado);
+    }
+
+    /**
+     * Carga en una sola query agregada los dias pendientes por planificar
+     * (vacaciones y asuntos propios) para los empleados del informe.
+     *
+     * <p>Pendientes por planificar = max(0, disponibles - count(planificacion
+     * procesado=false)) por empleado y tipo. La query agrupa por empleado y
+     * tipo; aqui se rellena un mapa empleadoId -> int[2] donde el indice 0
+     * es VACACIONES y el 1 es ASUNTO_PROPIO.</p>
+     *
+     * <p>El mapa contiene una entrada por cada empleado del informe, incluso
+     * cuando no tiene ninguna planificacion (en cuyo caso pendientes = disponibles).
+     * Empleados sin saldo en el año quedan fuera del informe antes de llegar
+     * aqui, asi que no hace falta defenderse contra ese caso.</p>
+     *
+     * @param anio    año del informe
+     * @param saldos  lista de saldos del informe (define que empleados aparecen)
+     * @return mapa empleadoId -> [pendVac, pendAP]
+     */
+    private Map<Long, int[]> cargarPendientesPlanificar(int anio, List<SaldoAnual> saldos) {
+        LocalDate desde = LocalDate.of(anio, 1, 1);
+        LocalDate hasta = LocalDate.of(anio, 12, 31);
+
+        // Indexar disponibles por empleadoId para combinar con los conteos
+        Map<Long, int[]> mapa = new HashMap<>();
+        for (SaldoAnual s : saldos) {
+            mapa.put(s.getEmpleado().getId(), new int[] {
+                    s.getDiasVacacionesDisponibles(),
+                    s.getDiasAsuntosPropiosDisponibles()
+            });
+        }
+
+        // Restar los planificados (procesado=false) del año
+        List<Object[]> conteos = planificacionRepository
+                .countPlanificadasVacApPorEmpleadoEnRango(desde, hasta);
+        for (Object[] fila : conteos) {
+            Long empleadoId = (Long) fila[0];
+            TipoAusencia tipo = (TipoAusencia) fila[1];
+            int planificados = ((Long) fila[2]).intValue();
+            int[] disp = mapa.get(empleadoId);
+            if (disp == null) continue; // empleado fuera del informe filtrado
+            if (tipo == TipoAusencia.VACACIONES) {
+                disp[0] = Math.max(0, disp[0] - planificados);
+            } else if (tipo == TipoAusencia.ASUNTO_PROPIO) {
+                disp[1] = Math.max(0, disp[1] - planificados);
+            }
+        }
+        return mapa;
     }
 
     // E44 — Construcción JSON de saldos
@@ -347,14 +420,15 @@ public class InformeService {
      */
     private List<Map<String, Object>> construirJsonSaldos(Integer anio,
                                                            List<SaldoAnual> saldos,
-                                                           Set<String> camposActivos) {
+                                                           Set<String> camposActivos,
+                                                           Map<Long, int[]> pendientesPorEmpleado) {
         List<Map<String, Object>> resultado = new ArrayList<>();
         for (SaldoAnual s : saldos) {
             Map<String, Object> fila = new LinkedHashMap<>();
             fila.put("empleadoId", s.getEmpleado().getId());
             fila.put("empleado",   nombreCompleto(s.getEmpleado()));
             fila.put("anio",       anio);
-            agregarCamposJson(fila, s, camposActivos);
+            agregarCamposJson(fila, s, camposActivos, pendientesPorEmpleado);
             resultado.add(fila);
         }
         return resultado;
@@ -362,9 +436,16 @@ public class InformeService {
 
     /**
      * Añade al mapa JSON solo los campos seleccionados del SaldoAnual.
+     *
+     * @param fila                  mapa destino (orden de inserción importa)
+     * @param s                     saldo anual del empleado
+     * @param camposActivos         campos a incluir
+     * @param pendientesPorEmpleado mapa empleadoId -> [pendVac, pendAP] precalculado
+     *                              (puede ser Map.of() si los campos PENDIENTE_PLANIF no estan activos)
      */
     private void agregarCamposJson(Map<String, Object> fila, SaldoAnual s,
-                                    Set<String> camposActivos) {
+                                    Set<String> camposActivos,
+                                    Map<Long, int[]> pendientesPorEmpleado) {
         if (camposActivos.contains("VAC_PENDIENTE_ANT"))
             fila.put("vacPendientesAnioAnterior", s.getDiasVacacionesPendientesAnioAnterior());
         if (camposActivos.contains("VAC_DERECHO"))
@@ -373,6 +454,10 @@ public class InformeService {
             fila.put("vacConsumidosAnioEnCurso", s.getDiasVacacionesConsumidos());
         if (camposActivos.contains("VAC_DISPONIBLES"))
             fila.put("vacDisponibles", s.getDiasVacacionesDisponibles());
+        if (camposActivos.contains("VAC_PENDIENTE_PLANIF")) {
+            int[] arr = pendientesPorEmpleado.get(s.getEmpleado().getId());
+            fila.put("vacPendientesPlanificar", arr != null ? arr[0] : s.getDiasVacacionesDisponibles());
+        }
         if (camposActivos.contains("AP_PENDIENTE_ANT"))
             fila.put("apPendientesAnioAnterior", s.getDiasAsuntosPropiosPendientesAnterior());
         if (camposActivos.contains("AP_DERECHO"))
@@ -381,6 +466,10 @@ public class InformeService {
             fila.put("apConsumidosAnioEnCurso", s.getDiasAsuntosPropiosConsumidos());
         if (camposActivos.contains("AP_DISPONIBLES"))
             fila.put("apDisponibles", s.getDiasAsuntosPropiosDisponibles());
+        if (camposActivos.contains("AP_PENDIENTE_PLANIF")) {
+            int[] arr = pendientesPorEmpleado.get(s.getEmpleado().getId());
+            fila.put("apPendientesPlanificar", arr != null ? arr[1] : s.getDiasAsuntosPropiosDisponibles());
+        }
         if (camposActivos.contains("DIAS_TRABAJADOS"))
             fila.put("diasTrabajados", s.getDiasTrabajados());
         if (camposActivos.contains("DIAS_BAJA_MEDICA"))
@@ -406,14 +495,22 @@ public class InformeService {
     /**
      * Genera el HTML del informe de saldos anuales (E44).
      * Tabla con cabecera de dos niveles, bloques coloreados, scroll horizontal.
-     * Colores: disponibles vacaciones/AP y saldo horas en verde/rojo/negro según valor.
+     * Colores: disponibles y pendientes por planificar (vacaciones/AP) y saldo
+     * horas en verde/rojo/negro según valor.
+     *
+     * @param anio                  año del informe
+     * @param saldos                lista de saldos a renderizar
+     * @param camposActivos         campos a mostrar (columnas)
+     * @param pendientesPorEmpleado mapa empleadoId -> [pendVac, pendAP] precalculado
+     *                              (puede ser Map.of() si los campos PENDIENTE_PLANIF no estan activos)
      */
     private String generarHtmlSaldos(Integer anio, List<SaldoAnual> saldos,
-                                      Set<String> camposActivos) {
+                                      Set<String> camposActivos,
+                                      Map<Long, int[]> pendientesPorEmpleado) {
 
         // Determinar qué bloques están activos (al menos un campo del bloque presente)
-        boolean bloqVac  = tieneAlgunCampo(camposActivos, "VAC_PENDIENTE_ANT","VAC_DERECHO","VAC_CONSUMIDOS","VAC_DISPONIBLES");
-        boolean bloqAp   = tieneAlgunCampo(camposActivos, "AP_PENDIENTE_ANT","AP_DERECHO","AP_CONSUMIDOS","AP_DISPONIBLES");
+        boolean bloqVac  = tieneAlgunCampo(camposActivos, "VAC_PENDIENTE_ANT","VAC_DERECHO","VAC_CONSUMIDOS","VAC_DISPONIBLES","VAC_PENDIENTE_PLANIF");
+        boolean bloqAp   = tieneAlgunCampo(camposActivos, "AP_PENDIENTE_ANT","AP_DERECHO","AP_CONSUMIDOS","AP_DISPONIBLES","AP_PENDIENTE_PLANIF");
         boolean bloqDias = tieneAlgunCampo(camposActivos, "DIAS_TRABAJADOS","DIAS_BAJA_MEDICA","DIAS_PERMISO_RETRIBUIDO","DIAS_AUSENCIA_INJUSTIFICADA");
         boolean bloqHoras= tieneAlgunCampo(camposActivos, "HORAS_AUSENCIA_RETRIBUIDA","SALDO_HORAS");
         boolean bloqCtrl = tieneAlgunCampo(camposActivos, "CALCULADO_HASTA","ULTIMA_MODIFICACION");
@@ -434,11 +531,11 @@ public class InformeService {
         sb.append("<thead>\n<tr>\n");
         sb.append("  <th rowspan=\"2\" class=\"col-empleado\">Empleado</th>\n");
         if (bloqVac) {
-            int cols = contarCamposBloque(camposActivos, "VAC_PENDIENTE_ANT","VAC_DERECHO","VAC_CONSUMIDOS","VAC_DISPONIBLES");
+            int cols = contarCamposBloque(camposActivos, "VAC_PENDIENTE_ANT","VAC_DERECHO","VAC_CONSUMIDOS","VAC_DISPONIBLES","VAC_PENDIENTE_PLANIF");
             sb.append("  <th colspan=\"").append(cols).append("\" class=\"bloque bloque-vac\">Dias vacaciones</th>\n");
         }
         if (bloqAp) {
-            int cols = contarCamposBloque(camposActivos, "AP_PENDIENTE_ANT","AP_DERECHO","AP_CONSUMIDOS","AP_DISPONIBLES");
+            int cols = contarCamposBloque(camposActivos, "AP_PENDIENTE_ANT","AP_DERECHO","AP_CONSUMIDOS","AP_DISPONIBLES","AP_PENDIENTE_PLANIF");
             sb.append("  <th colspan=\"").append(cols).append("\" class=\"bloque bloque-ap\">Dias asuntos propios</th>\n");
         }
         if (bloqDias) {
@@ -465,6 +562,8 @@ public class InformeService {
             sb.append("  <th>Consumidos<br>año en curso</th>\n");
         if (camposActivos.contains("VAC_DISPONIBLES"))
             sb.append("  <th>Disponibles</th>\n");
+        if (camposActivos.contains("VAC_PENDIENTE_PLANIF"))
+            sb.append("  <th>Pendientes<br>planificar</th>\n");
         if (camposActivos.contains("AP_PENDIENTE_ANT"))
             sb.append("  <th>Pendientes<br>año anterior</th>\n");
         if (camposActivos.contains("AP_DERECHO"))
@@ -473,6 +572,8 @@ public class InformeService {
             sb.append("  <th>Consumidos<br>año en curso</th>\n");
         if (camposActivos.contains("AP_DISPONIBLES"))
             sb.append("  <th>Disponibles</th>\n");
+        if (camposActivos.contains("AP_PENDIENTE_PLANIF"))
+            sb.append("  <th>Pendientes<br>planificar</th>\n");
         if (camposActivos.contains("DIAS_TRABAJADOS"))
             sb.append("  <th>Dias<br>trabajados</th>\n");
         if (camposActivos.contains("DIAS_BAJA_MEDICA"))
@@ -509,6 +610,12 @@ public class InformeService {
                 String extra = claseCelda(disp);
                 sb.append("  <td class=\"col-vac").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(disp).append("</td>\n");
             }
+            if (camposActivos.contains("VAC_PENDIENTE_PLANIF")) {
+                int[] arr = pendientesPorEmpleado.get(s.getEmpleado().getId());
+                int pend = arr != null ? arr[0] : s.getDiasVacacionesDisponibles();
+                String extra = claseCelda(pend);
+                sb.append("  <td class=\"col-vac").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(pend).append("</td>\n");
+            }
 
             // Bloque asuntos propios
             if (camposActivos.contains("AP_PENDIENTE_ANT"))
@@ -521,6 +628,12 @@ public class InformeService {
                 int disp = s.getDiasAsuntosPropiosDisponibles();
                 String extra = claseCelda(disp);
                 sb.append("  <td class=\"col-ap").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(disp).append("</td>\n");
+            }
+            if (camposActivos.contains("AP_PENDIENTE_PLANIF")) {
+                int[] arr = pendientesPorEmpleado.get(s.getEmpleado().getId());
+                int pend = arr != null ? arr[1] : s.getDiasAsuntosPropiosDisponibles();
+                String extra = claseCelda(pend);
+                sb.append("  <td class=\"col-ap").append(extra.isEmpty() ? "" : " " + extra).append("\">").append(pend).append("</td>\n");
             }
 
             // Bloque resto días
