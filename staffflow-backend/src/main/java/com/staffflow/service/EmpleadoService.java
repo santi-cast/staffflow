@@ -315,20 +315,22 @@ public class EmpleadoService {
      * El campo usuarioId nunca se modifica: la vinculación usuario-empleado
      * es permanente.
      *
-     * Valida unicidad de codigoNfc excluyendo al propio empleado
-     * (puede conservar su propio valor sin conflicto). PIN, DNI,
-     * numeroEmpleado y fechaAlta no se modifican por este endpoint:
-     * el PIN se regenera vía E65 (POST /{id}/regenerar-pin) y los
-     * otros tres son inmutables (no existen en EmpleadoPatchRequest).
+     * Valida unicidad de dni y codigoNfc excluyendo al propio empleado
+     * (puede conservar su propio valor sin conflicto). PIN y numeroEmpleado
+     * no se modifican por este endpoint: el PIN se regenera vía E65
+     * (POST /{id}/regenerar-pin) y numeroEmpleado se autogenera al crear.
+     *
+     * DNI y fechaAlta SÍ son editables: el ADMIN puede corregir errores
+     * tipográficos del alta o cambios reales. fechaAlta admite valores
+     * retroactivos (impacta informes históricos; el cliente avisa al
+     * usuario antes de guardar).
      *
      * Códigos HTTP producidos:
      *   200 OK          → perfil actualizado correctamente
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → NFC duplicado en otro empleado
-     *                     (NFC: feature reservada para v2; DNI y
-     *                     numeroEmpleado son inmutables, no aplican aquí)
+     *   409 Conflict    → DNI o NFC duplicado en otro empleado
      *
      * @param id      ID del empleado a actualizar
      * @param request campos a actualizar (todos opcionales)
@@ -349,8 +351,17 @@ public class EmpleadoService {
         if (request.getApellido2() != null) {
             empleado.setApellido2(request.getApellido2());
         }
-        // dni, numeroEmpleado y fechaAlta son inmutables
-        // no existen en EmpleadoPatchRequest
+        if (request.getDni() != null) {
+            if (empleadoRepository.existsByDniAndIdNot(request.getDni(), id)) {
+                throw new ConflictException(
+                        "El DNI '" + request.getDni() + "' ya está registrado");
+            }
+            empleado.setDni(request.getDni());
+        }
+        if (request.getFechaAlta() != null) {
+            empleado.setFechaAlta(request.getFechaAlta());
+        }
+        // numeroEmpleado es inmutable: se autogenera en crear() como EMP-XXX
         if (request.getCategoria() != null) {
             // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()
             empleado.setCategoria(request.getCategoria());

@@ -155,8 +155,7 @@ public class EmpleadoController {
      *   400 Bad Request → datos inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → empleado no encontrado
-     *   409 Conflict    → NFC duplicado (DNI inmutable en PATCH;
-     *                     NFC: feature reservada para v2)
+     *   409 Conflict    → DNI o NFC duplicado en otro empleado
      *
      * @param id      ID del empleado (path variable)
      * @param request body JSON con los campos a actualizar (todos opcionales)

@@ -139,9 +139,9 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
      * Comprueba si existe otro empleado con el DNI indicado, excluyendo
      * al empleado con el id especificado.
      *
-     * <p>NO CONSUMIDO en v1: el DNI es inmutable en EmpleadoService.actualizar()
-     * (E16) y EmpleadoPatchRequest no lo expone. Método mantenido como
-     * andamiaje por simetría con el bloque de validaciones de unicidad.</p>
+     * <p>Usado en EmpleadoService.actualizar() (E16) para validar la unicidad
+     * del DNI cuando el ADMIN lo corrige. Excluir al propio empleado permite
+     * que conserve su DNI actual sin disparar el conflicto.</p>
      *
      * @param dni DNI a verificar
      * @param id  ID del empleado que se está editando (se excluye)
