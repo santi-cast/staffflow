@@ -97,8 +97,13 @@ public class ProcesoCierreDiario {
                         "Usuario 'terminal_service' no encontrado en BD. "
                         + "El proceso nocturno no puede ejecutarse sin este usuario."));
 
-        // Cargar empleados activos una sola vez — se reutiliza en las tres tareas
-        List<Empleado> empleadosActivos = empleadoRepository.findByActivo(true);
+        // Cargar empleados operativos hoy una sola vez — se reutiliza en las
+        // tres tareas. Filtra activos cuya fechaAlta es <= hoy: un empleado
+        // con alta diferida existe en BD pero todavía no debe recibir
+        // AUSENCIA_INJUSTIFICADA ni planificaciones automáticas hasta el día
+        // en que empieza a trabajar.
+        List<Empleado> empleadosActivos = empleadoRepository
+                .findByActivoTrueAndFechaAltaLessThanEqual(hoy);
 
         // TAREA A — Cierre ausencias injustificadas
         // Empleados activos sin fichaje a las 23:55 reciben:

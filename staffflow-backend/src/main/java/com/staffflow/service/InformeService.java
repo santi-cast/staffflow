@@ -253,7 +253,10 @@ public class InformeService {
         String nombreEmpresa = obtenerNombreEmpresa();
         Set<String> filtroTipos = normalizarFiltro(tipos);
 
-        List<Empleado> empleados = empleadoRepository.findByActivo(true);
+        // Solo empleados ya operativos dentro del rango: si fechaAlta es
+        // posterior a "hasta", el empleado aún no ha empezado y queda fuera.
+        List<Empleado> empleados = empleadoRepository
+                .findByActivoTrueAndFechaAltaLessThanEqual(hasta);
 
         List<Map<String, Object>> filas = new ArrayList<>();
         for (Empleado empleado : empleados) {
@@ -1391,8 +1394,9 @@ public class InformeService {
         Rol rol = usuario.getRol();
         LocalDate hoy = LocalDate.now();
 
-        // Empleados activos ordenados por nombre
-        List<Empleado> empleados = empleadoRepository.findByActivo(true).stream()
+        // Empleados operativos en el rango (fechaAlta <= hasta), ordenados por nombre.
+        List<Empleado> empleados = empleadoRepository
+                .findByActivoTrueAndFechaAltaLessThanEqual(hasta).stream()
                 .sorted(Comparator.comparing(this::nombreCompleto))
                 .collect(Collectors.toList());
 
@@ -1717,7 +1721,9 @@ public class InformeService {
         Rol rol = usuario.getRol();
         LocalDate hoy = LocalDate.now();
 
-        List<Empleado> empleados = empleadoRepository.findByActivo(true).stream()
+        // Empleados operativos en el rango (fechaAlta <= hasta), ordenados por nombre.
+        List<Empleado> empleados = empleadoRepository
+                .findByActivoTrueAndFechaAltaLessThanEqual(hasta).stream()
                 .sorted(Comparator.comparing(this::nombreCompleto))
                 .collect(Collectors.toList());
 

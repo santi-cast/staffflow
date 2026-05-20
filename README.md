@@ -242,7 +242,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado | P17 |
+| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado. Incluye solo empleados operativos a la fecha consultada (`activo = true` AND `fechaAlta <= fecha`); los empleados con alta diferida no aparecen hasta su primer día de trabajo | P17 |
 | E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha | P18 |
 | E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del propio empleado en una fecha | P12 |
 
@@ -431,7 +431,7 @@ En el primer arranque la app sondea una lista de hosts candidatos hasta encontra
 
 ### 8. Cierre nocturno automático como única tarea programada
 
-`ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. La Tarea A cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado sin fichaje. La Tarea B materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior y dejar sembrado el `DIA_LIBRE` del sábado/domingo siguientes. La Tarea C recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo viven en B7 §7.1 y §7.3.
+`ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. Las tres tareas operan únicamente sobre empleados operativos esa noche (`activo = true` AND `fechaAlta <= hoy`); los empleados con alta diferida quedan fuera hasta su primer día de trabajo. La Tarea A cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado operativo sin fichaje. La Tarea B materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior y dejar sembrado el `DIA_LIBRE` del sábado/domingo siguientes. La Tarea C recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo viven en B7 §7.1 y §7.3.
 
 ---
 

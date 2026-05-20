@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +39,7 @@ import java.util.Optional;
  *
  * Métodos custom (consumidos transversalmente, no solo en EmpleadoService):
  *   - findByUsuarioId, findByUsuarioUsername, findByActivo, findByPinTerminal
+ *   - findByActivoTrueAndFechaAltaLessThanEqual (empleados operativos a una fecha)
  *   - existsByDni, existsByNumeroEmpleado, existsByPinTerminal, existsByCodigoNfc
  *   - existsByDniAndIdNot, existsByNumeroEmpleadoAndIdNot,
  *     existsByPinTerminalAndIdNot, existsByCodigoNfcAndIdNot
@@ -61,10 +63,33 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     /**
      * Lista todos los empleados con el estado activo indicado.
      *
+     * <p>NOTA: este método NO filtra por {@code fechaAlta}. Para procesos
+     * operativos diarios (parte diario, cierre nocturno, informes por
+     * rango) hay que usar {@link #findByActivoTrueAndFechaAltaLessThanEqual}
+     * con la fecha relevante. Este método se reserva para listados
+     * administrativos (gestión P13, exportaciones CSV/PDF) en los que el
+     * ADMIN debe poder ver a empleados aún no operativos para administrarlos.</p>
+     *
      * @param activo true = empleados activos, false = empleados inactivos
      * @return lista de empleados con ese estado (puede ser vacía)
      */
     List<Empleado> findByActivo(boolean activo);
+
+    /**
+     * Lista los empleados operativos a una fecha dada: estado activo Y
+     * fecha de alta menor o igual a la fecha indicada.
+     *
+     * <p>Pensado para procesos que reflejan la realidad laboral del día:
+     * parte diario (E35), cierre nocturno (ProcesoCierreDiario) e informes
+     * por rango (filtrar con {@code hasta} para incluir solo empleados que
+     * ya habían comenzado dentro del rango). Un empleado con {@code fechaAlta}
+     * futura existe en la base de datos pero todavía no contribuye a los
+     * fichajes, ausencias o saldos del día y debe quedar fuera de estos flujos.</p>
+     *
+     * @param fecha fecha de referencia (inclusive)
+     * @return empleados activos cuya fecha de alta es {@code <= fecha}
+     */
+    List<Empleado> findByActivoTrueAndFechaAltaLessThanEqual(LocalDate fecha);
 
     /**
      * Busca un empleado por su PIN de terminal.

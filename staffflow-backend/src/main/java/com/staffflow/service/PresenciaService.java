@@ -37,7 +37,8 @@ import java.util.stream.Collectors;
  * Patrón de carga de datos (antiN+1):
  *   Se ejecutan exactamente 5 queries planas al inicio de cada método
  *   principal, independientemente del número de empleados:
- *     1. findByActivo(true)                   → todos los empleados activos
+ *     1. findByActivoTrueAndFechaAltaLessThanEqual(fecha) → empleados operativos
+ *        ese día (activos cuya fecha de alta no es posterior a la del parte)
  *     2. findByFechaWithEmpleado(fecha)       → todos los fichajes del día
  *     3. findPausasActivasByFecha(fecha)      → todas las pausas activas del día
  *     4. findByFechaAndProcesadoFalse(fecha)  → ausencias planificadas del día
@@ -92,7 +93,10 @@ public class PresenciaService {
 
         // --- Carga de datos: 5 queries planas ---
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
-        List<Empleado> activos = empleadoRepository.findByActivo(true);
+        // Solo empleados operativos a esta fecha: descarta los que aún no
+        // han comenzado a trabajar (fechaAlta posterior a la fecha del parte).
+        List<Empleado> activos = empleadoRepository
+                .findByActivoTrueAndFechaAltaLessThanEqual(fecha);
         Map<Long, Fichaje> fichajesPorEmpleado = fichajeRepository
                 .findByFechaWithEmpleado(fecha)
                 .stream()
