@@ -42,11 +42,12 @@ import java.time.format.DateTimeParseException
  * desde sugerirUsername(rol) del ViewModel siguiendo el prefijo del rol
  * (emp/encargado/admin + numero correlativo) para garantizar coherencia
  * con la convencion del sistema; en modo edicion el backend no admite
- * cambiarlo via PATCH y el campo aparece disabled. Password tampoco se
- * edita en modo edicion (oculto). El estado activo NO se edita aqui:
- * para desactivar se usa el boton "Desactivar" (E12 DELETE) con
- * confirmacion. Reactivar usuarios desactivados no esta soportado en
- * v1.0 (no hay endpoint).
+ * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
+ * se introduce directamente; en modo edicion se puede cambiar pulsando
+ * btnCambiarPassword que abre un dialogo con campo visible (E14). El estado
+ * activo NO se edita aqui: para desactivar se usa el boton "Desactivar"
+ * (E12 DELETE) con confirmacion. Reactivar usuarios desactivados no esta
+ * soportado en v1.0 (no hay endpoint).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -131,6 +132,9 @@ class FormUsuarioFragment : Fragment() {
         // Se deshabilita el TextInputLayout completo para que el campo aparezca
         // visualmente atenuado (gris) en ambos modos.
         binding.tilUsername.isEnabled = false
+        // btnCambiarPassword solo visible en modo edicion (E14). En alta la
+        // contrasena se introduce directamente en tilPassword.
+        binding.btnCambiarPassword.isVisible = esEdicion
         // btnDesactivar arranca oculto y se hace visible solo si el usuario cargado
         // resulta estar activo (ver observarEstado()). En modo alta nunca se muestra.
         binding.btnDesactivar.isVisible = false
@@ -237,6 +241,10 @@ class FormUsuarioFragment : Fragment() {
         binding.btnDesactivar.setOnClickListener {
             mostrarDialogoDesactivar()
         }
+
+        binding.btnCambiarPassword.setOnClickListener {
+            mostrarDialogoCambiarPassword()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -252,6 +260,57 @@ class FormUsuarioFragment : Fragment() {
                 viewModel.desactivar()
             }
             .show()
+    }
+
+    // ------------------------------------------------------------------
+    // Dialogo de cambio de contrasena (E14)
+    // ------------------------------------------------------------------
+
+    /**
+     * Muestra un dialogo con un campo TextInputLayout para que el ADMIN
+     * introduzca la nueva contrasena del usuario en edicion.
+     *
+     * La contrasena se muestra en claro con toggle de visibilidad (ojo)
+     * para que el admin pueda leerla antes de confirmar (caso de uso helpdesk:
+     * el admin comunica la contrasena al empleado directamente).
+     *
+     * Validacion inline: si la contrasena tiene menos de 8 caracteres se
+     * muestra error en el propio campo y el dialogo NO se cierra.
+     * Si supera la validacion se llama a viewModel.resetearPassword().
+     */
+    private fun mostrarDialogoCambiarPassword() {
+        val dialogView = layoutInflater.inflate(
+            R.layout.dialog_cambiar_password, null
+        )
+        val tilNuevaPassword = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(
+            R.id.tilNuevaPassword
+        )
+        val etNuevaPassword = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(
+            R.id.etNuevaPassword
+        )
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.form_usuario_dialogo_password_titulo))
+            .setView(dialogView)
+            .setNegativeButton(getString(R.string.form_usuario_dialogo_cancelar), null)
+            .setPositiveButton(getString(R.string.form_usuario_dialogo_password_confirmar), null)
+            .create()
+
+        // El listener del boton positivo se asigna manualmente para poder
+        // validar sin cerrar el dialogo si la contrasena es demasiado corta.
+        dialog.setOnShowListener {
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val nuevaPassword = etNuevaPassword.text.toString()
+                if (nuevaPassword.length < 8) {
+                    tilNuevaPassword.error = getString(R.string.form_usuario_dialogo_password_error_corta)
+                    return@setOnClickListener
+                }
+                tilNuevaPassword.error = null
+                dialog.dismiss()
+                viewModel.resetearPassword(nuevaPassword)
+            }
+        }
+        dialog.show()
     }
 
     // ------------------------------------------------------------------
@@ -294,6 +353,16 @@ class FormUsuarioFragment : Fragment() {
             is FormUsuarioViewModel.UiState.Desactivado  -> finalizarConMensaje(
                 R.string.form_usuario_resultado_desactivado
             )
+
+            is FormUsuarioViewModel.UiState.PasswordReseteado -> {
+                // No navega atras: el admin puede seguir editando otros campos.
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.form_usuario_resultado_password_reseteado),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                viewModel.limpiarPasswordReseteado()
+            }
 
             is FormUsuarioViewModel.UiState.SuccessAlta  -> {
                 // Solo se emite en modo edicion: pre-rellenar campos al cargar.

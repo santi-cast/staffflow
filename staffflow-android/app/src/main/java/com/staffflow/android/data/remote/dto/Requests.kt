@@ -64,12 +64,22 @@ data class UsuarioRequest(
 /**
  * Actualizacion parcial de un usuario (E11 PATCH /usuarios/{id}).
  * Solo se envian los campos que se quieren modificar (null = sin cambio).
+ * La contrasena se gestiona por separado en E14 (AdminPasswordResetRequest).
  */
 data class UsuarioPatchRequest(
     val email: String? = null,
     val rol: Rol? = null,
     val activo: Boolean? = null
 )
+
+/**
+ * Restablecimiento de contrasena de otro usuario por parte del ADMIN
+ * (E14 PATCH /usuarios/{id}/password).
+ * nuevaPassword debe tener minimo 8 caracteres (validacion en backend).
+ * No requiere la contrasena actual del usuario: el ADMIN actua como helpdesk.
+ * No genera envio de correo.
+ */
+data class AdminPasswordResetRequest(val nuevaPassword: String)
 
 /**
  * Creacion de un empleado vinculado a un usuario existente (E13 POST /empleados).

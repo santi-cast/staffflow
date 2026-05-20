@@ -10,9 +10,11 @@
     Modo alta   (usuarioId=-1): tilRol, tilUsername, tilPassword, tilEmail,
                                 seccion perfil empleado, btnGuardar.
     Modo edicion (usuarioId>0): tilRol, tilUsername (disabled), tvFechaCreacion,
-                                tilEmail, btnGuardar, btnDesactivar.
+                                tilEmail, btnCambiarPassword, btnGuardar, btnDesactivar.
 
     tilPassword solo visible en modo alta.
+    btnCambiarPassword solo visible en modo edicion: abre dialogo con campo
+    de contrasena nueva (minimo 8 chars) y llama a E14 PATCH /usuarios/{id}/password.
     Seccion perfil empleado solo visible en modo alta (en edicion se gestiona desde P14/P15).
     btnDesactivar solo visible en modo edicion Y cuando el usuario esta activo.
     El estado activo NO se edita desde este formulario: para desactivar se usa
@@ -311,6 +313,22 @@
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
+
+        <!--
+            Boton para cambiar la contrasena del usuario (solo modo edicion).
+            Al pulsarlo se abre un dialogo con campo de contrasena nueva.
+            wrap_content centrado para no ocupar todo el ancho (accion secundaria,
+            no destructiva). Llama a E14 PATCH /usuarios/{id}/password.
+        -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCambiarPassword"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:text="@string/form_usuario_cambiar_password"
+            android:visibility="gone" />
 
         <!-- Boton guardar -->
         <com.google.android.material.button.MaterialButton

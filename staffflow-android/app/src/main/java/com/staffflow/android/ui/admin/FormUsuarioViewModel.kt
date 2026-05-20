@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
  *   Success                 -> operacion correcta (Fragment navega atras)
  *   SuccessAlta             -> usuario cargado en modo edicion (datos para pre-rellenar)
  *   Desactivado             -> baja logica OK (Fragment navega atras)
+ *   PasswordReseteado       -> E14 OK (Fragment muestra Snackbar, NO navega atras)
  *   Error                   -> mensaje de error inline
  *   UsernameDuplicadoEnAlta -> HTTP 409 en E08 por username ya existente.
  *                              El Fragment muestra el mensaje y vuelve a
@@ -60,6 +61,8 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         /** Datos del usuario cargados en modo edicion para pre-rellenar el formulario. */
         data class SuccessAlta(val usuario: UsuarioResponse) : UiState()
         object Desactivado : UiState()
+        /** E14 OK: contrasena reseteada. El Fragment muestra Snackbar y vuelve a Idle. */
+        object PasswordReseteado : UiState()
         data class Error(val mensaje: String) : UiState()
 
         /**
@@ -272,6 +275,29 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
+     * Restablece la contrasena del usuario en edicion (E14 PATCH /usuarios/{id}/password).
+     *
+     * Solo disponible en modo edicion (usuarioId > 0). El ADMIN proporciona la
+     * nueva contrasena desde el dialogo de P29; la validacion de longitud minima
+     * (8 chars) se realiza en el Fragment antes de llamar a este metodo.
+     *
+     * En exito emite UiState.PasswordReseteado y el Fragment muestra Snackbar
+     * sin navegar atras (el formulario permanece abierto).
+     *
+     * @param nuevaPassword nueva contrasena en claro (minimo 8 caracteres)
+     */
+    fun resetearPassword(nuevaPassword: String) {
+        if (!modoEdicion || usuarioId <= 0L) return
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.resetearPassword(usuarioId, nuevaPassword).fold(
+                onSuccess = { _uiState.value = UiState.PasswordReseteado },
+                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cambiar la contraseña") }
+            )
+        }
+    }
+
+    /**
      * Limpia los estados transitorios de error para que el Fragment no los
      * reprocese tras una rotacion u otro cambio de configuracion.
      * Cubre Error generico y UsernameDuplicadoEnAlta (ambos requieren
@@ -280,6 +306,16 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
     fun limpiarError() {
         val actual = _uiState.value
         if (actual is UiState.Error || actual is UiState.UsernameDuplicadoEnAlta) {
+            _uiState.value = UiState.Idle
+        }
+    }
+
+    /**
+     * Limpia el estado PasswordReseteado tras mostrar el Snackbar.
+     * Vuelve a Idle para que el Fragment no reprocese el estado en rotaciones.
+     */
+    fun limpiarPasswordReseteado() {
+        if (_uiState.value is UiState.PasswordReseteado) {
             _uiState.value = UiState.Idle
         }
     }

@@ -1,5 +1,6 @@
 package com.staffflow.android.data.remote.api
 
+import com.staffflow.android.data.remote.dto.AdminPasswordResetRequest
 import com.staffflow.android.data.remote.dto.MensajeResponse
 import com.staffflow.android.data.remote.dto.UsuarioPatchRequest
 import com.staffflow.android.data.remote.dto.UsuarioRequest
@@ -17,11 +18,12 @@ import retrofit2.http.Query
  * Interfaz Retrofit para los endpoints de gestion de usuarios (solo ADMIN).
  *
  * Endpoints cubiertos:
- *   E08 POST /usuarios              -> UsuarioResponse 201  (ADMIN)
- *   E09 GET  /usuarios?rol=&activo= -> List<UsuarioResponse> (ADMIN)
- *   E10 GET  /usuarios/{id}         -> UsuarioResponse       (ADMIN)
- *   E11 PATCH /usuarios/{id}        -> UsuarioResponse       (ADMIN)
- *   E12 DELETE /usuarios/{id}       -> MensajeResponse       (ADMIN, baja logica)
+ *   E08 POST /usuarios                   -> UsuarioResponse 201  (ADMIN)
+ *   E09 GET  /usuarios?rol=&activo=      -> List<UsuarioResponse> (ADMIN)
+ *   E10 GET  /usuarios/{id}              -> UsuarioResponse       (ADMIN)
+ *   E11 PATCH /usuarios/{id}             -> UsuarioResponse       (ADMIN)
+ *   E12 DELETE /usuarios/{id}            -> MensajeResponse       (ADMIN, baja logica)
+ *   E14 PATCH /usuarios/{id}/password    -> MensajeResponse       (ADMIN, reset contrasena)
  *
  * Requiere JWT con rol ADMIN. El AuthInterceptor adjunta el token.
  * E12 es baja logica (activo=false), no DELETE fisico.
@@ -69,4 +71,16 @@ interface UsuarioApiService {
      */
     @DELETE("usuarios/{id}")
     suspend fun desactivarUsuario(@Path("id") id: Long): Response<MensajeResponse>
+
+    /**
+     * E14 - Restablece la contrasena de un usuario (solo ADMIN).
+     * No requiere contrasena actual ni envia correo. Caso de uso helpdesk.
+     * Error 400 si nuevaPassword tiene menos de 8 caracteres.
+     * Error 404 si el usuario no existe.
+     */
+    @PATCH("usuarios/{id}/password")
+    suspend fun resetearPassword(
+        @Path("id") id: Long,
+        @Body request: AdminPasswordResetRequest
+    ): Response<MensajeResponse>
 }

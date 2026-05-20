@@ -3,6 +3,7 @@ package com.staffflow.service;
 import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.enums.Rol;
 import com.staffflow.domain.repository.UsuarioRepository;
+import com.staffflow.dto.request.AdminPasswordResetRequest;
 import com.staffflow.dto.request.UsuarioPatchRequest;
 import com.staffflow.dto.request.UsuarioRequest;
 import com.staffflow.dto.response.MensajeResponse;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12 y E14 del Grupo 3 (Gestión de Usuarios).
  * Accesible exclusivamente por el rol ADMIN. Los roles ENCARGADO
  * y EMPLEADO reciben HTTP 403 antes de llegar a este servicio
  * (Spring Security, @PreAuthorize en el controller).
@@ -42,7 +43,7 @@ import java.util.stream.Collectors;
  *   - Filtros combinables en listar(): rol y activo son independientes
  *     y pueden usarse simultáneamente o por separado (RF-04).
  *
- * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07.
+ * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07, RF-08.
  * RNF aplicados: RNF-S01 (BCrypt), RNF-M01 (sin lógica en controller).
  */
 @Service
@@ -167,9 +168,9 @@ public class UsuarioService {
     /**
      * Actualiza los datos editables de un usuario: email y rol.
      *
-     * La contraseña se gestiona exclusivamente por E03 (cambio con contraseña
-     * actual) y E05 (reset con token de recuperación). No se puede modificar
-     * por este endpoint.
+     * La contraseña no se modifica por este endpoint. Para cambiarla, el propio
+     * usuario usa E03 (cambio con contraseña actual) y el ADMIN usa E14
+     * (PATCH /api/v1/usuarios/{id}/password).
      *
      * El campo activo tampoco se modifica aquí: la desactivación se realiza
      * exclusivamente por E12 (baja lógica). Esta separación es intencional:
@@ -246,6 +247,44 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
 
         return new MensajeResponse("Usuario desactivado correctamente");
+    }
+
+    // E14 — PATCH /api/v1/usuarios/{id}/password
+    // RF-08: Restablecer contraseña de usuario (solo ADMIN)
+
+    /**
+     * Restablece la contraseña de un usuario a un valor elegido por el ADMIN.
+     *
+     * Caso de uso helpdesk: el empleado ha olvidado su contraseña y el ADMIN
+     * necesita una vía de último recurso sin depender del flujo de correo (E04).
+     * No requiere la contraseña actual del usuario (el ADMIN puede no conocerla).
+     * No envía ningún correo electrónico.
+     *
+     * La nueva contraseña se hashea con BCrypt y se persiste en password_hash.
+     * La contraseña en claro nunca se almacena ni se devuelve en la respuesta.
+     *
+     * // TODO M-020: candidato para auditoría de credenciales (tabla auditoria_credenciales)
+     *
+     * Códigos HTTP producidos:
+     *   200 OK          → contraseña actualizada correctamente
+     *   400 Bad Request → nuevaPassword no cumple la política mínima (< 8 chars)
+     *   403 Forbidden   → rol insuficiente (solo ADMIN)
+     *   404 Not Found   → usuario con el id indicado no existe
+     *
+     * @param id      ID del usuario al que se le restablece la contraseña
+     * @param request DTO con la nueva contraseña (mínimo 8 caracteres)
+     * @return MensajeResponse confirmando la operación
+     */
+    @Transactional
+    public MensajeResponse resetearPassword(Long id, AdminPasswordResetRequest request) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Usuario con id " + id + " no encontrado"));
+
+        usuario.setPasswordHash(passwordEncoder.encode(request.getNuevaPassword()));
+        usuarioRepository.save(usuario);
+
+        return new MensajeResponse("Contraseña actualizada correctamente");
     }
 
     // Conversión entidad → DTO (uso interno)

@@ -1,5 +1,6 @@
 package com.staffflow.controller;
 
+import com.staffflow.dto.request.AdminPasswordResetRequest;
 import com.staffflow.dto.request.UsuarioPatchRequest;
 import com.staffflow.dto.request.UsuarioRequest;
 import com.staffflow.dto.response.MensajeResponse;
@@ -17,7 +18,7 @@ import java.util.List;
 /**
  * Controller REST para la gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12 y E14 del Grupo 3 (Gestión de Usuarios).
  * Ruta base: /api/v1/usuarios
  *
  * Todos los endpoints de este controller son exclusivos del rol ADMIN.
@@ -30,7 +31,7 @@ import java.util.List;
  *   - Devuelve la respuesta con el código HTTP correcto.
  *   - Sin lógica de negocio en ningún método (RNF-M01).
  *
- * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07.
+ * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07, RF-08.
  */
 @RestController
 @RequestMapping("/api/v1/usuarios")
@@ -120,9 +121,9 @@ public class UsuarioController {
     /**
      * Actualiza los datos editables de un usuario: email y rol.
      *
-     * El username y la contraseña no son modificables por este endpoint.
-     * El campo activo tampoco se toca aquí. Solo actualiza los campos
-     * enviados con valor no nulo (PATCH semántico).
+     * El username no es modificable. La contraseña se gestiona por separado
+     * en E14 (PATCH /{id}/password). El campo activo tampoco se toca aquí.
+     * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      *
      * Códigos HTTP:
      *   200 OK          → usuario actualizado correctamente
@@ -170,5 +171,34 @@ public class UsuarioController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MensajeResponse> desactivar(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.desactivar(id));
+    }
+
+    // E14 — PATCH /api/v1/usuarios/{id}/password
+    // RF-08: Restablecer contraseña de usuario (solo ADMIN)
+
+    /**
+     * Restablece la contraseña de un usuario existente.
+     *
+     * Caso de uso helpdesk: el ADMIN fija una nueva contraseña directamente
+     * sin necesitar la contraseña actual del usuario y sin enviar correo.
+     * A diferencia de E03 (cambio propio) y E04 (recuperación por email),
+     * este endpoint es exclusivo del rol ADMIN.
+     *
+     * Códigos HTTP:
+     *   200 OK          → contraseña actualizada correctamente
+     *   400 Bad Request → nuevaPassword no cumple la política mínima (< 8 chars)
+     *   403 Forbidden   → rol insuficiente (solo ADMIN)
+     *   404 Not Found   → usuario no encontrado
+     *
+     * @param id      ID del usuario al que se le restablece la contraseña
+     * @param request body JSON con nuevaPassword (mínimo 8 caracteres)
+     * @return 200 OK con MensajeResponse
+     */
+    @PatchMapping("/{id}/password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MensajeResponse> resetearPassword(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminPasswordResetRequest request) {
+        return ResponseEntity.ok(usuarioService.resetearPassword(id, request));
     }
 }

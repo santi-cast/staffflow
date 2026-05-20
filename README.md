@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 65 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 64 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 66 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados, fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 64 tests unitarios + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -131,7 +131,7 @@ Características principales:
 - API REST **stateless** con autenticación **JWT**
 - Control de acceso basado en **roles** con Spring Security (`@PreAuthorize`)
 - Roles con reparto matricial por módulo (no jerarquía estricta):
-  - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
+  - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12, E14) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
   - **ENCARGADO**: mismos permisos que ADMIN sobre los módulos operativos (empleados, fichajes, pausas, ausencias, presencia, saldos sin recálculo, informes, desbloqueo del terminal E53/E54), pero SIN acceso a empresa, usuarios ni recálculo. Tiene perfil de empleado: usa `/me` y ficha por PIN.
   - **EMPLEADO**: acceso exclusivo a sus propios datos vía endpoints `/me`. Tiene perfil de empleado: ficha por PIN.
 - Separación entre **entidades de dominio y DTOs** (nunca se exponen entidades directamente)
@@ -148,14 +148,14 @@ La API se ha definido con enfoque **design‑first**: todos los endpoints están
 
 La especificación incluye:
 
-- **65 endpoints** en **13 grupos funcionales**
+- **66 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN desde el mismo dispositivoId → HTTP 423. El bloqueo persiste hasta que un ADMIN/ENCARGADO desbloquea el terminal vía E54 (DELETE /api/v1/terminal/bloqueo), un PIN exitoso reinicia el contador o el servidor se reinicia (contador in-memory).
 
 ### Catálogo de endpoints
 
-Los 65 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
+Los 66 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
 
 Convenciones de la tabla:
 
@@ -187,8 +187,9 @@ Convenciones de la tabla:
 | E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username ya existe (carrera entre dos altas simultáneas); P29 reacciona regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12) | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E14) | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
+| E14 | PATCH /{id}/password | ADMIN | Restablece la contraseña de un usuario directamente (caso de uso helpdesk). Sin envío de correo. Mínimo 8 caracteres | P29 |
 
 #### Empleados (`/api/v1/empleados`)
 
@@ -353,7 +354,7 @@ staffflow/
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (65 endpoints, JWT, iText 7) | ✅ Completada — 65/65 endpoints operativos |
+| Fase 2 | Desarrollo del backend (66 endpoints, JWT, iText 7) | ✅ Completada — 66/66 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
 | Fase 4 | Testing | ✅ Completada — 64 tests unitarios (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
@@ -418,7 +419,7 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
 | P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
-| P29 | FormUsuarioFragment | 5 — Admin | E08–E13 | ADMIN |
+| P29 | FormUsuarioFragment | 5 — Admin | E08–E14 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
 Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
