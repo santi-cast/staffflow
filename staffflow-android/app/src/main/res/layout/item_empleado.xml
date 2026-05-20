@@ -3,7 +3,8 @@
     Item del RecyclerView de lista de empleados (P13).
 
     Estructura:
-      - Borde izquierdo colorPrimary (5dp): activos / gris: inactivos
+      - Borde izquierdo verde (#4CAF50, 5dp): activos / gris: inactivos.
+        Mismos colores que UsuarioAdapter (P28) para coherencia.
       - Nombre completo (bold) + lapiz de affordance (U+270E)
       - Linea secundaria: numero de empleado (bodySmall, muted).
         Si el empleado esta inactivo, se concatena " · Inactivo" en rojo

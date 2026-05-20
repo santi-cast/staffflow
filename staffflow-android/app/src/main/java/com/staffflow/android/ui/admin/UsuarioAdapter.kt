@@ -1,5 +1,6 @@
 package com.staffflow.android.ui.admin
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -16,8 +17,13 @@ import com.staffflow.android.domain.model.Rol
  *
  * Cada item muestra username, email, rol legible y estado activo/inactivo.
  * El username lleva el lapiz de affordance (tap en la fila navega a P29
- * en modo edicion). El borde izquierdo indica el estado: activo
- * (#4CAF50) / inactivo (#9E9E9E).
+ * en modo edicion).
+ *
+ * Doble señal visual del estado:
+ *   - Borde izquierdo: activo (#4CAF50, verde claro) / inactivo (#9E9E9E, gris).
+ *   - Texto del estado: activo (#2E7D32, verde oscuro) / inactivo (#C62828, rojo).
+ *     Mismos colores que usa P14 DetalleEmpleadoFragment.tvEstado para
+ *     coherencia entre las pantallas de gestion de estado (empleados/usuarios).
  *
  * @param onClick Callback llamado al pulsar un item. UsuariosFragment navega a P29 edicion.
  */
@@ -32,6 +38,11 @@ class UsuarioAdapter(
          * (InformeService) para indicar que la celda es editable.
          */
         const val LAPIZ = "\u270E"
+
+        /** Verde oscuro de "estado activo". Coherente con tvEstado de P14. */
+        const val VERDE_ACTIVO   = "#2E7D32"
+        /** Rojo de "estado inactivo". Coherente con tvEstado de P14. */
+        const val ROJO_INACTIVO  = "#C62828"
     }
 
     class ViewHolder(val binding: ItemUsuarioBinding) : RecyclerView.ViewHolder(binding.root)
@@ -50,6 +61,9 @@ class UsuarioAdapter(
             tvEmail.text     = item.email
             tvRol.text       = rolLegible(item.rol)
             tvEstado.text    = if (item.activo) "Activo" else "Inactivo"
+            tvEstado.setTextColor(
+                Color.parseColor(if (item.activo) VERDE_ACTIVO else ROJO_INACTIVO)
+            )
 
             val colorBorde = if (item.activo) 0xFF4CAF50.toInt() else 0xFF9E9E9E.toInt()
             viewBorde.setBackgroundColor(colorBorde)

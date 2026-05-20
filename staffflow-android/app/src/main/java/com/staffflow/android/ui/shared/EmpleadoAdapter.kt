@@ -21,8 +21,10 @@ import com.staffflow.android.domain.model.CategoriaEmpleado
  *
  * Indicacion del estado activo/inactivo (doble señal visual):
  *   - Borde izquierdo:
- *       activo=true  -> colorPrimary del tema (#6750A4 en Material3 predeterminado)
+ *       activo=true  -> verde claro (#4CAF50)
  *       activo=false -> gris (#9E9E9E)
+ *     Mismos colores que el borde de UsuarioAdapter (P28) para coherencia
+ *     visual entre las dos listas de gestion de estado.
  *   - Texto " · Inactivo" en rojo (#C62828) en la linea del numero de
  *     empleado, solo si activo=false. Sigue la regla "marca la excepcion,
  *     no la norma": los activos no muestran texto adicional.
@@ -90,7 +92,7 @@ class EmpleadoAdapter(
         }
         holder.binding.tvCategoria.text = nombreCategoria(item.categoria)
         holder.binding.viewBorde.setBackgroundColor(
-            if (item.activo) Color.parseColor("#6750A4")
+            if (item.activo) Color.parseColor("#4CAF50")
             else Color.parseColor("#9E9E9E")
         )
         holder.itemView.setOnClickListener { onClick(item) }
