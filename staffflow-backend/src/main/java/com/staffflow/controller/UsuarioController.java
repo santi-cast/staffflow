@@ -151,7 +151,7 @@ public class UsuarioController {
      * Desactiva un usuario aplicando baja lógica (activo = false).
      *
      * No ejecuta SQL DELETE. El registro permanece en BD con activo=false.
- *  El historial de auditoría queda intacto.
+     * El historial de auditoría queda intacto.
      * El usuario desactivado no puede hacer login.
      *
      * Nota: el verbo HTTP es DELETE pero la semántica es baja lógica,

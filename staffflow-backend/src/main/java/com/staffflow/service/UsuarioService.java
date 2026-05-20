@@ -263,8 +263,6 @@ public class UsuarioService {
      * La nueva contraseña se hashea con BCrypt y se persiste en password_hash.
      * La contraseña en claro nunca se almacena ni se devuelve en la respuesta.
      *
-     * // TODO M-020: candidato para auditoría de credenciales (tabla auditoria_credenciales)
-     *
      * Códigos HTTP producidos:
      *   200 OK          → contraseña actualizada correctamente
      *   400 Bad Request → nuevaPassword no cumple la política mínima (< 8 chars)
@@ -281,6 +279,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new NotFoundException(
                         "Usuario con id " + id + " no encontrado"));
 
+        // TODO M-020: registrar esta operación en auditoria_credenciales cuando se implemente.
         usuario.setPasswordHash(passwordEncoder.encode(request.getNuevaPassword()));
         usuarioRepository.save(usuario);
 
