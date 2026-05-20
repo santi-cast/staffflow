@@ -331,11 +331,6 @@
             android:id="@+id/action_empleados_to_detalle"
             app:destination="@id/detalleEmpleadoFragment" />
 
-        <!-- P13 -> P15 Crear empleado (FAB) -->
-        <action
-            android:id="@+id/action_empleados_to_form"
-            app:destination="@id/formEmpleadoFragment" />
-
     </fragment>
 
     <!-- P14 Detalle de empleado -->
@@ -411,14 +406,7 @@
         android:id="@+id/formUsuarioFragment"
         android:name="com.staffflow.android.ui.admin.FormUsuarioFragment"
         android:label="Usuario"
-        tools:layout="@layout/fragment_form_usuario">
-
-        <!-- P29 -> P15 Crear perfil empleado (snackbar tras crear usuario) -->
-        <action
-            android:id="@+id/action_form_usuario_to_form_empleado"
-            app:destination="@id/formEmpleadoFragment" />
-
-    </fragment>
+        tools:layout="@layout/fragment_form_usuario" />
 
     <!-- P30 Configuracion de la empresa (singleton) -->
     <fragment

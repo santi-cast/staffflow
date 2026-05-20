@@ -92,24 +92,20 @@
     <string name="tipo_pausa_ausencia_retribuida">Ausencia retribuida</string>
     <string name="tipo_pausa_otros">Otros</string>
 
-    <!-- P15 Formulario de empleado -->
-    <string name="form_empleado_titulo_alta">Nuevo empleado</string>
+    <!-- P15 Formulario de empleado (solo edicion); el alta combinada vive en P29 -->
     <string name="form_empleado_titulo_edicion">Editar empleado</string>
     <string name="form_empleado_guardar">Guardar</string>
-    <string name="form_empleado_hint_usuario_id">ID de usuario</string>
+    <string name="form_empleado_alta_el">Alta: %1$s</string>
     <string name="form_empleado_hint_nombre">Nombre</string>
     <string name="form_empleado_hint_apellido1">Primer apellido</string>
     <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
+    <!-- form_empleado_hint_dni se usa en P29 (seccion perfil empleado del alta combinada). -->
     <string name="form_empleado_hint_dni">DNI</string>
-    <string name="form_empleado_hint_numero">Número de empleado (EMP-001)</string>
     <string name="form_empleado_hint_categoria">Categoría</string>
     <string name="form_empleado_hint_jornada_semanal">Horas semanales</string>
-    <string name="form_empleado_hint_jornada_diaria">Minutos jornada diaria</string>
     <string name="form_empleado_hint_vacaciones">Días de vacaciones al año</string>
     <string name="form_empleado_hint_asuntos">Días de asuntos propios al año</string>
-    <string name="form_empleado_hint_pin">PIN terminal (4 dígitos)</string>
     <string name="form_empleado_error_campos">Rellena todos los campos obligatorios</string>
-    <string name="form_empleado_error_pin">El PIN debe tener exactamente 4 dígitos</string>
 
     <!-- P14 Detalle de empleado -->
     <string name="detalle_empleado_activo">Activo</string>

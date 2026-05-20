@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout del formulario de empleado (P15).
+    Layout del formulario de empleado (P15). Solo edicion.
 
-    Patron F - formulario create/edit. Solo accesible para ADMIN.
-    Endpoints: E13 POST /empleados (alta) | E16 PATCH /empleados/{id} (edicion)
+    Patron F - formulario edit. Solo accesible para ADMIN.
+    Endpoint: E16 PATCH /empleados/{id}. La precarga inicial usa E15.
 
-    Modo alta   (empleadoId = -1): todos los campos visibles.
-    Modo edicion (empleadoId > 0): campos inmutables ocultos (GONE):
-      tilUsuarioId, tilDni, tilNumeroEmpleado.
-    La fecha de alta solo se elige al crear el usuario en P29; aqui no aparece.
+    El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) en el
+    mismo flujo que el alta de usuario. P15 no expone modo "crear" porque dni,
+    usuarioId, numeroEmpleado, pinTerminal y fechaAlta son inmutables via PATCH
+    y por tanto no pueden modificarse aqui.
 
-    El titulo de la toolbar lo establece FormEmpleadoFragment segun el modo.
     El boton GUARDAR se deshabilita durante la llamada al API.
 -->
 <ScrollView
@@ -25,6 +24,21 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
+        <!--
+            Fecha de alta del empleado (solo lectura).
+            Metadata contractual: dia en el que empezo (o empezara) a trabajar.
+            Inmutable via PATCH; se asigna al crear el usuario desde P29.
+            Se rellena en prerellenarCampos() tras E15 GET /empleados/{id}.
+        -->
+        <TextView
+            android:id="@+id/tvFechaAlta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
 
         <!-- Nombre -->
         <com.google.android.material.textfield.TextInputLayout
@@ -78,25 +92,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName|textCapWords"
-                android:imeOptions="actionNext"
-                android:singleLine="true" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- DNI: solo en modo alta -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilDni"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/form_empleado_hint_dni"
-            android:layout_marginBottom="12dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etDni"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapCharacters"
                 android:imeOptions="actionNext"
                 android:singleLine="true" />
 

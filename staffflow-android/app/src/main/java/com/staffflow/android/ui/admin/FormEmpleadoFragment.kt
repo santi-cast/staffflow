@@ -18,20 +18,23 @@ import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.FragmentFormEmpleadoBinding
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /**
- * Formulario de alta y edicion de empleado (P15). Solo accesible para ADMIN.
+ * Formulario de edicion de empleado (P15). Solo accesible para ADMIN.
  *
- * Patron F - formulario create/edit.
- * Modo alta   (empleadoId = -1): E13 POST /empleados.
- * Modo edicion (empleadoId > 0): E15 para precargar + E16 PATCH /empleados/{id}.
+ * Patron F - formulario edit.
+ * Flujo: E15 GET /empleados/{id} para precargar + E16 PATCH /empleados/{id}
+ * para guardar los campos modificables (nombre, apellidos, categoria,
+ * jornada, vacaciones, asuntos propios).
  *
- * Argumentos de navegacion:
- *   empleadoId: Long (-1 por defecto = modo alta)
- *   usuarioId:  Long (-1 por defecto = ADMIN introduce el ID manualmente)
+ * El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) junto
+ * al alta del usuario. No se admite empleadoId = -1 en esta pantalla.
  *
- * En modo edicion los campos DNI, numero, fecha alta y usuarioId se ocultan
- * ya que no son modificables via PATCH.
+ * Argumento de navegacion:
+ *   empleadoId: Long (debe ser > 0)
  *
  * GUARDAR deshabilita el boton y muestra LinearProgressIndicator durante la llamada.
  * OK: navega atras (popBackStack).
@@ -46,6 +49,9 @@ class FormEmpleadoFragment : Fragment() {
 
     private val categorias = CategoriaEmpleado.entries.toList()
     private val categoriaLabels = listOf("Operario", "Administrativo", "Técnico", "Encargado", "Otro")
+
+    /** Formato de presentacion para la fecha de alta del empleado. */
+    private val fmtFechaAlta = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -63,10 +69,9 @@ class FormEmpleadoFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val empleadoId = arguments?.getLong("empleadoId") ?: -1L
-        val usuarioId  = arguments?.getLong("usuarioId")  ?: -1L
-        viewModel.init(empleadoId, usuarioId)
+        viewModel.init(empleadoId)
         configurarCategoriasDropdown()
-        configurarModo(viewModel.modoEdicion, usuarioId)
+        requireActivity().title = getString(R.string.form_empleado_titulo_edicion)
         configurarListeners()
         observarViewModel()
     }
@@ -87,23 +92,6 @@ class FormEmpleadoFragment : Fragment() {
             categoriaLabels
         )
         binding.actvCategoria.setAdapter(adapter)
-    }
-
-    /**
-     * Ajusta la visibilidad de los campos segun el modo y el usuarioId prerellenado.
-     * En modo edicion: oculta campos no modificables via PATCH.
-     * En modo alta sin usuarioId: muestra el campo para introducirlo manualmente.
-     */
-    private fun configurarModo(modoEdicion: Boolean, usuarioId: Long) {
-        requireActivity().title = if (modoEdicion)
-            getString(R.string.form_empleado_titulo_edicion)
-        else
-            getString(R.string.form_empleado_titulo_alta)
-
-        // En modo edicion: DNI no es modificable via PATCH
-        binding.tilDni.isVisible = !modoEdicion
-
-        // tilUsuarioId eliminado: P15 solo se alcanza desde P29 (usuarioId llega pre-llenado)
     }
 
     private fun configurarListeners() {
@@ -142,7 +130,7 @@ class FormEmpleadoFragment : Fragment() {
         }
     }
 
-    /** Precarga los campos del formulario con los datos del empleado (modo edicion). */
+    /** Precarga los campos del formulario con los datos del empleado. */
     private fun prerellenarCampos(e: EmpleadoResponse) {
         binding.etNombre.setText(e.nombre)
         binding.etApellido1.setText(e.apellido1)
@@ -153,6 +141,28 @@ class FormEmpleadoFragment : Fragment() {
 
         val index = categorias.indexOf(e.categoria)
         if (index >= 0) binding.actvCategoria.setText(categoriaLabels[index], false)
+
+        mostrarFechaAlta(e.fechaAlta)
+    }
+
+    /**
+     * Muestra la fecha de alta del empleado formateada como "dd/MM/yyyy".
+     * Si el valor llega vacio o el parseo del ISO-8601 falla, el TextView se
+     * deja oculto (defensa silenciosa: la fecha es metadato informativo, no
+     * justifica romper la pantalla).
+     */
+    private fun mostrarFechaAlta(iso8601: String?) {
+        if (iso8601.isNullOrBlank()) {
+            binding.tvFechaAlta.isVisible = false
+            return
+        }
+        try {
+            val fecha = LocalDate.parse(iso8601).format(fmtFechaAlta)
+            binding.tvFechaAlta.text = getString(R.string.form_empleado_alta_el, fecha)
+            binding.tvFechaAlta.isVisible = true
+        } catch (_: DateTimeParseException) {
+            binding.tvFechaAlta.isVisible = false
+        }
     }
 
     // ------------------------------------------------------------------
@@ -190,14 +200,10 @@ class FormEmpleadoFragment : Fragment() {
             return
         }
 
-        val dni = binding.etDni.text?.toString().orEmpty().trim()
-
         viewModel.guardar(
-            usuarioIdInput      = null,  // siempre viene de P29 via argumento de navegacion
             nombre              = nombre,
             apellido1           = apellido1,
             apellido2           = apellido2.ifBlank { null },
-            dni                 = dni,
             categoria           = categoria,
             jornadaSemanalHoras = jornadaSemanal,
             diasVacaciones      = vacaciones,

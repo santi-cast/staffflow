@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.staffflow.android.data.remote.api.EmpleadoApiService
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.dto.EmpleadoPatchRequest
-import com.staffflow.android.data.remote.dto.EmpleadoRequest
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.data.remote.repository.EmpleadoRepository
 import com.staffflow.android.domain.model.CategoriaEmpleado
@@ -16,16 +15,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel del formulario de empleado (P15).
+ * ViewModel del formulario de empleado (P15). Solo edicion.
  *
- * Modo alta   (empleadoId = -1): llama a E13 POST /empleados.
- * Modo edicion (empleadoId > 0): llama a E15 para precargar datos,
- *                                luego a E16 PATCH /empleados/{id}.
+ * Flujo:
+ *   1. init(empleadoId) -> E15 GET /empleados/{id} para precargar datos.
+ *   2. guardar(...) -> E16 PATCH /empleados/{id} con los campos modificables.
+ *
+ * El alta de empleado NO se hace aqui: vive integrada en P29
+ * (FormUsuarioFragment) junto al alta del usuario. P15 solo admite
+ * empleadoId > 0; recibir -1 es un error de programacion y emite Error.
  *
  * UiState:
- *   Idle    -> formulario listo para rellenar (datos precargados en edicion)
+ *   Idle    -> formulario listo para editar (datos precargados)
  *   Loading -> llamada al API en curso (boton GUARDAR deshabilitado)
- *   Success -> operacion correcta (Fragment navega atras)
+ *   Success -> PATCH correcto (Fragment navega atras)
  *   Error   -> mensaje de error del backend o validacion local
  */
 class FormEmpleadoViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,36 +47,27 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    /** Empleado cargado en modo edicion. FormEmpleadoFragment lo usa para prerellenar campos. */
+    /** Empleado cargado. FormEmpleadoFragment lo usa para prerellenar campos. */
     private val _empleado = MutableStateFlow<EmpleadoResponse?>(null)
     val empleado: StateFlow<EmpleadoResponse?> = _empleado.asStateFlow()
 
-    /** true = modo edicion | false = modo alta */
-    var modoEdicion: Boolean = false
-        private set
-
     private var empleadoId: Long = Long.MIN_VALUE  // sentinel: aun no inicializado
-    private var usuarioId: Long = -1L
 
     /**
-     * Inicializa el modo del formulario.
-     * Llamado desde FormEmpleadoFragment.onViewCreated con los argumentos de navegacion.
+     * Inicializa el formulario cargando el empleado a editar.
+     * Llamado desde FormEmpleadoFragment.onViewCreated con el argumento de navegacion.
      *
-     * @param empleadoId Id del empleado a editar, o -1 para modo alta.
-     * @param usuarioId  Id del usuario al que vincular el empleado (modo alta desde P29).
-     *                   -1 si el ADMIN lo introduce manualmente.
+     * @param empleadoId Id del empleado a editar. Debe ser > 0.
      */
-    fun init(empleadoId: Long, usuarioId: Long) {
+    fun init(empleadoId: Long) {
         if (this.empleadoId == empleadoId) return  // ya inicializado (rotacion de pantalla)
         this.empleadoId = empleadoId
-        this.usuarioId  = usuarioId
-        modoEdicion = empleadoId > 0L
 
-        if (modoEdicion) {
-            cargarEmpleado()
-        } else {
-            _uiState.value = UiState.Idle
+        if (empleadoId <= 0L) {
+            _uiState.value = UiState.Error("Identificador de empleado invalido")
+            return
         }
+        cargarEmpleado()
     }
 
     private fun cargarEmpleado() {
@@ -92,16 +86,13 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     }
 
     /**
-     * Guarda el empleado.
-     * En modo alta llama a E13 POST, en modo edicion a E16 PATCH.
+     * Guarda los cambios del empleado mediante E16 PATCH /empleados/{id}.
      * Valida los campos antes de llamar al API.
      */
     fun guardar(
-        usuarioIdInput: Long?,       // solo modo alta
         nombre: String,
         apellido1: String,
         apellido2: String?,
-        dni: String,                 // solo modo alta
         categoria: CategoriaEmpleado,
         jornadaSemanalHoras: Double,
         diasVacaciones: Int,
@@ -114,46 +105,19 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading
-
-            if (modoEdicion) {
-                val request = EmpleadoPatchRequest(
-                    nombre = nombre,
-                    apellido1 = apellido1,
-                    apellido2 = apellido2?.ifBlank { null },
-                    categoria = categoria,
-                    jornadaSemanalHoras = jornadaSemanalHoras,
-                    diasVacacionesAnuales = diasVacaciones,
-                    diasAsuntosPropiosAnuales = diasAsuntos
-                )
-                repository.actualizarEmpleado(empleadoId, request).fold(
-                    onSuccess = { _uiState.value = UiState.Success },
-                    onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al guardar") }
-                )
-            } else {
-                val idUsuario = usuarioId.takeIf { it > 0L } ?: usuarioIdInput ?: run {
-                    _uiState.value = UiState.Error("Introduce el ID de usuario")
-                    return@launch
-                }
-                if (dni.isBlank()) {
-                    _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
-                    return@launch
-                }
-                val request = EmpleadoRequest(
-                    usuarioId = idUsuario,
-                    nombre = nombre,
-                    apellido1 = apellido1,
-                    apellido2 = apellido2?.ifBlank { null },
-                    dni = dni,
-                    categoria = categoria,
-                    jornadaSemanalHoras = jornadaSemanalHoras,
-                    diasVacacionesAnuales = diasVacaciones,
-                    diasAsuntosPropiosAnuales = diasAsuntos
-                )
-                repository.crearEmpleado(request).fold(
-                    onSuccess = { _uiState.value = UiState.Success },
-                    onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al crear el empleado") }
-                )
-            }
+            val request = EmpleadoPatchRequest(
+                nombre = nombre,
+                apellido1 = apellido1,
+                apellido2 = apellido2?.ifBlank { null },
+                categoria = categoria,
+                jornadaSemanalHoras = jornadaSemanalHoras,
+                diasVacacionesAnuales = diasVacaciones,
+                diasAsuntosPropiosAnuales = diasAsuntos
+            )
+            repository.actualizarEmpleado(empleadoId, request).fold(
+                onSuccess = { _uiState.value = UiState.Success },
+                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al guardar") }
+            )
         }
     }
 

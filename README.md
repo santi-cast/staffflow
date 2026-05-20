@@ -194,7 +194,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos. `fechaAlta` es opcional: si llega, debe ser ≥ hoy (altas diferidas); si se omite, se asigna `LocalDate.now()` | P15, P29 |
+| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos. `fechaAlta` es opcional: si llega, debe ser ≥ hoy (altas diferidas); si se omite, se asigna `LocalDate.now()` | P29 |
 | E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría). Sin filtros devuelve todos (activos e inactivos) | P13 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal` y `email`; ENCARGADO los recibe a `null` (Opción A) | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado (PIN de terminal NO se modifica aquí — usar E65) | P15 |
@@ -404,7 +404,7 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P12 | MiHoyFragment | 2 — Empleado | E37 | EMPLEADO, ENCARGADO |
 | P13 | EmpleadosFragment | 3 — Gestión | E14 | ADMIN, ENCARGADO |
 | P14 | DetalleEmpleadoFragment | 3 — Gestión | E15, E65 | ADMIN, ENCARGADO |
-| P15 | FormEmpleadoFragment | 3 — Gestión | E13, E15, E16 | ADMIN, ENCARGADO |
+| P15 | FormEmpleadoFragment | 3 — Gestión | E15, E16 | ADMIN |
 | P16 | DetalleDiaFragment | 4 — Encargado | E24, E29, E33 | ADMIN, ENCARGADO |
 | P17 | ParteDiarioFragment | 4 — Encargado | E35, E53, E54 | ADMIN, ENCARGADO |
 | P18 | SinJustificarFragment | 4 — Encargado | E36 | ADMIN, ENCARGADO |
