@@ -3,6 +3,7 @@ package com.staffflow.android.ui.admin
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.staffflow.android.R
 import com.staffflow.android.data.remote.api.EmpleadoApiService
 import com.staffflow.android.data.remote.api.NetworkModule
 import com.staffflow.android.data.remote.api.UsuarioApiService
@@ -111,7 +112,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
             _uiState.value = UiState.Cargando
             repository.obtenerUsuario(usuarioId).fold(
                 onSuccess = { _uiState.value = UiState.SuccessAlta(it) },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cargar usuario") }
+                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_cargar_usuario)) }
             )
         }
     }
@@ -168,14 +169,14 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         diasAsuntos: Int? = null, fechaAlta: String? = null
     ) {
         if (username.isBlank() || password.isBlank() || email.isBlank()) {
-            _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
+            _uiState.value = UiState.Error(getApplication<Application>().getString(R.string.form_usuario_error_campos_obligatorios))
             return
         }
         if (rol != Rol.ADMIN) {
             if (nombre.isNullOrBlank() || apellido1.isNullOrBlank() ||
                 dni.isNullOrBlank() || categoria == null ||
                 jornadaSemanalHoras == null || diasVacaciones == null || diasAsuntos == null) {
-                _uiState.value = UiState.Error("Rellena todos los campos del perfil de empleado")
+                _uiState.value = UiState.Error(getApplication<Application>().getString(R.string.form_usuario_error_campos_perfil_empleado))
                 return
             }
         }
@@ -196,12 +197,12 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
                 if (errorApi is ApiError.Conflict) {
                     _uiState.value = UiState.UsernameDuplicadoEnAlta(
                         mensaje = errorApi.mensaje
-                            ?: "El usuario ya esta registrado, se ha generado uno nuevo",
+                            ?: getApplication<Application>().getString(R.string.form_usuario_error_username_duplicado_fallback),
                         rol = rol
                     )
                 } else {
                     _uiState.value = UiState.Error(
-                        fallo?.message ?: "Error al crear usuario"
+                        fallo?.message ?: getApplication<Application>().getString(R.string.form_usuario_error_crear_usuario)
                     )
                 }
                 return@launch
@@ -226,7 +227,10 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
                     onSuccess = { _uiState.value = UiState.Success },
                     onFailure = {
                         _uiState.value = UiState.Error(
-                            "Usuario creado pero falló el perfil: ${it.message}"
+                            getApplication<Application>().getString(
+                                R.string.form_usuario_error_perfil_empleado_fallido,
+                                it.message ?: ""
+                            )
                         )
                     }
                 )
@@ -246,7 +250,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun actualizar(email: String, rol: Rol) {
         if (email.isBlank()) {
-            _uiState.value = UiState.Error("El email es obligatorio")
+            _uiState.value = UiState.Error(getApplication<Application>().getString(R.string.form_usuario_error_email_obligatorio))
             return
         }
         viewModelScope.launch {
@@ -254,7 +258,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
             val request = UsuarioPatchRequest(email = email, rol = rol)
             repository.actualizarUsuario(usuarioId, request).fold(
                 onSuccess = { _uiState.value = UiState.Success },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al guardar") }
+                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_guardar)) }
             )
         }
     }
@@ -269,7 +273,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
             _uiState.value = UiState.Loading
             repository.desactivarUsuario(usuarioId).fold(
                 onSuccess = { _uiState.value = UiState.Desactivado },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al desactivar") }
+                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_desactivar)) }
             )
         }
     }
@@ -292,7 +296,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
             _uiState.value = UiState.Loading
             repository.resetearPassword(usuarioId, nuevaPassword).fold(
                 onSuccess = { _uiState.value = UiState.PasswordReseteado },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: "Error al cambiar la contraseña") }
+                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_cambiar_password)) }
             )
         }
     }

@@ -265,6 +265,17 @@
     <string name="form_usuario_dialogo_password_error_corta">La contraseña debe tener al menos 8 caracteres</string>
     <string name="form_usuario_dialogo_password_confirmar">Cambiar</string>
     <string name="form_usuario_resultado_password_reseteado">Contraseña actualizada correctamente</string>
+    <!-- Errores del ViewModel P29 (fallbacks cuando el backend no envía mensaje propio). -->
+    <string name="form_usuario_error_campos_obligatorios">Rellena todos los campos obligatorios</string>
+    <string name="form_usuario_error_campos_perfil_empleado">Rellena todos los campos del perfil de empleado</string>
+    <string name="form_usuario_error_email_obligatorio">El email es obligatorio</string>
+    <string name="form_usuario_error_cargar_usuario">Error al cargar usuario</string>
+    <string name="form_usuario_error_crear_usuario">Error al crear usuario</string>
+    <string name="form_usuario_error_guardar">Error al guardar</string>
+    <string name="form_usuario_error_desactivar">Error al desactivar</string>
+    <string name="form_usuario_error_cambiar_password">Error al cambiar la contraseña</string>
+    <string name="form_usuario_error_username_duplicado_fallback">El usuario ya está registrado, se ha generado uno nuevo</string>
+    <string name="form_usuario_error_perfil_empleado_fallido">Usuario creado pero falló el perfil: %1$s</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
