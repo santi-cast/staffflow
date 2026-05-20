@@ -5,12 +5,14 @@
     Orden de campos:
       tilRol (primero, controla el resto), tilUsername (auto-sugerido segun rol),
       tvFechaCreacion (solo edicion), tilPassword (solo alta), tilEmail,
-      seccion perfil empleado (solo alta si rol != ADMIN), btnGuardar, btnCambiarEstado.
+      seccion perfil empleado (solo alta si rol != ADMIN), btnCambiarPassword,
+      btnCambiarEstado, btnGuardar.
 
     Modo alta   (usuarioId=-1): tilRol, tilUsername, tilPassword, tilEmail,
                                 seccion perfil empleado, btnGuardar.
     Modo edicion (usuarioId>0): tilRol, tilUsername (disabled), tvFechaCreacion,
-                                tilEmail, btnCambiarPassword, btnGuardar, btnCambiarEstado.
+                                tilEmail, btnCambiarPassword, btnCambiarEstado,
+                                btnGuardar.
 
     tilPassword solo visible en modo alta.
     btnCambiarPassword solo visible en modo edicion: abre dialogo con campo
@@ -19,6 +21,8 @@
     btnCambiarEstado solo visible en modo edicion: alterna entre "Desactivar"
     (rojo, llama a E12 DELETE) y "Activar" (verde, llama a E67 PATCH /reactivar)
     segun usuario.activo. Patron simetrico al de DetalleEmpleadoFragment (P15).
+    Acciones secundarias (btnCambiarPassword, btnCambiarEstado) wrap_content
+    centradas; btnGuardar es la accion primaria y ocupa el ancho completo.
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -329,29 +333,31 @@
             android:text="@string/form_usuario_cambiar_password"
             android:visibility="gone" />
 
+        <!--
+            Boton para cambiar el estado activo (solo en modo edicion).
+            Texto y color se reasignan en runtime (Fragment.observarViewModel) segun
+            usuario.activo: "Desactivar" rojo si activo=true, "Activar" verde si false.
+            wrap_content centrado (mismo tamaño que btnCambiarPassword) por ser
+            accion secundaria; btnGuardar es la accion primaria y ocupa el ancho.
+        -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCambiarEstado"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:text="@string/form_usuario_desactivar"
+            android:textColor="?attr/colorError"
+            android:visibility="gone"
+            app:strokeColor="?attr/colorError" />
+
         <!-- Boton guardar -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/form_usuario_guardar" />
-
-        <!--
-            Boton para cambiar el estado activo (solo en modo edicion).
-            Texto y color se reasignan en runtime (Fragment.observarViewModel) segun
-            usuario.activo: "Desactivar" rojo si activo=true, "Activar" verde si false.
-            Texto inicial neutro hasta que SuccessAlta lo configure correctamente.
-        -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCambiarEstado"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/form_usuario_desactivar"
-            android:textColor="?attr/colorError"
-            android:visibility="gone"
-            app:strokeColor="?attr/colorError" />
 
         <!-- Indicador de progreso -->
         <com.google.android.material.progressindicator.LinearProgressIndicator
