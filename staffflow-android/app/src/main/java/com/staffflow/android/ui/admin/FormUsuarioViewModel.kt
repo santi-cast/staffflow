@@ -14,6 +14,8 @@ import com.staffflow.android.data.remote.repository.EmpleadoRepository
 import com.staffflow.android.data.remote.repository.UsuarioRepository
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import com.staffflow.android.domain.model.Rol
+import com.staffflow.android.util.ApiError
+import com.staffflow.android.util.ApiException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,19 +24,24 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel del formulario de usuario (P29). Solo ADMIN.
  *
- * Modo alta   (usuarioId = -1): E08 POST /usuarios.
+ * Modo alta   (usuarioId = -1): E08 POST /usuarios + E13 POST /empleados
+ *                               cuando rol != ADMIN.
  * Modo edicion (usuarioId > 0): pre-carga con E10 GET /usuarios/{id},
  *                               guarda con E11 PATCH /usuarios/{id}.
  * Desactivar  (usuarioId > 0): E12 DELETE /usuarios/{id} (baja logica).
  *
  * UiState:
- *   Idle        -> formulario listo
- *   Loading     -> llamada al API en curso
- *   Cargando    -> pre-cargando datos en modo edicion
- *   Success     -> operacion correcta (Fragment navega atras)
- *   SuccessAlta -> usuario creado (Fragment muestra Snackbar con accion crear perfil)
- *   Desactivado -> baja logica OK (Fragment navega atras)
- *   Error       -> mensaje de error inline
+ *   Idle                    -> formulario listo
+ *   Loading                 -> llamada al API en curso
+ *   Cargando                -> pre-cargando datos en modo edicion
+ *   Success                 -> operacion correcta (Fragment navega atras)
+ *   SuccessAlta             -> usuario cargado en modo edicion (datos para pre-rellenar)
+ *   Desactivado             -> baja logica OK (Fragment navega atras)
+ *   Error                   -> mensaje de error inline
+ *   UsernameDuplicadoEnAlta -> HTTP 409 en E08 por username ya existente.
+ *                              El Fragment muestra el mensaje y vuelve a
+ *                              sugerir un username libre sin perder el
+ *                              resto de campos del formulario.
  */
 class FormUsuarioViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -50,10 +57,22 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         object Cargando : UiState()
         object Loading : UiState()
         object Success : UiState()
-        /** Usuario creado. empleadoId del nuevo usuario para navegar a P15. */
+        /** Datos del usuario cargados en modo edicion para pre-rellenar el formulario. */
         data class SuccessAlta(val usuario: UsuarioResponse) : UiState()
         object Desactivado : UiState()
         data class Error(val mensaje: String) : UiState()
+
+        /**
+         * HTTP 409 en E08 POST /usuarios por username ya existente.
+         * Se emite solo en modo alta y solo cuando el conflicto viene del
+         * primer paso (creacion del usuario). Conflictos de E13 (DNI o NFC)
+         * caen en Error porque no son resolubles automaticamente.
+         *
+         * El Fragment debe mostrar `mensaje` en Snackbar y volver a invocar
+         * `sugerirUsername(rol)` para que el ViewModel proponga el siguiente
+         * username libre. El resto del formulario se conserva intacto.
+         */
+        data class UsernameDuplicadoEnAlta(val mensaje: String, val rol: Rol) : UiState()
     }
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -165,9 +184,23 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
                                email = email, rol = rol)
             )
             if (usuarioResult.isFailure) {
-                _uiState.value = UiState.Error(
-                    usuarioResult.exceptionOrNull()?.message ?: "Error al crear usuario"
-                )
+                val fallo = usuarioResult.exceptionOrNull()
+                // HTTP 409 en E08 = conflicto de username (es el unico campo con
+                // unicidad chequeada en POST /usuarios; email no es unique en BD).
+                // Se trata de forma especial para que el Fragment regenere
+                // automaticamente el username sin perder el resto del formulario.
+                val errorApi = (fallo as? ApiException)?.error
+                if (errorApi is ApiError.Conflict) {
+                    _uiState.value = UiState.UsernameDuplicadoEnAlta(
+                        mensaje = errorApi.mensaje
+                            ?: "El usuario ya esta registrado, se ha generado uno nuevo",
+                        rol = rol
+                    )
+                } else {
+                    _uiState.value = UiState.Error(
+                        fallo?.message ?: "Error al crear usuario"
+                    )
+                }
                 return@launch
             }
             val usuario = usuarioResult.getOrThrow()
@@ -238,7 +271,16 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /**
+     * Limpia los estados transitorios de error para que el Fragment no los
+     * reprocese tras una rotacion u otro cambio de configuracion.
+     * Cubre Error generico y UsernameDuplicadoEnAlta (ambos requieren
+     * Snackbar + vuelta a Idle).
+     */
     fun limpiarError() {
-        if (_uiState.value is UiState.Error) _uiState.value = UiState.Idle
+        val actual = _uiState.value
+        if (actual is UiState.Error || actual is UiState.UsernameDuplicadoEnAlta) {
+            _uiState.value = UiState.Idle
+        }
     }
 }

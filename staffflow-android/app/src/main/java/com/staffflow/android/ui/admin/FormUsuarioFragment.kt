@@ -311,6 +311,21 @@ class FormUsuarioFragment : Fragment() {
                 viewModel.limpiarError()
             }
 
+            is FormUsuarioViewModel.UiState.UsernameDuplicadoEnAlta -> {
+                // Conflicto de username detectado por el backend (carrera entre
+                // dos admins simultaneos en la misma maquina o en clientes
+                // distintos). Avisamos al usuario, regeneramos automaticamente
+                // el username con el siguiente prefijo libre y dejamos el resto
+                // del formulario intacto para que solo tenga que dar Guardar.
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.form_usuario_username_duplicado, estado.mensaje),
+                    Snackbar.LENGTH_LONG
+                ).show()
+                viewModel.sugerirUsername(estado.rol)
+                viewModel.limpiarError()
+            }
+
             else -> Unit
         }
     }

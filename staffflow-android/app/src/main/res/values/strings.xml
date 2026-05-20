@@ -258,6 +258,7 @@
     <string name="form_usuario_resultado_creado">Usuario creado correctamente</string>
     <string name="form_usuario_resultado_actualizado">Usuario actualizado correctamente</string>
     <string name="form_usuario_resultado_desactivado">Usuario desactivado correctamente</string>
+    <string name="form_usuario_username_duplicado">%1$s. Se ha generado un nuevo nombre de usuario.</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
