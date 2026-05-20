@@ -164,7 +164,13 @@ public class EmpleadoService {
     /**
      * Lista empleados con filtros opcionales y combinables.
      *
-     * Sin parámetros devuelve todos los empleados activos.
+     * Sin parámetros devuelve TODOS los empleados (activos e inactivos).
+     * Para filtrar por estado se debe pasar explícitamente activo=true
+     * o activo=false. Este defecto se eligió pensando en la pantalla de
+     * gestión P13 del cliente Android, donde el ADMIN necesita ver
+     * inactivos para poder reactivarlos. Los consumidores que solo
+     * quieran activos (informes, PDFs) deben pasar activo=true explícito.
+     *
      * El parámetro q busca simultáneamente en nombre, apellido1,
      * apellido2 y dni integrando RF-12 y RF-14 en un solo endpoint.
      *
@@ -176,7 +182,7 @@ public class EmpleadoService {
      *   200 OK          → lista devuelta (puede ser lista vacía)
      *   403 Forbidden   → rol insuficiente
      *
-     * @param activo    filtro por estado: true/false — null = solo activos (defecto)
+     * @param activo    filtro por estado: true/false — null = todos (defecto)
      * @param q         búsqueda por nombre, apellido1, apellido2 o dni — null = sin filtro
      * @param categoria filtro por categoría laboral — null = sin filtro
      * @return lista de EmpleadoResponse sin pinTerminal
@@ -210,8 +216,10 @@ public class EmpleadoService {
         } else if (activo != null) {
             empleados = empleadoRepository.findByActivo(activo);
         } else {
-            // Sin filtros: devuelve solo los activos (comportamiento por defecto)
-            empleados = empleadoRepository.findByActivo(true);
+            // Sin filtros: devuelve TODOS los empleados (activos e inactivos).
+            // Necesario para que la pantalla P13 del cliente Android pueda
+            // mostrar tambien los inactivos y permitir su reactivacion.
+            empleados = empleadoRepository.findAll();
         }
 
         // PIN nunca se devuelve en listados: toEmpleadoResponse() omite

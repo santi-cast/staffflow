@@ -87,7 +87,9 @@ public class EmpleadoController {
     /**
      * Lista empleados con filtros opcionales y combinables.
      *
-     * Sin query params devuelve todos los empleados activos.
+     * Sin query params devuelve TODOS los empleados (activos e inactivos).
+     * Para limitar a activos se debe pasar activo=true explícito; ver
+     * Javadoc de EmpleadoService.listar para el detalle del defecto.
      * El PIN no se incluye en el listado independientemente del rol.
      *   ?activo=true|false
      *   ?q=texto (busca en nombre, apellido1, apellido2, dni)
@@ -97,7 +99,7 @@ public class EmpleadoController {
      *   200 OK          → lista devuelta (puede ser lista vacía)
      *   403 Forbidden   → rol insuficiente
      *
-     * @param activo    filtro por estado — opcional
+     * @param activo    filtro por estado — opcional (null = todos)
      * @param q         búsqueda por texto — opcional
      * @param categoria filtro por categoría — opcional
      * @return 200 OK con lista de EmpleadoResponse (sin pinTerminal)
