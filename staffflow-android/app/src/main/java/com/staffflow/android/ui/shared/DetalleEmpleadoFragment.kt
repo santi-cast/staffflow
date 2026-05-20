@@ -43,6 +43,15 @@ import java.time.format.DateTimeFormatter
  *   Editar         -> P15 (FormEmpleadoFragment).        Solo ADMIN.
  *   Regenerar PIN  -> E65 POST /empleados/{id}/regenerar-pin.
  *                     ADMIN o ENCARGADO. Confirmacion + dialog con PIN nuevo.
+ *                     Se deshabilita si el empleado esta inactivo.
+ *
+ * Boton bimodal en el header (debajo del estado), solo ADMIN:
+ *   Activo   -> "Desactivar" (rojo)  -> E17 PATCH /empleados/{id}/baja
+ *   Inactivo -> "Activar"    (verde) -> E18 PATCH /empleados/{id}/reactivar
+ *   En ambos casos: dialog de confirmacion + Snackbar de resultado.
+ *   El backend mantiene "baja/reactivar" en URL por compatibilidad de la
+ *   API publicada; la UI adopta "desactivar/activar" por cubrir mas casos
+ *   (excedencias, bajas medicas, permisos sin sueldo).
  */
 class DetalleEmpleadoFragment : Fragment() {
 
@@ -110,6 +119,17 @@ class DetalleEmpleadoFragment : Fragment() {
         binding.chipRegenerarPin.setOnClickListener {
             mostrarDialogConfirmarRegenerarPin()
         }
+        binding.btnCambiarEstado.setOnClickListener {
+            // Decidir desactivar vs activar segun el estado actual del empleado
+            val estado = viewModel.uiState.value
+            if (estado is DetalleEmpleadoViewModel.UiState.Success) {
+                if (estado.empleado.activo) {
+                    mostrarDialogConfirmarDesactivar()
+                } else {
+                    mostrarDialogConfirmarActivar()
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------------
@@ -137,6 +157,34 @@ class DetalleEmpleadoFragment : Fragment() {
                                     "404" -> getString(R.string.regenerar_pin_error_404)
                                     "red" -> getString(R.string.regenerar_pin_error_red)
                                     else -> getString(R.string.regenerar_pin_error_generico)
+                                }
+                                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+                launch {
+                    viewModel.eventoCambioEstado.collect { evento ->
+                        when (evento) {
+                            is CambioEstadoEmpleadoEvento.Cargando -> {
+                                binding.btnCambiarEstado.isEnabled = false
+                            }
+                            is CambioEstadoEmpleadoEvento.Exito -> {
+                                binding.btnCambiarEstado.isEnabled = true
+                                val msg = if (evento.activado) {
+                                    getString(R.string.detalle_empleado_activar_ok)
+                                } else {
+                                    getString(R.string.detalle_empleado_desactivar_ok)
+                                }
+                                Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
+                            }
+                            is CambioEstadoEmpleadoEvento.Error -> {
+                                binding.btnCambiarEstado.isEnabled = true
+                                val msg = when (evento.codigo) {
+                                    "404" -> getString(R.string.detalle_empleado_estado_error_404)
+                                    "409" -> getString(R.string.detalle_empleado_estado_error_409)
+                                    "red" -> getString(R.string.detalle_empleado_estado_error_red)
+                                    else -> getString(R.string.detalle_empleado_estado_error_generico)
                                 }
                                 Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
                             }
@@ -176,9 +224,17 @@ class DetalleEmpleadoFragment : Fragment() {
             binding.tvEstado.text = getString(R.string.detalle_empleado_activo)
             binding.tvEstado.setTextColor(Color.parseColor("#2E7D32"))
         } else {
-            binding.tvEstado.text = getString(R.string.detalle_empleado_baja)
+            binding.tvEstado.text = getString(R.string.detalle_empleado_inactivo)
             binding.tvEstado.setTextColor(Color.parseColor("#C62828"))
         }
+
+        // Boton bimodal Desactivar/Activar (solo ADMIN; ver aplicarGatingPorRol)
+        configurarBotonCambiarEstado(e.activo)
+
+        // Regenerar PIN se deshabilita si el empleado esta inactivo.
+        // No tiene sentido regenerar el PIN de alguien que no puede fichar;
+        // ademas evita ruido si vuelve activo con un PIN distinto al recordado.
+        binding.chipRegenerarPin.isEnabled = e.activo
 
         // Datos personales
         binding.filaDni.tvLabel.text  = "DNI"
@@ -218,13 +274,69 @@ class DetalleEmpleadoFragment : Fragment() {
     }
 
     /**
-     * Aplica el gating por rol a los chips de accion:
-     *   Editar         -> solo ADMIN
-     *   Regenerar PIN  -> ADMIN o ENCARGADO
+     * Aplica el gating por rol a los chips de accion y al boton de estado:
+     *   Editar             -> solo ADMIN
+     *   Regenerar PIN      -> ADMIN o ENCARGADO
+     *   Desactivar/Activar -> solo ADMIN (E17/E18)
      */
     private fun aplicarGatingPorRol(rol: Rol?) {
         binding.chipEditar.isVisible = rol == Rol.ADMIN
         binding.chipRegenerarPin.isVisible = rol == Rol.ADMIN || rol == Rol.ENCARGADO
+        binding.btnCambiarEstado.isVisible = rol == Rol.ADMIN
+    }
+
+    /**
+     * Configura el texto y el color del boton bimodal Desactivar/Activar
+     * segun el estado actual del empleado. Se invoca desde mostrarDatos()
+     * cada vez que el ViewModel emite UiState.Success, asi que tras una
+     * llamada exitosa a E17 o E18 el boton se redibuja automaticamente
+     * (el ViewModel actualiza uiState con el nuevo valor de `activo`).
+     *
+     * Activo   -> "Desactivar" outlined rojo  (#C62828, mismo que tvEstado inactivo)
+     * Inactivo -> "Activar"    outlined verde (#2E7D32, mismo que tvEstado activo)
+     */
+    private fun configurarBotonCambiarEstado(activo: Boolean) {
+        if (activo) {
+            binding.btnCambiarEstado.text = getString(R.string.detalle_empleado_btn_desactivar)
+            val rojo = Color.parseColor("#C62828")
+            binding.btnCambiarEstado.setTextColor(rojo)
+            binding.btnCambiarEstado.strokeColor = android.content.res.ColorStateList.valueOf(rojo)
+        } else {
+            binding.btnCambiarEstado.text = getString(R.string.detalle_empleado_btn_activar)
+            val verde = Color.parseColor("#2E7D32")
+            binding.btnCambiarEstado.setTextColor(verde)
+            binding.btnCambiarEstado.strokeColor = android.content.res.ColorStateList.valueOf(verde)
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Dialogs E17 / E18 - Desactivar / Activar
+    // ------------------------------------------------------------------
+
+    private fun mostrarDialogConfirmarDesactivar() {
+        val empleadoId = arguments?.getLong("empleadoId") ?: -1L
+        val nombre = nombreEmpleadoActual()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.detalle_empleado_desactivar_dialog_titulo, nombre))
+            .setMessage(R.string.detalle_empleado_desactivar_dialog_mensaje)
+            .setNegativeButton(R.string.form_ausencia_dialogo_cancelar, null)
+            .setPositiveButton(R.string.detalle_empleado_btn_desactivar) { _, _ ->
+                viewModel.desactivar(empleadoId)
+            }
+            .show()
+    }
+
+    private fun mostrarDialogConfirmarActivar() {
+        val empleadoId = arguments?.getLong("empleadoId") ?: -1L
+        val nombre = nombreEmpleadoActual()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.detalle_empleado_activar_dialog_titulo, nombre))
+            .setMessage(R.string.detalle_empleado_activar_dialog_mensaje)
+            .setNegativeButton(R.string.form_ausencia_dialogo_cancelar, null)
+            .setPositiveButton(R.string.detalle_empleado_btn_activar) { _, _ ->
+                viewModel.activar(empleadoId)
+            }
+            .show()
     }
 
     // ------------------------------------------------------------------

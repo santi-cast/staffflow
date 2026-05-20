@@ -114,7 +114,7 @@
 
     <!-- P14 Detalle de empleado -->
     <string name="detalle_empleado_activo">Activo</string>
-    <string name="detalle_empleado_baja">No activo</string>
+    <string name="detalle_empleado_inactivo">Inactivo</string>
     <string name="detalle_empleado_ver_saldo">Ver saldo</string>
     <string name="detalle_empleado_ver_fichajes">Ver fichajes</string>
     <string name="detalle_empleado_ver_ausencias">Ver ausencias</string>
@@ -123,6 +123,26 @@
     <!-- P14 DetalleEmpleado - chips de accion -->
     <string name="detalle_empleado_chip_editar">Editar empleado</string>
     <string name="detalle_empleado_chip_regenerar_pin">Regenerar PIN</string>
+
+    <!-- P14 DetalleEmpleado - boton activar/desactivar (solo ADMIN, E17/E18) -->
+    <string name="detalle_empleado_btn_desactivar">Desactivar</string>
+    <string name="detalle_empleado_btn_activar">Activar</string>
+
+    <!-- P14 DetalleEmpleado - dialog confirmacion desactivar/activar -->
+    <string name="detalle_empleado_desactivar_dialog_titulo">¿Desactivar a %1$s?</string>
+    <string name="detalle_empleado_desactivar_dialog_mensaje">Dejará de poder fichar. Sus datos se conservan y podrás activarlo de nuevo más tarde.</string>
+    <string name="detalle_empleado_activar_dialog_titulo">¿Activar a %1$s?</string>
+    <string name="detalle_empleado_activar_dialog_mensaje">Volverá a poder fichar inmediatamente.</string>
+
+    <!-- P14 DetalleEmpleado - snackbars resultado desactivar/activar -->
+    <string name="detalle_empleado_desactivar_ok">Empleado desactivado</string>
+    <string name="detalle_empleado_activar_ok">Empleado activado</string>
+
+    <!-- P14 DetalleEmpleado - errores desactivar/activar -->
+    <string name="detalle_empleado_estado_error_404">No se encontró el empleado.</string>
+    <string name="detalle_empleado_estado_error_409">El empleado ya está en ese estado.</string>
+    <string name="detalle_empleado_estado_error_red">Sin conexión con el servidor. Inténtalo de nuevo.</string>
+    <string name="detalle_empleado_estado_error_generico">No se pudo cambiar el estado del empleado. Inténtalo más tarde.</string>
 
     <!-- P14 DetalleEmpleado - dialog confirmacion regenerar PIN -->
     <string name="regenerar_pin_dialog_titulo">Regenerar PIN</string>

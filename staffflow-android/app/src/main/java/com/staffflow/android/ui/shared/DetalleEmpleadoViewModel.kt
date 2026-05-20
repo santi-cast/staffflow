@@ -36,15 +36,42 @@ sealed class RegenerarPinEvento {
 }
 
 /**
+ * Eventos one-shot de las operaciones "Desactivar" (E17) y "Activar" (E18).
+ *
+ * El Fragment los consume con SharedFlow + repeatOnLifecycle para
+ * deshabilitar el boton durante la llamada, mostrar Snackbar de exito
+ * tras actualizar el estado en pantalla, o Snackbar de error.
+ *
+ * El campo `activado` de Exito indica el nuevo estado tras la operacion:
+ *   activado=false -> el empleado se acaba de desactivar (E17)
+ *   activado=true  -> el empleado se acaba de activar (E18)
+ * El Fragment lo usa para elegir el string del Snackbar.
+ *
+ * El campo codigo de Error es una de: "404" | "409" | "red" | "generico".
+ * 409 cubre el caso de E18 cuando el empleado ya esta activo.
+ */
+sealed class CambioEstadoEmpleadoEvento {
+    object Cargando : CambioEstadoEmpleadoEvento()
+    data class Exito(val activado: Boolean) : CambioEstadoEmpleadoEvento()
+    data class Error(val codigo: String) : CambioEstadoEmpleadoEvento()
+}
+
+/**
  * ViewModel del detalle de empleado (P14).
  *
  * Llama a E15 GET /empleados/{id} via EmpleadoRepository.
  * Recibe el empleadoId desde DetalleEmpleadoFragment (argumento de navegacion).
  *
  * Expone el rol del usuario autenticado para que DetalleEmpleadoFragment
- * muestre u oculte los chips de accion segun rol (Editar y Regenerar PIN).
+ * muestre u oculte los chips de accion segun rol (Editar y Regenerar PIN)
+ * y el boton Desactivar/Activar (solo ADMIN).
  *
- * Tambien expone eventoRegenerarPin (SharedFlow) para la accion E65.
+ * Tambien expone:
+ *   - eventoRegenerarPin (SharedFlow) para la accion E65.
+ *   - eventoCambioEstado (SharedFlow) para las acciones E17 (desactivar)
+ *     y E18 (activar). En exito, el ViewModel ademas refresca uiState con
+ *     el nuevo valor de `activo` para que la pantalla refleje el cambio
+ *     sin tener que recargar via E15.
  */
 class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -76,6 +103,13 @@ class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(appl
      * Cargando -> Exito(pin) | Error(codigo).
      */
     val eventoRegenerarPin: SharedFlow<RegenerarPinEvento> = _eventoRegenerarPin.asSharedFlow()
+
+    private val _eventoCambioEstado = MutableSharedFlow<CambioEstadoEmpleadoEvento>()
+    /**
+     * Eventos one-shot de las operaciones E17 (desactivar) y E18 (activar).
+     * Cargando -> Exito(activado) | Error(codigo).
+     */
+    val eventoCambioEstado: SharedFlow<CambioEstadoEmpleadoEvento> = _eventoCambioEstado.asSharedFlow()
 
     private var empleadoId: Long = -1L
 
@@ -128,11 +162,72 @@ class DetalleEmpleadoViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    /**
+     * Desactiva al empleado (E17 PATCH /empleados/{id}/baja).
+     *
+     * Emite Cargando -> Exito(activado=false) en 2xx; en error mapea el
+     * throwable a un codigo simple ("404" | "409" | "red" | "generico")
+     * que el Fragment resuelve a string. El 409 cubre estados inesperados
+     * de inconsistencia (no aplica directamente a E17 pero se mantiene
+     * el mapeo unificado con E18 para simplificar el Fragment).
+     *
+     * En exito tambien actualiza _uiState con `activo=false` (copy del
+     * EmpleadoResponse actual) para que P14 refleje el cambio sin tener
+     * que recargar via E15. Esto evita una request extra y mantiene
+     * coherente el patron ya aplicado en regenerarPin.
+     */
+    fun desactivar(empleadoId: Long) {
+        viewModelScope.launch {
+            _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Cargando)
+            repository.desactivar(empleadoId).fold(
+                onSuccess = {
+                    actualizarEstadoLocal(activo = false)
+                    _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Exito(activado = false))
+                },
+                onFailure = { _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Error(mapearError(it))) }
+            )
+        }
+    }
+
+    /**
+     * Activa al empleado (E18 PATCH /empleados/{id}/reactivar).
+     *
+     * Mismo patron que desactivar(): emite Cargando -> Exito(activado=true)
+     * y actualiza _uiState con `activo=true` en exito. En error mapea a
+     * codigo ("404" | "409" | "red" | "generico"); el 409 aqui si aplica:
+     * el backend lo devuelve si el empleado ya estaba activo.
+     */
+    fun activar(empleadoId: Long) {
+        viewModelScope.launch {
+            _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Cargando)
+            repository.activar(empleadoId).fold(
+                onSuccess = {
+                    actualizarEstadoLocal(activo = true)
+                    _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Exito(activado = true))
+                },
+                onFailure = { _eventoCambioEstado.emit(CambioEstadoEmpleadoEvento.Error(mapearError(it))) }
+            )
+        }
+    }
+
+    /**
+     * Refresca _uiState reemplazando el valor de `activo` en el
+     * EmpleadoResponse cacheado. Se invoca tras E17 o E18 en exito
+     * para que P14 redibuje el estado y el boton bimodal sin recargar.
+     */
+    private fun actualizarEstadoLocal(activo: Boolean) {
+        val actual = _uiState.value
+        if (actual is UiState.Success) {
+            _uiState.value = UiState.Success(actual.empleado.copy(activo = activo))
+        }
+    }
+
     private fun mapearError(t: Throwable): String {
         val error = (t as? ApiException)?.error
         return when (error) {
             is ApiError.Network, ApiError.Timeout -> "red"
             is ApiError.NotFound -> "404"
+            is ApiError.Conflict -> "409"
             else -> "generico"
         }
     }

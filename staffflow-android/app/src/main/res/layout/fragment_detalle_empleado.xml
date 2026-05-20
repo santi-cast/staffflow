@@ -11,13 +11,26 @@
       EXITO    -> scrollContenido visible, resto GONE
 
     Secciones de datos:
-      Header:   nombre completo + numero empleado + badge activo/baja
+      Header:   nombre completo + numero empleado + badge activo/inactivo
+                + boton bimodal Desactivar/Activar a la derecha del badge
+                en la misma fila (solo ADMIN, E17/E18). Estado y accion
+                quedan visualmente ligados. El boton cambia de texto y
+                color segun el estado actual:
+                  Activo   -> "Desactivar" (rojo) llama a E17 PATCH /empleados/{id}/baja
+                  Inactivo -> "Activar"    (verde) llama a E18 PATCH /empleados/{id}/reactivar
+                El backend mantiene el termino "baja" en la URL por
+                compatibilidad de la API publicada; la UI adopta
+                "desactivar/activar" por cubrir mas casos (excedencias,
+                bajas medicas, permisos sin sueldo).
       Datos:    DNI, fecha de alta, categoria
       Jornada:  horas semanales, dias vacaciones, dias asuntos propios
       Acciones: chips "Ver saldo", "Ver fichajes", "Ver ausencias",
                 "Editar empleado" y "Regenerar PIN".
                 Editar visible solo para ADMIN.
-                Regenerar PIN visible para ADMIN y ENCARGADO.
+                Regenerar PIN visible para ADMIN y ENCARGADO. Si el
+                empleado esta inactivo, el chip Regenerar PIN se
+                deshabilita (no tiene sentido regenerar PIN de un
+                empleado que no puede fichar).
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -121,6 +134,31 @@
                             android:layout_height="wrap_content"
                             android:textAppearance="?attr/textAppearanceTitleMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <!--
+                            Boton bimodal Desactivar/Activar (E17/E18).
+                            Visible solo para ADMIN (gating en Fragment).
+                            Compacto y a la derecha del estado en la misma
+                            fila para que estado + accion queden ligados
+                            visualmente. Texto y color dinamicos segun
+                            empleado.activo:
+                              activo=true  -> "Desactivar" rojo
+                              activo=false -> "Activar"    verde
+                        -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCambiarEstado"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:minWidth="0dp"
+                            android:minHeight="0dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
 
                     </LinearLayout>
 
