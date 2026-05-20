@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests estructurales de seguridad declarativa para UsuarioController.
  *
- * <p>Verifica por reflexión sobre los bytecodes compilados que los 6 endpoints
- * de gestión de usuarios (E08-E12, E66) están protegidos con
+ * <p>Verifica por reflexión sobre los bytecodes compilados que los 7 endpoints
+ * de gestión de usuarios (E08-E12, E66, E67) están protegidos con
  * {@code @PreAuthorize("hasRole('ADMIN')")}. UsuarioController es exclusivo de
  * ADMIN: ningún método debe abrir su acceso a ENCARGADO o EMPLEADO.
  *
@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>E11 PATCH /api/v1/usuarios/{id} — {@code actualizar}</li>
  *   <li>E12 DELETE /api/v1/usuarios/{id} — {@code desactivar}</li>
  *   <li>E66 PATCH /api/v1/usuarios/{id}/password — {@code resetearPassword}</li>
+ *   <li>E67 PATCH /api/v1/usuarios/{id}/reactivar — {@code reactivar}</li>
  * </ul>
  *
  * <p>El patrón es el mismo de {@link MethodSecurityConfigTest}: reflexión sin
@@ -73,6 +74,12 @@ class UsuarioControllerSecurityTest {
     @DisplayName("E66 UsuarioController#resetearPassword usa hasRole('ADMIN')")
     void resetearPassword_exigeAdmin() {
         assertPreAuthorizeValue(UsuarioController.class, "resetearPassword", EXPECTED_EXPR);
+    }
+
+    @Test
+    @DisplayName("E67 UsuarioController#reactivar usa hasRole('ADMIN')")
+    void reactivar_exigeAdmin() {
+        assertPreAuthorizeValue(UsuarioController.class, "reactivar", EXPECTED_EXPR);
     }
 
     // -----------------------------------------------------------------------

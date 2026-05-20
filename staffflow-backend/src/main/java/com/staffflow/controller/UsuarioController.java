@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Controller REST para la gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 y E66 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12, E66 y E67 del Grupo 3 (Gestión de Usuarios).
  * Ruta base: /api/v1/usuarios
  *
  * Todos los endpoints de este controller son exclusivos del rol ADMIN.
@@ -200,5 +200,29 @@ public class UsuarioController {
             @PathVariable Long id,
             @Valid @RequestBody AdminPasswordResetRequest request) {
         return ResponseEntity.ok(usuarioService.resetearPassword(id, request));
+    }
+
+    // E67 — PATCH /api/v1/usuarios/{id}/reactivar
+    // RF-07: Reactivar usuario
+
+    /**
+     * Reactiva un usuario previamente desactivado (activo = true).
+     *
+     * Simétrico a E12 (desactivar). Tras reactivar, el usuario vuelve a
+     * poder hacer login. Solo accesible por el rol ADMIN.
+     *
+     * Códigos HTTP:
+     *   200 OK          → usuario reactivado correctamente
+     *   403 Forbidden   → rol insuficiente (solo ADMIN)
+     *   404 Not Found   → usuario no encontrado
+     *   409 Conflict    → el usuario ya estaba activo
+     *
+     * @param id ID del usuario a reactivar (path variable)
+     * @return 200 OK con MensajeResponse
+     */
+    @PatchMapping("/{id}/reactivar")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MensajeResponse> reactivar(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioService.reactivar(id));
     }
 }

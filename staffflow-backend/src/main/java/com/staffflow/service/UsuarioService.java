@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 y E66 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12, E66 y E67 del Grupo 3 (Gestión de Usuarios).
  * Accesible exclusivamente por el rol ADMIN. Los roles ENCARGADO
  * y EMPLEADO reciben HTTP 403 antes de llegar a este servicio
  * (Spring Security, @PreAuthorize en el controller).
@@ -247,6 +247,43 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
 
         return new MensajeResponse("Usuario desactivado correctamente");
+    }
+
+    // E67 — PATCH /api/v1/usuarios/{id}/reactivar
+    // RF-07: Reactivar usuario
+
+    /**
+     * Reactiva un usuario previamente desactivado (activo = true).
+     *
+     * Simétrico a E12 (desactivar): permite al ADMIN devolver a un
+     * usuario al estado operativo sin tener que crearlo de nuevo.
+     * Tras la reactivación el usuario vuelve a poder hacer login
+     * (UserDetailsServiceImpl deja pasar el campo activo=true).
+     *
+     * Códigos HTTP producidos:
+     *   200 OK          → usuario reactivado correctamente
+     *   403 Forbidden   → rol insuficiente
+     *   404 Not Found   → usuario con el id indicado no existe
+     *   409 Conflict    → el usuario ya estaba activo
+     *
+     * @param id ID del usuario a reactivar
+     * @return MensajeResponse confirmando la operación
+     */
+    @Transactional
+    public MensajeResponse reactivar(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Usuario con id " + id + " no encontrado"));
+
+        if (usuario.getActivo()) {
+            throw new ConflictException(
+                    "El usuario con id " + id + " ya está activo");
+        }
+
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+
+        return new MensajeResponse("Usuario reactivado correctamente");
     }
 
     // E66 — PATCH /api/v1/usuarios/{id}/password
