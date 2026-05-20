@@ -270,9 +270,9 @@ class FormUsuarioFragment : Fragment() {
      * Muestra un dialogo con un campo TextInputLayout para que el ADMIN
      * introduzca la nueva contrasena del usuario en edicion.
      *
-     * La contrasena se muestra en claro con toggle de visibilidad (ojo)
-     * para que el admin pueda leerla antes de confirmar (caso de uso helpdesk:
-     * el admin comunica la contrasena al empleado directamente).
+     * La contrasena se muestra siempre en claro (sin toggle de visibilidad)
+     * porque el caso de uso es helpdesk: el admin necesita leer la contrasena
+     * para comunicarsela al empleado, no hay motivo para ocultarla.
      *
      * Validacion inline: si la contrasena tiene menos de 8 caracteres se
      * muestra error en el propio campo y el dialogo NO se cierra.
@@ -344,6 +344,8 @@ class FormUsuarioFragment : Fragment() {
                        estado is FormUsuarioViewModel.UiState.Cargando
         binding.progressIndicator.isVisible = cargando
         binding.btnGuardar.isEnabled = !cargando
+        binding.btnCambiarPassword.isEnabled = !cargando
+        binding.btnDesactivar.isEnabled = !cargando
 
         when (estado) {
             is FormUsuarioViewModel.UiState.Success      -> finalizarConMensaje(
