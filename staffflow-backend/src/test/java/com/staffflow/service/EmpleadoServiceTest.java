@@ -123,26 +123,29 @@ class EmpleadoServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // obtenerPorId (E15) — Opción A: PIN y email solo a ADMIN
+    // obtenerPorId (E15) — Opción A: PIN, email, username y rol solo a ADMIN
     // ---------------------------------------------------------------
 
     /**
      * Cubre el contrato E15 (GET /api/v1/empleados/{id}) tras aplicar la
-     * Opción A: ADMIN recibe pinTerminal y email con valor; ENCARGADO los
-     * recibe a null. El UI Android ya asume este comportamiento al
-     * renderizar el detalle del empleado.
+     * Opción A: ADMIN recibe pinTerminal, email, username y rol con valor;
+     * ENCARGADO los recibe a null. El UI Android ya asume este comportamiento
+     * al renderizar el detalle del empleado y la cabecera de P15.
      */
     @Nested
-    @DisplayName("obtenerPorId (E15) — filtrado de PIN y email por rol")
+    @DisplayName("obtenerPorId (E15) — filtrado de PIN, email, username y rol por rol")
     class ObtenerPorId {
 
         private static final String PIN = "1234";
         private static final String EMAIL = "empleado@staffflow.local";
+        private static final String USERNAME = "jperez";
 
         private Empleado empleadoConDatosSensibles() {
             Usuario usuario = new Usuario();
             usuario.setId(10L);
             usuario.setEmail(EMAIL);
+            usuario.setUsername(USERNAME);
+            usuario.setRol(com.staffflow.domain.enums.Rol.EMPLEADO);
 
             Empleado emp = new Empleado();
             emp.setId(EMPLEADO_ID);
@@ -159,8 +162,8 @@ class EmpleadoServiceTest {
         }
 
         @Test
-        @DisplayName("ADMIN — recibe pinTerminal y email con valor real")
-        void obtenerPorId_admin_devuelvePinYEmail() {
+        @DisplayName("ADMIN — recibe pinTerminal, email, username y rol con valor real")
+        void obtenerPorId_admin_devuelveCamposSensibles() {
             // Arrange
             when(empleadoRepository.findById(EMPLEADO_ID))
                     .thenReturn(Optional.of(empleadoConDatosSensibles()));
@@ -172,11 +175,13 @@ class EmpleadoServiceTest {
             // Assert
             assertThat(response.getPinTerminal()).isEqualTo(PIN);
             assertThat(response.getEmail()).isEqualTo(EMAIL);
+            assertThat(response.getUsername()).isEqualTo(USERNAME);
+            assertThat(response.getRol()).isEqualTo(com.staffflow.domain.enums.Rol.EMPLEADO);
         }
 
         @Test
-        @DisplayName("ENCARGADO — recibe pinTerminal y email a null (Opción A)")
-        void obtenerPorId_encargado_devuelvePinYEmailNull() {
+        @DisplayName("ENCARGADO — recibe pinTerminal, email, username y rol a null (Opción A)")
+        void obtenerPorId_encargado_devuelveCamposSensiblesNull() {
             // Arrange
             when(empleadoRepository.findById(EMPLEADO_ID))
                     .thenReturn(Optional.of(empleadoConDatosSensibles()));
@@ -188,6 +193,8 @@ class EmpleadoServiceTest {
             // Assert
             assertThat(response.getPinTerminal()).isNull();
             assertThat(response.getEmail()).isNull();
+            assertThat(response.getUsername()).isNull();
+            assertThat(response.getRol()).isNull();
             // El resto del DTO sigue rellenándose con normalidad
             assertThat(response.getId()).isEqualTo(EMPLEADO_ID);
         }

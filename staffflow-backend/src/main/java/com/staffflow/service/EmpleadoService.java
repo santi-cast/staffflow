@@ -42,8 +42,9 @@ import java.util.stream.Collectors;
  *     futuro se autorizase ADMIN en method security, el service responderia
  *     HTTP 404 via NotFoundException porque ADMIN no tiene perfil de
  *     empleado. Comportamiento esperado en ambos casos.
- *   - pinTerminal y email se exponen en E15 (GET /empleados/{id}) SOLO
- *     al rol ADMIN. ENCARGADO recibe null en ambos campos (Opción A
+ *   - pinTerminal, email, username y rol se exponen en E15
+ *     (GET /empleados/{id}) SOLO al rol ADMIN. ENCARGADO recibe null
+ *     en los cuatro campos (Opción A
  *     acordada con Android). El resto de endpoints de listado y edición
  *     nunca exponen el PIN. E65 (regenerar-pin) sí lo devuelve a ambos
  *     roles porque su propósito es entregarlo al empleado en mano.
@@ -257,8 +258,12 @@ public class EmpleadoService {
      * Devuelve el perfil completo de un empleado.
      *
      * Aplica la Opción A acordada con Android:
-     *   - ADMIN     → pinTerminal y email con valor real.
-     *   - ENCARGADO → pinTerminal y email a null (la UI nunca los muestra).
+     *   - ADMIN     → pinTerminal, email, username y rol con valor real.
+     *   - ENCARGADO → los cuatro a null (la UI nunca los muestra).
+     *
+     * username y rol del usuario asociado alimentan la cabecera read-only
+     * del formulario P15 (FormEmpleadoFragment), que solo es accesible a
+     * ADMIN: por eso quedan bajo el mismo filtro que pinTerminal y email.
      *
      * Códigos HTTP producidos:
      *   200 OK          → empleado encontrado y devuelto
@@ -277,11 +282,15 @@ public class EmpleadoService {
                 .orElseThrow(() -> new NotFoundException(
                         "Empleado con id " + id + " no encontrado"));
         EmpleadoResponse response = toEmpleadoResponse(empleado);
-        // Opción A: PIN y email se exponen únicamente al rol ADMIN.
-        // ENCARGADO recibe null en ambos campos (la UI Android ya filtra por rol).
+        // Opción A: PIN, email, username y rol del usuario asociado se exponen
+        // únicamente al rol ADMIN. ENCARGADO recibe null en los cuatro campos
+        // (la UI Android ya filtra por rol). username y rol alimentan la
+        // cabecera read-only del formulario de edición P15.
         if (esAdmin(authentication)) {
             response.setPinTerminal(empleado.getPinTerminal());
             response.setEmail(empleado.getUsuario().getEmail());
+            response.setUsername(empleado.getUsuario().getUsername());
+            response.setRol(empleado.getUsuario().getRol());
         }
         return response;
     }
@@ -600,10 +609,12 @@ public class EmpleadoService {
         response.setJornadaDiariaMinutos(empleado.getJornadaDiariaMinutos());
         response.setDiasVacacionesAnuales(empleado.getDiasVacacionesAnuales());
         response.setDiasAsuntosPropiosAnuales(empleado.getDiasAsuntosPropiosAnuales());
-        // pinTerminal y email se rellenan aparte en dos vías:
+        // pinTerminal, email, username y rol se rellenan aparte en dos vías:
         //   - obtenerPorId(): solo si el llamante es ADMIN (Opción A).
-        //   - crear(): siempre rellena pinTerminal para entregar el PIN inicial.
-        // El resto de consumidores deja ambos campos a null en el DTO base.
+        //   - crear(): rellena pinTerminal para entregar el PIN inicial; el
+        //     resto (email/username/rol) quedan a null porque la respuesta
+        //     del alta no los usa.
+        // El resto de consumidores deja los cuatro campos a null en el DTO base.
         response.setCodigoNfc(empleado.getCodigoNfc());
         response.setActivo(empleado.getActivo());
         return response;

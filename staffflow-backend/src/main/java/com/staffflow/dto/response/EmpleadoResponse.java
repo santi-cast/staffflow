@@ -1,6 +1,7 @@
 package com.staffflow.dto.response;
 
 import com.staffflow.domain.enums.CategoriaEmpleado;
+import com.staffflow.domain.enums.Rol;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -86,4 +87,13 @@ public class EmpleadoResponse {
 
     // Email del usuario asociado. Solo se devuelve en E15 (detalle por id) para ADMIN.
     private String email;
+
+    // Username del usuario asociado. Mismo criterio que email: solo se devuelve
+    // en E15 (detalle por id) para ADMIN. Sirve a P15 FormEmpleadoFragment para
+    // mostrar la cabecera read-only con "Usuario: jperez".
+    private String username;
+
+    // Rol del usuario asociado. Mismo criterio que email/username: solo en
+    // E15 para ADMIN. Sirve a P15 para mostrar la cabecera "Rol: EMPLEADO".
+    private Rol rol;
 }
