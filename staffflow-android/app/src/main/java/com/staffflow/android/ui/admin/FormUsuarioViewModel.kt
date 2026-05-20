@@ -132,6 +132,10 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      * Si el segundo paso falla (error en /empleados), emite Error con mensaje
      * descriptivo para que el admin sepa que el usuario SI fue creado.
      *
+     * fechaAlta (String ISO-8601 "yyyy-MM-dd") es opcional: si es null, el
+     * backend asigna LocalDate.now(). Si se envia, debe ser igual o posterior
+     * a hoy; en caso contrario el backend devuelve HTTP 400 y emite Error.
+     *
      * En exito emite UiState.Success y el Fragment navega atras.
      */
     fun crear(
@@ -139,7 +143,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         nombre: String? = null, apellido1: String? = null, apellido2: String? = null,
         dni: String? = null, categoria: CategoriaEmpleado? = null,
         jornadaSemanalHoras: Double? = null, diasVacaciones: Int? = null,
-        diasAsuntos: Int? = null
+        diasAsuntos: Int? = null, fechaAlta: String? = null
     ) {
         if (username.isBlank() || password.isBlank() || email.isBlank()) {
             _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
@@ -179,7 +183,8 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
                         categoria = categoria!!,
                         jornadaSemanalHoras = jornadaSemanalHoras!!,
                         diasVacacionesAnuales = diasVacaciones!!,
-                        diasAsuntosPropiosAnuales = diasAsuntos!!
+                        diasAsuntosPropiosAnuales = diasAsuntos!!,
+                        fechaAlta = fechaAlta
                     )
                 ).fold(
                     onSuccess = { _uiState.value = UiState.Success },

@@ -102,7 +102,6 @@
     <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
     <string name="form_empleado_hint_dni">DNI</string>
     <string name="form_empleado_hint_numero">Número de empleado (EMP-001)</string>
-    <string name="form_empleado_hint_fecha_alta">Fecha de alta (yyyy-MM-dd)</string>
     <string name="form_empleado_hint_categoria">Categoría</string>
     <string name="form_empleado_hint_jornada_semanal">Horas semanales</string>
     <string name="form_empleado_hint_jornada_diaria">Minutos jornada diaria</string>
@@ -250,6 +249,8 @@
     <string name="form_usuario_hint_password">Contraseña</string>
     <string name="form_usuario_hint_email">Email</string>
     <string name="form_usuario_hint_rol">Rol</string>
+    <string name="form_usuario_hint_fecha_alta">Fecha de alta (primer día de trabajo)</string>
+    <string name="form_usuario_error_fecha_alta_pasada">La fecha de alta no puede ser anterior a hoy</string>
     <string name="form_usuario_guardar">Guardar</string>
     <string name="form_usuario_desactivar">Desactivar usuario</string>
     <string name="form_usuario_seccion_perfil">Perfil de empleado</string>
@@ -257,6 +258,7 @@
     <string name="form_usuario_dialogo_desactivar_mensaje">El usuario no podrá iniciar sesión. Esta acción se puede revertir editando el usuario.</string>
     <string name="form_usuario_dialogo_cancelar">Cancelar</string>
     <string name="form_usuario_dialogo_confirmar">Desactivar</string>
+    <string name="form_usuario_creado_el">Creado el: %1$s</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>

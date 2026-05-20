@@ -4,6 +4,8 @@ import com.staffflow.domain.enums.CategoriaEmpleado;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 /**
  * Datos para crear la ficha de un nuevo empleado.
  * Usado en E13 (POST /api/v1/empleados), accesible por ADMIN y ENCARGADO.
@@ -12,11 +14,17 @@ import lombok.Data;
  *
  * Campos auto-generados por el backend (no presentes en este request):
  *   - numeroEmpleado: generado como EMP-XXX a partir del conteo total de empleados.
- *   - fechaAlta:      fecha actual del sistema (LocalDate.now()).
  *   - jornadaDiariaMinutos: calculado como (jornadaSemanalHoras / 5) * 60.
  *   - pinTerminal:    PIN de 4 dígitos único generado aleatoriamente.
  *                     Se devuelve en EmpleadoResponse solo en E13 y E15 para
  *                     que el ADMIN/ENCARGADO pueda entregárselo al empleado.
+ *
+ * El campo fechaAlta es opcional: si el cliente lo envía, se usa el valor
+ * indicado (debe ser igual o posterior a la fecha actual del sistema, para
+ * cubrir altas diferidas: empleado que se registra hoy y empieza a trabajar
+ * en una fecha futura). Si el cliente lo omite, el servicio asigna
+ * LocalDate.now(). El campo es inmutable una vez creado el empleado
+ * (no figura en EmpleadoPatchRequest).
  *
  * @author Santiago Castillo
  */
@@ -65,4 +73,10 @@ public class EmpleadoRequest {
     // y se valida, pero ningún endpoint de fichaje lo consume en v1.
     @Size(max = 100)
     private String codigoNfc;
+
+    // Fecha en la que el empleado empieza a contar laboralmente.
+    // Opcional: si es null, el servicio asigna LocalDate.now().
+    // Cuando viene informada, debe ser igual o posterior a la fecha actual
+    // (validación en el servicio para soportar altas diferidas).
+    private LocalDate fechaAlta;
 }

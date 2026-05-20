@@ -89,9 +89,18 @@ public class EmpleadoService {
      *   - jornadaSemanalHoras: dato contractual introducido por el ADMIN.
      *   - jornadaDiariaMinutos: referencia de cálculo para el saldo de horas.
      *
+     * El campo fechaAlta es opcional: si el cliente lo envía, debe ser
+     * igual o posterior a la fecha actual del sistema (soporta altas
+     * diferidas: usuario que se registra hoy y empieza a trabajar
+     * en una fecha futura). Si llega null, se asigna LocalDate.now().
+     * Una fecha anterior a hoy responde HTTP 400 vía ConflictException
+     * para preservar la coherencia con el cálculo prorrateado de saldos
+     * en SaldoService (un empleado no puede trabajar antes de su alta).
+     *
      * Códigos HTTP producidos:
      *   201 Created      → perfil creado correctamente
-     *   400 Bad Request  → datos de entrada inválidos (@Valid en controller)
+     *   400 Bad Request  → datos de entrada inválidos (@Valid en controller
+     *                      o fechaAlta anterior a la fecha actual)
      *   404 Not Found    → usuarioId no existe en la tabla usuarios
      *   409 Conflict     → DNI o NFC ya registrados
      *                      (PIN y numero_empleado se autogeneran en el service,
@@ -133,6 +142,18 @@ public class EmpleadoService {
         // Calcular jornada diaria: (horas/semana / 5 días) * 60 minutos
         int jornadaDiariaMinutos = (int) Math.round(request.getJornadaSemanalHoras() / 5.0 * 60);
 
+        // Resolver fecha de alta: si el cliente la envía, validar que no
+        // sea anterior a hoy (soporta altas diferidas pero no retroactivas,
+        // por coherencia con el prorrateo de saldos en SaldoService).
+        // Si no se envía, se asigna LocalDate.now().
+        LocalDate fechaAlta = request.getFechaAlta();
+        if (fechaAlta == null) {
+            fechaAlta = LocalDate.now();
+        } else if (fechaAlta.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "La fecha de alta no puede ser anterior a hoy");
+        }
+
         Empleado empleado = new Empleado();
         empleado.setUsuario(usuario);
         empleado.setNombre(request.getNombre());
@@ -140,7 +161,7 @@ public class EmpleadoService {
         empleado.setApellido2(request.getApellido2());
         empleado.setDni(request.getDni());
         empleado.setNumeroEmpleado(numeroEmpleado);
-        empleado.setFechaAlta(LocalDate.now());
+        empleado.setFechaAlta(fechaAlta);
         // categoria ya es CategoriaEmpleado en el DTO — sin valueOf()
         empleado.setCategoria(request.getCategoria());
         empleado.setJornadaSemanalHoras(request.getJornadaSemanalHoras());

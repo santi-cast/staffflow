@@ -12,6 +12,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
@@ -19,6 +22,12 @@ import com.staffflow.android.databinding.FragmentFormUsuarioBinding
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import com.staffflow.android.domain.model.Rol
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /**
  * Formulario de usuario (P29). Solo ADMIN.
@@ -44,6 +53,22 @@ class FormUsuarioFragment : Fragment() {
     /** Ultima sugerencia aplicada. Permite detectar si el usuario edito el campo a mano. */
     private var lastSuggestion: String? = null
 
+    /** Formato de presentacion para la fecha de creacion del usuario. */
+    private val fmtFechaCreacion = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+
+    /** Formato visible para la fecha de alta del empleado (input editable). */
+    private val fmtFechaAltaVisible = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    /** Formato ISO-8601 que se envia al backend en EmpleadoRequest.fechaAlta. */
+    private val fmtFechaAltaIso = DateTimeFormatter.ISO_LOCAL_DATE
+
+    /**
+     * Fecha de alta seleccionada por el admin (LocalDate). Default = hoy.
+     * Solo se usa en modo alta cuando el rol no es ADMIN. Se envia al backend
+     * como String ISO-8601 ("yyyy-MM-dd") y debe ser >= hoy.
+     */
+    private var fechaAltaSeleccionada: LocalDate = LocalDate.now()
+
     // ------------------------------------------------------------------
     // Ciclo de vida
     // ------------------------------------------------------------------
@@ -65,6 +90,7 @@ class FormUsuarioFragment : Fragment() {
 
         configurarDropdown()
         configurarModo()
+        configurarFechaAlta()
         configurarListeners()
         observarViewModel()
         // Sugerir username inicial solo en modo alta (rol por defecto: EMPLEADO)
@@ -103,6 +129,56 @@ class FormUsuarioFragment : Fragment() {
         binding.layoutPerfilEmpleado.isVisible = !esEdicion
     }
 
+    /**
+     * Inicializa el campo de fecha de alta del empleado.
+     * Precarga "hoy" como default y delega el click al MaterialDatePicker.
+     * El EditText es no-focusable (ver layout) para forzar el dialogo.
+     */
+    private fun configurarFechaAlta() {
+        actualizarTextoFechaAlta()
+        binding.etFechaAlta.setOnClickListener { abrirSelectorFechaAlta() }
+        binding.tilFechaAlta.setEndIconOnClickListener { abrirSelectorFechaAlta() }
+    }
+
+    private fun actualizarTextoFechaAlta() {
+        binding.etFechaAlta.setText(fechaAltaSeleccionada.format(fmtFechaAltaVisible))
+    }
+
+    /**
+     * Abre un MaterialDatePicker limitado a fechas iguales o posteriores a hoy
+     * (DateValidatorPointForward.now()). El backend valida lo mismo y responde
+     * HTTP 400 si llega una fecha anterior, pero filtrar en cliente evita el
+     * ida-y-vuelta innecesario.
+     */
+    private fun abrirSelectorFechaAlta() {
+        val hoyUtcMillis = LocalDate.now()
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+        val seleccionUtcMillis = fechaAltaSeleccionada
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+        val constraints = CalendarConstraints.Builder()
+            .setValidator(DateValidatorPointForward.from(hoyUtcMillis))
+            .setStart(hoyUtcMillis)
+            .build()
+        val picker = MaterialDatePicker.Builder.datePicker()
+            .setTitleText(R.string.form_usuario_hint_fecha_alta)
+            .setSelection(seleccionUtcMillis)
+            .setCalendarConstraints(constraints)
+            .build()
+        picker.addOnPositiveButtonClickListener { millis ->
+            // MaterialDatePicker devuelve siempre en UTC: convertir a LocalDate
+            // usando ZoneOffset.UTC para evitar saltos de dia por TZ del dispositivo.
+            fechaAltaSeleccionada = java.time.Instant.ofEpochMilli(millis)
+                .atZone(ZoneId.of("UTC"))
+                .toLocalDate()
+            actualizarTextoFechaAlta()
+        }
+        picker.show(parentFragmentManager, "fechaAltaPicker")
+    }
+
     private fun configurarListeners() {
         // Al cambiar el rol: mostrar/ocultar seccion de empleado y sugerir username
         binding.actvRol.setOnItemClickListener { _, _, _, _ ->
@@ -121,6 +197,13 @@ class FormUsuarioFragment : Fragment() {
                         rol = rol
                     )
                 } else {
+                    // Solo enviamos fechaAlta si el rol crea perfil de empleado.
+                    // Para ADMIN no aplica (no tiene ficha de empleado).
+                    val fechaAltaIso = if (rol != Rol.ADMIN) {
+                        fechaAltaSeleccionada.format(fmtFechaAltaIso)
+                    } else {
+                        null
+                    }
                     viewModel.crear(
                         username = binding.etUsername.text.toString().trim(),
                         password = binding.etPassword.text.toString().trim(),
@@ -133,7 +216,8 @@ class FormUsuarioFragment : Fragment() {
                         categoria = categoriaFromLabel(binding.actvCategoria.text.toString()),
                         jornadaSemanalHoras = binding.etJornadaSemanal.text.toString().toDoubleOrNull(),
                         diasVacaciones = binding.etVacaciones.text.toString().toIntOrNull(),
-                        diasAsuntos = binding.etAsuntos.text.toString().toIntOrNull()
+                        diasAsuntos = binding.etAsuntos.text.toString().toIntOrNull(),
+                        fechaAlta = fechaAltaIso
                     )
                 }
             } finally {
@@ -206,6 +290,7 @@ class FormUsuarioFragment : Fragment() {
                 binding.etEmail.setText(estado.usuario.email)
                 binding.actvRol.setText(rolLabel(estado.usuario.rol), false)
                 binding.btnDesactivar.isVisible = estado.usuario.activo
+                mostrarFechaCreacion(estado.usuario.fechaCreacion)
             }
 
             is FormUsuarioViewModel.UiState.Error -> {
@@ -214,6 +299,30 @@ class FormUsuarioFragment : Fragment() {
             }
 
             else -> Unit
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Fecha de creacion (solo modo edicion)
+    // ------------------------------------------------------------------
+
+    /**
+     * Muestra la fecha de creacion del usuario formateada como "dd/MM/yyyy HH:mm".
+     * Si el valor llega vacio o el parseo del ISO-8601 falla, el TextView se
+     * deja oculto (defensa silenciosa: la fecha es metadato informativo, no
+     * justifica romper la pantalla).
+     */
+    private fun mostrarFechaCreacion(iso8601: String?) {
+        if (iso8601.isNullOrBlank()) {
+            binding.tvFechaCreacion.isVisible = false
+            return
+        }
+        try {
+            val fecha = LocalDateTime.parse(iso8601).format(fmtFechaCreacion)
+            binding.tvFechaCreacion.text = getString(R.string.form_usuario_creado_el, fecha)
+            binding.tvFechaCreacion.isVisible = true
+        } catch (_: DateTimeParseException) {
+            binding.tvFechaCreacion.isVisible = false
         }
     }
 

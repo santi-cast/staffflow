@@ -6,8 +6,9 @@
     Endpoints: E13 POST /empleados (alta) | E16 PATCH /empleados/{id} (edicion)
 
     Modo alta   (empleadoId = -1): todos los campos visibles.
-    Modo edicion (empleadoId > 0): campos de alta ocultos (GONE):
-      tilUsuarioId, tilDni, tilNumeroEmpleado, tilFechaAlta.
+    Modo edicion (empleadoId > 0): campos inmutables ocultos (GONE):
+      tilUsuarioId, tilDni, tilNumeroEmpleado.
+    La fecha de alta solo se elige al crear el usuario en P29; aqui no aparece.
 
     El titulo de la toolbar lo establece FormEmpleadoFragment segun el modo.
     El boton GUARDAR se deshabilita durante la llamada al API.

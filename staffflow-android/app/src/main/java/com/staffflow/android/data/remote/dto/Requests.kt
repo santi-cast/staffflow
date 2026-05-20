@@ -74,10 +74,16 @@ data class UsuarioPatchRequest(
 /**
  * Creacion de un empleado vinculado a un usuario existente (E13 POST /empleados).
  *
- * El backend auto-genera: numeroEmpleado (EMP-XXX), fechaAlta (hoy),
+ * El backend auto-genera: numeroEmpleado (EMP-XXX),
  * jornadaDiariaMinutos (jornadaSemanal/5*60) y pinTerminal (4 digitos unicos).
  * El PIN generado se devuelve en EmpleadoResponse para que el admin lo entregue al empleado.
- * Error 409 si DNI o codigoNfc ya existen.
+ *
+ * fechaAlta es opcional (String ISO-8601 "yyyy-MM-dd"): si se envia, debe ser
+ * igual o posterior a hoy (soporta altas diferidas, no retroactivas). Si se
+ * omite (null), el backend asigna LocalDate.now(). El backend valida el rango
+ * y responde HTTP 400 si la fecha es anterior a hoy.
+ *
+ * Error 400 si fechaAlta es anterior a hoy. Error 409 si DNI o codigoNfc ya existen.
  */
 data class EmpleadoRequest(
     val usuarioId: Long,
@@ -89,7 +95,8 @@ data class EmpleadoRequest(
     val jornadaSemanalHoras: Double,
     val diasVacacionesAnuales: Int,
     val diasAsuntosPropiosAnuales: Int,
-    val codigoNfc: String? = null
+    val codigoNfc: String? = null,
+    val fechaAlta: String? = null
 )
 
 /**
