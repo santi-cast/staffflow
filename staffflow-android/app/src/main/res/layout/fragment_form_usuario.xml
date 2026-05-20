@@ -2,10 +2,15 @@
 <!--
     Layout del formulario de usuario (P29). Solo ADMIN.
 
-    Modo alta   (usuarioId=-1): tilUsername, tilPassword, tilEmail, tilRol,
+    Orden de campos:
+      tilRol (primero, controla el resto), tilUsername (auto-sugerido segun rol),
+      tvFechaCreacion (solo edicion), tilPassword (solo alta), tilEmail,
+      seccion perfil empleado (solo alta si rol != ADMIN), btnGuardar, btnDesactivar.
+
+    Modo alta   (usuarioId=-1): tilRol, tilUsername, tilPassword, tilEmail,
                                 seccion perfil empleado, btnGuardar.
-    Modo edicion (usuarioId>0): tilUsername (disabled), tilEmail, tilRol,
-                                btnGuardar, btnDesactivar.
+    Modo edicion (usuarioId>0): tilRol, tilUsername (disabled), tvFechaCreacion,
+                                tilEmail, btnGuardar, btnDesactivar.
 
     tilPassword solo visible en modo alta.
     Seccion perfil empleado solo visible en modo alta (en edicion se gestiona desde P14/P15).
@@ -26,7 +31,29 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Username -->
+        <!--
+            Rol primero: marca el contexto del formulario y dispara la
+            sugerencia de username segun el prefijo (emp/encargado/admin).
+            Tambien controla la visibilidad de la seccion de perfil empleado.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilRol"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:hint="@string/form_usuario_hint_rol">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvRol"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:focusableInTouchMode="false" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Username (auto-sugerido segun el rol elegido arriba) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilUsername"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -92,24 +119,6 @@
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
                 android:autofillHints="emailAddress" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Rol (dropdown) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRol"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:hint="@string/form_usuario_hint_rol">
-
-            <AutoCompleteTextView
-                android:id="@+id/actvRol"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:focusableInTouchMode="false" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
