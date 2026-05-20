@@ -69,6 +69,28 @@ interface EmpleadoApiService {
     ): Response<EmpleadoResponse>
 
     /**
+     * E17 - PATCH /empleados/{id}/baja.
+     * Desactiva al empleado (baja logica: pone activo=false). El backend
+     * mantiene el termino "baja" en la URL por compatibilidad de la API
+     * publicada; el cliente Android usa "desactivar" en UI por ser un
+     * termino mas amplio que cubre excedencias, bajas medicas y permisos.
+     * Error 404 si el empleado no existe.
+     */
+    @PATCH("empleados/{id}/baja")
+    suspend fun desactivar(@Path("id") id: Long): Response<MensajeResponse>
+
+    /**
+     * E18 - PATCH /empleados/{id}/reactivar.
+     * Activa al empleado (pone activo=true). Aplica a empleados que estaban
+     * dados de baja previamente (excedencia finalizada, regreso de baja
+     * medica, etc.).
+     * Error 404 si el empleado no existe.
+     * Error 409 si el empleado ya esta activo.
+     */
+    @PATCH("empleados/{id}/reactivar")
+    suspend fun activar(@Path("id") id: Long): Response<MensajeResponse>
+
+    /**
      * E65 - POST /empleados/{id}/regenerar-pin.
      * Regenera el PIN del empleado y lo devuelve en claro UNA sola vez.
      * Error 404 si el empleado no existe.
