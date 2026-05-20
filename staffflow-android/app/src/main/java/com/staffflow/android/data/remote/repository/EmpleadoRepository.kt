@@ -25,7 +25,8 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
 
     /**
      * E13 - Crea un nuevo empleado.
-     * P15 (FormEmpleadoFragment) en modo alta llama a este metodo.
+     * P29 (FormUsuarioFragment) en modo alta combinada usuario + empleado
+     * llama a este metodo tras crear el usuario via E08.
      */
     suspend fun crearEmpleado(request: EmpleadoRequest): Result<EmpleadoResponse> =
         safeApiCall { api.crearEmpleado(request) }

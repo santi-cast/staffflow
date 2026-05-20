@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
  *   Success -> RecyclerView con pull-to-refresh
  *
  * SearchView en toolbar con debounce de 300ms (llamada al API por cada busqueda).
- * FAB (+): visible solo para ADMIN, navega a P15 (FormEmpleadoFragment).
+ * Sin FAB de alta directa: el alta combinada usuario + empleado se hace
+ * siempre desde P28 -> P29 (FormUsuarioFragment).
  * Tap en fila -> P14 (action_empleados_to_detalle) con el empleadoId como argumento.
  */
 class EmpleadosFragment : Fragment() {

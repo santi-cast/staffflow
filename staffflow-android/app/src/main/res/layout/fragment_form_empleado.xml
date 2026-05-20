@@ -6,9 +6,15 @@
     Endpoint: E16 PATCH /empleados/{id}. La precarga inicial usa E15.
 
     El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) en el
-    mismo flujo que el alta de usuario. P15 no expone modo "crear" porque dni,
-    usuarioId, numeroEmpleado, pinTerminal y fechaAlta son inmutables via PATCH
-    y por tanto no pueden modificarse aqui.
+    mismo flujo que el alta de usuario. P15 no expone modo "crear".
+
+    Campos editables: dni, fechaAlta, nombre, apellido1, apellido2, categoria,
+    jornadaSemanalHoras, diasVacaciones, diasAsuntos. La cabecera read-only
+    (numeroEmpleado, usuario, email, rol) es solo informativa y se rellena
+    desde E15 para que el ADMIN identifique de un vistazo a quien pertenece
+    la ficha. El alta de empleado se hace siempre desde P29 (FormUsuario-
+    Fragment) en el mismo flujo que el alta de usuario. numeroEmpleado se
+    autogenera EMP-XXX y no es editable. El PIN se regenera desde P14 (E65).
 
     El boton GUARDAR se deshabilita durante la llamada al API.
 -->
@@ -26,19 +32,47 @@
         android:padding="16dp">
 
         <!--
-            Fecha de alta del empleado (solo lectura).
-            Metadata contractual: dia en el que empezo (o empezara) a trabajar.
-            Inmutable via PATCH; se asigna al crear el usuario desde P29.
-            Se rellena en prerellenarCampos() tras E15 GET /empleados/{id}.
+            Cabecera read-only: identifica la ficha sin ocupar espacio editable.
+            Se rellena en prerellenarCampos() a partir de E15 (campos numero-
+            Empleado, username, email y rol del EmpleadoResponse).
+            Reutiliza el patron item_saldo_fila ya usado en P14 DetalleEmpleado.
         -->
-        <TextView
-            android:id="@+id/tvFechaAlta"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCabecera"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:visibility="gone" />
+            android:layout_marginBottom="16dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <include
+                    android:id="@+id/filaNumeroEmpleado"
+                    layout="@layout/item_ficha_fila" />
+                <include
+                    android:id="@+id/filaUsuario"
+                    layout="@layout/item_ficha_fila" />
+                <include
+                    android:id="@+id/filaEmail"
+                    layout="@layout/item_ficha_fila" />
+                <include
+                    android:id="@+id/filaRol"
+                    layout="@layout/item_ficha_fila" />
+                <!--
+                    Fecha de alta: por ahora read-only dentro de la cabecera.
+                    En el proximo commit pasa a editable con MaterialDatePicker
+                    y sale de la cabecera al cuerpo del formulario.
+                -->
+                <include
+                    android:id="@+id/filaFechaAlta"
+                    layout="@layout/item_ficha_fila" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Nombre -->
         <com.google.android.material.textfield.TextInputLayout

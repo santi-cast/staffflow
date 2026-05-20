@@ -376,7 +376,7 @@
         android:label="Ausencias"
         tools:layout="@layout/fragment_mis_ausencias" />
 
-    <!-- P15 Crear o editar empleado -->
+    <!-- P15 Editar empleado (el alta combinada vive en P29) -->
     <fragment
         android:id="@+id/formEmpleadoFragment"
         android:name="com.staffflow.android.ui.admin.FormEmpleadoFragment"

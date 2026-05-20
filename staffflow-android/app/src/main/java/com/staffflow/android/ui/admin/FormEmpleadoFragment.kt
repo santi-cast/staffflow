@@ -50,7 +50,7 @@ class FormEmpleadoFragment : Fragment() {
     private val categorias = CategoriaEmpleado.entries.toList()
     private val categoriaLabels = listOf("Operario", "Administrativo", "Técnico", "Encargado", "Otro")
 
-    /** Formato de presentacion para la fecha de alta del empleado. */
+    /** Formato de presentacion para la fecha de alta del empleado (read-only en la cabecera ficha). */
     private val fmtFechaAlta = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     // ------------------------------------------------------------------
@@ -132,6 +132,8 @@ class FormEmpleadoFragment : Fragment() {
 
     /** Precarga los campos del formulario con los datos del empleado. */
     private fun prerellenarCampos(e: EmpleadoResponse) {
+        rellenarCabecera(e)
+
         binding.etNombre.setText(e.nombre)
         binding.etApellido1.setText(e.apellido1)
         binding.etApellido2.setText(e.apellido2 ?: "")
@@ -141,27 +143,49 @@ class FormEmpleadoFragment : Fragment() {
 
         val index = categorias.indexOf(e.categoria)
         if (index >= 0) binding.actvCategoria.setText(categoriaLabels[index], false)
-
-        mostrarFechaAlta(e.fechaAlta)
     }
 
     /**
-     * Muestra la fecha de alta del empleado formateada como "dd/MM/yyyy".
-     * Si el valor llega vacio o el parseo del ISO-8601 falla, el TextView se
-     * deja oculto (defensa silenciosa: la fecha es metadato informativo, no
-     * justifica romper la pantalla).
+     * Rellena la cabecera read-only con numeroEmpleado, username, email, rol
+     * y fechaAlta. Patron item_ficha_fila (label + valor en linea).
+     *
+     * E15 devuelve username, email y rol solo cuando el llamante es ADMIN
+     * (Opcion A). P15 solo es accesible a ADMIN, asi que en el caso normal
+     * los tres campos vienen rellenos. Si por defensa llegan null se muestra
+     * un guion para que la fila no se vea rota.
+     *
+     * fechaAlta llega en ISO-8601 desde el backend; se formatea como
+     * "dd/MM/yyyy" para presentacion. Si el parseo falla se muestra un guion
+     * (defensa silenciosa: el dato es metadato informativo, no justifica
+     * romper la pantalla).
      */
-    private fun mostrarFechaAlta(iso8601: String?) {
-        if (iso8601.isNullOrBlank()) {
-            binding.tvFechaAlta.isVisible = false
-            return
-        }
-        try {
-            val fecha = LocalDate.parse(iso8601).format(fmtFechaAlta)
-            binding.tvFechaAlta.text = getString(R.string.form_empleado_alta_el, fecha)
-            binding.tvFechaAlta.isVisible = true
+    private fun rellenarCabecera(e: EmpleadoResponse) {
+        binding.filaNumeroEmpleado.tvLabel.text = getString(R.string.form_empleado_cabecera_numero_empleado)
+        binding.filaNumeroEmpleado.tvValor.text = e.numeroEmpleado
+
+        binding.filaUsuario.tvLabel.text = getString(R.string.form_empleado_cabecera_usuario)
+        binding.filaUsuario.tvValor.text = e.username ?: "—"
+
+        binding.filaEmail.tvLabel.text = getString(R.string.form_empleado_cabecera_email)
+        binding.filaEmail.tvValor.text = e.email ?: "—"
+
+        binding.filaRol.tvLabel.text = getString(R.string.form_empleado_cabecera_rol)
+        binding.filaRol.tvValor.text = e.rol?.name ?: "—"
+
+        binding.filaFechaAlta.tvLabel.text = getString(R.string.form_empleado_cabecera_fecha_alta)
+        binding.filaFechaAlta.tvValor.text = formatearFechaAlta(e.fechaAlta)
+    }
+
+    /**
+     * Formatea la fecha de alta del empleado (ISO-8601) como "dd/MM/yyyy".
+     * Devuelve "—" si el valor llega vacio o el parseo falla.
+     */
+    private fun formatearFechaAlta(iso8601: String?): String {
+        if (iso8601.isNullOrBlank()) return "—"
+        return try {
+            LocalDate.parse(iso8601).format(fmtFechaAlta)
         } catch (_: DateTimeParseException) {
-            binding.tvFechaAlta.isVisible = false
+            "—"
         }
     }
 

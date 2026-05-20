@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fila compacta de "Etiqueta: valor" en una linea. Se usa en cabeceras
+    read-only donde los pares label+valor van juntos (P15 FormEmpleado cabecera).
+
+    Se diferencia de item_saldo_fila porque alli el valor se justifica a la
+    derecha (formato tabular para saldos numericos). Aqui valor y etiqueta
+    van pegados, con el valor a continuacion de los dos puntos. Mas legible
+    para textos largos (email, username).
+
+    El texto de tvLabel se establece desde el Fragment con el formato
+    "Etiqueta:" (los dos puntos los pone el caller, no el layout, para que
+    los strings sean traducibles sin asunciones tipograficas).
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="2dp">
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <TextView
+        android:id="@+id/tvValor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textStyle="bold" />
+
+</LinearLayout>

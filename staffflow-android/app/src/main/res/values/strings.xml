@@ -95,7 +95,14 @@
     <!-- P15 Formulario de empleado (solo edicion); el alta combinada vive en P29 -->
     <string name="form_empleado_titulo_edicion">Editar empleado</string>
     <string name="form_empleado_guardar">Guardar</string>
-    <string name="form_empleado_alta_el">Alta: %1$s</string>
+    <!-- Cabecera read-only de P15 (etiquetas de las filas informativas).
+         Las etiquetas incluyen los dos puntos para evitar componer strings
+         en codigo (i18n-friendly). -->
+    <string name="form_empleado_cabecera_numero_empleado">Nº empleado:</string>
+    <string name="form_empleado_cabecera_usuario">Usuario:</string>
+    <string name="form_empleado_cabecera_email">Email:</string>
+    <string name="form_empleado_cabecera_rol">Rol:</string>
+    <string name="form_empleado_cabecera_fecha_alta">Fecha de alta:</string>
     <string name="form_empleado_hint_nombre">Nombre</string>
     <string name="form_empleado_hint_apellido1">Primer apellido</string>
     <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
