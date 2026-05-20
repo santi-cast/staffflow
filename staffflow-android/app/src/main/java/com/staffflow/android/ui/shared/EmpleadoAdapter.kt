@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.ItemEmpleadoBinding
 import com.staffflow.android.domain.model.CategoriaEmpleado
@@ -18,9 +19,13 @@ import com.staffflow.android.domain.model.CategoriaEmpleado
  * El nombre lleva el lapiz de affordance (tap en la fila navega a P14
  * detalle, donde un chip lleva a P15 edicion).
  *
- * Color del borde izquierdo segun el campo activo:
- *   activo=true  -> colorPrimary del tema (#6750A4 en Material3 predeterminado)
- *   activo=false -> gris (#9E9E9E), indica que el empleado esta dado de baja
+ * Indicacion del estado activo/inactivo (doble señal visual):
+ *   - Borde izquierdo:
+ *       activo=true  -> colorPrimary del tema (#6750A4 en Material3 predeterminado)
+ *       activo=false -> gris (#9E9E9E)
+ *   - Texto " · Inactivo" en rojo (#C62828) en la linea del numero de
+ *     empleado, solo si activo=false. Sigue la regla "marca la excepcion,
+ *     no la norma": los activos no muestran texto adicional.
  *
  * @param onClick Callback llamado al pulsar un item. EmpleadosFragment navega a P14.
  */
@@ -38,6 +43,9 @@ class EmpleadoAdapter(
          * para llegar a P15 (form de edicion).
          */
         const val LAPIZ = "\u270E"
+
+        /** Rojo de "estado inactivo". Coherente con tvEstado de P14. */
+        const val ROJO_INACTIVO = "#C62828"
     }
 
     class ViewHolder(val binding: ItemEmpleadoBinding) : RecyclerView.ViewHolder(binding.root)
@@ -60,7 +68,26 @@ class EmpleadoAdapter(
             append(" ")
             append(LAPIZ)
         }
-        holder.binding.tvNumeroEmpleado.text = item.numeroEmpleado
+        // Marcar la excepcion: si esta inactivo, añadir " · Inactivo" en rojo
+        // tras el numero de empleado. Los activos no muestran texto adicional
+        // para no saturar la lista (los inactivos son ~5% del total).
+        // Se usa SpannableStringBuilder para colorear solo el sufijo.
+        if (item.activo) {
+            holder.binding.tvNumeroEmpleado.text = item.numeroEmpleado
+        } else {
+            val sufijo = " · ${holder.itemView.context.getString(R.string.detalle_empleado_inactivo)}"
+            val texto = android.text.SpannableStringBuilder(item.numeroEmpleado).apply {
+                val inicio = length
+                append(sufijo)
+                setSpan(
+                    android.text.style.ForegroundColorSpan(Color.parseColor(ROJO_INACTIVO)),
+                    inicio,
+                    length,
+                    android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            holder.binding.tvNumeroEmpleado.text = texto
+        }
         holder.binding.tvCategoria.text = nombreCategoria(item.categoria)
         holder.binding.viewBorde.setBackgroundColor(
             if (item.activo) Color.parseColor("#6750A4")

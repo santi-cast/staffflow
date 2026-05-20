@@ -3,12 +3,16 @@
     Item del RecyclerView de lista de empleados (P13).
 
     Estructura:
-      - Borde izquierdo colorPrimary (4dp): activos / colorOutline: dados de baja
-      - Nombre completo (bold)
-      - Numero de empleado (bodySmall, muted)
+      - Borde izquierdo colorPrimary (5dp): activos / gris: inactivos
+      - Nombre completo (bold) + lapiz de affordance (U+270E)
+      - Linea secundaria: numero de empleado (bodySmall, muted).
+        Si el empleado esta inactivo, se concatena " · Inactivo" en rojo
+        (#C62828) como segunda señal visual junto al borde gris.
       - Categoria alineada a la derecha
 
-    El color del borde se establece desde EmpleadoAdapter segun el campo activo.
+    El color del borde y el sufijo "Inactivo" los aplica EmpleadoAdapter
+    segun el campo activo. El texto base del item es identico para activos
+    e inactivos; la unica diferencia visible es el sufijo en rojo.
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
