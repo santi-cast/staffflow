@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
  *   Success                 -> operacion correcta (Fragment navega atras)
  *   SuccessAlta             -> usuario cargado en modo edicion (datos para pre-rellenar)
  *   Desactivado             -> baja logica OK (Fragment navega atras)
- *   PasswordReseteado       -> E14 OK (Fragment muestra Snackbar, NO navega atras)
+ *   PasswordReseteado       -> E66 OK (Fragment muestra Snackbar, NO navega atras)
  *   Error                   -> mensaje de error inline
  *   UsernameDuplicadoEnAlta -> HTTP 409 en E08 por username ya existente.
  *                              El Fragment muestra el mensaje y vuelve a
@@ -61,7 +61,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         /** Datos del usuario cargados en modo edicion para pre-rellenar el formulario. */
         data class SuccessAlta(val usuario: UsuarioResponse) : UiState()
         object Desactivado : UiState()
-        /** E14 OK: contrasena reseteada. El Fragment muestra Snackbar y vuelve a Idle. */
+        /** E66 OK: contrasena reseteada. El Fragment muestra Snackbar y vuelve a Idle. */
         object PasswordReseteado : UiState()
         data class Error(val mensaje: String) : UiState()
 
@@ -275,7 +275,7 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
-     * Restablece la contrasena del usuario en edicion (E14 PATCH /usuarios/{id}/password).
+     * Restablece la contrasena del usuario en edicion (E66 PATCH /usuarios/{id}/password).
      *
      * Solo disponible en modo edicion (usuarioId > 0). El ADMIN proporciona la
      * nueva contrasena desde el dialogo de P29; la validacion de longitud minima

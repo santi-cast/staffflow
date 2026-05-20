@@ -9,7 +9,7 @@ import com.staffflow.android.data.remote.dto.UsuarioResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
- * Repositorio para los endpoints de gestion de usuarios (E08-E12, E14).
+ * Repositorio para los endpoints de gestion de usuarios (E08-E12, E66).
  *
  * Solo accesible con rol ADMIN.
  * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
@@ -60,7 +60,7 @@ class UsuarioRepository(private val api: UsuarioApiService) {
         safeApiCall { api.desactivarUsuario(id) }
 
     /**
-     * E14 - Restablece la contrasena de un usuario (solo ADMIN).
+     * E66 - Restablece la contrasena de un usuario (solo ADMIN).
      * P29 (FormUsuarioFragment) en modo edicion llama a este metodo desde
      * el dialogo de cambio de contrasena.
      */

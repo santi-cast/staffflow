@@ -44,7 +44,7 @@ import java.time.format.DateTimeParseException
  * con la convencion del sistema; en modo edicion el backend no admite
  * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
  * se introduce directamente; en modo edicion se puede cambiar pulsando
- * btnCambiarPassword que abre un dialogo con campo visible (E14). El estado
+ * btnCambiarPassword que abre un dialogo con campo visible (E66). El estado
  * activo NO se edita aqui: para desactivar se usa el boton "Desactivar"
  * (E12 DELETE) con confirmacion. Reactivar usuarios desactivados no esta
  * soportado en v1.0 (no hay endpoint).
@@ -132,7 +132,7 @@ class FormUsuarioFragment : Fragment() {
         // Se deshabilita el TextInputLayout completo para que el campo aparezca
         // visualmente atenuado (gris) en ambos modos.
         binding.tilUsername.isEnabled = false
-        // btnCambiarPassword solo visible en modo edicion (E14). En alta la
+        // btnCambiarPassword solo visible en modo edicion (E66). En alta la
         // contrasena se introduce directamente en tilPassword.
         binding.btnCambiarPassword.isVisible = esEdicion
         // btnDesactivar arranca oculto y se hace visible solo si el usuario cargado
@@ -263,7 +263,7 @@ class FormUsuarioFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogo de cambio de contrasena (E14)
+    // Dialogo de cambio de contrasena (E66)
     // ------------------------------------------------------------------
 
     /**

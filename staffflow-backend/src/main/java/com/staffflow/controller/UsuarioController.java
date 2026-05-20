@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Controller REST para la gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 y E14 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12 y E66 del Grupo 3 (Gestión de Usuarios).
  * Ruta base: /api/v1/usuarios
  *
  * Todos los endpoints de este controller son exclusivos del rol ADMIN.
@@ -122,7 +122,7 @@ public class UsuarioController {
      * Actualiza los datos editables de un usuario: email y rol.
      *
      * El username no es modificable. La contraseña se gestiona por separado
-     * en E14 (PATCH /{id}/password). El campo activo tampoco se toca aquí.
+     * en E66 (PATCH /{id}/password). El campo activo tampoco se toca aquí.
      * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      *
      * Códigos HTTP:
@@ -173,7 +173,7 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.desactivar(id));
     }
 
-    // E14 — PATCH /api/v1/usuarios/{id}/password
+    // E66 — PATCH /api/v1/usuarios/{id}/password
     // RF-08: Restablecer contraseña de usuario (solo ADMIN)
 
     /**
@@ -182,7 +182,7 @@ public class UsuarioController {
      * Caso de uso helpdesk: el ADMIN fija una nueva contraseña directamente
      * sin necesitar la contraseña actual del usuario y sin enviar correo.
      * A diferencia de E03 (cambio propio) y E04 (recuperación por email),
-     * este endpoint es exclusivo del rol ADMIN.
+     * este endpoint (E66) es exclusivo del rol ADMIN.
      *
      * Códigos HTTP:
      *   200 OK          → contraseña actualizada correctamente

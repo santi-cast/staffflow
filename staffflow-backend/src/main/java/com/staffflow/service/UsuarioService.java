@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión de usuarios del sistema.
  *
- * Cubre los endpoints E08-E12 y E14 del Grupo 3 (Gestión de Usuarios).
+ * Cubre los endpoints E08-E12 y E66 del Grupo 3 (Gestión de Usuarios).
  * Accesible exclusivamente por el rol ADMIN. Los roles ENCARGADO
  * y EMPLEADO reciben HTTP 403 antes de llegar a este servicio
  * (Spring Security, @PreAuthorize en el controller).
@@ -169,7 +169,7 @@ public class UsuarioService {
      * Actualiza los datos editables de un usuario: email y rol.
      *
      * La contraseña no se modifica por este endpoint. Para cambiarla, el propio
-     * usuario usa E03 (cambio con contraseña actual) y el ADMIN usa E14
+     * usuario usa E03 (cambio con contraseña actual) y el ADMIN usa E66
      * (PATCH /api/v1/usuarios/{id}/password).
      *
      * El campo activo tampoco se modifica aquí: la desactivación se realiza
@@ -249,7 +249,7 @@ public class UsuarioService {
         return new MensajeResponse("Usuario desactivado correctamente");
     }
 
-    // E14 — PATCH /api/v1/usuarios/{id}/password
+    // E66 — PATCH /api/v1/usuarios/{id}/password
     // RF-08: Restablecer contraseña de usuario (solo ADMIN)
 
     /**

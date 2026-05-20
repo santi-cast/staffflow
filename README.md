@@ -131,7 +131,7 @@ Características principales:
 - API REST **stateless** con autenticación **JWT**
 - Control de acceso basado en **roles** con Spring Security (`@PreAuthorize`)
 - Roles con reparto matricial por módulo (no jerarquía estricta):
-  - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12, E14) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
+  - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12, E66) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
   - **ENCARGADO**: mismos permisos que ADMIN sobre los módulos operativos (empleados, fichajes, pausas, ausencias, presencia, saldos sin recálculo, informes, desbloqueo del terminal E53/E54), pero SIN acceso a empresa, usuarios ni recálculo. Tiene perfil de empleado: usa `/me` y ficha por PIN.
   - **EMPLEADO**: acceso exclusivo a sus propios datos vía endpoints `/me`. Tiene perfil de empleado: ficha por PIN.
 - Separación entre **entidades de dominio y DTOs** (nunca se exponen entidades directamente)
@@ -187,9 +187,9 @@ Convenciones de la tabla:
 | E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username ya existe (carrera entre dos altas simultáneas); P29 reacciona regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E14) | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66) | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
-| E14 | PATCH /{id}/password | ADMIN | Restablece la contraseña de un usuario directamente (caso de uso helpdesk). Sin envío de correo. Mínimo 8 caracteres | P29 |
+| E66 | PATCH /{id}/password | ADMIN | Restablece la contraseña de un usuario directamente (caso de uso helpdesk). Sin envío de correo. Mínimo 8 caracteres | P29 |
 
 #### Empleados (`/api/v1/empleados`)
 
@@ -419,7 +419,7 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
 | P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
-| P29 | FormUsuarioFragment | 5 — Admin | E08–E14 | ADMIN |
+| P29 | FormUsuarioFragment | 5 — Admin | E08–E12, E66 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
 Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.

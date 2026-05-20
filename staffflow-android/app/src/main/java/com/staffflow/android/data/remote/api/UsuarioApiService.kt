@@ -23,7 +23,7 @@ import retrofit2.http.Query
  *   E10 GET  /usuarios/{id}              -> UsuarioResponse       (ADMIN)
  *   E11 PATCH /usuarios/{id}             -> UsuarioResponse       (ADMIN)
  *   E12 DELETE /usuarios/{id}            -> MensajeResponse       (ADMIN, baja logica)
- *   E14 PATCH /usuarios/{id}/password    -> MensajeResponse       (ADMIN, reset contrasena)
+ *   E66 PATCH /usuarios/{id}/password    -> MensajeResponse       (ADMIN, reset contrasena)
  *
  * Requiere JWT con rol ADMIN. El AuthInterceptor adjunta el token.
  * E12 es baja logica (activo=false), no DELETE fisico.
@@ -73,7 +73,7 @@ interface UsuarioApiService {
     suspend fun desactivarUsuario(@Path("id") id: Long): Response<MensajeResponse>
 
     /**
-     * E14 - Restablece la contrasena de un usuario (solo ADMIN).
+     * E66 - Restablece la contrasena de un usuario (solo ADMIN).
      * No requiere contrasena actual ni envia correo. Caso de uso helpdesk.
      * Error 400 si nuevaPassword tiene menos de 8 caracteres.
      * Error 404 si el usuario no existe.

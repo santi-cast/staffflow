@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * Datos necesarios para que un ADMIN restablezca la contraseña de otro usuario.
- * Usado en E14 (PATCH /api/v1/usuarios/{id}/password), requiere JWT con rol ADMIN.
+ * Usado en E66 (PATCH /api/v1/usuarios/{id}/password), requiere JWT con rol ADMIN.
  *
  * A diferencia de E03 (cambio de contraseña propia) no se exige la contraseña
  * actual: el ADMIN actúa como helpdesk y puede no conocerla. La nueva contraseña

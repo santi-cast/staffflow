@@ -14,7 +14,7 @@
 
     tilPassword solo visible en modo alta.
     btnCambiarPassword solo visible en modo edicion: abre dialogo con campo
-    de contrasena nueva (minimo 8 chars) y llama a E14 PATCH /usuarios/{id}/password.
+    de contrasena nueva (minimo 8 chars) y llama a E66 PATCH /usuarios/{id}/password.
     Seccion perfil empleado solo visible en modo alta (en edicion se gestiona desde P14/P15).
     btnDesactivar solo visible en modo edicion Y cuando el usuario esta activo.
     El estado activo NO se edita desde este formulario: para desactivar se usa
@@ -318,7 +318,7 @@
             Boton para cambiar la contrasena del usuario (solo modo edicion).
             Al pulsarlo se abre un dialogo con campo de contrasena nueva.
             wrap_content centrado para no ocupar todo el ancho (accion secundaria,
-            no destructiva). Llama a E14 PATCH /usuarios/{id}/password.
+            no destructiva). Llama a E66 PATCH /usuarios/{id}/password.
         -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCambiarPassword"
