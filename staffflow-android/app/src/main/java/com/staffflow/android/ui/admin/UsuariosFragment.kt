@@ -6,12 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.databinding.FragmentUsuariosBinding
 import kotlinx.coroutines.launch
@@ -30,6 +32,13 @@ import kotlinx.coroutines.launch
  * FAB (+) navega a P29 (FormUsuarioFragment) en modo alta.
  * Tap en fila -> P29 en modo edicion con usuarioId.
  * onResume() llama reintentar() para refrescar al volver de P29.
+ *
+ * Feedback de operaciones: P29 envia un FragmentResult con clave
+ * FormUsuarioFragment.KEY_RESULTADO al volver con exito de una alta,
+ * edicion o desactivacion. Este fragment lo recibe con
+ * setFragmentResultListener y muestra el mensaje en un Snackbar para
+ * que el admin sepa que la operacion termino bien (antes solo se
+ * informaban los errores, los exitos eran silenciosos).
  */
 class UsuariosFragment : Fragment() {
 
@@ -57,6 +66,23 @@ class UsuariosFragment : Fragment() {
         configurarRecyclerView()
         configurarListeners()
         observarViewModel()
+        escucharResultadoFormulario()
+    }
+
+    /**
+     * Recibe el resultado de P29 al cerrarse con exito (alta, edicion o
+     * desactivacion) y muestra el mensaje localizado en un Snackbar.
+     * El listener se registra con viewLifecycleOwner para que solo viva
+     * mientras la vista exista (Android cancela el resultado pendiente si
+     * se destruye antes de consumirlo).
+     */
+    private fun escucharResultadoFormulario() {
+        setFragmentResultListener(FormUsuarioFragment.KEY_RESULTADO) { _, bundle ->
+            val mensajeRes = bundle.getInt(FormUsuarioFragment.ARG_MENSAJE_RES, 0)
+            if (mensajeRes != 0) {
+                Snackbar.make(binding.root, getString(mensajeRes), Snackbar.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onResume() {

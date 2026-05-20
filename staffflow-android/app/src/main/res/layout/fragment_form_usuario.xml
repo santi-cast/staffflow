@@ -53,7 +53,14 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Username (auto-sugerido segun el rol elegido arriba) -->
+        <!--
+            Username: NO editable a mano. En modo alta se auto-rellena con
+            el prefijo del rol (empXX, encargadoXX, adminXX) calculado por
+            FormUsuarioViewModel.sugerirUsername. En modo edicion queda
+            disabled (el backend no admite cambiar username via PATCH).
+            Por eso el EditText es no focusable: la unica via de obtener
+            valor es la sugerencia del ViewModel.
+        -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilUsername"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -66,7 +73,9 @@
                 android:id="@+id/etUsername"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:inputType="none"
                 android:autofillHints="username" />
 
         </com.google.android.material.textfield.TextInputLayout>

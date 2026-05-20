@@ -255,6 +255,9 @@
     <string name="form_usuario_dialogo_cancelar">Cancelar</string>
     <string name="form_usuario_dialogo_confirmar">Desactivar</string>
     <string name="form_usuario_creado_el">Creado el: %1$s</string>
+    <string name="form_usuario_resultado_creado">Usuario creado correctamente</string>
+    <string name="form_usuario_resultado_actualizado">Usuario actualizado correctamente</string>
+    <string name="form_usuario_resultado_desactivado">Usuario desactivado correctamente</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>

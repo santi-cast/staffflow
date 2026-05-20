@@ -5,8 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -32,13 +34,19 @@ import java.time.format.DateTimeParseException
 /**
  * Formulario de usuario (P29). Solo ADMIN.
  *
- * Modo alta   (usuarioId = -1): E08 POST /usuarios.
- *   Al crear EMPLEADO o ENCARGADO: Snackbar con accion "Crear perfil" -> P15.
+ * Modo alta   (usuarioId = -1): E08 POST /usuarios + E13 POST /empleados
+ *   en cadena dentro del ViewModel cuando rol != ADMIN.
  * Modo edicion (usuarioId > 0): E11 PATCH (email, rol).
- *   Username y password no son editables en modo edicion.
- *   El estado activo NO se edita aqui (el backend ignora el campo en PATCH):
- *   para desactivar se usa el boton "Desactivar" (E12 DELETE) con confirmacion.
- *   Reactivar usuarios desactivados no esta soportado en v1.0 (no hay endpoint).
+ *
+ * El campo username NUNCA es editable a mano: en modo alta se autorrellena
+ * desde sugerirUsername(rol) del ViewModel siguiendo el prefijo del rol
+ * (emp/encargado/admin + numero correlativo) para garantizar coherencia
+ * con la convencion del sistema; en modo edicion el backend no admite
+ * cambiarlo via PATCH y el campo aparece disabled. Password tampoco se
+ * edita en modo edicion (oculto). El estado activo NO se edita aqui:
+ * para desactivar se usa el boton "Desactivar" (E12 DELETE) con
+ * confirmacion. Reactivar usuarios desactivados no esta soportado en
+ * v1.0 (no hay endpoint).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -49,9 +57,6 @@ class FormUsuarioFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: FormUsuarioViewModel by viewModels()
-
-    /** Ultima sugerencia aplicada. Permite detectar si el usuario edito el campo a mano. */
-    private var lastSuggestion: String? = null
 
     /** Formato de presentacion para la fecha de creacion del usuario. */
     private val fmtFechaCreacion = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
@@ -121,7 +126,11 @@ class FormUsuarioFragment : Fragment() {
     private fun configurarModo() {
         val esEdicion = viewModel.modoEdicion
         binding.tilPassword.isVisible = !esEdicion
-        binding.etUsername.isEnabled = !esEdicion
+        // Username nunca editable a mano: en alta lo autogenera el ViewModel
+        // a partir del rol; en edicion el backend no admite cambiarlo via PATCH.
+        // Se deshabilita el TextInputLayout completo para que el campo aparezca
+        // visualmente atenuado (gris) en ambos modos.
+        binding.tilUsername.isEnabled = false
         // btnDesactivar arranca oculto y se hace visible solo si el usuario cargado
         // resulta estar activo (ver observarEstado()). En modo alta nunca se muestra.
         binding.btnDesactivar.isVisible = false
@@ -255,12 +264,11 @@ class FormUsuarioFragment : Fragment() {
                 launch { viewModel.uiState.collect { procesarEstado(it) } }
                 launch {
                     viewModel.usernameSugerido.collect { suggestion ->
-                        if (suggestion == null) return@collect
-                        val current = binding.etUsername.text.toString()
-                        // Aplicar solo si el campo esta vacio o tiene la sugerencia anterior
-                        if (current.isEmpty() || current == lastSuggestion) {
+                        // El campo no es editable a mano (focusable=false en layout),
+                        // por tanto cualquier sugerencia recibida en modo alta
+                        // sobrescribe siempre el contenido del input.
+                        if (suggestion != null) {
                             binding.etUsername.setText(suggestion)
-                            lastSuggestion = suggestion
                         }
                     }
                 }
@@ -279,8 +287,13 @@ class FormUsuarioFragment : Fragment() {
         binding.btnGuardar.isEnabled = !cargando
 
         when (estado) {
-            is FormUsuarioViewModel.UiState.Success      -> findNavController().popBackStack()
-            is FormUsuarioViewModel.UiState.Desactivado  -> findNavController().popBackStack()
+            is FormUsuarioViewModel.UiState.Success      -> finalizarConMensaje(
+                if (viewModel.modoEdicion) R.string.form_usuario_resultado_actualizado
+                else R.string.form_usuario_resultado_creado
+            )
+            is FormUsuarioViewModel.UiState.Desactivado  -> finalizarConMensaje(
+                R.string.form_usuario_resultado_desactivado
+            )
 
             is FormUsuarioViewModel.UiState.SuccessAlta  -> {
                 // Solo se emite en modo edicion: pre-rellenar campos al cargar.
@@ -300,6 +313,25 @@ class FormUsuarioFragment : Fragment() {
 
             else -> Unit
         }
+    }
+
+    /**
+     * Envia un mensaje de resultado al fragment destino (P28 UsuariosFragment)
+     * via FragmentResult y vuelve atras. UsuariosFragment lo recibe en
+     * setFragmentResultListener("usuarioResultado") y muestra Snackbar.
+     *
+     * Mismo patron que TipoPausaFragment -> ConfirmacionFragment, elegido
+     * por ser idiomatico de Android Navigation y sobrevivir al popBackStack
+     * (un Snackbar lanzado aqui se mata con la transicion de fragment).
+     *
+     * @param mensajeRes recurso de string con el texto a mostrar en P28
+     */
+    private fun finalizarConMensaje(mensajeRes: Int) {
+        setFragmentResult(
+            KEY_RESULTADO,
+            bundleOf(ARG_MENSAJE_RES to mensajeRes)
+        )
+        findNavController().popBackStack()
     }
 
     // ------------------------------------------------------------------
@@ -349,4 +381,19 @@ class FormUsuarioFragment : Fragment() {
 
     private fun categoriaFromLabel(label: String): CategoriaEmpleado? =
         CategoriaEmpleado.values().find { categoriaLabel(it) == label }
+
+    companion object {
+        /**
+         * Clave del FragmentResult que envia P29 a P28 al terminar una operacion
+         * con exito (alta, edicion o desactivacion). UsuariosFragment debe
+         * registrar setFragmentResultListener con esta misma clave.
+         */
+        const val KEY_RESULTADO = "usuarioResultado"
+
+        /**
+         * Argumento dentro del Bundle del FragmentResult: id del recurso
+         * de string con el mensaje localizado a mostrar en P28 (Int).
+         */
+        const val ARG_MENSAJE_RES = "mensajeRes"
+    }
 }
