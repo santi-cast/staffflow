@@ -3,7 +3,6 @@ package com.staffflow.android.ui.admin
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -15,15 +14,16 @@ import com.staffflow.android.domain.model.Rol
 /**
  * Adapter del RecyclerView de lista de usuarios (P28).
  *
- * Cada item muestra username, email, rol legible y estado activo/inactivo.
- * El username lleva el lapiz de affordance (tap en la fila navega a P29
- * en modo edicion).
+ * Cada item muestra username, email y rol legible. El username lleva el
+ * lapiz de affordance (tap en la fila navega a P29 en modo edicion).
  *
- * Doble señal visual del estado:
+ * Indicacion del estado activo/inactivo (doble señal visual, simetrica a
+ * EmpleadoAdapter):
  *   - Borde izquierdo: activo (#4CAF50, verde claro) / inactivo (#9E9E9E, gris).
- *   - Texto del estado: activo (#2E7D32, verde oscuro) / inactivo (#C62828, rojo).
- *     Mismos colores que usa P14 DetalleEmpleadoFragment.tvEstado para
- *     coherencia entre las pantallas de gestion de estado (empleados/usuarios).
+ *   - Texto " · Inactivo" en rojo (#C62828) en la linea del rol, solo si
+ *     activo=false. Sigue la regla "marca la excepcion, no la norma": los
+ *     activos no muestran texto adicional para no saturar la lista (los
+ *     inactivos son la minoria del total).
  *
  * @param onClick Callback llamado al pulsar un item. UsuariosFragment navega a P29 edicion.
  */
@@ -39,9 +39,7 @@ class UsuarioAdapter(
          */
         const val LAPIZ = "\u270E"
 
-        /** Verde oscuro de "estado activo". Coherente con tvEstado de P14. */
-        const val VERDE_ACTIVO   = "#2E7D32"
-        /** Rojo de "estado inactivo". Coherente con tvEstado de P14. */
+        /** Rojo de "estado inactivo". Coherente con EmpleadoAdapter y tvEstado de P14. */
         const val ROJO_INACTIVO  = "#C62828"
     }
 
@@ -59,11 +57,25 @@ class UsuarioAdapter(
         with(holder.binding) {
             tvUsername.text  = "${item.username} $LAPIZ"
             tvEmail.text     = item.email
-            tvRol.text       = rolLegible(item.rol)
-            tvEstado.text    = if (item.activo) "Activo" else "Inactivo"
-            tvEstado.setTextColor(
-                Color.parseColor(if (item.activo) VERDE_ACTIVO else ROJO_INACTIVO)
-            )
+            // Marcar la excepcion: si esta inactivo, añadir " · Inactivo" en rojo
+            // tras el rol. Los activos no muestran texto adicional (patron
+            // simetrico a EmpleadoAdapter).
+            val rolLegible = rolLegible(item.rol)
+            if (item.activo) {
+                tvRol.text = rolLegible
+            } else {
+                val sufijo = " · ${holder.itemView.context.getString(R.string.usuarios_item_inactivo)}"
+                val texto = android.text.SpannableStringBuilder(rolLegible).apply {
+                    append(sufijo)
+                    setSpan(
+                        android.text.style.ForegroundColorSpan(Color.parseColor(ROJO_INACTIVO)),
+                        rolLegible.length,
+                        rolLegible.length + sufijo.length,
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+                tvRol.text = texto
+            }
 
             val colorBorde = if (item.activo) 0xFF4CAF50.toInt() else 0xFF9E9E9E.toInt()
             viewBorde.setBackgroundColor(colorBorde)
