@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
  * Modo edicion (usuarioId > 0): pre-carga con E10 GET /usuarios/{id},
  *                               guarda con E11 PATCH /usuarios/{id}.
  * Desactivar  (usuarioId > 0): E12 DELETE /usuarios/{id} (baja logica).
+ * Reactivar   (usuarioId > 0): E67 PATCH /usuarios/{id}/reactivar (deshace E12).
  *
  * UiState:
  *   Idle                    -> formulario listo
@@ -38,6 +39,7 @@ import kotlinx.coroutines.launch
  *   Success                 -> operacion correcta (Fragment navega atras)
  *   SuccessAlta             -> usuario cargado en modo edicion (datos para pre-rellenar)
  *   Desactivado             -> baja logica OK (Fragment navega atras)
+ *   Reactivado              -> E67 OK (Fragment navega atras)
  *   PasswordReseteado       -> E66 OK (Fragment muestra Snackbar, NO navega atras)
  *   Error                   -> mensaje de error inline
  *   UsernameDuplicadoEnAlta -> HTTP 409 en E08 por username ya existente.
@@ -62,6 +64,8 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         /** Datos del usuario cargados en modo edicion para pre-rellenar el formulario. */
         data class SuccessAlta(val usuario: UsuarioResponse) : UiState()
         object Desactivado : UiState()
+        /** E67 OK: usuario reactivado. El Fragment navega atras y notifica con FragmentResult. */
+        object Reactivado : UiState()
         /** E66 OK: contrasena reseteada. El Fragment muestra Snackbar y vuelve a Idle. */
         object PasswordReseteado : UiState()
         data class Error(val mensaje: String) : UiState()
@@ -246,7 +250,8 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      *
      * El estado activo no se modifica por esta via: el backend ignora el campo
      * `activo` en PATCH (ver UsuarioController E11). Para desactivar se usa
-     * E12 DELETE (metodo `desactivar()`). Reactivar no esta soportado en v1.
+     * E12 DELETE (metodo `desactivar()`); para reactivar se usa E67 PATCH
+     * /usuarios/{id}/reactivar (metodo `reactivar()`).
      */
     fun actualizar(email: String, rol: Rol) {
         if (email.isBlank()) {
@@ -274,6 +279,22 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
             repository.desactivarUsuario(usuarioId).fold(
                 onSuccess = { _uiState.value = UiState.Desactivado },
                 onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_desactivar)) }
+            )
+        }
+    }
+
+    /**
+     * Reactiva el usuario (E67 PATCH /usuarios/{id}/reactivar). Simetrico a
+     * desactivar(): solo aplica a usuarios en edicion con activo=false.
+     * El Fragment debe mostrar MaterialAlertDialogBuilder antes de llamar.
+     */
+    fun reactivar() {
+        if (usuarioId <= 0L) return
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            repository.reactivarUsuario(usuarioId).fold(
+                onSuccess = { _uiState.value = UiState.Reactivado },
+                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_reactivar)) }
             )
         }
     }

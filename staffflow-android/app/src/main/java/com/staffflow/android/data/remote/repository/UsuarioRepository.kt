@@ -9,7 +9,7 @@ import com.staffflow.android.data.remote.dto.UsuarioResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
- * Repositorio para los endpoints de gestion de usuarios (E08-E12, E66).
+ * Repositorio para los endpoints de gestion de usuarios (E08-E12, E66, E67).
  *
  * Solo accesible con rol ADMIN.
  * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
@@ -66,4 +66,12 @@ class UsuarioRepository(private val api: UsuarioApiService) {
      */
     suspend fun resetearPassword(id: Long, nuevaPassword: String): Result<MensajeResponse> =
         safeApiCall { api.resetearPassword(id, AdminPasswordResetRequest(nuevaPassword)) }
+
+    /**
+     * E67 - Reactiva un usuario previamente desactivado.
+     * P29 (FormUsuarioFragment) con el boton Activar (visible solo cuando
+     * usuario.activo == false) llama a este metodo. Simetrico a desactivarUsuario.
+     */
+    suspend fun reactivarUsuario(id: Long): Result<MensajeResponse> =
+        safeApiCall { api.reactivarUsuario(id) }
 }

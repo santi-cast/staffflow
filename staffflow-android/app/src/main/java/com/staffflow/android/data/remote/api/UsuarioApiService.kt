@@ -24,9 +24,10 @@ import retrofit2.http.Query
  *   E11 PATCH /usuarios/{id}             -> UsuarioResponse       (ADMIN)
  *   E12 DELETE /usuarios/{id}            -> MensajeResponse       (ADMIN, baja logica)
  *   E66 PATCH /usuarios/{id}/password    -> MensajeResponse       (ADMIN, reset contrasena)
+ *   E67 PATCH /usuarios/{id}/reactivar   -> MensajeResponse       (ADMIN, simetrico a E12)
  *
  * Requiere JWT con rol ADMIN. El AuthInterceptor adjunta el token.
- * E12 es baja logica (activo=false), no DELETE fisico.
+ * E12 es baja logica (activo=false), no DELETE fisico. E67 deshace E12.
  */
 interface UsuarioApiService {
 
@@ -83,4 +84,14 @@ interface UsuarioApiService {
         @Path("id") id: Long,
         @Body request: AdminPasswordResetRequest
     ): Response<MensajeResponse>
+
+    /**
+     * E67 - Reactiva un usuario previamente desactivado (activo=true).
+     * Simetrico a E12 (desactivar). Tras reactivar, el usuario vuelve a
+     * poder hacer login.
+     * Error 404 si el usuario no existe.
+     * Error 409 si el usuario ya estaba activo.
+     */
+    @PATCH("usuarios/{id}/reactivar")
+    suspend fun reactivarUsuario(@Path("id") id: Long): Response<MensajeResponse>
 }

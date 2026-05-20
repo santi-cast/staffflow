@@ -1,5 +1,6 @@
 package com.staffflow.android.ui.admin
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -45,9 +46,10 @@ import java.time.format.DateTimeParseException
  * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
  * se introduce directamente; en modo edicion se puede cambiar pulsando
  * btnCambiarPassword que abre un dialogo con campo visible (E66). El estado
- * activo NO se edita aqui: para desactivar se usa el boton "Desactivar"
- * (E12 DELETE) con confirmacion. Reactivar usuarios desactivados no esta
- * soportado en v1.0 (no hay endpoint).
+ * activo NO se edita por el campo `activo`: el boton btnCambiarEstado alterna
+ * entre "Desactivar" (E12 DELETE) y "Activar" (E67 PATCH /reactivar) segun
+ * usuario.activo, ambos con confirmacion via MaterialAlertDialog. Patron
+ * simetrico al de DetalleEmpleadoFragment (P15).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -74,6 +76,15 @@ class FormUsuarioFragment : Fragment() {
      * como String ISO-8601 ("yyyy-MM-dd") y debe ser >= hoy.
      */
     private var fechaAltaSeleccionada: LocalDate = LocalDate.now()
+
+    /**
+     * Cache local del estado activo del usuario cargado en modo edicion.
+     * Lo refrescamos en SuccessAlta y lo consultamos en btnCambiarEstado para
+     * decidir si abrir el dialogo de desactivar o el de activar (E12 vs E67).
+     * Mantener un campo local evita depender de uiState (que cambia a Loading
+     * durante las llamadas) en el momento del click. Null = aun no cargado.
+     */
+    private var usuarioActivo: Boolean? = null
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -135,9 +146,10 @@ class FormUsuarioFragment : Fragment() {
         // btnCambiarPassword solo visible en modo edicion (E66). En alta la
         // contrasena se introduce directamente en tilPassword.
         binding.btnCambiarPassword.isVisible = esEdicion
-        // btnDesactivar arranca oculto y se hace visible solo si el usuario cargado
-        // resulta estar activo (ver observarEstado()). En modo alta nunca se muestra.
-        binding.btnDesactivar.isVisible = false
+        // btnCambiarEstado arranca oculto. En modo edicion se hace visible al
+        // cargar el usuario, con texto y color segun usuario.activo (ver
+        // SuccessAlta en procesarEstado). En modo alta nunca se muestra.
+        binding.btnCambiarEstado.isVisible = false
         // En edicion: el perfil de empleado se gestiona desde P14/P15, no aqui
         binding.layoutPerfilEmpleado.isVisible = !esEdicion
     }
@@ -238,8 +250,14 @@ class FormUsuarioFragment : Fragment() {
             }
         }
 
-        binding.btnDesactivar.setOnClickListener {
-            mostrarDialogoDesactivar()
+        binding.btnCambiarEstado.setOnClickListener {
+            // Decidir desactivar vs activar segun el estado del usuario cargado.
+            // Mismo patron que DetalleEmpleadoFragment (P15).
+            when (usuarioActivo) {
+                true  -> mostrarDialogoDesactivar()
+                false -> mostrarDialogoActivar()
+                null  -> Unit // usuario aun no cargado, ignorar click
+            }
         }
 
         binding.btnCambiarPassword.setOnClickListener {
@@ -248,7 +266,7 @@ class FormUsuarioFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogo de confirmacion antes de desactivar (Decision 26)
+    // Dialogos de confirmacion antes de cambiar estado (Decision 26)
     // ------------------------------------------------------------------
 
     private fun mostrarDialogoDesactivar() {
@@ -260,6 +278,39 @@ class FormUsuarioFragment : Fragment() {
                 viewModel.desactivar()
             }
             .show()
+    }
+
+    private fun mostrarDialogoActivar() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.form_usuario_dialogo_activar_titulo))
+            .setMessage(getString(R.string.form_usuario_dialogo_activar_mensaje))
+            .setNegativeButton(getString(R.string.form_usuario_dialogo_cancelar), null)
+            .setPositiveButton(getString(R.string.form_usuario_dialogo_confirmar)) { _, _ ->
+                viewModel.reactivar()
+            }
+            .show()
+    }
+
+    /**
+     * Configura el texto y el color del boton bimodal Desactivar/Activar
+     * segun el estado actual del usuario cargado. Se invoca desde SuccessAlta
+     * en procesarEstado(). Patron simetrico al de DetalleEmpleadoFragment (P15).
+     *
+     * Activo   -> "Desactivar" outlined rojo  (#C62828)
+     * Inactivo -> "Activar"    outlined verde (#2E7D32)
+     */
+    private fun configurarBotonCambiarEstado(activo: Boolean) {
+        if (activo) {
+            binding.btnCambiarEstado.text = getString(R.string.form_usuario_desactivar)
+            val rojo = Color.parseColor("#C62828")
+            binding.btnCambiarEstado.setTextColor(rojo)
+            binding.btnCambiarEstado.strokeColor = android.content.res.ColorStateList.valueOf(rojo)
+        } else {
+            binding.btnCambiarEstado.text = getString(R.string.form_usuario_activar)
+            val verde = Color.parseColor("#2E7D32")
+            binding.btnCambiarEstado.setTextColor(verde)
+            binding.btnCambiarEstado.strokeColor = android.content.res.ColorStateList.valueOf(verde)
+        }
     }
 
     // ------------------------------------------------------------------
@@ -345,7 +396,7 @@ class FormUsuarioFragment : Fragment() {
         binding.progressIndicator.isVisible = cargando
         binding.btnGuardar.isEnabled = !cargando
         binding.btnCambiarPassword.isEnabled = !cargando
-        binding.btnDesactivar.isEnabled = !cargando
+        binding.btnCambiarEstado.isEnabled = !cargando
 
         when (estado) {
             is FormUsuarioViewModel.UiState.Success      -> finalizarConMensaje(
@@ -354,6 +405,9 @@ class FormUsuarioFragment : Fragment() {
             )
             is FormUsuarioViewModel.UiState.Desactivado  -> finalizarConMensaje(
                 R.string.form_usuario_resultado_desactivado
+            )
+            is FormUsuarioViewModel.UiState.Reactivado   -> finalizarConMensaje(
+                R.string.form_usuario_resultado_reactivado
             )
 
             is FormUsuarioViewModel.UiState.PasswordReseteado -> {
@@ -368,12 +422,14 @@ class FormUsuarioFragment : Fragment() {
 
             is FormUsuarioViewModel.UiState.SuccessAlta  -> {
                 // Solo se emite en modo edicion: pre-rellenar campos al cargar.
-                // btnDesactivar solo visible si el usuario esta activo (si ya esta
-                // inactivo no hay accion posible: reactivar no esta soportado en v1).
+                // btnCambiarEstado se configura segun usuario.activo: texto y color
+                // alternan entre "Desactivar" (rojo, E12) y "Activar" (verde, E67).
                 binding.etUsername.setText(estado.usuario.username)
                 binding.etEmail.setText(estado.usuario.email)
                 binding.actvRol.setText(rolLabel(estado.usuario.rol), false)
-                binding.btnDesactivar.isVisible = estado.usuario.activo
+                usuarioActivo = estado.usuario.activo
+                binding.btnCambiarEstado.isVisible = true
+                configurarBotonCambiarEstado(estado.usuario.activo)
                 mostrarFechaCreacion(estado.usuario.fechaCreacion)
             }
 
@@ -471,8 +527,8 @@ class FormUsuarioFragment : Fragment() {
     companion object {
         /**
          * Clave del FragmentResult que envia P29 a P28 al terminar una operacion
-         * con exito (alta, edicion o desactivacion). UsuariosFragment debe
-         * registrar setFragmentResultListener con esta misma clave.
+         * con exito (alta, edicion, desactivacion o reactivacion). UsuariosFragment
+         * debe registrar setFragmentResultListener con esta misma clave.
          */
         const val KEY_RESULTADO = "usuarioResultado"
 
