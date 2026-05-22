@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * ViewModel del formulario de empleado (P15). Solo edicion.
@@ -54,6 +56,16 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     private var empleadoId: Long = Long.MIN_VALUE  // sentinel: aun no inicializado
 
     /**
+     * Fecha de alta original del empleado (la que llego de E15). Se usa para
+     * decidir si hay que enviarla en el PATCH: solo se envia cuando difiere
+     * del valor original. null = sin cambio respecto a lo precargado.
+     */
+    private var fechaAltaOriginal: LocalDate? = null
+
+    /** Formato ISO-8601 (yyyy-MM-dd) que espera el backend en fechaAlta. */
+    private val fmtFechaAltaIso = DateTimeFormatter.ISO_LOCAL_DATE
+
+    /**
      * Inicializa el formulario cargando el empleado a editar.
      * Llamado desde FormEmpleadoFragment.onViewCreated con el argumento de navegacion.
      *
@@ -76,6 +88,7 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
             repository.getEmpleado(empleadoId).fold(
                 onSuccess = {
                     _empleado.value = it
+                    fechaAltaOriginal = parsearFechaAltaIso(it.fechaAlta)
                     _uiState.value = UiState.Idle
                 },
                 onFailure = {
@@ -86,8 +99,28 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     }
 
     /**
+     * Parsea la fechaAlta tal como llega del backend (ISO-8601 yyyy-MM-dd).
+     * Devuelve null si el valor es nulo, blanco o no se puede parsear; en ese
+     * caso la edicion de fechaAlta queda implicitamente deshabilitada (el
+     * Fragment usara LocalDate.now() como base del picker).
+     */
+    private fun parsearFechaAltaIso(iso: String?): LocalDate? {
+        if (iso.isNullOrBlank()) return null
+        return try {
+            LocalDate.parse(iso)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
      * Guarda los cambios del empleado mediante E16 PATCH /empleados/{id}.
      * Valida los campos antes de llamar al API.
+     *
+     * fechaAlta solo viaja en el PATCH cuando difiere de la fecha original
+     * cargada de E15 (semantica del PATCH: null = sin cambio). Asi evitamos
+     * marcar el row como modificado en el backend cuando el ADMIN no toco la
+     * fecha y simplificamos la auditoria de cambios.
      */
     fun guardar(
         nombre: String,
@@ -96,11 +129,18 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
         categoria: CategoriaEmpleado,
         jornadaSemanalHoras: Double,
         diasVacaciones: Int,
-        diasAsuntos: Int
+        diasAsuntos: Int,
+        fechaAlta: LocalDate
     ) {
         if (nombre.isBlank() || apellido1.isBlank()) {
             _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
             return
+        }
+
+        val fechaAltaIso = if (fechaAlta != fechaAltaOriginal) {
+            fechaAlta.format(fmtFechaAltaIso)
+        } else {
+            null
         }
 
         viewModelScope.launch {
@@ -112,7 +152,8 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
                 categoria = categoria,
                 jornadaSemanalHoras = jornadaSemanalHoras,
                 diasVacacionesAnuales = diasVacaciones,
-                diasAsuntosPropiosAnuales = diasAsuntos
+                diasAsuntosPropiosAnuales = diasAsuntos,
+                fechaAlta = fechaAltaIso
             )
             repository.actualizarEmpleado(empleadoId, request).fold(
                 onSuccess = { _uiState.value = UiState.Success },

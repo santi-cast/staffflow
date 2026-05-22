@@ -102,8 +102,8 @@
     <string name="form_empleado_cabecera_usuario">Usuario:</string>
     <string name="form_empleado_cabecera_email">Email:</string>
     <string name="form_empleado_cabecera_rol">Rol:</string>
-    <string name="form_empleado_cabecera_fecha_alta">Fecha de alta:</string>
     <string name="form_empleado_hint_nombre">Nombre</string>
+    <string name="form_empleado_hint_fecha_alta">Fecha de alta</string>
     <string name="form_empleado_hint_apellido1">Primer apellido</string>
     <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
     <!-- form_empleado_hint_dni se usa en P29 (seccion perfil empleado del alta combinada). -->

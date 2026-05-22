@@ -12,13 +12,17 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.FragmentFormEmpleadoBinding
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -28,7 +32,11 @@ import java.time.format.DateTimeParseException
  * Patron F - formulario edit.
  * Flujo: E15 GET /empleados/{id} para precargar + E16 PATCH /empleados/{id}
  * para guardar los campos modificables (nombre, apellidos, categoria,
- * jornada, vacaciones, asuntos propios).
+ * jornada, vacaciones, asuntos propios, fechaAlta).
+ *
+ * fechaAlta se edita via MaterialDatePicker sin restriccion de rango: el
+ * ADMIN puede corregir tanto fechas pasadas como futuras. El backend (E16)
+ * acepta cualquier fecha al editar.
  *
  * El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) junto
  * al alta del usuario. No se admite empleadoId = -1 en esta pantalla.
@@ -50,8 +58,15 @@ class FormEmpleadoFragment : Fragment() {
     private val categorias = CategoriaEmpleado.entries.toList()
     private val categoriaLabels = listOf("Operario", "Administrativo", "Técnico", "Encargado", "Otro")
 
-    /** Formato de presentacion para la fecha de alta del empleado (read-only en la cabecera ficha). */
-    private val fmtFechaAlta = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    /** Formato visible para la fecha de alta editable (campo tilFechaAlta). */
+    private val fmtFechaAltaVisible = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    /**
+     * Fecha de alta seleccionada en el picker. Se inicializa al precargar el
+     * empleado (E15). Si la precarga viene sin fecha valida se usa hoy como
+     * fallback para que el picker tenga una referencia razonable.
+     */
+    private var fechaAltaSeleccionada: LocalDate = LocalDate.now()
 
     // ------------------------------------------------------------------
     // Ciclo de vida
@@ -96,6 +111,38 @@ class FormEmpleadoFragment : Fragment() {
 
     private fun configurarListeners() {
         binding.btnGuardar.setOnClickListener { intentarGuardar() }
+        binding.etFechaAlta.setOnClickListener { abrirSelectorFechaAlta() }
+        binding.tilFechaAlta.setEndIconOnClickListener { abrirSelectorFechaAlta() }
+    }
+
+    /**
+     * Abre un MaterialDatePicker SIN restriccion de rango: el ADMIN puede
+     * elegir cualquier fecha (pasada o futura) para corregir errores de alta.
+     *
+     * MaterialDatePicker trabaja en UTC: la seleccion se convierte a
+     * LocalDate usando ZoneOffset.UTC para evitar saltos de dia segun la TZ
+     * del dispositivo (mismo patron que P29 FormUsuarioFragment).
+     */
+    private fun abrirSelectorFechaAlta() {
+        val seleccionUtcMillis = fechaAltaSeleccionada
+            .atStartOfDay(ZoneOffset.UTC)
+            .toInstant()
+            .toEpochMilli()
+        val picker = MaterialDatePicker.Builder.datePicker()
+            .setTitleText(R.string.form_empleado_hint_fecha_alta)
+            .setSelection(seleccionUtcMillis)
+            .build()
+        picker.addOnPositiveButtonClickListener { millis ->
+            fechaAltaSeleccionada = Instant.ofEpochMilli(millis)
+                .atZone(ZoneId.of("UTC"))
+                .toLocalDate()
+            actualizarTextoFechaAlta()
+        }
+        picker.show(parentFragmentManager, "fechaAltaPicker")
+    }
+
+    private fun actualizarTextoFechaAlta() {
+        binding.etFechaAlta.setText(fechaAltaSeleccionada.format(fmtFechaAltaVisible))
     }
 
     // ------------------------------------------------------------------
@@ -143,21 +190,24 @@ class FormEmpleadoFragment : Fragment() {
 
         val index = categorias.indexOf(e.categoria)
         if (index >= 0) binding.actvCategoria.setText(categoriaLabels[index], false)
+
+        // Precarga de la fecha de alta editable. Si el backend mando null o un
+        // valor no parseable, se deja el default (hoy) como referencia visual.
+        parsearFechaAltaIso(e.fechaAlta)?.let { fechaAltaSeleccionada = it }
+        actualizarTextoFechaAlta()
     }
 
     /**
-     * Rellena la cabecera read-only con numeroEmpleado, username, email, rol
-     * y fechaAlta. Patron item_ficha_fila (label + valor en linea).
+     * Rellena la cabecera read-only con numeroEmpleado, username, email y rol.
+     * Patron item_ficha_fila (label + valor en linea).
      *
      * E15 devuelve username, email y rol solo cuando el llamante es ADMIN
      * (Opcion A). P15 solo es accesible a ADMIN, asi que en el caso normal
      * los tres campos vienen rellenos. Si por defensa llegan null se muestra
      * un guion para que la fila no se vea rota.
      *
-     * fechaAlta llega en ISO-8601 desde el backend; se formatea como
-     * "dd/MM/yyyy" para presentacion. Si el parseo falla se muestra un guion
-     * (defensa silenciosa: el dato es metadato informativo, no justifica
-     * romper la pantalla).
+     * fechaAlta ya no vive en la cabecera: se edita en el cuerpo del formulario
+     * via MaterialDatePicker (tilFechaAlta).
      */
     private fun rellenarCabecera(e: EmpleadoResponse) {
         binding.filaNumeroEmpleado.tvLabel.text = getString(R.string.form_empleado_cabecera_numero_empleado)
@@ -171,21 +221,19 @@ class FormEmpleadoFragment : Fragment() {
 
         binding.filaRol.tvLabel.text = getString(R.string.form_empleado_cabecera_rol)
         binding.filaRol.tvValor.text = e.rol?.name ?: "—"
-
-        binding.filaFechaAlta.tvLabel.text = getString(R.string.form_empleado_cabecera_fecha_alta)
-        binding.filaFechaAlta.tvValor.text = formatearFechaAlta(e.fechaAlta)
     }
 
     /**
-     * Formatea la fecha de alta del empleado (ISO-8601) como "dd/MM/yyyy".
-     * Devuelve "—" si el valor llega vacio o el parseo falla.
+     * Parsea la fechaAlta tal como llega del backend (ISO-8601 yyyy-MM-dd).
+     * Devuelve null si el valor es nulo, blanco o no se puede parsear; el
+     * llamante decide el fallback.
      */
-    private fun formatearFechaAlta(iso8601: String?): String {
-        if (iso8601.isNullOrBlank()) return "—"
+    private fun parsearFechaAltaIso(iso: String?): LocalDate? {
+        if (iso.isNullOrBlank()) return null
         return try {
-            LocalDate.parse(iso8601).format(fmtFechaAlta)
+            LocalDate.parse(iso)
         } catch (_: DateTimeParseException) {
-            "—"
+            null
         }
     }
 
@@ -231,7 +279,8 @@ class FormEmpleadoFragment : Fragment() {
             categoria           = categoria,
             jornadaSemanalHoras = jornadaSemanal,
             diasVacaciones      = vacaciones,
-            diasAsuntos         = asuntos
+            diasAsuntos         = asuntos,
+            fechaAlta           = fechaAltaSeleccionada
         )
     }
 }

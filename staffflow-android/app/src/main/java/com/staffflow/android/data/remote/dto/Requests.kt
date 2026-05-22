@@ -112,11 +112,16 @@ data class EmpleadoRequest(
 /**
  * Actualizacion parcial de un empleado (E16 PATCH /empleados/{id}).
  * Solo se envian los campos que se quieren modificar (null = sin cambio).
+ *
+ * fechaAlta y dni son editables por ADMIN desde P15 para corregir errores de
+ * alta. fechaAlta admite pasado y futuro (sin restriccion de rango); dni se
+ * valida con 409 si ya existe en otro empleado.
  */
 data class EmpleadoPatchRequest(
     val nombre: String? = null,
     val apellido1: String? = null,
     val apellido2: String? = null,
+    val dni: String? = null,
     val categoria: CategoriaEmpleado? = null,
     val jornadaSemanalHoras: Double? = null,
     val jornadaDiariaMinutos: Int? = null,
@@ -124,7 +129,8 @@ data class EmpleadoPatchRequest(
     val diasAsuntosPropiosAnuales: Int? = null,
     val pinTerminal: String? = null,
     val codigoNfc: String? = null,
-    val activo: Boolean? = null
+    val activo: Boolean? = null,
+    val fechaAlta: String? = null
 )
 
 /**

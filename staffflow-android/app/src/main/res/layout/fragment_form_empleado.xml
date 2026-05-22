@@ -5,16 +5,16 @@
     Patron F - formulario edit. Solo accesible para ADMIN.
     Endpoint: E16 PATCH /empleados/{id}. La precarga inicial usa E15.
 
-    El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) en el
-    mismo flujo que el alta de usuario. P15 no expone modo "crear".
+    Campos editables: nombre, apellido1, apellido2, categoria,
+    jornadaSemanalHoras, diasVacaciones, diasAsuntos, fechaAlta (MaterialDatePicker
+    sin restriccion de rango: el ADMIN puede corregir tanto fechas pasadas como
+    futuras). El proximo commit añade dni editable.
 
-    Campos editables: dni, fechaAlta, nombre, apellido1, apellido2, categoria,
-    jornadaSemanalHoras, diasVacaciones, diasAsuntos. La cabecera read-only
-    (numeroEmpleado, usuario, email, rol) es solo informativa y se rellena
-    desde E15 para que el ADMIN identifique de un vistazo a quien pertenece
-    la ficha. El alta de empleado se hace siempre desde P29 (FormUsuario-
-    Fragment) en el mismo flujo que el alta de usuario. numeroEmpleado se
-    autogenera EMP-XXX y no es editable. El PIN se regenera desde P14 (E65).
+    La cabecera read-only (numeroEmpleado, usuario, email, rol) es solo informativa
+    y se rellena desde E15 para que el ADMIN identifique de un vistazo a quien
+    pertenece la ficha. numeroEmpleado se autogenera EMP-XXX y no es editable.
+    El PIN se regenera desde P14 (E65). El alta de empleado se hace siempre
+    desde P29 (FormUsuarioFragment) en el mismo flujo que el alta de usuario.
 
     El boton GUARDAR se deshabilita durante la llamada al API.
 -->
@@ -35,7 +35,7 @@
             Cabecera read-only: identifica la ficha sin ocupar espacio editable.
             Se rellena en prerellenarCampos() a partir de E15 (campos numero-
             Empleado, username, email y rol del EmpleadoResponse).
-            Reutiliza el patron item_saldo_fila ya usado en P14 DetalleEmpleado.
+            Patron item_ficha_fila (label + valor en linea).
         -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCabecera"
@@ -61,14 +61,6 @@
                     layout="@layout/item_ficha_fila" />
                 <include
                     android:id="@+id/filaRol"
-                    layout="@layout/item_ficha_fila" />
-                <!--
-                    Fecha de alta: por ahora read-only dentro de la cabecera.
-                    En el proximo commit pasa a editable con MaterialDatePicker
-                    y sale de la cabecera al cuerpo del formulario.
-                -->
-                <include
-                    android:id="@+id/filaFechaAlta"
                     layout="@layout/item_ficha_fila" />
 
             </LinearLayout>
@@ -202,6 +194,34 @@
                 android:layout_height="wrap_content"
                 android:inputType="number"
                 android:imeOptions="actionNext"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--
+            Fecha de alta del empleado. Editable via MaterialDatePicker (el
+            EditText es no focusable para forzar el dialogo). Sin restriccion
+            de rango: el ADMIN puede corregir tanto fechas pasadas como futuras
+            (por ejemplo, "iba a empezar manana pero le puse hoy"). El backend
+            (E16) acepta cualquier fecha al editar.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilFechaAlta"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/form_empleado_hint_fecha_alta"
+            android:layout_marginBottom="12dp"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_menu_my_calendar">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFechaAlta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:inputType="none"
                 android:singleLine="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
