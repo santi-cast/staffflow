@@ -104,6 +104,9 @@
     <string name="form_empleado_cabecera_rol">Rol:</string>
     <string name="form_empleado_hint_nombre">Nombre</string>
     <string name="form_empleado_hint_fecha_alta">Fecha de alta</string>
+    <string name="form_empleado_helper_fecha_alta">⚠  Cambiarla afecta a los informes históricos</string>
+    <string name="form_empleado_aviso_fecha_alta_titulo">Cambiar la fecha de alta</string>
+    <string name="form_empleado_aviso_fecha_alta_mensaje">Cambiar la fecha de alta afecta a los informes históricos del empleado (saldos, jornadas, ausencias). Confirma que el cambio es intencionado.</string>
     <string name="form_empleado_hint_apellido1">Primer apellido</string>
     <string name="form_empleado_hint_apellido2">Segundo apellido (opcional)</string>
     <!-- form_empleado_hint_dni se usa en P29 (seccion perfil empleado del alta combinada). -->

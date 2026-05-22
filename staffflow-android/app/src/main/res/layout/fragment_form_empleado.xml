@@ -228,6 +228,17 @@
             de rango: el ADMIN puede corregir tanto fechas pasadas como futuras
             (por ejemplo, "iba a empezar manana pero le puse hoy"). El backend
             (E16) acepta cualquier fecha al editar.
+
+            Triple red de seguridad porque el cambio afecta a los informes
+            historicos (M-037 en MEJORAS_V2):
+              1. helperText permanente "Cambiarla afecta a los informes
+                 historicos" visible bajo el campo antes de tocar nada.
+              2. Dialogo de confirmacion al CERRAR el picker con una fecha
+                 distinta a la actual (ver confirmarCambioFechaAlta en el
+                 Fragment). Cancelar descarta la seleccion del picker.
+              3. Dialogo final del GUARDAR vuelve a listar el cambio en el
+                 resumen "antes -> despues" con nota especial bajo la fila
+                 de fecha de alta (ver construirResumenCambios en el ViewModel).
         -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilFechaAlta"
@@ -235,6 +246,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/form_empleado_hint_fecha_alta"
+            app:helperText="@string/form_empleado_helper_fecha_alta"
+            app:helperTextTextAppearance="@style/TextAppearance.Material3.BodySmall"
             android:layout_marginBottom="12dp"
             app:endIconMode="custom"
             app:endIconDrawable="@android:drawable/ic_menu_my_calendar">

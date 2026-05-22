@@ -131,6 +131,14 @@ class FormEmpleadoFragment : Fragment() {
      * MaterialDatePicker trabaja en UTC: la seleccion se convierte a
      * LocalDate usando ZoneOffset.UTC para evitar saltos de dia segun la TZ
      * del dispositivo (mismo patron que P29 FormUsuarioFragment).
+     *
+     * Al cerrar el picker con una fecha distinta de la original cargada de
+     * E15, se muestra un dialogo de advertencia: "afecta a los informes
+     * historicos". Confirmar aplica el cambio al formulario; cancelar
+     * descarta la seleccion y deja el campo como estaba. El TextInputLayout
+     * ya muestra un helperText permanente como primera red de seguridad y
+     * el dialogo final del GUARDAR vuelve a listar el cambio en el resumen
+     * "antes -> despues" (triple confirmacion).
      */
     private fun abrirSelectorFechaAlta() {
         val seleccionUtcMillis = fechaAltaSeleccionada
@@ -142,12 +150,36 @@ class FormEmpleadoFragment : Fragment() {
             .setSelection(seleccionUtcMillis)
             .build()
         picker.addOnPositiveButtonClickListener { millis ->
-            fechaAltaSeleccionada = Instant.ofEpochMilli(millis)
+            val fechaElegida = Instant.ofEpochMilli(millis)
                 .atZone(ZoneId.of("UTC"))
                 .toLocalDate()
-            actualizarTextoFechaAlta()
+            if (fechaElegida == fechaAltaSeleccionada) {
+                return@addOnPositiveButtonClickListener
+            }
+            confirmarCambioFechaAlta(fechaElegida)
         }
         picker.show(parentFragmentManager, "fechaAltaPicker")
+    }
+
+    /**
+     * Muestra un dialogo de advertencia antes de aplicar el cambio de fecha
+     * de alta al formulario. Solo se dispara cuando la fecha elegida en el
+     * picker difiere de la actualmente mostrada (que arranca como la fecha
+     * original cargada de E15).
+     *
+     * Confirmar -> actualiza fechaAltaSeleccionada y refresca el campo.
+     * Cancelar  -> no hace nada, el campo conserva el valor previo.
+     */
+    private fun confirmarCambioFechaAlta(fechaElegida: java.time.LocalDate) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.form_empleado_aviso_fecha_alta_titulo)
+            .setMessage(R.string.form_empleado_aviso_fecha_alta_mensaje)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                fechaAltaSeleccionada = fechaElegida
+                actualizarTextoFechaAlta()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun actualizarTextoFechaAlta() {
