@@ -105,10 +105,18 @@ class MiPerfilFragment : Fragment() {
         }
         binding.tvNumeroEmpleado.text = e.numeroEmpleado
         binding.tvCategoria.text      = categoriaLabel(e.categoria)
-        binding.tvJornada.text        = getString(R.string.mi_perfil_jornada_valor, e.jornadaSemanalHoras)
+        binding.tvJornada.text        = getString(R.string.mi_perfil_jornada_valor, formatearHoras(e.jornadaSemanalHoras))
         binding.tvVacaciones.text     = getString(R.string.mi_perfil_vacaciones_valor, e.diasVacacionesAnuales)
         binding.tvAsuntos.text        = getString(R.string.mi_perfil_asuntos_valor, e.diasAsuntosPropiosAnuales)
     }
+
+    /**
+     * Formatea horas como entero cuando no tiene parte decimal ("40") y como
+     * decimal con un digito cuando si la tiene ("37.5"). Evita mostrar "40.0"
+     * en jornadas enteras manteniendo legibilidad para fracciones como 37.5h.
+     */
+    private fun formatearHoras(horas: Double): String =
+        if (horas % 1.0 == 0.0) horas.toInt().toString() else "%.1f".format(horas)
 
     private fun categoriaLabel(categoria: CategoriaEmpleado): String = when (categoria) {
         CategoriaEmpleado.OPERARIO      -> "Operario"

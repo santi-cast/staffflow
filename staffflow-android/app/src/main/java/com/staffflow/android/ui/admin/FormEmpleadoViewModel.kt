@@ -72,6 +72,44 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     /** Formato ISO-8601 (yyyy-MM-dd) que espera el backend en fechaAlta. */
     private val fmtFechaAltaIso = DateTimeFormatter.ISO_LOCAL_DATE
 
+    /** Formato visible (dd/MM/yyyy) para mostrar fechas en el resumen de cambios. */
+    private val fmtFechaAltaVisible = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    /**
+     * Representa un campo modificado del formulario. La construye
+     * [construirResumenCambios] para alimentar el dialogo de confirmacion
+     * previo al guardado.
+     *
+     * @property etiqueta nombre legible del campo (ej. "DNI", "Fecha de alta")
+     * @property antes valor original formateado para mostrar
+     * @property despues valor nuevo formateado para mostrar
+     * @property nota texto adicional opcional para advertencias (ej. "Afecta a informes historicos")
+     */
+    data class Cambio(
+        val etiqueta: String,
+        val antes: String,
+        val despues: String,
+        val nota: String? = null
+    )
+
+    /**
+     * Snapshot del estado actual del formulario que el Fragment envia al
+     * ViewModel para comparar contra los valores originales y construir el
+     * resumen de cambios. Es un objeto plano (sin tipos de Android) para que
+     * [construirResumenCambios] sea pura y testeable.
+     */
+    data class EstadoFormulario(
+        val nombre: String,
+        val apellido1: String,
+        val apellido2: String?,
+        val dni: String,
+        val categoria: CategoriaEmpleado,
+        val jornadaSemanalHoras: Double,
+        val diasVacaciones: Int,
+        val diasAsuntos: Int,
+        val fechaAlta: LocalDate
+    )
+
     /**
      * Inicializa el formulario cargando el empleado a editar.
      * Llamado desde FormEmpleadoFragment.onViewCreated con el argumento de navegacion.
@@ -122,6 +160,82 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
     }
 
     /**
+     * Compara el estado actual del formulario contra los valores originales
+     * cargados de E15 y devuelve la lista de campos modificados.
+     *
+     * Funcion pura: no toca StateFlows ni dispara llamadas; recibe todo lo
+     * que necesita por parametro y se apoya en `fechaAltaOriginal`,
+     * `dniOriginal` y el `EmpleadoResponse` cacheado en `_empleado`. Permite
+     * cubrir con tests unitarios sin contexto Android.
+     *
+     * El dni se compara normalizado (trim + uppercase): si el ADMIN reescribe
+     * el mismo valor con espacios o mayusculas distintas no aparece como
+     * cambio. La fecha de alta lleva nota especial "Afecta a informes
+     * historicos" porque su cambio repercute en saldos y reportes (M-037).
+     *
+     * El orden de la lista es estable: nombre, apellido1, apellido2, dni,
+     * categoria, jornadaSemanalHoras, diasVacaciones, diasAsuntos, fechaAlta.
+     */
+    fun construirResumenCambios(estado: EstadoFormulario): List<Cambio> {
+        val original = _empleado.value ?: return emptyList()
+        val cambios = mutableListOf<Cambio>()
+
+        if (estado.nombre != original.nombre) {
+            cambios += Cambio("Nombre", original.nombre, estado.nombre)
+        }
+        if (estado.apellido1 != original.apellido1) {
+            cambios += Cambio("Primer apellido", original.apellido1, estado.apellido1)
+        }
+        val apellido2Original = original.apellido2 ?: ""
+        val apellido2Actual = estado.apellido2 ?: ""
+        if (apellido2Actual != apellido2Original) {
+            cambios += Cambio(
+                "Segundo apellido",
+                apellido2Original.ifBlank { "—" },
+                apellido2Actual.ifBlank { "—" }
+            )
+        }
+        val dniActualNormalizado = estado.dni.trim().uppercase()
+        val dniOriginalNormalizado = dniOriginal?.trim()?.uppercase() ?: ""
+        if (dniActualNormalizado != dniOriginalNormalizado) {
+            cambios += Cambio("DNI", dniOriginalNormalizado.ifBlank { "—" }, dniActualNormalizado)
+        }
+        if (estado.categoria != original.categoria) {
+            cambios += Cambio("Categoria", original.categoria.name, estado.categoria.name)
+        }
+        if (estado.jornadaSemanalHoras != original.jornadaSemanalHoras) {
+            cambios += Cambio(
+                "Jornada semanal (h)",
+                original.jornadaSemanalHoras.toString(),
+                estado.jornadaSemanalHoras.toString()
+            )
+        }
+        if (estado.diasVacaciones != original.diasVacacionesAnuales) {
+            cambios += Cambio(
+                "Dias de vacaciones",
+                original.diasVacacionesAnuales.toString(),
+                estado.diasVacaciones.toString()
+            )
+        }
+        if (estado.diasAsuntos != original.diasAsuntosPropiosAnuales) {
+            cambios += Cambio(
+                "Dias de asuntos propios",
+                original.diasAsuntosPropiosAnuales.toString(),
+                estado.diasAsuntos.toString()
+            )
+        }
+        if (estado.fechaAlta != fechaAltaOriginal) {
+            cambios += Cambio(
+                "Fecha de alta",
+                fechaAltaOriginal?.format(fmtFechaAltaVisible) ?: "—",
+                estado.fechaAlta.format(fmtFechaAltaVisible),
+                nota = "Afecta a informes historicos"
+            )
+        }
+        return cambios
+    }
+
+    /**
      * Guarda los cambios del empleado mediante E16 PATCH /empleados/{id}.
      * Valida los campos antes de llamar al API.
      *
@@ -137,30 +251,20 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
      *   - 409 DNI duplicado (otro empleado ya lo tiene)
      *   - 409 dni con formato invalido o letra de control incorrecta (validacion backend)
      */
-    fun guardar(
-        nombre: String,
-        apellido1: String,
-        apellido2: String?,
-        dni: String,
-        categoria: CategoriaEmpleado,
-        jornadaSemanalHoras: Double,
-        diasVacaciones: Int,
-        diasAsuntos: Int,
-        fechaAlta: LocalDate
-    ) {
-        if (nombre.isBlank() || apellido1.isBlank() || dni.isBlank()) {
+    fun guardar(estado: EstadoFormulario) {
+        if (estado.nombre.isBlank() || estado.apellido1.isBlank() || estado.dni.isBlank()) {
             _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
             return
         }
 
-        val dniNormalizado = dni.trim().uppercase()
+        val dniNormalizado = estado.dni.trim().uppercase()
         if (dniNormalizado.length != 9) {
             _uiState.value = UiState.Error("El DNI debe tener 9 caracteres")
             return
         }
 
-        val fechaAltaIso = if (fechaAlta != fechaAltaOriginal) {
-            fechaAlta.format(fmtFechaAltaIso)
+        val fechaAltaIso = if (estado.fechaAlta != fechaAltaOriginal) {
+            estado.fechaAlta.format(fmtFechaAltaIso)
         } else {
             null
         }
@@ -174,14 +278,14 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             val request = EmpleadoPatchRequest(
-                nombre = nombre,
-                apellido1 = apellido1,
-                apellido2 = apellido2?.ifBlank { null },
+                nombre = estado.nombre,
+                apellido1 = estado.apellido1,
+                apellido2 = estado.apellido2?.ifBlank { null },
                 dni = dniNuevo,
-                categoria = categoria,
-                jornadaSemanalHoras = jornadaSemanalHoras,
-                diasVacacionesAnuales = diasVacaciones,
-                diasAsuntosPropiosAnuales = diasAsuntos,
+                categoria = estado.categoria,
+                jornadaSemanalHoras = estado.jornadaSemanalHoras,
+                diasVacacionesAnuales = estado.diasVacaciones,
+                diasAsuntosPropiosAnuales = estado.diasAsuntos,
                 fechaAlta = fechaAltaIso
             )
             repository.actualizarEmpleado(empleadoId, request).fold(

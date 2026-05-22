@@ -230,7 +230,7 @@
     <string name="mi_perfil_datos_personales">Datos personales</string>
     <string name="mi_perfil_condiciones">Condiciones laborales</string>
     <string name="mi_perfil_jornada_label">Jornada semanal</string>
-    <string name="mi_perfil_jornada_valor">%d horas</string>
+    <string name="mi_perfil_jornada_valor">%s horas</string>
     <string name="mi_perfil_jornada_caption">Tu carga horaria semanal según contrato</string>
     <string name="mi_perfil_vacaciones_label">Vacaciones</string>
     <string name="mi_perfil_vacaciones_valor">%d días</string>

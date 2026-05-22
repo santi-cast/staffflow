@@ -291,7 +291,7 @@ class DetalleEmpleadoFragment : Fragment() {
 
         // Jornada
         binding.filaJornadaSemanal.tvLabel.text = "Jornada semanal"
-        binding.filaJornadaSemanal.tvValor.text = "${e.jornadaSemanalHoras} h/semana"
+        binding.filaJornadaSemanal.tvValor.text = "${formatearHoras(e.jornadaSemanalHoras)} h/semana"
         binding.filaJornadaDiaria.tvLabel.text  = "Jornada diaria"
         binding.filaJornadaDiaria.tvValor.text  = "${"%.2f".format(e.jornadaDiariaMinutos / 60.0)} h/día"
         binding.filaVacaciones.tvLabel.text     = "Vacaciones"
@@ -299,6 +299,14 @@ class DetalleEmpleadoFragment : Fragment() {
         binding.filaAsuntosPropios.tvLabel.text = "Asuntos propios"
         binding.filaAsuntosPropios.tvValor.text = "${e.diasAsuntosPropiosAnuales} días/año"
     }
+
+    /**
+     * Formatea horas como entero cuando no tiene parte decimal ("40") y como
+     * decimal con un dígito cuando si la tiene ("37.5"). Evita mostrar "40.0"
+     * en jornadas enteras manteniendo legibilidad para fracciones como 37.5h.
+     */
+    private fun formatearHoras(horas: Double): String =
+        if (horas % 1.0 == 0.0) horas.toInt().toString() else "%.1f".format(horas)
 
     /**
      * Aplica el gating por rol a los chips de accion y al boton de estado:

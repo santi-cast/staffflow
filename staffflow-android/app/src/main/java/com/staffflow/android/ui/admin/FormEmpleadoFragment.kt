@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
@@ -306,17 +307,53 @@ class FormEmpleadoFragment : Fragment() {
             return
         }
 
-        viewModel.guardar(
-            nombre              = nombre,
-            apellido1           = apellido1,
-            apellido2           = apellido2.ifBlank { null },
-            dni                 = dni,
-            categoria           = categoria,
+        val estado = FormEmpleadoViewModel.EstadoFormulario(
+            nombre = nombre,
+            apellido1 = apellido1,
+            apellido2 = apellido2.ifBlank { null },
+            dni = dni,
+            categoria = categoria,
             jornadaSemanalHoras = jornadaSemanal,
-            diasVacaciones      = vacaciones,
-            diasAsuntos         = asuntos,
-            fechaAlta           = fechaAltaSeleccionada
+            diasVacaciones = vacaciones,
+            diasAsuntos = asuntos,
+            fechaAlta = fechaAltaSeleccionada
         )
+
+        val cambios = viewModel.construirResumenCambios(estado)
+        if (cambios.isEmpty()) {
+            Snackbar.make(binding.root, "Sin cambios", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        mostrarDialogoConfirmacion(cambios, estado)
+    }
+
+    /**
+     * Muestra un MaterialAlertDialog con el resumen "antes -> despues" de
+     * todos los campos modificados. Confirmar dispara el PATCH; cancelar
+     * deja el formulario intacto.
+     *
+     * El mensaje se construye como texto plano multilinea: cada cambio en
+     * una linea "Etiqueta: antes -> despues", y si el cambio trae nota
+     * (caso fechaAlta -> "Afecta a informes historicos") se añade en linea
+     * aparte entre parentesis para diferenciarla visualmente.
+     */
+    private fun mostrarDialogoConfirmacion(
+        cambios: List<FormEmpleadoViewModel.Cambio>,
+        estado: FormEmpleadoViewModel.EstadoFormulario
+    ) {
+        val mensaje = cambios.joinToString(separator = "\n\n") { c ->
+            buildString {
+                append(c.etiqueta).append(": ").append(c.antes).append(" → ").append(c.despues)
+                c.nota?.let { append("\n  (").append(it).append(")") }
+            }
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Confirmar cambios")
+            .setMessage(mensaje)
+            .setPositiveButton("Guardar") { _, _ -> viewModel.guardar(estado) }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     companion object {

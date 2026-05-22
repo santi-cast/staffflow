@@ -62,7 +62,7 @@ data class EmpleadoResponse(
     val numeroEmpleado: String,
     val fechaAlta: String,
     val categoria: CategoriaEmpleado,
-    val jornadaSemanalHoras: Int,
+    val jornadaSemanalHoras: Double,
     val jornadaDiariaMinutos: Int,
     val diasVacacionesAnuales: Int,
     val diasAsuntosPropiosAnuales: Int,
