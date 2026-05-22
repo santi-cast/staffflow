@@ -5,10 +5,10 @@
     Patron F - formulario edit. Solo accesible para ADMIN.
     Endpoint: E16 PATCH /empleados/{id}. La precarga inicial usa E15.
 
-    Campos editables: nombre, apellido1, apellido2, categoria,
-    jornadaSemanalHoras, diasVacaciones, diasAsuntos, fechaAlta (MaterialDatePicker
-    sin restriccion de rango: el ADMIN puede corregir tanto fechas pasadas como
-    futuras). El proximo commit añade dni editable.
+    Campos editables: nombre, apellido1, apellido2, dni (max 9 chars, 409 si
+    ya existe en otro empleado), categoria, jornadaSemanalHoras, diasVacaciones,
+    diasAsuntos, fechaAlta (MaterialDatePicker sin restriccion de rango: el
+    ADMIN puede corregir tanto fechas pasadas como futuras).
 
     La cabecera read-only (numeroEmpleado, usuario, email, rol) es solo informativa
     y se rellena desde E15 para que el ADMIN identifique de un vistazo a quien
@@ -118,6 +118,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName|textCapWords"
+                android:imeOptions="actionNext"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--
+            DNI editable. Validacion en cliente: longitud 9 y no vacio. El
+            backend valida unicidad (409 si ya existe en otro empleado) y la
+            letra de control; el cliente no duplica esa logica.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDni"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/form_empleado_hint_dni"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDni"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapCharacters"
+                android:maxLength="9"
                 android:imeOptions="actionNext"
                 android:singleLine="true" />
 

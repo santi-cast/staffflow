@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +18,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.staffflow.android.R
 import com.staffflow.android.data.remote.dto.EmpleadoResponse
 import com.staffflow.android.databinding.FragmentDetalleEmpleadoBinding
+import com.staffflow.android.ui.admin.FormEmpleadoFragment
 import com.staffflow.android.domain.model.CategoriaEmpleado
 import com.staffflow.android.domain.model.Rol
 import kotlinx.coroutines.launch
@@ -52,6 +54,12 @@ import java.time.format.DateTimeFormatter
  *   El backend mantiene "baja/reactivar" en URL por compatibilidad de la
  *   API publicada; la UI adopta "desactivar/activar" por cubrir mas casos
  *   (excedencias, bajas medicas, permisos sin sueldo).
+ *
+ * Feedback de operaciones: P15 (FormEmpleadoFragment) envia un FragmentResult
+ * con clave FormEmpleadoFragment.KEY_RESULTADO al terminar una edicion con
+ * exito. Este fragment registra setFragmentResultListener y muestra el
+ * mensaje en un Snackbar para que sobreviva al popBackStack. Mismo patron
+ * P29 -> P28 para usuarios.
  */
 class DetalleEmpleadoFragment : Fragment() {
 
@@ -78,7 +86,26 @@ class DetalleEmpleadoFragment : Fragment() {
         val empleadoId = arguments?.getLong("empleadoId") ?: -1L
         viewModel.init(empleadoId)
         configurarListeners()
+        configurarResultadoEdicion()
         observarViewModel()
+    }
+
+    /**
+     * Recibe el resultado de P15 (FormEmpleadoFragment) cuando termina una
+     * edicion con exito y muestra un Snackbar con el mensaje localizado. El
+     * Bundle trae ARG_MENSAJE_RES con el resId del string.
+     *
+     * Lanzar el Snackbar aqui (no en P15) garantiza que sobreviva al
+     * popBackStack: la transicion de fragments mataria un Snackbar lanzado
+     * desde el form al volver atras.
+     */
+    private fun configurarResultadoEdicion() {
+        setFragmentResultListener(FormEmpleadoFragment.KEY_RESULTADO) { _, bundle ->
+            val mensajeRes = bundle.getInt(FormEmpleadoFragment.ARG_MENSAJE_RES)
+            if (mensajeRes != 0) {
+                Snackbar.make(binding.root, getString(mensajeRes), Snackbar.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onDestroyView() {

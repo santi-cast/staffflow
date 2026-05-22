@@ -5,8 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -31,12 +33,16 @@ import java.time.format.DateTimeParseException
  *
  * Patron F - formulario edit.
  * Flujo: E15 GET /empleados/{id} para precargar + E16 PATCH /empleados/{id}
- * para guardar los campos modificables (nombre, apellidos, categoria,
+ * para guardar los campos modificables (nombre, apellidos, dni, categoria,
  * jornada, vacaciones, asuntos propios, fechaAlta).
  *
  * fechaAlta se edita via MaterialDatePicker sin restriccion de rango: el
  * ADMIN puede corregir tanto fechas pasadas como futuras. El backend (E16)
  * acepta cualquier fecha al editar.
+ *
+ * dni se edita como TextInputLayout normal (max 9 chars, textCapCharacters).
+ * Validacion en cliente: longitud 9 y no vacio. El backend valida unicidad
+ * (409) y formato/letra de control.
  *
  * El alta de empleado se hace siempre desde P29 (FormUsuarioFragment) junto
  * al alta del usuario. No se admite empleadoId = -1 en esta pantalla.
@@ -45,8 +51,10 @@ import java.time.format.DateTimeParseException
  *   empleadoId: Long (debe ser > 0)
  *
  * GUARDAR deshabilita el boton y muestra LinearProgressIndicator durante la llamada.
- * OK: navega atras (popBackStack).
- * Error 409 (duplicado): Snackbar con el mensaje del backend.
+ * OK: notifica al fragment destino (P14 DetalleEmpleadoFragment) via
+ *     FragmentResult con KEY_RESULTADO y vuelve atras. P14 muestra el Snackbar
+ *     de confirmacion para que sobreviva al popBackStack.
+ * Error 409 (duplicado): Snackbar con el mensaje del backend (queda en esta pantalla).
  */
 class FormEmpleadoFragment : Fragment() {
 
@@ -168,13 +176,32 @@ class FormEmpleadoFragment : Fragment() {
         binding.progressIndicator.isVisible = cargando
 
         when (estado) {
-            is FormEmpleadoViewModel.UiState.Success -> findNavController().popBackStack()
+            is FormEmpleadoViewModel.UiState.Success -> finalizarConMensaje(R.string.form_empleado_resultado_editado)
             is FormEmpleadoViewModel.UiState.Error   -> {
                 Snackbar.make(binding.root, estado.mensaje, Snackbar.LENGTH_LONG).show()
                 viewModel.limpiarError()
             }
             else -> Unit
         }
+    }
+
+    /**
+     * Envia un mensaje de resultado al fragment destino (P14 DetalleEmpleado-
+     * Fragment) via FragmentResult y vuelve atras. P14 lo recibe en
+     * setFragmentResultListener(KEY_RESULTADO) y muestra Snackbar.
+     *
+     * Mismo patron que P29 -> P28 (FormUsuarioFragment -> UsuariosFragment),
+     * elegido por ser idiomatico de Android Navigation y sobrevivir al
+     * popBackStack (un Snackbar lanzado aqui se mata con la transicion).
+     *
+     * @param mensajeRes recurso de string con el texto a mostrar en P14
+     */
+    private fun finalizarConMensaje(mensajeRes: Int) {
+        setFragmentResult(
+            KEY_RESULTADO,
+            bundleOf(ARG_MENSAJE_RES to mensajeRes)
+        )
+        findNavController().popBackStack()
     }
 
     /** Precarga los campos del formulario con los datos del empleado. */
@@ -184,6 +211,7 @@ class FormEmpleadoFragment : Fragment() {
         binding.etNombre.setText(e.nombre)
         binding.etApellido1.setText(e.apellido1)
         binding.etApellido2.setText(e.apellido2 ?: "")
+        binding.etDni.setText(e.dni)
         binding.etJornadaSemanal.setText(e.jornadaSemanalHoras.toString())
         binding.etVacaciones.setText(e.diasVacacionesAnuales.toString())
         binding.etAsuntos.setText(e.diasAsuntosPropiosAnuales.toString())
@@ -245,6 +273,7 @@ class FormEmpleadoFragment : Fragment() {
         val nombre    = binding.etNombre.text?.toString().orEmpty().trim()
         val apellido1 = binding.etApellido1.text?.toString().orEmpty().trim()
         val apellido2 = binding.etApellido2.text?.toString().orEmpty().trim()
+        val dni       = binding.etDni.text?.toString().orEmpty().trim().uppercase()
         val categoriaLabel = binding.actvCategoria.text?.toString().orEmpty()
         val categoriaIndex = categoriaLabels.indexOf(categoriaLabel)
         val categoria = if (categoriaIndex >= 0) categorias[categoriaIndex] else null
@@ -253,9 +282,14 @@ class FormEmpleadoFragment : Fragment() {
         val vacacionesStr     = binding.etVacaciones.text?.toString().orEmpty().trim()
         val asuntosStr        = binding.etAsuntos.text?.toString().orEmpty().trim()
 
-        if (nombre.isBlank() || apellido1.isBlank() || categoria == null ||
+        if (nombre.isBlank() || apellido1.isBlank() || dni.isBlank() || categoria == null ||
             jornadaSemanalStr.isBlank() || vacacionesStr.isBlank() || asuntosStr.isBlank()) {
             Snackbar.make(binding.root, getString(R.string.form_empleado_error_campos), Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        if (dni.length != 9) {
+            Snackbar.make(binding.root, "El DNI debe tener 9 caracteres", Snackbar.LENGTH_SHORT).show()
             return
         }
 
@@ -276,11 +310,27 @@ class FormEmpleadoFragment : Fragment() {
             nombre              = nombre,
             apellido1           = apellido1,
             apellido2           = apellido2.ifBlank { null },
+            dni                 = dni,
             categoria           = categoria,
             jornadaSemanalHoras = jornadaSemanal,
             diasVacaciones      = vacaciones,
             diasAsuntos         = asuntos,
             fechaAlta           = fechaAltaSeleccionada
         )
+    }
+
+    companion object {
+        /**
+         * Clave del FragmentResult que envia P15 a P14 al terminar una edicion
+         * con exito. DetalleEmpleadoFragment debe registrar
+         * setFragmentResultListener con esta misma clave.
+         */
+        const val KEY_RESULTADO = "empleadoResultado"
+
+        /**
+         * Argumento dentro del Bundle del FragmentResult: id del recurso
+         * de string con el mensaje localizado a mostrar en P14 (Int).
+         */
+        const val ARG_MENSAJE_RES = "mensajeRes"
     }
 }

@@ -113,6 +113,7 @@
     <string name="form_empleado_hint_vacaciones">Días de vacaciones al año</string>
     <string name="form_empleado_hint_asuntos">Días de asuntos propios al año</string>
     <string name="form_empleado_error_campos">Rellena todos los campos obligatorios</string>
+    <string name="form_empleado_resultado_editado">Empleado actualizado</string>
 
     <!-- P14 Detalle de empleado -->
     <string name="detalle_empleado_activo">Activo</string>

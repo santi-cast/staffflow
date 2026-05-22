@@ -62,6 +62,13 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
      */
     private var fechaAltaOriginal: LocalDate? = null
 
+    /**
+     * DNI original del empleado (el que llego de E15). Se compara normalizado
+     * (trim + uppercase) para evitar PATCH "fantasma" si el ADMIN reescribe el
+     * mismo valor con espacios o minusculas distintas.
+     */
+    private var dniOriginal: String? = null
+
     /** Formato ISO-8601 (yyyy-MM-dd) que espera el backend en fechaAlta. */
     private val fmtFechaAltaIso = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -89,6 +96,7 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
                 onSuccess = {
                     _empleado.value = it
                     fechaAltaOriginal = parsearFechaAltaIso(it.fechaAlta)
+                    dniOriginal = it.dni
                     _uiState.value = UiState.Idle
                 },
                 onFailure = {
@@ -117,28 +125,48 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
      * Guarda los cambios del empleado mediante E16 PATCH /empleados/{id}.
      * Valida los campos antes de llamar al API.
      *
-     * fechaAlta solo viaja en el PATCH cuando difiere de la fecha original
-     * cargada de E15 (semantica del PATCH: null = sin cambio). Asi evitamos
-     * marcar el row como modificado en el backend cuando el ADMIN no toco la
-     * fecha y simplificamos la auditoria de cambios.
+     * fechaAlta y dni solo viajan en el PATCH cuando difieren de los valores
+     * originales cargados de E15 (semantica del PATCH: null = sin cambio). Asi
+     * evitamos marcar el row como modificado en el backend cuando el ADMIN no
+     * toco esos campos y simplificamos la auditoria de cambios.
+     *
+     * El dni se compara normalizado (trim + uppercase): si el ADMIN reescribe
+     * el mismo valor con espacios o mayusculas distintas, no se envia.
+     *
+     * Errores tipicos esperados:
+     *   - 409 DNI duplicado (otro empleado ya lo tiene)
+     *   - 409 dni con formato invalido o letra de control incorrecta (validacion backend)
      */
     fun guardar(
         nombre: String,
         apellido1: String,
         apellido2: String?,
+        dni: String,
         categoria: CategoriaEmpleado,
         jornadaSemanalHoras: Double,
         diasVacaciones: Int,
         diasAsuntos: Int,
         fechaAlta: LocalDate
     ) {
-        if (nombre.isBlank() || apellido1.isBlank()) {
+        if (nombre.isBlank() || apellido1.isBlank() || dni.isBlank()) {
             _uiState.value = UiState.Error("Rellena todos los campos obligatorios")
+            return
+        }
+
+        val dniNormalizado = dni.trim().uppercase()
+        if (dniNormalizado.length != 9) {
+            _uiState.value = UiState.Error("El DNI debe tener 9 caracteres")
             return
         }
 
         val fechaAltaIso = if (fechaAlta != fechaAltaOriginal) {
             fechaAlta.format(fmtFechaAltaIso)
+        } else {
+            null
+        }
+
+        val dniNuevo = if (dniNormalizado != dniOriginal?.trim()?.uppercase()) {
+            dniNormalizado
         } else {
             null
         }
@@ -149,6 +177,7 @@ class FormEmpleadoViewModel(application: Application) : AndroidViewModel(applica
                 nombre = nombre,
                 apellido1 = apellido1,
                 apellido2 = apellido2?.ifBlank { null },
+                dni = dniNuevo,
                 categoria = categoria,
                 jornadaSemanalHoras = jornadaSemanalHoras,
                 diasVacacionesAnuales = diasVacaciones,
