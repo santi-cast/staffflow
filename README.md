@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 67 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 64 tests unitarios + 18 tests estructurales de seguridad declarativa + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 64 tests unitarios + 19 tests estructurales de seguridad declarativa + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) (JUnit 5 + Mockito + ArchUnit) contra MySQL 8.0. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -148,14 +148,14 @@ La API se ha definido con enfoque **design‑first**: todos los endpoints están
 
 La especificación incluye:
 
-- **67 endpoints** en **13 grupos funcionales**
+- **68 endpoints** en **13 grupos funcionales**
 - Control de acceso por roles en cada endpoint
 - Terminal de fichaje con PIN en ruta separada `/api/v1/terminal/` con cadena de seguridad propia. Los 5 endpoints del flujo de fichaje (entrada, salida, pausa iniciar/finalizar, estado) son públicos; los 2 endpoints de gestión del bloqueo del terminal requieren JWT con rol ADMIN o ENCARGADO
 - Bloqueo por fuerza bruta: 5 intentos fallidos de PIN desde el mismo dispositivoId → HTTP 423. El bloqueo persiste hasta que un ADMIN/ENCARGADO desbloquea el terminal vía E54 (DELETE /api/v1/terminal/bloqueo), un PIN exitoso reinicia el contador o el servidor se reinicia (contador in-memory).
 
 ### Catálogo de endpoints
 
-Los 67 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
+Los 68 endpoints están organizados en 13 grupos funcionales. La tabla siguiente lista cada endpoint con su grupo, verbo HTTP, ruta, roles autorizados, descripción y la pantalla Android que lo consume.
 
 Convenciones de la tabla:
 
@@ -356,7 +356,7 @@ staffflow/
 |---|---|---|
 | Fase 0 | Configuración del entorno y estructura base | ✅ Completada |
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
-| Fase 2 | Desarrollo del backend (67 endpoints, JWT, iText 7) | ✅ Completada — 67/67 endpoints operativos |
+| Fase 2 | Desarrollo del backend (68 endpoints, JWT, iText 7) | ✅ Completada — 68/68 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
 | Fase 4 | Testing | ✅ Completada — 64 tests unitarios + 17 tests estructurales de seguridad declarativa (JUnit 5 + Mockito) + 1 test de arquitectura (ArchUnit) + 1 smoke test (@SpringBootTest) + matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
@@ -446,7 +446,7 @@ Sobre la base funcional se aplicó una capa adicional de hardening centrada en s
 - **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 55 anotaciones `@PreAuthorize` de la capa controller del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
 - **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
-- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize` de los endpoints `/me`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (10 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación y E65), todos por reflexión sin arrancar el contexto de Spring. También se añadió `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
+- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize` de los endpoints `/me`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—), todos por reflexión sin arrancar el contexto de Spring. También se añadió `GlobalExceptionHandlerNotFoundTest` (3 tests sobre el remap del nuevo modelo de excepciones).
 
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 
