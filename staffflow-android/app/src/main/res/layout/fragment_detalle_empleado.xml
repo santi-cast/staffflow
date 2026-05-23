@@ -24,8 +24,12 @@
                 bajas medicas, permisos sin sueldo).
       Datos:    DNI, fecha de alta, categoria
       Jornada:  horas semanales, dias vacaciones, dias asuntos propios
-      Acciones: chips "Ver saldo", "Ver fichajes", "Ver ausencias",
-                "Editar empleado" y "Regenerar PIN".
+      Acciones: chips Assist "Ver saldo", "Ver fichajes", "Ver ausencias",
+                "Editar empleado" y "Regenerar PIN". Texto en colorPrimary
+                (morado del theme Material 3) para destacar las acciones,
+                stroke negro para que el borde contraste contra el fondo
+                de la tarjeta y esquinas a 20dp alineadas con el corner
+                radius del boton "Editar empleado" de P29 FormUsuarioFragment.
                 Editar visible solo para ADMIN.
                 Regenerar PIN visible para ADMIN y ENCARGADO. Si el
                 empleado esta inactivo, el chip Regenerar PIN se
@@ -254,35 +258,50 @@
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/detalle_empleado_ver_saldo" />
+                            android:text="@string/detalle_empleado_ver_saldo"
+                            android:textColor="?attr/colorPrimary"
+                            app:chipCornerRadius="20dp"
+                            app:chipStrokeColor="@color/black" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipVerFichajes"
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/detalle_empleado_ver_fichajes" />
+                            android:text="@string/detalle_empleado_ver_fichajes"
+                            android:textColor="?attr/colorPrimary"
+                            app:chipCornerRadius="20dp"
+                            app:chipStrokeColor="@color/black" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipVerAusencias"
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/detalle_empleado_ver_ausencias" />
+                            android:text="@string/detalle_empleado_ver_ausencias"
+                            android:textColor="?attr/colorPrimary"
+                            app:chipCornerRadius="20dp"
+                            app:chipStrokeColor="@color/black" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipEditar"
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/detalle_empleado_chip_editar" />
+                            android:text="@string/detalle_empleado_chip_editar"
+                            android:textColor="?attr/colorPrimary"
+                            app:chipCornerRadius="20dp"
+                            app:chipStrokeColor="@color/black" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipRegenerarPin"
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/detalle_empleado_chip_regenerar_pin" />
+                            android:text="@string/detalle_empleado_chip_regenerar_pin"
+                            android:textColor="?attr/colorPrimary"
+                            app:chipCornerRadius="20dp"
+                            app:chipStrokeColor="@color/black" />
 
                     </com.google.android.material.chip.ChipGroup>
 
