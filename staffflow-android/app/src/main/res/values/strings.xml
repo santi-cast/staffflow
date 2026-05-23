@@ -137,6 +137,14 @@
     -->
     <string name="detalle_empleado_btn_editar_usuario">Usuario: %1$s</string>
 
+    <!--
+        Cabecera de P14: label + valor en una sola linea para el numero de
+        empleado. %1$s = numeroEmpleado. Coherente con la cabecera de P15
+        FormEmpleadoFragment que usa el mismo prefijo "Nº empleado:" en
+        formato label/valor separados.
+    -->
+    <string name="detalle_empleado_numero_empleado">Nº empleado: %1$s</string>
+
     <!-- P14 DetalleEmpleado - boton activar/desactivar (solo ADMIN, E17/E18) -->
     <string name="detalle_empleado_btn_desactivar">Desactivar</string>
     <string name="detalle_empleado_btn_activar">Activar</string>

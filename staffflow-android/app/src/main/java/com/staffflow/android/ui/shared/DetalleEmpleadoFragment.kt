@@ -258,7 +258,8 @@ class DetalleEmpleadoFragment : Fragment() {
             append(e.apellido1)
             e.apellido2?.let { append(" $it") }
         }
-        binding.tvNumeroEmpleado.text = e.numeroEmpleado
+        binding.tvNumeroEmpleado.text =
+            getString(R.string.detalle_empleado_numero_empleado, e.numeroEmpleado)
         if (e.activo) {
             binding.tvEstado.text = getString(R.string.detalle_empleado_activo)
             binding.tvEstado.setTextColor(Color.parseColor("#2E7D32"))
