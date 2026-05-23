@@ -54,10 +54,12 @@ import java.time.format.DateTimeParseException
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
  *
- * Cabecera de empleado asociado (sólo edición + rol != ADMIN): se carga vía E68
- * GET /empleados/by-usuario/{usuarioId} y muestra 'Nombre Apellido1 Apellido2
- * (EMP-XXX)' con un botón 'Editar empleado' que salta a P14. Si el usuario es
- * ADMIN o el endpoint devuelve 404, la cabecera permanece oculta.
+ * Cabecera de empleado asociado (solo edicion + rol != ADMIN): se carga via E68
+ * GET /empleados/by-usuario/{usuarioId} y se renderiza como un MaterialButton
+ * TextButton con el texto "Empleado: Nombre Apellido1 Apellido2 (EMP-XXX)" y
+ * un icono de lapiz a la derecha que abre P14 DetalleEmpleadoFragment. Patron
+ * simetrico al boton "Usuario: {username}" de la cabecera de P14. Si el usuario
+ * es ADMIN o el endpoint devuelve 404, el boton permanece oculto.
  */
 class FormUsuarioFragment : Fragment() {
 
@@ -515,24 +517,26 @@ class FormUsuarioFragment : Fragment() {
     // ------------------------------------------------------------------
 
     /**
-     * Pinta la cabecera "Nombre Apellido1 Apellido2 (EMP-XXX)" y habilita
-     * el botón "Editar empleado" cuando el ViewModel tiene un empleado
-     * cargado. Si cabecera es null, oculta el bloque entero. El botón
-     * navega a P14 con bundleOf("empleadoId" to ...) usando la action
+     * Pinta el boton "Empleado: Nombre Apellido1 Apellido2 (EMP-XXX)" con
+     * icono de lapiz cuando el ViewModel tiene un empleado cargado. Si
+     * cabecera es null, oculta el boton. Al pulsarlo navega a P14 con
+     * bundleOf("empleadoId" to ...) usando la action
      * action_form_usuario_to_detalle_empleado del nav_graph.
+     *
+     * Simetrico al boton "Usuario: {username}" de la cabecera de P14.
      */
     private fun pintarCabeceraEmpleado(cabecera: CabeceraEmpleado?) {
         if (cabecera == null) {
-            binding.layoutCabeceraEmpleado.isVisible = false
+            binding.btnEditarEmpleado.isVisible = false
             binding.btnEditarEmpleado.setOnClickListener(null)
             return
         }
-        binding.tvCabeceraEmpleado.text = getString(
+        binding.btnEditarEmpleado.text = getString(
             R.string.form_usuario_cabecera_empleado,
             cabecera.nombreCompleto,
             cabecera.numeroEmpleado
         )
-        binding.layoutCabeceraEmpleado.isVisible = true
+        binding.btnEditarEmpleado.isVisible = true
         binding.btnEditarEmpleado.setOnClickListener {
             findNavController().navigate(
                 R.id.action_form_usuario_to_detalle_empleado,

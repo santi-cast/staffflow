@@ -3,7 +3,7 @@
     Layout del formulario de usuario (P29). Solo ADMIN.
 
     Orden de campos:
-      layoutCabeceraEmpleado (sólo modo edición + rol != ADMIN),
+      btnEditarEmpleado (solo modo edicion + rol != ADMIN),
       tilRol (primero, controla el resto), tilUsername (auto-sugerido segun rol),
       tvFechaCreacion (solo edicion), tilPassword (solo alta), tilEmail,
       seccion perfil empleado (solo alta si rol != ADMIN), btnCambiarPassword,
@@ -14,9 +14,10 @@
     Modo edicion (usuarioId>0): tilRol, tilUsername (disabled), tvFechaCreacion,
                                 tilEmail, btnCambiarPassword, btnCambiarEstado,
                                 btnGuardar.
-                                Cabecera 'Nombre Apellidos (EMP-XXX)' con botón
-                                'Editar empleado' que abre P14 — sólo si el usuario
-                                tiene empleado asociado.
+                                Cabecera "Empleado: Nombre Apellidos (EMP-XXX)"
+                                como TextButton con icono de lapiz que abre P14
+                                — solo si el usuario tiene empleado asociado.
+                                Simetrico al boton "Usuario: {username}" de P14.
 
     tilPassword solo visible en modo alta.
     btnCambiarPassword solo visible en modo edicion: abre dialogo con campo
@@ -41,38 +42,38 @@
         android:padding="16dp">
 
         <!--
-            Cabecera read-only del empleado asociado (sólo modo edición,
-            sólo rol != ADMIN). El TextView ocupa el peso disponible y el
-            botón "Editar empleado" abre P14 con el empleadoId capturado
-            de cabeceraEmpleado en el ViewModel. Visibility=gone por defecto;
-            el Fragment lo hace visible al recibir un CabeceraEmpleado != null.
+            Cabecera read-only del empleado asociado (solo modo edicion,
+            solo rol != ADMIN). MaterialButton.TextButton con el texto
+            "Empleado: Nombre (EMP-XXX)" y un icono de lapiz a la derecha
+            que indica que abre P14 DetalleEmpleadoFragment para editar
+            al empleado. Alineado a la izquierda y sin botones extra al
+            lado para que quede claro a que entidad se refiere la accion.
+
+            Simetrico al boton "Usuario: {username}" de la cabecera de P14:
+            ambas pantallas usan el mismo patron (TextButton + icono lapiz
+            + colorPrimary) para saltar a la edicion de la entidad opuesta.
+
+            Visibility=gone por defecto; el Fragment lo hace visible al
+            recibir un CabeceraEmpleado != null (pintarCabeceraEmpleado).
         -->
-        <LinearLayout
-            android:id="@+id/layoutCabeceraEmpleado"
-            android:layout_width="match_parent"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditarEmpleado"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:layout_gravity="start"
             android:layout_marginBottom="16dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvCabeceraEmpleado"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textAppearance="?attr/textAppearanceTitleSmall"
-                android:textColor="?attr/colorPrimary" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEditarEmpleado"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/form_usuario_btn_editar_empleado" />
-
-        </LinearLayout>
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingStart="0dp"
+            android:paddingEnd="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:textColor="?attr/colorPrimary"
+            app:icon="@drawable/ic_edit_24"
+            app:iconGravity="textEnd"
+            app:iconTint="?attr/colorPrimary"
+            android:visibility="gone" />
 
         <!--
             Rol primero: marca el contexto del formulario y dispara la
