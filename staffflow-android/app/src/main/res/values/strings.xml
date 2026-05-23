@@ -292,6 +292,9 @@
     <string name="form_usuario_error_cambiar_password">Error al cambiar la contraseña</string>
     <string name="form_usuario_error_username_duplicado_fallback">El usuario ya está registrado, se ha generado uno nuevo</string>
     <string name="form_usuario_error_perfil_empleado_fallido">Usuario creado pero falló el perfil: %1$s</string>
+    <!-- P29: cabecera read-only del empleado vinculado al usuario en edición. -->
+    <string name="form_usuario_cabecera_empleado">%1$s (%2$s)</string>
+    <string name="form_usuario_btn_editar_empleado">Editar empleado</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>

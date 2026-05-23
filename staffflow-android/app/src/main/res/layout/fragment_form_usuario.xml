@@ -3,6 +3,7 @@
     Layout del formulario de usuario (P29). Solo ADMIN.
 
     Orden de campos:
+      layoutCabeceraEmpleado (sólo modo edición + rol != ADMIN),
       tilRol (primero, controla el resto), tilUsername (auto-sugerido segun rol),
       tvFechaCreacion (solo edicion), tilPassword (solo alta), tilEmail,
       seccion perfil empleado (solo alta si rol != ADMIN), btnCambiarPassword,
@@ -13,6 +14,9 @@
     Modo edicion (usuarioId>0): tilRol, tilUsername (disabled), tvFechaCreacion,
                                 tilEmail, btnCambiarPassword, btnCambiarEstado,
                                 btnGuardar.
+                                Cabecera 'Nombre Apellidos (EMP-XXX)' con botón
+                                'Editar empleado' que abre P14 — sólo si el usuario
+                                tiene empleado asociado.
 
     tilPassword solo visible en modo alta.
     btnCambiarPassword solo visible en modo edicion: abre dialogo con campo
@@ -35,6 +39,40 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
+        <!--
+            Cabecera read-only del empleado asociado (sólo modo edición,
+            sólo rol != ADMIN). El TextView ocupa el peso disponible y el
+            botón "Editar empleado" abre P14 con el empleadoId capturado
+            de cabeceraEmpleado en el ViewModel. Visibility=gone por defecto;
+            el Fragment lo hace visible al recibir un CabeceraEmpleado != null.
+        -->
+        <LinearLayout
+            android:id="@+id/layoutCabeceraEmpleado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvCabeceraEmpleado"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorPrimary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditarEmpleado"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/form_usuario_btn_editar_empleado" />
+
+        </LinearLayout>
 
         <!--
             Rol primero: marca el contexto del formulario y dispara la

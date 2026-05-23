@@ -193,7 +193,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/informes/me/**").hasAnyRole("EMPLEADO", "ENCARGADO")
 
                 // --- ADMIN o ENCARGADO ---
-                // E13-E20 + E65: gestion de empleados (sin /me, ya cubierto arriba)
+                // E13-E20 + E65 + E68: gestion de empleados (sin /me, ya cubierto arriba).
+                // E68 (GET /by-usuario/{usuarioId}) reduce los permisos a SOLO ADMIN
+                // mediante @PreAuthorize("hasRole('ADMIN')") en el controller; aqui se
+                // mantiene la regla amplia para que las dos reglas (URL + metodo) se
+                // compongan sin requerir un requestMatchers especifico para E68.
                 .requestMatchers("/api/v1/empleados/**").hasAnyRole("ADMIN", "ENCARGADO")
                 // E22-E25: fichajes (sin /me)
                 .requestMatchers("/api/v1/fichajes/**").hasAnyRole("ADMIN", "ENCARGADO")

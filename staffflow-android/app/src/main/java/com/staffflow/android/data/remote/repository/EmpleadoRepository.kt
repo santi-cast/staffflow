@@ -9,7 +9,7 @@ import com.staffflow.android.data.remote.dto.RegenerarPinResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
- * Repositorio para los endpoints de empleados (E13-E18, E21, E65).
+ * Repositorio para los endpoints de empleados (E13-E18, E21, E65, E68).
  *
  * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
  * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
@@ -89,4 +89,16 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
      */
     suspend fun getMiPerfil(): Result<EmpleadoResponse> =
         safeApiCall { api.getMiPerfil() }
+
+    /**
+     * E68 - Obtiene el empleado vinculado a un usuario dado por su usuarioId.
+     * P29 (FormUsuarioFragment) lo llama en modo edición cuando el usuario
+     * cargado tiene rol distinto de ADMIN, para mostrar la cabecera
+     * read-only "Nombre Apellido1 Apellido2 (EMP-XXX)" y permitir saltar
+     * a P14. Un 404 viaja como ApiError.NotFound y el ViewModel lo trata
+     * como ausencia silenciosa de cabecera (caso típico: usuario ADMIN
+     * sin empleado asociado).
+     */
+    suspend fun getEmpleadoPorUsuario(usuarioId: Long): Result<EmpleadoResponse> =
+        safeApiCall { api.getEmpleadoPorUsuario(usuarioId) }
 }

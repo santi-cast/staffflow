@@ -53,6 +53,11 @@ import java.time.format.DateTimeParseException
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
+ *
+ * Cabecera de empleado asociado (sólo edición + rol != ADMIN): se carga vía E68
+ * GET /empleados/by-usuario/{usuarioId} y muestra 'Nombre Apellido1 Apellido2
+ * (EMP-XXX)' con un botón 'Editar empleado' que salta a P14. Si el usuario es
+ * ADMIN o el endpoint devuelve 404, la cabecera permanece oculta.
  */
 class FormUsuarioFragment : Fragment() {
 
@@ -382,6 +387,11 @@ class FormUsuarioFragment : Fragment() {
                         }
                     }
                 }
+                launch {
+                    viewModel.cabeceraEmpleado.collect { cabecera ->
+                        pintarCabeceraEmpleado(cabecera)
+                    }
+                }
             }
         }
     }
@@ -497,6 +507,37 @@ class FormUsuarioFragment : Fragment() {
             binding.tvFechaCreacion.isVisible = true
         } catch (_: DateTimeParseException) {
             binding.tvFechaCreacion.isVisible = false
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Cabecera read-only del empleado asociado (E68)
+    // ------------------------------------------------------------------
+
+    /**
+     * Pinta la cabecera "Nombre Apellido1 Apellido2 (EMP-XXX)" y habilita
+     * el botón "Editar empleado" cuando el ViewModel tiene un empleado
+     * cargado. Si cabecera es null, oculta el bloque entero. El botón
+     * navega a P14 con bundleOf("empleadoId" to ...) usando la action
+     * action_form_usuario_to_detalle_empleado del nav_graph.
+     */
+    private fun pintarCabeceraEmpleado(cabecera: CabeceraEmpleado?) {
+        if (cabecera == null) {
+            binding.layoutCabeceraEmpleado.isVisible = false
+            binding.btnEditarEmpleado.setOnClickListener(null)
+            return
+        }
+        binding.tvCabeceraEmpleado.text = getString(
+            R.string.form_usuario_cabecera_empleado,
+            cabecera.nombreCompleto,
+            cabecera.numeroEmpleado
+        )
+        binding.layoutCabeceraEmpleado.isVisible = true
+        binding.btnEditarEmpleado.setOnClickListener {
+            findNavController().navigate(
+                R.id.action_form_usuario_to_detalle_empleado,
+                bundleOf("empleadoId" to cabecera.empleadoId)
+            )
         }
     }
 

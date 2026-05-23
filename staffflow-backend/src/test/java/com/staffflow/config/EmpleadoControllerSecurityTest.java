@@ -15,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests estructurales de seguridad declarativa para EmpleadoController.
  *
  * <p>Verifica por reflexión sobre los bytecodes compilados que los endpoints
- * de gestión de empleados (E13-E18, parte diario, exportación y E65) están
- * protegidos con {@code @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")}.
- * Estos endpoints son de gestión operativa: ADMIN y ENCARGADO pueden usarlos,
- * EMPLEADO no.
+ * de gestión de empleados (E13-E18, parte diario, exportación, E65 y E68) están
+ * protegidos con la expresión {@code @PreAuthorize} correspondiente.
+ * Los endpoints de gestión operativa usan {@code @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")}.
+ * El endpoint E68 es excepción: usa {@code @PreAuthorize("hasRole('ADMIN')")}.
  *
  * <p>Cobertura:
  * <ul>
@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>Parte diario — {@code obtenerEstado}</li>
  *   <li>Exportación — {@code exportar}</li>
  *   <li>E65 PATCH /api/v1/empleados/{id}/pin — {@code regenerarPin}</li>
+ *   <li>E68 GET /api/v1/empleados/by-usuario/{usuarioId} — {@code obtenerPorUsuarioId} (SOLO ADMIN)</li>
  * </ul>
  *
  * <p>El endpoint {@code obtenerMiPerfil} (E33 GET /me) se excluye porque ya
@@ -96,6 +97,12 @@ class EmpleadoControllerSecurityTest {
     @DisplayName("E65 EmpleadoController#regenerarPin usa hasAnyRole('ADMIN', 'ENCARGADO')")
     void regenerarPin_exigeAdminOEncargado() {
         assertPreAuthorizeValue(EmpleadoController.class, "regenerarPin", EXPECTED_EXPR);
+    }
+
+    @Test
+    @DisplayName("E68 EmpleadoController#obtenerPorUsuarioId usa hasRole('ADMIN')")
+    void obtenerPorUsuarioId_exigeSoloAdmin() {
+        assertPreAuthorizeValue(EmpleadoController.class, "obtenerPorUsuarioId", "hasRole('ADMIN')");
     }
 
     // -----------------------------------------------------------------------

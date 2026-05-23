@@ -24,6 +24,7 @@ import retrofit2.http.Query
  *   E17 PATCH /empleados/{id}/baja   -> MensajeResponse       (ADMIN, ENCARGADO)
  *   E18 PATCH /empleados/{id}/reactivar -> MensajeResponse    (ADMIN, ENCARGADO)
  *   E21 GET  /empleados/me           -> EmpleadoResponse      (EMPLEADO)
+ *   E68 GET  /empleados/by-usuario/{usuarioId} -> EmpleadoResponse (ADMIN)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  * El PIN del empleado nunca se incluye en ninguna respuesta por seguridad.
@@ -104,4 +105,18 @@ interface EmpleadoApiService {
      */
     @GET("empleados/me")
     suspend fun getMiPerfil(): Response<EmpleadoResponse>
+
+    /**
+     * E68 - GET /empleados/by-usuario/{usuarioId}.
+     * Devuelve el empleado vinculado a un usuario dado (relación 1:1
+     * empleado→usuario garantizada por UNIQUE sobre usuario_id).
+     * Alimenta la cabecera read-only de P29 (FormUsuarioFragment).
+     *
+     * Solo accesible al rol ADMIN.
+     * Error 404 si no existe empleado vinculado (caso esperado cuando
+     * el usuario tiene rol ADMIN; el ViewModel lo trata como ausencia
+     * silenciosa de cabecera).
+     */
+    @GET("empleados/by-usuario/{usuarioId}")
+    suspend fun getEmpleadoPorUsuario(@Path("usuarioId") usuarioId: Long): Response<EmpleadoResponse>
 }

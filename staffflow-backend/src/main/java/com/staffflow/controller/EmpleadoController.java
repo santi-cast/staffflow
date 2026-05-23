@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Controller REST para la gestión del perfil laboral de los empleados.
  *
- * Cubre los endpoints E13-E21 y E65 del Grupo 4 (Gestión de Empleados).
+ * Cubre los endpoints E13-E21, E65 y E68 del Grupo 4 (Gestión de Empleados).
  * Ruta base: /api/v1/empleados
  *
  * Control de acceso:
@@ -33,6 +33,9 @@ import java.util.List;
  *   - E65 (/{id}/regenerar-pin): ADMIN y ENCARGADO. Genera un PIN
  *     nuevo de 4 dígitos para el terminal físico. El PIN nunca se
  *     expone en otros endpoints.
+ *   - E68 (/by-usuario/{usuarioId}): SOLO ADMIN. Devuelve el empleado
+ *     vinculado a un usuario dado; alimenta la cabecera read-only de
+ *     P29 (FormUsuarioFragment).
  *
  * El controller extrae del JWT (objeto Authentication de Spring Security)
  * el usuarioId del usuario autenticado para identificar al empleado en E21.
@@ -143,6 +146,46 @@ public class EmpleadoController {
             @PathVariable Long id,
             Authentication authentication) {
         return ResponseEntity.ok(empleadoService.obtenerPorId(id, authentication));
+    }
+
+    // E68 — GET /api/v1/empleados/by-usuario/{usuarioId}
+    // RF-13: Perfil completo de empleado (acceso por usuarioId)
+
+    /**
+     * Devuelve el perfil completo del empleado asociado a un usuario dado,
+     * identificado por el id del usuario (no por el id del empleado).
+     *
+     * Existe para alimentar la cabecera read-only de P29 FormUsuarioFragment
+     * (cliente Android) cuando el ADMIN edita un usuario con rol distinto
+     * de ADMIN: en ese caso necesitamos mostrar a qué empleado pertenece
+     * ese usuario y permitir el salto directo a P14. Reutiliza el método
+     * de repositorio findByUsuarioId que ya emplean cinco services del
+     * backend (AuthService, FichajeService, PausaService, InformeService,
+     * EmpleadoService).
+     *
+     * Endpoint exclusivo del rol ADMIN: ENCARGADO no edita usuarios
+     * (P29 está restringido a ADMIN en cliente y el resto de endpoints
+     * del Grupo 3 también). El service NO aplica filtrado por rol en el
+     * EmpleadoResponse devuelto: la cabecera de P29 sólo consume nombre,
+     * apellidos y numeroEmpleado, campos que no son sensibles.
+     *
+     * Códigos HTTP:
+     *   200 OK          → empleado encontrado y devuelto
+     *   403 Forbidden   → rol distinto de ADMIN
+     *   404 Not Found   → no existe empleado vinculado a ese usuarioId
+     *                     (caso típico: el usuario es ADMIN y no tiene
+     *                     perfil de empleado asociado; el cliente lo trata
+     *                     como ausencia silenciosa de cabecera)
+     *
+     * @param usuarioId id del usuario cuyo perfil de empleado se quiere obtener
+     * @return 200 OK con EmpleadoResponse (sin pinTerminal, sin email,
+     *         sin username, sin rol del usuario asociado: este endpoint
+     *         está pensado para una cabecera mínima)
+     */
+    @GetMapping("/by-usuario/{usuarioId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<EmpleadoResponse> obtenerPorUsuarioId(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(empleadoService.obtenerPorUsuarioId(usuarioId));
     }
 
     // E16 — PATCH /api/v1/empleados/{id}

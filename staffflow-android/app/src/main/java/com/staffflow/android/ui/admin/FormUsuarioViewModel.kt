@@ -23,6 +23,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
+ * Cabecera read-only del empleado asociado al usuario en edición.
+ * Se muestra en P29 cuando el usuario cargado tiene rol distinto
+ * de ADMIN. Sólo expone los campos que pinta la cabecera y el id
+ * del empleado para que el botón "Editar empleado" navegue a P14.
+ */
+data class CabeceraEmpleado(
+    val empleadoId: Long,
+    val nombreCompleto: String,
+    val numeroEmpleado: String
+)
+
+/**
  * ViewModel del formulario de usuario (P29). Solo ADMIN.
  *
  * Modo alta   (usuarioId = -1): E08 POST /usuarios + E13 POST /empleados
@@ -94,6 +106,16 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      */
     val usernameSugerido: StateFlow<String?> = _usernameSugerido.asStateFlow()
 
+    private val _cabeceraEmpleado = MutableStateFlow<CabeceraEmpleado?>(null)
+    /**
+     * Cabecera del empleado asociado al usuario en edición (sólo modo
+     * edición, sólo rol != ADMIN). null mientras no se cargue, o si la
+     * llamada devuelve 404 (caso típico: usuario ADMIN sin empleado).
+     * El Fragment observa este flow para mostrar/ocultar el bloque de
+     * cabecera y habilitar el botón "Editar empleado".
+     */
+    val cabeceraEmpleado: StateFlow<CabeceraEmpleado?> = _cabeceraEmpleado.asStateFlow()
+
     var modoEdicion: Boolean = false
         private set
 
@@ -115,8 +137,50 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             _uiState.value = UiState.Cargando
             repository.obtenerUsuario(usuarioId).fold(
-                onSuccess = { _uiState.value = UiState.SuccessAlta(it) },
-                onFailure = { _uiState.value = UiState.Error(it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_cargar_usuario)) }
+                onSuccess = { usuario ->
+                    _uiState.value = UiState.SuccessAlta(usuario)
+                    if (usuario.rol != Rol.ADMIN) {
+                        cargarCabeceraEmpleado()
+                    }
+                },
+                onFailure = {
+                    _uiState.value = UiState.Error(
+                        it.message ?: getApplication<Application>().getString(R.string.form_usuario_error_cargar_usuario)
+                    )
+                }
+            )
+        }
+    }
+
+    /**
+     * Carga la cabecera del empleado vinculado al usuario en edición vía E68.
+     * Sólo se invoca cuando rol != ADMIN. Un 404 (ApiError.NotFound) deja
+     * la cabecera en null sin emitir error: el caso típico es un usuario
+     * ADMIN sin empleado asociado, y otros fallos (red, 5xx) tampoco deben
+     * romper el formulario porque la cabecera es un complemento informativo.
+     */
+    private fun cargarCabeceraEmpleado() {
+        viewModelScope.launch {
+            empleadoRepository.getEmpleadoPorUsuario(usuarioId).fold(
+                onSuccess = { empleado ->
+                    val nombreCompleto = buildString {
+                        append(empleado.nombre).append(' ').append(empleado.apellido1)
+                        empleado.apellido2?.takeIf { it.isNotBlank() }?.let {
+                            append(' ').append(it)
+                        }
+                    }
+                    _cabeceraEmpleado.value = CabeceraEmpleado(
+                        empleadoId = empleado.id,
+                        nombreCompleto = nombreCompleto,
+                        numeroEmpleado = empleado.numeroEmpleado
+                    )
+                },
+                onFailure = {
+                    // Silencio deliberado: la cabecera es informativa, no debe
+                    // romper el flujo. 404 es el caso esperado para usuarios
+                    // sin empleado vinculado.
+                    _cabeceraEmpleado.value = null
+                }
             )
         }
     }

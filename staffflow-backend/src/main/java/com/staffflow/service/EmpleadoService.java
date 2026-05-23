@@ -27,8 +27,9 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión del perfil laboral de los empleados.
  *
- * Cubre los endpoints E13-E21 del Grupo 4 (Gestión de Empleados).
+ * Cubre los endpoints E13-E21 y E68 del Grupo 4 (Gestión de Empleados).
  * ADMIN y ENCARGADO acceden a todos los empleados (E13-E20).
+ * E68 es exclusivo ADMIN: alimenta la cabecera de P29 con el empleado vinculado a un usuarioId.
  * EMPLEADO y ENCARGADO acceden a sus propios datos mediante /me (E21).
  *
  * Decisiones de diseño aplicadas:
@@ -312,6 +313,39 @@ public class EmpleadoService {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
+    }
+
+    // E68 — GET /api/v1/empleados/by-usuario/{usuarioId}
+    // RF-13: Perfil completo de empleado (acceso por usuarioId)
+
+    /**
+     * Devuelve el perfil del empleado vinculado a un usuario dado.
+     *
+     * A diferencia de obtenerPorId (E15), este método recibe el id del
+     * USUARIO, no el id del empleado, y aprovecha la relación 1:1
+     * empleado→usuario garantizada por la constraint UNIQUE sobre
+     * usuario_id en la tabla empleados.
+     *
+     * Devuelve el EmpleadoResponse "limpio" producido por toEmpleadoResponse:
+     * sin pinTerminal, sin email del usuario, sin username, sin rol. La
+     * cabecera de P29 que consume este endpoint sólo necesita nombre,
+     * apellidos y numeroEmpleado; no hay motivo para exponer aquí los
+     * cuatro campos sensibles de la Opción A.
+     *
+     * Códigos HTTP producidos:
+     *   200 OK         → empleado encontrado
+     *   404 Not Found  → no hay empleado vinculado a ese usuarioId
+     *                    (caso esperado para usuarios con rol ADMIN)
+     *
+     * @param usuarioId id del usuario cuyo perfil de empleado se busca
+     * @return EmpleadoResponse del empleado vinculado
+     */
+    @Transactional(readOnly = true)
+    public EmpleadoResponse obtenerPorUsuarioId(Long usuarioId) {
+        Empleado empleado = empleadoRepository.findByUsuarioId(usuarioId)
+                .orElseThrow(() -> new NotFoundException(
+                        "No existe empleado vinculado al usuario con id " + usuarioId));
+        return toEmpleadoResponse(empleado);
     }
 
     // E16 — PATCH /api/v1/empleados/{id}

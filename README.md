@@ -205,6 +205,7 @@ Convenciones de la tabla:
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
 | E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve en la respuesta. El PIN queda persistido; tras la regeneración solo es re-consultable por ADMIN vía E15 | P14 |
+| E68 | GET /by-usuario/{usuarioId} | ADMIN | Devuelve el empleado vinculado a un usuario dado (relación 1:1 garantizada por UNIQUE sobre `usuario_id`). Alimenta la cabecera read-only de P29 que identifica al empleado y permite saltar a P14. HTTP 404 si el usuario no tiene empleado asociado (caso típico: usuario ADMIN). Devuelve `EmpleadoResponse` sin `pinTerminal`, `email`, `username` ni `rol` (la cabecera solo consume nombre, apellidos y `numeroEmpleado`) | P29 |
 | E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
 
 #### Fichajes (`/api/v1/fichajes`)
@@ -420,7 +421,7 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
 | P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
-| P29 | FormUsuarioFragment | 5 — Admin | E08–E12, E66, E67 | ADMIN |
+| P29 | FormUsuarioFragment | 5 — Admin | E08–E12, E66, E67, E68 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
 Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
