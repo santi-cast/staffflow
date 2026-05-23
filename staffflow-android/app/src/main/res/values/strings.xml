@@ -130,6 +130,13 @@
     <string name="detalle_empleado_chip_editar">Editar empleado</string>
     <string name="detalle_empleado_chip_regenerar_pin">Regenerar PIN</string>
 
+    <!--
+        Boton de la cabecera de P14 que navega a P29 para editar el usuario
+        asociado al empleado. %1$s = username del usuario (no del empleado).
+        Simetrico al boton "Editar empleado" de la cabecera de P29.
+    -->
+    <string name="detalle_empleado_btn_editar_usuario">Usuario: %1$s</string>
+
     <!-- P14 DetalleEmpleado - boton activar/desactivar (solo ADMIN, E17/E18) -->
     <string name="detalle_empleado_btn_desactivar">Desactivar</string>
     <string name="detalle_empleado_btn_activar">Activar</string>

@@ -22,6 +22,17 @@
                 compatibilidad de la API publicada; la UI adopta
                 "desactivar/activar" por cubrir mas casos (excedencias,
                 bajas medicas, permisos sin sueldo).
+                Debajo de la fila numero/estado/desactivar, un TextButton
+                "Usuario: {username}" con icono de lapiz a la derecha
+                navega a P29 FormUsuarioFragment para editar el usuario
+                asociado. Alineado a la izquierda (layout_gravity=start)
+                para que quede claro que se refiere al usuario y no al
+                empleado (que es lo que tiene el boton Desactivar/Activar
+                arriba). Visible solo para ADMIN y solo si el empleado
+                tiene usuario asociado con username no nulo (E15 lo trae
+                cuando llama un ADMIN; ENCARGADO recibe username=null por
+                Opcion A y por eso se oculta tambien por dato). Simetrico
+                al boton "Editar empleado" de la cabecera de P29.
       Datos:    DNI, fecha de alta, categoria
       Jornada:  horas semanales, dias vacaciones, dias asuntos propios
       Acciones: chips Assist "Ver saldo", "Ver fichajes", "Ver ausencias",
@@ -165,6 +176,38 @@
                             android:visibility="gone" />
 
                     </LinearLayout>
+
+                    <!--
+                        Boton "Usuario: {username}" con icono de lapiz a la
+                        derecha. Navega a P29 FormUsuarioFragment para editar
+                        el usuario asociado. Simetrico al boton "Editar
+                        empleado" de la cabecera de P29.
+
+                        Alineado a la izquierda para que no se confunda con
+                        el boton Desactivar/Activar de arriba (que se refiere
+                        al empleado, no al usuario).
+
+                        Visible solo si rol=ADMIN y empleado.username != null
+                        (gating en Fragment.aplicarGatingPorRol).
+                    -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditarUsuario"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:layout_marginTop="4dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:textColor="?attr/colorPrimary"
+                        app:icon="@drawable/ic_edit_24"
+                        app:iconGravity="textEnd"
+                        app:iconTint="?attr/colorPrimary"
+                        android:visibility="gone" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

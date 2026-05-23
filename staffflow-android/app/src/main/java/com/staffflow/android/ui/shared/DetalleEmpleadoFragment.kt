@@ -143,6 +143,18 @@ class DetalleEmpleadoFragment : Fragment() {
             }
             findNavController().navigate(R.id.action_detalle_to_form_empleado, args)
         }
+        // Boton "Usuario: {username}" -> P29 FormUsuarioFragment.
+        // Solo navega si hay empleado cargado y trae usuarioId (lo trae siempre
+        // en E15; el gating por rol y por username!=null vive en aplicarGatingPorRol).
+        binding.btnEditarUsuario.setOnClickListener {
+            val estado = viewModel.uiState.value
+            if (estado is DetalleEmpleadoViewModel.UiState.Success) {
+                val args = Bundle().apply {
+                    putLong("usuarioId", estado.empleado.usuarioId)
+                }
+                findNavController().navigate(R.id.action_detalle_to_form_usuario, args)
+            }
+        }
         binding.chipRegenerarPin.setOnClickListener {
             mostrarDialogConfirmarRegenerarPin()
         }
@@ -289,6 +301,17 @@ class DetalleEmpleadoFragment : Fragment() {
             binding.filaPinTerminal.tvValor.text = pin
         }
 
+        // Boton "Usuario: {username}" -> P29. Solo visible para ADMIN y solo
+        // si la respuesta trae username (E15 lo expone con valor cuando llama
+        // un ADMIN; ENCARGADO recibe null por Opcion A, asi que el boton se
+        // oculta tambien por dato). Texto dinamico con el username actual.
+        val username = e.username
+        binding.btnEditarUsuario.isVisible = username != null && esAdmin
+        if (username != null && esAdmin) {
+            binding.btnEditarUsuario.text =
+                getString(R.string.detalle_empleado_btn_editar_usuario, username)
+        }
+
         // Jornada
         binding.filaJornadaSemanal.tvLabel.text = "Jornada semanal"
         binding.filaJornadaSemanal.tvValor.text = "${formatearHoras(e.jornadaSemanalHoras)} h/semana"
@@ -309,15 +332,25 @@ class DetalleEmpleadoFragment : Fragment() {
         if (horas % 1.0 == 0.0) horas.toInt().toString() else "%.1f".format(horas)
 
     /**
-     * Aplica el gating por rol a los chips de accion y al boton de estado:
+     * Aplica el gating por rol a los chips de accion y a los botones de la
+     * cabecera:
      *   Editar             -> solo ADMIN
      *   Regenerar PIN      -> ADMIN o ENCARGADO
      *   Desactivar/Activar -> solo ADMIN (E17/E18)
+     *   Editar usuario     -> solo ADMIN (ademas se exige username != null en
+     *                         mostrarDatos, porque ENCARGADO recibe username=null
+     *                         por Opcion A y no podria editar usuarios igualmente).
      */
     private fun aplicarGatingPorRol(rol: Rol?) {
         binding.chipEditar.isVisible = rol == Rol.ADMIN
         binding.chipRegenerarPin.isVisible = rol == Rol.ADMIN || rol == Rol.ENCARGADO
         binding.btnCambiarEstado.isVisible = rol == Rol.ADMIN
+        // btnEditarUsuario se gatea en mostrarDatos cruzando rol + username
+        // disponible, asi que aqui no se toca: en una emision de rol sin
+        // datos del empleado todavia, dejarlo GONE evita un flash inicial.
+        if (rol != Rol.ADMIN) {
+            binding.btnEditarUsuario.isVisible = false
+        }
     }
 
     /**

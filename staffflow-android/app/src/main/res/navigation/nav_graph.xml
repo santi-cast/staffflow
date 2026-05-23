@@ -360,6 +360,17 @@
             android:id="@+id/action_detalle_to_ausencias"
             app:destination="@id/informeAusenciasEmpleadoFragment" />
 
+        <!--
+            P14 -> P29 Editar el usuario asociado al empleado.
+            Simetrico a action_form_usuario_to_detalle_empleado (P29 -> P14)
+            que ya existe abajo en formUsuarioFragment. Se dispara desde el
+            boton "Usuario: {username}" de la cabecera de P14, visible solo
+            para ADMIN.
+        -->
+        <action
+            android:id="@+id/action_detalle_to_form_usuario"
+            app:destination="@id/formUsuarioFragment" />
+
     </fragment>
 
     <!-- P21 Informe de fichajes de un empleado (WebView, igual que P10) -->
