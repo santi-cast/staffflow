@@ -387,9 +387,17 @@ Los 5 endpoints públicos de terminal (`/api/v1/terminal/entrada`, `/salida`, `/
 
 La app Android usa una única `MainActivity` con `NavHostFragment`. Cada pantalla es un `Fragment`. Navigation Component gestiona el back stack automáticamente desde `nav_graph.xml`. El Navigation Drawer vive en `MainActivity` y se infla dinámicamente según el rol del JWT.
 
-### 6. Catálogo de pantallas Android
+### 6. Estrategia de reutilización de Fragments en Android
 
-Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol:
+Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol con numeración continua P01–P30 sin huecos. Al planificar el desarrollo se identificaron grupos de pantallas con comportamiento visual y estructural similar, y se decidió implementarlas reutilizando un mismo patrón de Fragment cambiando solo el endpoint que invocan o el modo de operación.
+
+Concretamente:
+
+- El formulario de login (P02) sirvió de base para P03 (recuperación), P04 (cambio de contraseña) y P05 (reset por deep link): mismo layout de campo + botón + estado de carga.
+- Las pantallas con WebView de informe (P10, P11, P19, P23, P26, P27) comparten el mismo esqueleto: barra de filtros, WebView que renderiza HTML servido por el backend y botones de exportación CSV/PDF.
+- P21 y P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint: ven el informe individual de un empleado concreto en lugar del propio.
+
+Esta estrategia redujo el tiempo estimado de implementación de las pantallas Android de ~60–70 horas a ~30 horas sin impacto visible para el usuario. La tabla siguiente lista las 30 pantallas con su bloque funcional, endpoints principales y roles que pueden acceder a cada una:
 
 | ID | Fragment | Bloque | Endpoints principales | Roles |
 |---|---|---|---|---|
@@ -423,10 +431,6 @@ Las 30 pantallas de la app Android se organizan en 6 bloques funcionales por rol
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
 | P29 | FormUsuarioFragment | 5 — Admin | E08–E12, E66, E67, E68 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
-
-Las 30 pantallas se numeran de forma continua P01–P30 sin huecos.
-
-Las pantallas reutilizan patrones de Fragment cuando el comportamiento visual lo permite: el formulario de login (P02) sirve de base para P03, P04 y P05; las pantallas con WebView de informe (P10, P11, P19, P23, P26, P27) comparten el mismo esqueleto, y P21/P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint que invocan. Esta estrategia redujo el tiempo de implementación de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
 
 ### 7. Auto-detección de la URL del backend en Android
 
