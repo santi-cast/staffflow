@@ -110,6 +110,15 @@ class FormUsuarioFragment : Fragment() {
      */
     private var rolOriginal: Rol? = null
 
+    /**
+     * Cache local del email cargado del usuario en modo edicion. Se actualiza
+     * desde SuccessAlta. Necesario para comparar con el email del campo al
+     * pulsar Guardar y detectar si hubo cambio de email (que dispara el
+     * dialogo de verificacion ortografica). Null hasta que se haya cargado
+     * el usuario.
+     */
+    private var emailOriginal: String? = null
+
     // ------------------------------------------------------------------
     // Ciclo de vida
     // ------------------------------------------------------------------
@@ -281,28 +290,81 @@ class FormUsuarioFragment : Fragment() {
             val rol = rolFromLabel(binding.actvRol.text.toString())
             if (viewModel.modoEdicion) {
                 val email = binding.etEmail.text.toString().trim()
-                // Detectar cambio de rol ENCARGADO <-> EMPLEADO en modo edicion.
-                // Si hay empleado asociado y el rol cambio entre ENCARGADO y EMPLEADO,
-                // mostrar dialogo de confirmacion antes de llamar al backend.
+                // Detectar que ha cambiado respecto a los valores cargados del backend.
+                // - cambioRol: solo cuenta si pasa entre ENCARGADO y EMPLEADO con
+                //   empleado asociado (la unica transicion permitida por el guard
+                //   del backend; ADMIN <-> otros lo bloquea la UI y tambien el
+                //   backend con HTTP 409, ver M-040).
+                // - cambioEmail: solo cuenta si el email cambio respecto al
+                //   cargado y emailOriginal ya esta inicializado.
                 val rolAnterior = rolOriginal
+                val emailAnterior = emailOriginal
                 val esCambioRolConEmpleado = cabeceraEmpleadoActual != null &&
                     rolAnterior != null &&
                     rolAnterior != rol &&
                     rolAnterior in setOf(Rol.ENCARGADO, Rol.EMPLEADO) &&
                     rol in setOf(Rol.ENCARGADO, Rol.EMPLEADO)
-                if (esCambioRolConEmpleado) {
-                    // No deshabilitar el boton: el dialogo es modal y el usuario
-                    // puede cancelar. El boton se deshabilita dentro del callback
-                    // de Confirmar y se recupera via procesarEstado (Loading/Error/Success).
-                    mostrarDialogoConfirmacionCambioRol(
-                        cabecera = cabeceraEmpleadoActual!!,
-                        rolActual = rolAnterior!!,
-                        rolNuevo = rol,
-                        email = email
-                    )
-                } else {
+                val esCambioEmail = emailAnterior != null && email != emailAnterior
+
+                // Accion final: dispara la peticion al backend y deshabilita el
+                // boton. procesarEstado lo mantendra deshabilitado hasta que el
+                // UiState deje de ser Loading/Cargando (Success o Error).
+                val ejecutarActualizacion: () -> Unit = {
                     binding.btnGuardar.isEnabled = false
                     viewModel.actualizar(email = email, rol = rol)
+                }
+
+                // Para el dialogo de email necesitamos personalizar el encabezado:
+                // si el usuario tiene empleado asociado, usar nombre y numero de
+                // empleado; si es ADMIN puro, usar username como identificador.
+                val cabecera = cabeceraEmpleadoActual
+                val nombreEmail = cabecera?.nombreCompleto
+                    ?: binding.etUsername.text.toString()
+                val idEmail = cabecera?.numeroEmpleado
+                    ?: binding.etUsername.text.toString()
+
+                // Encadenado de dialogos: si hay cambio de rol, primero el dialogo
+                // de rol. Tras confirmar, si ademas hay cambio de email, segundo
+                // dialogo de email. Tras confirmar (o si solo cambio email),
+                // se ejecuta la actualizacion. Si no hay ninguno de los dos
+                // cambios criticos, directo al backend sin dialogo.
+                when {
+                    esCambioRolConEmpleado && esCambioEmail -> {
+                        mostrarDialogoConfirmacionCambioRol(
+                            cabecera = cabecera!!,
+                            rolActual = rolAnterior!!,
+                            rolNuevo = rol,
+                            onConfirmar = {
+                                mostrarDialogoConfirmacionEmail(
+                                    nombreCompleto = nombreEmail,
+                                    identificador = idEmail,
+                                    emailAnterior = emailAnterior!!,
+                                    emailNuevo = email,
+                                    onConfirmar = ejecutarActualizacion
+                                )
+                            }
+                        )
+                    }
+                    esCambioRolConEmpleado -> {
+                        mostrarDialogoConfirmacionCambioRol(
+                            cabecera = cabecera!!,
+                            rolActual = rolAnterior!!,
+                            rolNuevo = rol,
+                            onConfirmar = ejecutarActualizacion
+                        )
+                    }
+                    esCambioEmail -> {
+                        mostrarDialogoConfirmacionEmail(
+                            nombreCompleto = nombreEmail,
+                            identificador = idEmail,
+                            emailAnterior = emailAnterior!!,
+                            emailNuevo = email,
+                            onConfirmar = ejecutarActualizacion
+                        )
+                    }
+                    else -> {
+                        ejecutarActualizacion()
+                    }
                 }
             } else {
                 binding.btnGuardar.isEnabled = false
@@ -395,15 +457,22 @@ class FormUsuarioFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogo de confirmacion de cambio de rol ENCARGADO <-> EMPLEADO
+    // Dialogos de confirmacion en modo edicion (rol y email)
     // ------------------------------------------------------------------
+    //
+    // Ambos dialogos siguen el mismo patron: muestran el cambio "antes -> despues",
+    // permiten cancelar (deja el formulario intacto) y, al confirmar, invocan un
+    // callback `onConfirmar`. El listener de Guardar encadena los dos cuando
+    // procede (primero rol, despues email) y deja el callback final en la accion
+    // que dispara la peticion al backend.
 
     /**
      * Muestra un MaterialAlertDialog de confirmacion antes de guardar un cambio
      * de rol entre ENCARGADO y EMPLEADO. Describe la transicion y sus consecuencias.
      *
      * Cancelar deja el formulario intacto sin llamar al backend.
-     * Confirmar dispara [FormUsuarioViewModel.actualizar] con el email y rol nuevos.
+     * Confirmar invoca el callback [onConfirmar] (que puede a su vez encadenar
+     * otro dialogo o disparar directamente la peticion al backend).
      *
      * Solo se llama en modo edicion cuando el usuario tiene empleado asociado
      * y el rol cambio entre ENCARGADO y EMPLEADO (ambas direcciones).
@@ -411,13 +480,13 @@ class FormUsuarioFragment : Fragment() {
      * @param cabecera datos del empleado asociado para personalizar el mensaje
      * @param rolActual rol cargado originalmente del backend
      * @param rolNuevo rol seleccionado en el dropdown
-     * @param email email tal como figura en el campo al pulsar Guardar
+     * @param onConfirmar accion a ejecutar si el ADMIN confirma la transicion
      */
     private fun mostrarDialogoConfirmacionCambioRol(
         cabecera: CabeceraEmpleado,
         rolActual: Rol,
         rolNuevo: Rol,
-        email: String
+        onConfirmar: () -> Unit
     ) {
         val consecuencias = when (rolNuevo) {
             Rol.ENCARGADO -> getString(R.string.form_usuario_consecuencias_a_encargado)
@@ -437,10 +506,56 @@ class FormUsuarioFragment : Fragment() {
             .setMessage(mensaje)
             .setNegativeButton(getString(R.string.form_usuario_dialogo_cancelar), null)
             .setPositiveButton(getString(R.string.form_usuario_dialogo_confirmar)) { _, _ ->
-                // Deshabilitar el boton solo al confirmar: el ViewModel emitira
-                // Loading y procesarEstado lo mantendra deshabilitado hasta Success o Error.
-                binding.btnGuardar.isEnabled = false
-                viewModel.actualizar(email = email, rol = rolNuevo)
+                onConfirmar()
+            }
+            .show()
+    }
+
+    /**
+     * Muestra un MaterialAlertDialog de verificacion ortografica antes de guardar
+     * un cambio de email. NO enumera consecuencias del cambio en si: el objetivo
+     * es que el ADMIN relea el email nuevo en grande y confirme activamente que
+     * esta bien escrito, igual que en los flujos de "Confirma tu correo" de las
+     * webs de registro. Un email mal tecleado romperia E04 (recuperacion de
+     * contrasena) sin que el sistema pueda detectarlo.
+     *
+     * Cancelar deja el formulario intacto sin llamar al backend.
+     * Confirmar invoca el callback [onConfirmar] (normalmente la peticion al
+     * backend, o el dialogo encadenado si el listener de Guardar lo decide).
+     *
+     * Solo se llama en modo edicion cuando el email cambio respecto al cargado
+     * originalmente del backend.
+     *
+     * @param nombreCompleto nombre del usuario para personalizar el encabezado
+     *        (en ADMIN puro sin empleado asociado se usa el username, en
+     *        ENCARGADO/EMPLEADO se usa el nombre del empleado asociado)
+     * @param identificador segunda linea del encabezado: numero de empleado si
+     *        existe, o username del usuario si es ADMIN puro
+     * @param emailAnterior email cargado originalmente del backend
+     * @param emailNuevo email tal como figura en el campo al pulsar Guardar
+     * @param onConfirmar accion a ejecutar si el ADMIN confirma que el email
+     *        nuevo esta bien escrito
+     */
+    private fun mostrarDialogoConfirmacionEmail(
+        nombreCompleto: String,
+        identificador: String,
+        emailAnterior: String,
+        emailNuevo: String,
+        onConfirmar: () -> Unit
+    ) {
+        val mensaje = getString(
+            R.string.form_usuario_dialogo_email_mensaje,
+            nombreCompleto,
+            identificador,
+            emailAnterior,
+            emailNuevo
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.form_usuario_dialogo_titulo_email))
+            .setMessage(mensaje)
+            .setNegativeButton(getString(R.string.form_usuario_dialogo_cancelar), null)
+            .setPositiveButton(getString(R.string.form_usuario_dialogo_email_confirmar)) { _, _ ->
+                onConfirmar()
             }
             .show()
     }
@@ -567,6 +682,7 @@ class FormUsuarioFragment : Fragment() {
                 binding.etEmail.setText(estado.usuario.email)
                 binding.actvRol.setText(rolLabel(estado.usuario.rol), false)
                 rolOriginal = estado.usuario.rol
+                emailOriginal = estado.usuario.email
                 usuarioActivo = estado.usuario.activo
                 binding.btnCambiarEstado.isVisible = true
                 configurarBotonCambiarEstado(estado.usuario.activo)

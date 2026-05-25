@@ -327,6 +327,22 @@
     <string name="form_usuario_dialogo_cambio_rol_mensaje">Vas a cambiar el rol de %1$s (%2$s):\n\nRol: %3$s → %4$s\n\nConsecuencias:\n%5$s\n\n¿Confirmar el cambio?</string>
     <string name="form_usuario_consecuencias_a_encargado">Podrá ver y gestionar fichajes, ausencias y saldos de otros empleados, y tendrá acceso al panel de gestión de su equipo.</string>
     <string name="form_usuario_consecuencias_a_empleado">Perderá el acceso al panel de gestión de equipo. Solo podrá ver y gestionar sus propios fichajes, ausencias y saldos.</string>
+    <!--
+        P29: dialogo de verificacion ortografica del email al editar un usuario.
+        Aparece cuando el email cambio respecto al cargado del backend. NO enumera
+        consecuencias del cambio: el objetivo es que el ADMIN relea el email nuevo
+        y confirme activamente que esta bien escrito, evitando errores tipograficos
+        que dejarian al usuario sin recuperacion de contrasena (E04).
+        form_usuario_dialogo_email_mensaje placeholders:
+          %1$s = nombre completo (o username si es ADMIN puro),
+          %2$s = numero de empleado (o username si es ADMIN puro),
+          %3$s = email anterior, %4$s = email nuevo.
+        El boton positivo usa una formula afirmativa ("Si, es correcto") para
+        forzar a leer antes de confirmar, en lugar del generico Confirmar.
+    -->
+    <string name="form_usuario_dialogo_titulo_email">Confirmar email</string>
+    <string name="form_usuario_dialogo_email_mensaje">Vas a cambiar el email de %1$s (%2$s):\n\nDe:   %3$s\nA:    %4$s\n\nRevisa que el email nuevo está bien escrito. Si tiene un error tipográfico, el usuario no recibirá las recuperaciones de contraseña ni las notificaciones del sistema.</string>
+    <string name="form_usuario_dialogo_email_confirmar">Sí, es correcto</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
