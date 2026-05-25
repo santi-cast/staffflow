@@ -116,6 +116,12 @@ data class EmpleadoRequest(
  * fechaAlta y dni son editables por ADMIN desde P15 para corregir errores de
  * alta. fechaAlta admite pasado y futuro (sin restriccion de rango); dni se
  * valida con 409 si ya existe en otro empleado.
+ *
+ * No incluye pinTerminal ni activo: el PIN se regenera via E65
+ * (POST /empleados/{id}/pin/regenerar) y la activacion/desactivacion va
+ * por endpoints dedicados E17 (PATCH /empleados/{id}/baja) y E18
+ * (PATCH /empleados/{id}/reactivar). El backend ignora ambos campos si
+ * llegan en este patch.
  */
 data class EmpleadoPatchRequest(
     val nombre: String? = null,
@@ -127,9 +133,7 @@ data class EmpleadoPatchRequest(
     val jornadaDiariaMinutos: Int? = null,
     val diasVacacionesAnuales: Int? = null,
     val diasAsuntosPropiosAnuales: Int? = null,
-    val pinTerminal: String? = null,
     val codigoNfc: String? = null,
-    val activo: Boolean? = null,
     val fechaAlta: String? = null
 )
 
