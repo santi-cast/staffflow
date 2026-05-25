@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Year;
@@ -70,6 +71,16 @@ public class ProcesoCierreDiario {
     private final SaldoService                    saldoService;
 
     /**
+     * Reloj usado para resolver "hoy" dentro del proceso nocturno. En
+     * produccion Spring inyecta el {@code Clock} bean configurado en
+     * {@code AppConfig} (zona horaria de la empresa); en tests se sustituye
+     * por un {@code Clock.fixed(...)} para hacer deterministas las ramas
+     * que dependen del dia de la semana (Tarea A laborable vs fin de semana
+     * y bloque DIA_LIBRE del dia siguiente).
+     */
+    private final Clock                           clock;
+
+    /**
      * Proceso nocturno que cierra la jornada del dia (23:55).
      *
      * <p>Las tres tareas se ejecutan en orden dentro de una unica transaccion:
@@ -85,7 +96,7 @@ public class ProcesoCierreDiario {
     @Scheduled(cron = "0 55 23 * * *")
     @Transactional
     public void ejecutar() {
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(clock);
         log.info("ProcesoCierreDiario iniciado para la fecha {}", hoy);
 
         // Cargar el usuario sistema una sola vez para usarlo en Tarea A y Tarea B.
@@ -241,7 +252,7 @@ public class ProcesoCierreDiario {
         // desde cero sin construir DTO.
         log.info("Tarea C iniciada: recalculo saldos anuales para {} empleados activos",
                 empleadosActivos.size());
-        int anioActual = Year.now().getValue();
+        int anioActual = Year.now(clock).getValue();
         int saldosRecalculados = 0;
 
         for (Empleado empleado : empleadosActivos) {
