@@ -72,21 +72,19 @@ class EmpleadoServiceTest {
     }
 
     // ---------------------------------------------------------------
-    // regenerarPin — happy path
+    // regenerarPin (E65)
     // ---------------------------------------------------------------
 
     @Test
     @DisplayName("regenerarPin — empleado existente — actualiza PIN y devuelve response con mismo valor")
     void regenerarPin_actualizaYDevuelvePinNuevo() {
-        // Arrange: el empleado existe y el PIN generado es único
         when(empleadoRepository.findById(EMPLEADO_ID)).thenReturn(Optional.of(empleado));
         when(empleadoRepository.existsByPinTerminal(anyString())).thenReturn(false);
         when(empleadoRepository.save(any(Empleado.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
         RegenerarPinResponse response = empleadoService.regenerarPin(EMPLEADO_ID);
 
-        // Assert: el PIN del response coincide con el persistido en el empleado capturado
+        // El PIN del response debe coincidir con el persistido en el empleado capturado
         ArgumentCaptor<Empleado> captor = ArgumentCaptor.forClass(Empleado.class);
         verify(empleadoRepository).save(captor.capture());
 
@@ -97,37 +95,24 @@ class EmpleadoServiceTest {
         assertThat(response.getEmpleadoId()).isEqualTo(EMPLEADO_ID);
     }
 
-    // ---------------------------------------------------------------
-    // regenerarPin — not found
-    // ---------------------------------------------------------------
-
     @Test
     @DisplayName("regenerarPin — empleado inexistente — lanza NotFoundException")
     void regenerarPin_idInexistente_lanzaNotFoundException() {
-        // Arrange
         when(empleadoRepository.findById(99999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThatThrownBy(() -> empleadoService.regenerarPin(99999L))
                 .isInstanceOf(NotFoundException.class);
     }
 
-    // ---------------------------------------------------------------
-    // regenerarPin — formato del PIN
-    // ---------------------------------------------------------------
-
     @Test
     @DisplayName("regenerarPin — PIN devuelto tiene exactamente 4 dígitos numéricos")
     void regenerarPin_pinDevueltoTieneCuatroDigitos() {
-        // Arrange
         when(empleadoRepository.findById(EMPLEADO_ID)).thenReturn(Optional.of(empleado));
         when(empleadoRepository.existsByPinTerminal(anyString())).thenReturn(false);
         when(empleadoRepository.save(any(Empleado.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
         RegenerarPinResponse response = empleadoService.regenerarPin(EMPLEADO_ID);
 
-        // Assert: exactamente 4 dígitos numéricos
         assertThat(response.getPinTerminal())
                 .isNotNull()
                 .matches("\\d{4}");
@@ -175,15 +160,12 @@ class EmpleadoServiceTest {
         @Test
         @DisplayName("ADMIN — recibe pinTerminal, email, username y rol con valor real")
         void obtenerPorId_admin_devuelveCamposSensibles() {
-            // Arrange
             when(empleadoRepository.findById(EMPLEADO_ID))
                     .thenReturn(Optional.of(empleadoConDatosSensibles()));
 
-            // Act
             EmpleadoResponse response = empleadoService.obtenerPorId(
                     EMPLEADO_ID, authConRol("ROLE_ADMIN"));
 
-            // Assert
             assertThat(response.getPinTerminal()).isEqualTo(PIN);
             assertThat(response.getEmail()).isEqualTo(EMAIL);
             assertThat(response.getUsername()).isEqualTo(USERNAME);
@@ -193,15 +175,12 @@ class EmpleadoServiceTest {
         @Test
         @DisplayName("ENCARGADO — recibe pinTerminal, email, username y rol a null (Opción A)")
         void obtenerPorId_encargado_devuelveCamposSensiblesNull() {
-            // Arrange
             when(empleadoRepository.findById(EMPLEADO_ID))
                     .thenReturn(Optional.of(empleadoConDatosSensibles()));
 
-            // Act
             EmpleadoResponse response = empleadoService.obtenerPorId(
                     EMPLEADO_ID, authConRol("ROLE_ENCARGADO"));
 
-            // Assert
             assertThat(response.getPinTerminal()).isNull();
             assertThat(response.getEmail()).isNull();
             assertThat(response.getUsername()).isNull();
@@ -213,10 +192,8 @@ class EmpleadoServiceTest {
         @Test
         @DisplayName("Empleado inexistente — lanza NotFoundException independientemente del rol")
         void obtenerPorId_idInexistente_lanzaNotFoundException() {
-            // Arrange
             when(empleadoRepository.findById(99999L)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThatThrownBy(() -> empleadoService.obtenerPorId(
                     99999L, authConRol("ROLE_ADMIN")))
                     .isInstanceOf(NotFoundException.class);

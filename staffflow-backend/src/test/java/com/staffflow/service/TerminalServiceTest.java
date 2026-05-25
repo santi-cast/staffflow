@@ -93,18 +93,17 @@ class TerminalServiceTest {
     @Test
     @DisplayName("obtenerEstado — 5 intentos fallidos — el dispositivo queda bloqueado (423)")
     void obtenerEstado_cincoIntentosFallidos_dispositivoBloqueado() {
-        // Simular 5 intentos fallidos con PIN incorrecto
         when(empleadoRepository.findByPinTerminal(PIN_INVALIDO)).thenReturn(Optional.empty());
 
         TerminalPinRequest request = req(PIN_INVALIDO, DISPOSITIVO);
 
+        // Cada intento incrementa el contador y lanza 404 (PIN incorrecto)
         for (int i = 0; i < 5; i++) {
-            // Cada intento debe lanzar 404 (PIN incorrecto) e incrementar contador
             assertThatThrownBy(() -> terminalService.obtenerEstado(request))
                     .isInstanceOf(EntityNotFoundException.class);
         }
 
-        // El sexto intento debe lanzar PinBloqueadoException (el GlobalExceptionHandler la convierte a 423)
+        // El sexto intento lanza PinBloqueadoException → 423 en el GlobalExceptionHandler
         assertThatThrownBy(() -> terminalService.obtenerEstado(request))
                 .isInstanceOf(PinBloqueadoException.class)
                 .hasMessageContaining("bloqueado");
