@@ -93,6 +93,21 @@ class FormUsuarioFragment : Fragment() {
      */
     private var usuarioActivo: Boolean? = null
 
+    /**
+     * Cache local de la cabecera del empleado asociado. Se actualiza cada vez
+     * que el ViewModel emite un nuevo valor en [FormUsuarioViewModel.cabeceraEmpleado].
+     * Se usa en el listener de Guardar para decidir si mostrar el dialogo de
+     * confirmacion de cambio de rol (null = usuario ADMIN puro, sin empleado).
+     */
+    private var cabeceraEmpleadoActual: CabeceraEmpleado? = null
+
+    /**
+     * Cache local del rol cargado del usuario en modo edicion. Se actualiza
+     * desde SuccessAlta. Necesario para comparar con el rol seleccionado en
+     * el dropdown al pulsar Guardar y detectar si hubo cambio de rol.
+     */
+    private var rolOriginal: Rol? = null
+
     // ------------------------------------------------------------------
     // Ciclo de vida
     // ------------------------------------------------------------------
@@ -131,6 +146,9 @@ class FormUsuarioFragment : Fragment() {
     // ------------------------------------------------------------------
 
     private fun configurarDropdown() {
+        // En modo alta: todos los roles disponibles sin restriccion.
+        // En modo edicion: se actualiza via actualizarDropdownRol() cuando llega
+        // el empleado asociado desde el ViewModel (o la ausencia del mismo).
         val roles = Rol.values().map { rolLabel(it) }
         val rolesAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, roles)
         binding.actvRol.setAdapter(rolesAdapter)
@@ -140,6 +158,39 @@ class FormUsuarioFragment : Fragment() {
         val categorias = CategoriaEmpleado.values().map { categoriaLabel(it) }
         val categoriasAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categorias)
         binding.actvCategoria.setAdapter(categoriasAdapter)
+    }
+
+    /**
+     * Actualiza el dropdown de rol segun el tipo de usuario en modo edicion:
+     *
+     * - Usuario con empleado asociado (rol ENCARGADO o EMPLEADO): dropdown habilitado
+     *   con solo ENCARGADO y EMPLEADO visibles. La opcion ADMIN se oculta para
+     *   evitar la transicion prohibida por el backend (HTTP 409).
+     * - Usuario ADMIN puro (sin empleado): dropdown deshabilitado con helperText
+     *   informativo. El backend rechazaria cualquier cambio de rol (HTTP 409).
+     *
+     * En modo alta (modoEdicion = false) este metodo no debe invocarse: el
+     * dropdown muestra todos los roles sin restriccion.
+     */
+    private fun actualizarDropdownRol(cabecera: CabeceraEmpleado?) {
+        if (!viewModel.modoEdicion) return
+
+        if (cabecera != null) {
+            // Usuario con empleado asociado: ENCARGADO y EMPLEADO disponibles, sin ADMIN
+            val rolesPermitidos = listOf(Rol.ENCARGADO, Rol.EMPLEADO)
+            val adapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                rolesPermitidos.map { rolLabel(it) }
+            )
+            binding.actvRol.setAdapter(adapter)
+            binding.tilRol.isEnabled = true
+            binding.tilRol.helperText = null
+        } else {
+            // Usuario ADMIN puro: dropdown deshabilitado con texto informativo
+            binding.tilRol.isEnabled = false
+            binding.tilRol.helperText = getString(R.string.form_usuario_rol_admin_no_editable)
+        }
     }
 
     private fun configurarModo() {
@@ -220,40 +271,56 @@ class FormUsuarioFragment : Fragment() {
         }
 
         binding.btnGuardar.setOnClickListener {
-            binding.btnGuardar.isEnabled = false
-            try {
-                val rol = rolFromLabel(binding.actvRol.text.toString())
-                if (viewModel.modoEdicion) {
-                    viewModel.actualizar(
-                        email = binding.etEmail.text.toString().trim(),
-                        rol = rol
+            val rol = rolFromLabel(binding.actvRol.text.toString())
+            if (viewModel.modoEdicion) {
+                val email = binding.etEmail.text.toString().trim()
+                // Detectar cambio de rol ENCARGADO <-> EMPLEADO en modo edicion.
+                // Si hay empleado asociado y el rol cambio entre ENCARGADO y EMPLEADO,
+                // mostrar dialogo de confirmacion antes de llamar al backend.
+                val rolAnterior = rolOriginal
+                val esCambioRolConEmpleado = cabeceraEmpleadoActual != null &&
+                    rolAnterior != null &&
+                    rolAnterior != rol &&
+                    rolAnterior in setOf(Rol.ENCARGADO, Rol.EMPLEADO) &&
+                    rol in setOf(Rol.ENCARGADO, Rol.EMPLEADO)
+                if (esCambioRolConEmpleado) {
+                    // No deshabilitar el boton: el dialogo es modal y el usuario
+                    // puede cancelar. El boton se deshabilita dentro del callback
+                    // de Confirmar y se recupera via procesarEstado (Loading/Error/Success).
+                    mostrarDialogoConfirmacionCambioRol(
+                        cabecera = cabeceraEmpleadoActual!!,
+                        rolActual = rolAnterior!!,
+                        rolNuevo = rol,
+                        email = email
                     )
                 } else {
-                    // Solo enviamos fechaAlta si el rol crea perfil de empleado.
-                    // Para ADMIN no aplica (no tiene ficha de empleado).
-                    val fechaAltaIso = if (rol != Rol.ADMIN) {
-                        fechaAltaSeleccionada.format(fmtFechaAltaIso)
-                    } else {
-                        null
-                    }
-                    viewModel.crear(
-                        username = binding.etUsername.text.toString().trim(),
-                        password = binding.etPassword.text.toString().trim(),
-                        email = binding.etEmail.text.toString().trim(),
-                        rol = rol,
-                        nombre = binding.etNombre.text.toString().trim(),
-                        apellido1 = binding.etApellido1.text.toString().trim(),
-                        apellido2 = binding.etApellido2.text.toString().trim().ifBlank { null },
-                        dni = binding.etDni.text.toString().trim(),
-                        categoria = categoriaFromLabel(binding.actvCategoria.text.toString()),
-                        jornadaSemanalHoras = binding.etJornadaSemanal.text.toString().toDoubleOrNull(),
-                        diasVacaciones = binding.etVacaciones.text.toString().toIntOrNull(),
-                        diasAsuntos = binding.etAsuntos.text.toString().toIntOrNull(),
-                        fechaAlta = fechaAltaIso
-                    )
+                    binding.btnGuardar.isEnabled = false
+                    viewModel.actualizar(email = email, rol = rol)
                 }
-            } finally {
-                binding.btnGuardar.isEnabled = true
+            } else {
+                binding.btnGuardar.isEnabled = false
+                // Solo enviamos fechaAlta si el rol crea perfil de empleado.
+                // Para ADMIN no aplica (no tiene ficha de empleado).
+                val fechaAltaIso = if (rol != Rol.ADMIN) {
+                    fechaAltaSeleccionada.format(fmtFechaAltaIso)
+                } else {
+                    null
+                }
+                viewModel.crear(
+                    username = binding.etUsername.text.toString().trim(),
+                    password = binding.etPassword.text.toString().trim(),
+                    email = binding.etEmail.text.toString().trim(),
+                    rol = rol,
+                    nombre = binding.etNombre.text.toString().trim(),
+                    apellido1 = binding.etApellido1.text.toString().trim(),
+                    apellido2 = binding.etApellido2.text.toString().trim().ifBlank { null },
+                    dni = binding.etDni.text.toString().trim(),
+                    categoria = categoriaFromLabel(binding.actvCategoria.text.toString()),
+                    jornadaSemanalHoras = binding.etJornadaSemanal.text.toString().toDoubleOrNull(),
+                    diasVacaciones = binding.etVacaciones.text.toString().toIntOrNull(),
+                    diasAsuntos = binding.etAsuntos.text.toString().toIntOrNull(),
+                    fechaAlta = fechaAltaIso
+                )
             }
         }
 
@@ -318,6 +385,57 @@ class FormUsuarioFragment : Fragment() {
             binding.btnCambiarEstado.setTextColor(verde)
             binding.btnCambiarEstado.strokeColor = android.content.res.ColorStateList.valueOf(verde)
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Dialogo de confirmacion de cambio de rol ENCARGADO <-> EMPLEADO
+    // ------------------------------------------------------------------
+
+    /**
+     * Muestra un MaterialAlertDialog de confirmacion antes de guardar un cambio
+     * de rol entre ENCARGADO y EMPLEADO. Describe la transicion y sus consecuencias.
+     *
+     * Cancelar deja el formulario intacto sin llamar al backend.
+     * Confirmar dispara [FormUsuarioViewModel.actualizar] con el email y rol nuevos.
+     *
+     * Solo se llama en modo edicion cuando el usuario tiene empleado asociado
+     * y el rol cambio entre ENCARGADO y EMPLEADO (ambas direcciones).
+     *
+     * @param cabecera datos del empleado asociado para personalizar el mensaje
+     * @param rolActual rol cargado originalmente del backend
+     * @param rolNuevo rol seleccionado en el dropdown
+     * @param email email tal como figura en el campo al pulsar Guardar
+     */
+    private fun mostrarDialogoConfirmacionCambioRol(
+        cabecera: CabeceraEmpleado,
+        rolActual: Rol,
+        rolNuevo: Rol,
+        email: String
+    ) {
+        val consecuencias = when (rolNuevo) {
+            Rol.ENCARGADO -> getString(R.string.form_usuario_consecuencias_a_encargado)
+            Rol.EMPLEADO  -> getString(R.string.form_usuario_consecuencias_a_empleado)
+            else          -> ""
+        }
+        val mensaje = getString(
+            R.string.form_usuario_dialogo_cambio_rol_mensaje,
+            cabecera.nombreCompleto,
+            cabecera.numeroEmpleado,
+            rolLabel(rolActual),
+            rolLabel(rolNuevo),
+            consecuencias
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.form_usuario_dialogo_titulo_cambio_rol))
+            .setMessage(mensaje)
+            .setNegativeButton(getString(R.string.form_usuario_dialogo_cancelar), null)
+            .setPositiveButton(getString(R.string.form_usuario_dialogo_confirmar)) { _, _ ->
+                // Deshabilitar el boton solo al confirmar: el ViewModel emitira
+                // Loading y procesarEstado lo mantendra deshabilitado hasta Success o Error.
+                binding.btnGuardar.isEnabled = false
+                viewModel.actualizar(email = email, rol = rolNuevo)
+            }
+            .show()
     }
 
     // ------------------------------------------------------------------
@@ -391,7 +509,9 @@ class FormUsuarioFragment : Fragment() {
                 }
                 launch {
                     viewModel.cabeceraEmpleado.collect { cabecera ->
+                        cabeceraEmpleadoActual = cabecera
                         pintarCabeceraEmpleado(cabecera)
+                        actualizarDropdownRol(cabecera)
                     }
                 }
             }
@@ -439,6 +559,7 @@ class FormUsuarioFragment : Fragment() {
                 binding.etUsername.setText(estado.usuario.username)
                 binding.etEmail.setText(estado.usuario.email)
                 binding.actvRol.setText(rolLabel(estado.usuario.rol), false)
+                rolOriginal = estado.usuario.rol
                 usuarioActivo = estado.usuario.activo
                 binding.btnCambiarEstado.isVisible = true
                 configurarBotonCambiarEstado(estado.usuario.activo)

@@ -313,6 +313,20 @@
         %1$s = nombre completo, %2$s = numeroEmpleado.
     -->
     <string name="form_usuario_cabecera_empleado">Empleado: %1$s (%2$s)</string>
+    <!--
+        P29: restricciones de edicion de rol segun tipo de usuario.
+        form_usuario_rol_admin_no_editable: helper text cuando el usuario es ADMIN puro.
+        form_usuario_dialogo_cambio_rol_mensaje: formato del cuerpo del dialogo de confirmacion
+          de cambio de rol ENCARGADO <-> EMPLEADO. Parametros:
+          %1$s = nombre completo del empleado, %2$s = numero de empleado,
+          %3$s = etiqueta del rol actual, %4$s = etiqueta del rol nuevo,
+          %5$s = texto de consecuencias segun direccion del cambio.
+    -->
+    <string name="form_usuario_rol_admin_no_editable">El rol ADMIN no se puede cambiar</string>
+    <string name="form_usuario_dialogo_titulo_cambio_rol">Confirmar cambio de rol</string>
+    <string name="form_usuario_dialogo_cambio_rol_mensaje">Vas a cambiar el rol de %1$s (%2$s):\n\nRol: %3$s → %4$s\n\nConsecuencias:\n%5$s\n\n¿Confirmar el cambio?</string>
+    <string name="form_usuario_consecuencias_a_encargado">Podrá ver y gestionar fichajes, ausencias y saldos de otros empleados, y tendrá acceso al panel de gestión de su equipo.</string>
+    <string name="form_usuario_consecuencias_a_empleado">Perderá el acceso al panel de gestión de equipo. Solo podrá ver y gestionar sus propios fichajes, ausencias y saldos.</string>
 
     <!-- P28 Lista de usuarios -->
     <string name="usuarios_vacio">No hay usuarios registrados</string>
