@@ -10,7 +10,14 @@ import lombok.Data;
  * Usado en E11 (PATCH /api/v1/usuarios/{id}), solo accesible por ADMIN.
  * Todos los campos son opcionales: el servicio solo actualiza los que
  * lleguen con valor no null (patrón PATCH).
- * El username y la contraseña no son modificables por este endpoint.
+ *
+ * Campos NO modificables por este endpoint:
+ *   - username y password: inmutables vía E11. La contraseña se gestiona
+ *     por E03 (cambio propio) y E66 (reset por ADMIN).
+ *   - activo: la activación/desactivación se realiza exclusivamente por los
+ *     endpoints dedicados E12 (DELETE, baja lógica) y E67 (PATCH /reactivar).
+ *     Esta separación es intencional: evita que una edición de datos
+ *     accidental modifique el estado del usuario.
  *
  * @author Santiago Castillo
  */
@@ -24,8 +31,4 @@ public class UsuarioPatchRequest {
 
     // Cambio de rol: solo ADMIN puede modificarlo.
     private Rol rol;
-
-    // Baja lógica: activo=false desactiva el acceso sin borrar el registro
-    // No confundir con DELETE físico, que no existe.
-    private Boolean activo;
 }

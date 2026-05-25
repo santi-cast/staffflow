@@ -65,11 +65,12 @@ data class UsuarioRequest(
  * Actualizacion parcial de un usuario (E11 PATCH /usuarios/{id}).
  * Solo se envian los campos que se quieren modificar (null = sin cambio).
  * La contrasena se gestiona por separado en E66 (AdminPasswordResetRequest).
+ * El estado activo se gestiona por E12 (DELETE, baja logica) y E67
+ * (PATCH /reactivar), no por este DTO.
  */
 data class UsuarioPatchRequest(
     val email: String? = null,
-    val rol: Rol? = null,
-    val activo: Boolean? = null
+    val rol: Rol? = null
 )
 
 /**

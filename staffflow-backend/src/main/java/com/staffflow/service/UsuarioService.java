@@ -174,9 +174,11 @@ public class UsuarioService {
      * usuario usa E03 (cambio con contraseña actual) y el ADMIN usa E66
      * (PATCH /api/v1/usuarios/{id}/password).
      *
-     * El campo activo tampoco se modifica aquí: la desactivación se realiza
-     * exclusivamente por E12 (baja lógica). Esta separación es intencional:
-     * evita que una edición de datos accidental modifique el estado del usuario.
+     * El estado activo no es modificable por este endpoint: el DTO no declara
+     * el campo. La activación/desactivación se realiza exclusivamente por
+     * E12 (DELETE, baja lógica) y E67 (PATCH /reactivar). Esta separación es
+     * intencional: evita que una edición de datos accidental modifique el
+     * estado del usuario.
      *
      * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      * Valida unicidad de email excluyendo al propio usuario que se está

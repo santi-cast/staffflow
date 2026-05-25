@@ -122,7 +122,8 @@ public class UsuarioController {
      * Actualiza los datos editables de un usuario: email y rol.
      *
      * El username no es modificable. La contraseña se gestiona por separado
-     * en E66 (PATCH /{id}/password). El campo activo tampoco se toca aquí.
+     * en E66 (PATCH /{id}/password). El estado activo se gestiona por E12
+     * (DELETE, baja lógica) y E67 (PATCH /reactivar), no por este endpoint.
      * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      *
      * Códigos HTTP:

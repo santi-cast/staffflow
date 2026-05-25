@@ -343,10 +343,10 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      * Actualiza un usuario existente (E11 PATCH /usuarios/{id}).
      * Solo permite cambiar email y rol (no username, password ni activo).
      *
-     * El estado activo no se modifica por esta via: el backend ignora el campo
-     * `activo` en PATCH (ver UsuarioController E11). Para desactivar se usa
-     * E12 DELETE (metodo `desactivar()`); para reactivar se usa E67 PATCH
-     * /usuarios/{id}/reactivar (metodo `reactivar()`).
+     * El estado activo no es modificable por esta via: el DTO
+     * `UsuarioPatchRequest` no declara el campo (ni en backend ni en cliente).
+     * Para desactivar se usa E12 DELETE (metodo `desactivar()`); para reactivar
+     * se usa E67 PATCH /usuarios/{id}/reactivar (metodo `reactivar()`).
      */
     fun actualizar(email: String, rol: Rol) {
         if (email.isBlank()) {
