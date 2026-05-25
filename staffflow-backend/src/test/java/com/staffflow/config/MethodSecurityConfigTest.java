@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li>5.1 {@code SecurityConfig} declara {@code @EnableMethodSecurity}</li>
  *   <li>5.2-5.3 Los 7 endpoints /me usan {@code hasAnyRole('EMPLEADO','ENCARGADO')}</li>
- *   <li>5.4 {@code TerminalController} no tiene {@code @PreAuthorize}</li>
  * </ul>
  *
  * <p>Usa reflexión sobre los bytecodes compilados — si la anotación no existe el test falla
