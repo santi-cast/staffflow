@@ -265,8 +265,13 @@ class FormUsuarioFragment : Fragment() {
     }
 
     private fun configurarListeners() {
-        // Al cambiar el rol: mostrar/ocultar seccion de empleado y sugerir username
+        // Al cambiar el rol: solo aplica en modo alta. En modo edicion el
+        // empleado asociado YA existe (o el usuario es ADMIN puro sin empleado),
+        // asi que NO debemos mostrar el bloque de "asignar empleado nuevo" ni
+        // pedir sugerencias de username (el username no se regenera al editar).
+        // La visibilidad inicial del bloque queda fijada por configurarModo().
         binding.actvRol.setOnItemClickListener { _, _, _, _ ->
+            if (viewModel.modoEdicion) return@setOnItemClickListener
             val rol = rolFromLabel(binding.actvRol.text.toString())
             binding.layoutPerfilEmpleado.isVisible = (rol != Rol.ADMIN)
             viewModel.sugerirUsername(rol)
