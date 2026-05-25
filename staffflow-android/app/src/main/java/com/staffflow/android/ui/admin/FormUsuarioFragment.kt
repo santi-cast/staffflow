@@ -41,8 +41,10 @@ import java.time.format.DateTimeParseException
  *
  * El campo username NUNCA es editable a mano: en modo alta se autorrellena
  * desde sugerirUsername(rol) del ViewModel siguiendo el prefijo del rol
- * (emp/encargado/admin + numero correlativo) para garantizar coherencia
- * con la convencion del sistema; en modo edicion el backend no admite
+ * (usu001/usu002... para ENCARGADO y EMPLEADO, admin001/admin002... para ADMIN)
+ * con padding de 3 digitos y numeracion compartida entre ENCARGADO y EMPLEADO
+ * para que el username sea agnostico del rol operativo (M-040/M-041);
+ * en modo edicion el backend no admite
  * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
  * se introduce directamente; en modo edicion se puede cambiar pulsando
  * btnCambiarPassword que abre un dialogo con campo visible (E66). El estado

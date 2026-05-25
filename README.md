@@ -103,7 +103,7 @@ Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:val
 Base de datos en memoria. No requiere instalación de MySQL. Los datos de prueba se cargan automáticamente desde `data.sql` en cada arranque:
 
 - 1 configuración de empresa
-- 5 usuarios: admin, encargado01, emp01, emp02, terminal\_service
+- 5 usuarios: admin001, usu001, usu002, usu003, terminal\_service
 - 3 empleados con PIN asignado: Ana García (1111), Carlos López (2222), Laura Fernández (3333)
 
 El perfil `dev` es el activo por defecto (fijado en `application.yaml`), así que basta con:

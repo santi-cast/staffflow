@@ -189,29 +189,60 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      * Sugiere el siguiente username disponible segun el rol seleccionado.
      * Llama a E09 GET /usuarios?rol= para obtener los usuarios existentes,
      * busca el numero mas alto que siga el patron del prefijo y propone el
-     * siguiente con formato de 2 digitos (emp01, emp02, ...).
+     * siguiente con formato de 3 digitos (usu001, usu002, ... / admin001, admin002, ...).
+     *
+     * Reglas de prefijo:
+     *   - ADMIN     → prefijo "admin", numeracion exclusiva de ADMIN.
+     *   - ENCARGADO → prefijo "usu", numeracion COMPARTIDA con EMPLEADO.
+     *   - EMPLEADO  → prefijo "usu", numeracion COMPARTIDA con ENCARGADO.
+     *
+     * ENCARGADO y EMPLEADO comparten prefijo "usu" y numeracion correlativa porque
+     * el username es agnostico del rol operativo y no se regenera al cambiar de rol
+     * (M-040). Asi un cambio ENCARGADO ↔ EMPLEADO no deja el username inconsistente.
+     *
+     * El usuario de sistema "terminal_service" no sigue este esquema: es un seed de
+     * sistema creado directamente en data.sql y nunca se crea desde la UI.
      *
      * Solo relevante en modo alta. Se ignora en modo edicion.
-     * Si la llamada falla, no emite nada (el campo queda como esta).
+     * Si la llamada falla, no emite nada (el campo queda libre para escribir).
      */
     fun sugerirUsername(rol: Rol) {
         if (modoEdicion) return
-        val prefix = when (rol) {
-            Rol.EMPLEADO  -> "emp"
-            Rol.ENCARGADO -> "encargado"
-            Rol.ADMIN     -> "admin"
+        val prefix: String
+        val rolesAConsultar: List<Rol>
+        when (rol) {
+            Rol.ADMIN -> {
+                prefix = "admin"
+                rolesAConsultar = listOf(Rol.ADMIN)
+            }
+            Rol.ENCARGADO, Rol.EMPLEADO -> {
+                prefix = "usu"
+                // ENCARGADO y EMPLEADO comparten numeracion porque comparten prefijo "usu":
+                // el username es agnostico del rol operativo y no se regenera al cambiar rol.
+                rolesAConsultar = listOf(Rol.ENCARGADO, Rol.EMPLEADO)
+            }
         }
         viewModelScope.launch {
-            repository.listarUsuarios(rol = rol.name).fold(
-                onSuccess = { lista ->
-                    val regex = Regex("^${Regex.escape(prefix)}(\\d+)$")
-                    val maxNum = lista
-                        .mapNotNull { regex.find(it.username)?.groupValues?.get(1)?.toIntOrNull() }
-                        .maxOrNull() ?: 0
-                    _usernameSugerido.value = "%s%02d".format(prefix, maxNum + 1)
-                },
-                onFailure = { /* silencioso: el campo queda libre para escribir */ }
-            )
+            val regex = Regex("^${Regex.escape(prefix)}(\\d+)$")
+            var maxNum = 0
+            var huboFallo = false
+            for (r in rolesAConsultar) {
+                repository.listarUsuarios(rol = r.name).fold(
+                    onSuccess = { lista ->
+                        val maxRol = lista
+                            .mapNotNull { regex.find(it.username)?.groupValues?.get(1)?.toIntOrNull() }
+                            .maxOrNull() ?: 0
+                        if (maxRol > maxNum) maxNum = maxRol
+                    },
+                    onFailure = { huboFallo = true }
+                )
+            }
+            // Si al menos una peticion respondio con exito (o ninguna fallo), emite sugerencia.
+            // Si una falla pero la otra responde, usa el dato disponible sin bloquear.
+            // Solo silencioso si TODAS fallaron y maxNum quedo en 0.
+            if (!huboFallo || maxNum > 0) {
+                _usernameSugerido.value = "%s%03d".format(prefix, maxNum + 1)
+            }
         }
     }
 

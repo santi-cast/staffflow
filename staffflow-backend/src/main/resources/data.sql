@@ -38,7 +38,7 @@
 -- usuario_id en `fichajes` identifica al AUTOR TÉCNICO del registro:
 --   - El propio empleado (3 Ana, 4 Carlos, 2 Laura) para fichajes NORMAL
 --     hechos por PIN en el terminal.
---   - 1 (admin) o 2 (encargado01) para fichajes creados/corregidos manualmente
+--   - 1 (admin001) o 2 (usu001) para fichajes creados/corregidos manualmente
 --     desde la app de gestión, con observaciones obligatorias.
 --   - 5 (terminal_service) para TODO fichaje generado por ProcesoCierreDiario:
 --       · AUSENCIA_INJUSTIFICADA del cierre nocturno de un día laborable sin
@@ -63,14 +63,14 @@
 -- El orden de inserción es importante: usuarios antes que empleados (FK usuario_id).
 --
 -- Credenciales de prueba (contraseña 'admin1234' para todos):
---   admin        → ADMIN
---   encargado01  → ENCARGADO   (PIN terminal: 3333)
---   emp01        → EMPLEADO    (PIN terminal: 1111)
---   emp02        → EMPLEADO    (PIN terminal: 2222)
+--   admin001     → ADMIN
+--   usu001       → ENCARGADO   (PIN terminal: 3333)
+--   usu002       → EMPLEADO    (PIN terminal: 1111)
+--   usu003       → EMPLEADO    (PIN terminal: 2222)
 --   terminal_service → solo para auditoría interna, nunca para login
 --
--- Fichajes y pausas: Ana García (emp01, empleadoId=1), Carlos López
--- (emp02, empleadoId=2) y Laura Fernández (encargado01, empleadoId=3),
+-- Fichajes y pausas: Ana García (usu002, empleadoId=1), Carlos López
+-- (usu003, empleadoId=2) y Laura Fernández (usu001, empleadoId=3),
 -- del 30/03 al 17/05/2026.
 -- Hoy (18/05) sin fichajes para fichar en vivo durante la grabación.
 --
@@ -79,10 +79,10 @@
 --   - Asuntos propios: round(3 × 277/365) = 2 días
 --
 -- usuario_id referencia:
---   1 = admin
---   2 = encargado01
---   3 = emp01 (Ana)
---   4 = emp02 (Carlos)
+--   1 = admin001
+--   2 = usu001
+--   3 = usu002 (Ana)
+--   4 = usu003 (Carlos)
 --   5 = terminal_service
 -- =============================================================================
 
@@ -107,7 +107,7 @@ VALUES (
 
 INSERT INTO usuarios (username, password_hash, email, rol, activo, fecha_creacion)
 VALUES (
-    'admin',
+    'admin001',
     '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
     'santicastnuevo@gmail.com',
     'ADMIN',
@@ -117,9 +117,9 @@ VALUES (
 
 INSERT INTO usuarios (username, password_hash, email, rol, activo, fecha_creacion)
 VALUES (
-    'encargado01',
+    'usu001',
     '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
-    'encargado01@staffflow.demo',
+    'usu001@staffflow.demo',
     'ENCARGADO',
     TRUE,
     '2026-01-01 00:00:00'
@@ -127,9 +127,9 @@ VALUES (
 
 INSERT INTO usuarios (username, password_hash, email, rol, activo, fecha_creacion)
 VALUES (
-    'emp01',
+    'usu002',
     '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
-    'emp01@staffflow.demo',
+    'usu002@staffflow.demo',
     'EMPLEADO',
     TRUE,
     '2026-01-01 00:00:00'
@@ -137,9 +137,9 @@ VALUES (
 
 INSERT INTO usuarios (username, password_hash, email, rol, activo, fecha_creacion)
 VALUES (
-    'emp02',
+    'usu003',
     '$2a$10$HaOeyYyuQOjcaNZ/zkhOsu/2f.SYeFK3G1XCfWXVAftuRHvKUb9eW',
-    'emp02@staffflow.demo',
+    'usu003@staffflow.demo',
     'EMPLEADO',
     TRUE,
     '2026-01-01 00:00:00'
@@ -210,9 +210,9 @@ INSERT INTO empleados (
 --   Sem 20/04: lun 20/04, mar 21/04
 --   22/04 (hoy): SIN FICHAJES
 --
--- Ana García (emp01, empleado_id=1): jornada 09:00-17:30
--- Carlos López (emp02, empleado_id=2): jornada 08:00-16:30
--- Laura Fernández (encargado01, empleado_id=3): sin fichajes
+-- Ana García (usu002, empleado_id=1): jornada 09:00-17:30
+-- Carlos López (usu003, empleado_id=2): jornada 08:00-16:30
+-- Laura Fernández (usu001, empleado_id=3): sin fichajes
 -- -----------------------------------------------------------------------------
 
 
