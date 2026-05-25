@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -73,6 +74,15 @@ public class FichajeService {
      */
     private final UsuarioRepository usuarioRepository;
 
+    /**
+     * Reloj inyectado para resolver la fecha actual. Permite a los tests fijarlo
+     * con {@code Clock.fixed(...)} y volver deterministas las ramas que dependen
+     * del dia de hoy (rechazo de fechas futuras, restriccion del ENCARGADO sobre
+     * fechas pasadas y fallback de E25 cuando no se pasa fecha). El bean lo
+     * provee {@link com.staffflow.config.ClockConfig} fijado a Europe/Madrid.
+     */
+    private final Clock clock;
+
     // E22 — POST /api/v1/fichajes
 
     /**
@@ -121,7 +131,7 @@ public class FichajeService {
                         "Usuario autenticado no encontrado: " + username));
 
         // Fichajes en fechas futuras no permitidos para ningún rol.
-        if (request.getFecha().isAfter(LocalDate.now())) {
+        if (request.getFecha().isAfter(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "No se pueden registrar fichajes en fechas futuras");
         }
@@ -129,7 +139,7 @@ public class FichajeService {
         // ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear fichajes para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && request.getFecha().isBefore(LocalDate.now())) {
+                && request.getFecha().isBefore(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -224,7 +234,7 @@ public class FichajeService {
                         "Usuario autenticado no encontrado: " + username));
 
         // Fichajes en fechas futuras no modificables para ningún rol.
-        if (fichaje.getFecha().isAfter(LocalDate.now())) {
+        if (fichaje.getFecha().isAfter(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "No se pueden modificar fichajes en fechas futuras");
         }
@@ -233,7 +243,7 @@ public class FichajeService {
         // La fecha a validar es la del fichaje cargado de BD, no del request.
         // ADMIN puede modificar fichajes de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && fichaje.getFecha().isBefore(LocalDate.now())) {
+                && fichaje.getFecha().isBefore(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -304,7 +314,7 @@ public class FichajeService {
      * Útil para que el encargado detecte al final del día qué empleados
      * han olvidado fichar la salida.
      *
-     * Si no se proporciona fecha, usa hoy (LocalDate.now()).
+     * Si no se proporciona fecha, usa hoy ({@code LocalDate.now(clock)}).
      *
      * @param fecha fecha a consultar (puede ser null → usa hoy)
      * @return lista de FichajeResponse donde horaSalida = null
@@ -313,7 +323,7 @@ public class FichajeService {
     public List<FichajeResponse> listarIncompletos(LocalDate fecha) {
 
         // Si no se proporciona fecha, usar hoy
-        LocalDate fechaConsulta = (fecha != null) ? fecha : LocalDate.now();
+        LocalDate fechaConsulta = (fecha != null) ? fecha : LocalDate.now(clock);
 
         return fichajeRepository
                 .findByFechaAndHoraSalidaIsNull(fechaConsulta)
