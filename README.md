@@ -103,7 +103,7 @@ Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:val
 Base de datos en memoria. No requiere instalación de MySQL. Los datos de prueba se cargan automáticamente desde `data.sql` en cada arranque:
 
 - 1 configuración de empresa
-- 5 usuarios: admin001, usu001, usu002, usu003, terminal\_service
+- 5 usuarios: admin001, usu001, usu002, usu003, terminal\_service (ver Decisión 9 sobre las convenciones de naming)
 - 3 empleados con PIN asignado: Ana García (1111), Carlos López (2222), Laura Fernández (3333)
 
 El perfil `dev` es el activo por defecto (fijado en `application.yaml`), así que basta con:
@@ -435,6 +435,15 @@ En el primer arranque la app sondea una lista de hosts candidatos hasta encontra
 ### 8. Cierre nocturno automático como única tarea programada
 
 `ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. Las tres tareas operan únicamente sobre empleados operativos esa noche (`activo = true` AND `fechaAlta <= hoy`); los empleados con alta diferida quedan fuera hasta su primer día de trabajo. La Tarea A cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado operativo sin fichaje. La Tarea B materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior y dejar sembrado el `DIA_LIBRE` del sábado/domingo siguientes. La Tarea C recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo viven en B7 §7.1 y §7.3.
+
+### 9. Convenciones de naming de identificadores humanos
+
+El sistema usa dos identificadores legibles para personas con convenciones deliberadamente distintas:
+
+- `username` (campo de login): lowercase, sin separador, prefijo según rol. `admin001` para ADMIN; `usu001`, `usu002`, ... para ENCARGADO y EMPLEADO (ambos comparten prefijo porque ambos tienen empleado asociado). Excepción: `terminal_service` (id=5) es el usuario de sistema autor técnico de los fichajes generados por `ProcesoCierreDiario`; no se renombra para preservar la trazabilidad histórica.
+- `numeroEmpleado` (código de empleado): mayúsculas, con guion, prefijo fijo. `EMP-001`, `EMP-002`, ... Solo lo tienen ENCARGADO y EMPLEADO (ADMIN no tiene perfil de empleado por diseño).
+
+La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 LoginFragment varias veces al día, por eso se diseñó sin separador y en lowercase. `EMP-001` es un código que aparece en informes, listados y nóminas, por eso se diseñó con guion y en mayúsculas para destacar visualmente. El prefijo `usu` compartido por ENCARGADO y EMPLEADO refleja la regla de dominio "tiene perfil de empleado", que también es la invariante validada por el guard de transición de rol (E11): un usuario con empleado asociado nunca puede ser promovido a ADMIN, ni un ADMIN puro puede pasar a tener empleado.
 
 ---
 
