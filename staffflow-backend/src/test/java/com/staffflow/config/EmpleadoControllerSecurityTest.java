@@ -28,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>E16 PATCH /api/v1/empleados/{id} — {@code actualizar}</li>
  *   <li>E17 PATCH /api/v1/empleados/{id}/baja — {@code darDeBaja}</li>
  *   <li>E18 PATCH /api/v1/empleados/{id}/reactivar — {@code reactivar}</li>
- *   <li>Parte diario — {@code obtenerEstado}</li>
- *   <li>Exportación — {@code exportar}</li>
+ *   <li>GET /api/v1/empleados/estado — {@code obtenerEstado} (parte diario)</li>
+ *   <li>GET /api/v1/empleados/export — {@code exportar}</li>
  *   <li>E65 POST /api/v1/empleados/{id}/regenerar-pin — {@code regenerarPin}</li>
  *   <li>E68 GET /api/v1/empleados/by-usuario/{usuarioId} — {@code obtenerPorUsuarioId} (SOLO ADMIN)</li>
  * </ul>
