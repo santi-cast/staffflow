@@ -14,7 +14,7 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 102 tests verdes (0 errors, 0 skipped) — 52 tests unitarios de servicio (Mockito puro, incluido el proceso nocturno `ProcesoCierreDiario` con `Clock` inyectado) + 10 tests del proveedor JWT + 9 tests del `GlobalExceptionHandler` (MockMvc en modo standalone) + 30 tests estructurales de seguridad declarativa por reflexión + 1 test de arquitectura (ArchUnit), todos sin levantar el contexto de Spring. Stack JUnit 5 + Mockito + ArchUnit. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 123 tests verdes (0 errors, 0 skipped) — 73 tests unitarios de servicio (Mockito puro, incluidos `PausaService` y el proceso nocturno `ProcesoCierreDiario`, ambos con `Clock` inyectado) + 10 tests del proveedor JWT + 9 tests del `GlobalExceptionHandler` (MockMvc en modo standalone) + 30 tests estructurales de seguridad declarativa por reflexión + 1 test de arquitectura (ArchUnit), todos sin levantar el contexto de Spring. Stack JUnit 5 + Mockito + ArchUnit. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (52 tests unitarios de servicio + 10 tests JWT + 9 tests del exception handler con MockMvc standalone + 30 tests estructurales de seguridad declarativa por reflexión) + ArchUnit 1.4.0 (1 test de arquitectura). 102 tests verdes (0 errors, 0 skipped) sin contexto Spring.
+- JUnit 5 + Mockito (73 tests unitarios de servicio + 10 tests JWT + 9 tests del exception handler con MockMvc standalone + 30 tests estructurales de seguridad declarativa por reflexión) + ArchUnit 1.4.0 (1 test de arquitectura). 123 tests verdes (0 errors, 0 skipped) sin contexto Spring.
 
 ### Cliente Android
 
@@ -358,7 +358,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (68 endpoints, JWT, iText 7) | ✅ Completada — 68/68 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 102 tests verdes (0 errors): 52 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring. Matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 123 tests verdes (0 errors): 73 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring. Matrix de seguridad 35/35 |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales

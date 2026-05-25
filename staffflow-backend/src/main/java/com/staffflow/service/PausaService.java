@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -78,6 +79,17 @@ public class PausaService {
      */
     private final UsuarioRepository usuarioRepository;
 
+    /**
+     * Reloj usado para resolver "hoy" en las validaciones de fecha (pausas
+     * en el pasado para ENCARGADO, pausas en el futuro para cualquier rol).
+     *
+     * <p>En producción Spring inyecta el {@code Clock} bean configurado en
+     * {@link com.staffflow.config.ClockConfig} (zona horaria Europe/Madrid).
+     * En tests se sustituye por un {@code Clock.fixed(...)} para hacer
+     * deterministas las ramas que dependen de la fecha actual.</p>
+     */
+    private final Clock clock;
+
     // E27 — POST /api/v1/pausas
 
     /**
@@ -113,8 +125,10 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
+        LocalDate hoy = LocalDate.now(clock);
+
         // Pausas en fechas futuras no permitidas para ningún rol.
-        if (request.getFecha().isAfter(LocalDate.now())) {
+        if (request.getFecha().isAfter(hoy)) {
             throw new IllegalArgumentException(
                     "No se pueden registrar pausas en fechas futuras");
         }
@@ -122,7 +136,7 @@ public class PausaService {
         // ENCARGADO puede gestionar hoy y futuro, no el pasado.
         // ADMIN puede crear pausas para cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && request.getFecha().isBefore(LocalDate.now())) {
+                && request.getFecha().isBefore(hoy)) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -208,8 +222,10 @@ public class PausaService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario autenticado no encontrado: " + username));
 
+        LocalDate hoy = LocalDate.now(clock);
+
         // Pausas en fechas futuras no modificables para ningún rol.
-        if (pausa.getFecha().isAfter(LocalDate.now())) {
+        if (pausa.getFecha().isAfter(hoy)) {
             throw new IllegalArgumentException(
                     "No se pueden modificar pausas en fechas futuras");
         }
@@ -218,7 +234,7 @@ public class PausaService {
         // La fecha a validar es la de la pausa cargada de BD.
         // ADMIN puede modificar pausas de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && pausa.getFecha().isBefore(LocalDate.now())) {
+                && pausa.getFecha().isBefore(hoy)) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
