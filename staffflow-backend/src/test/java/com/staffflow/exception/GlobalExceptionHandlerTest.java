@@ -27,7 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * excepciones, no la seguridad).
  *
  * Casos criticos cubiertos:
- *   - IllegalStateException         → 404 (recurso no encontrado)
+ *   - IllegalStateException         → 500 (manejador especifico eliminado en ISE-01;
+ *                                          cae al generico — ISE se reserva para
+ *                                          fallos internos genuinos como iText7)
  *   - EntityNotFoundException       → 404 (fix del bug E52 — PIN invalido 500 → 404)
  *   - ConflictException             → 409 (unicidad de dominio)
  *   - PinBloqueadoException         → 423 (bloqueo terminal RNF-S05)
@@ -62,18 +64,25 @@ class GlobalExceptionHandlerTest {
     }
 
     // ---------------------------------------------------------------
-    // 404 NOT FOUND
+    // 500 INTERNAL SERVER ERROR — IllegalStateException
     // ---------------------------------------------------------------
 
     @Test
-    @DisplayName("IllegalStateException → 404 (recurso no encontrado)")
-    void illegalStateException_devuelve404() throws Exception {
+    @DisplayName("IllegalStateException → 500 (manejador especifico eliminado en ISE-01)")
+    void illegalStateException_devuelve500() throws Exception {
+        // Tras ISE-01 (SDD backend-hardening-high-issues) el handler de
+        // IllegalStateException fue eliminado: las ISE intencionales (PdfService)
+        // caen al handler generico → 500 con mensaje opaco al cliente.
         mockMvc.perform(get("/test/illegal-state")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Recurso no encontrado de prueba"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Error interno del servidor"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
+
+    // ---------------------------------------------------------------
+    // 404 NOT FOUND
+    // ---------------------------------------------------------------
 
     @Test
     @DisplayName("EntityNotFoundException → 404 (fix: E52 PIN invalido ya no devuelve 500)")
