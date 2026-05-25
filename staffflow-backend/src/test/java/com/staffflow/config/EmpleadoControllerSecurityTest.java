@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>E18 PATCH /api/v1/empleados/{id}/reactivar — {@code reactivar}</li>
  *   <li>Parte diario — {@code obtenerEstado}</li>
  *   <li>Exportación — {@code exportar}</li>
- *   <li>E65 PATCH /api/v1/empleados/{id}/pin — {@code regenerarPin}</li>
+ *   <li>E65 POST /api/v1/empleados/{id}/regenerar-pin — {@code regenerarPin}</li>
  *   <li>E68 GET /api/v1/empleados/by-usuario/{usuarioId} — {@code obtenerPorUsuarioId} (SOLO ADMIN)</li>
  * </ul>
  *

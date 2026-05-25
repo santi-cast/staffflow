@@ -30,15 +30,26 @@ import static org.mockito.Mockito.*;
 /**
  * Tests unitarios de EmpleadoService.
  *
- * Verifica la lógica de regeneración de PIN de terminal (E65):
- *   - Happy path: el PIN se genera, persiste y devuelve correctamente.
- *   - Not found: lanza NotFoundException si el empleado no existe.
- *   - Formato: el PIN devuelto es una cadena de exactamente 4 dígitos numéricos.
+ * Cubre dos bloques de comportamiento:
+ *
+ * <p><strong>Regeneración de PIN de terminal (E65):</strong>
+ * <ul>
+ *   <li>Happy path: el PIN se genera, persiste y devuelve correctamente.</li>
+ *   <li>Not found: lanza NotFoundException si el empleado no existe.</li>
+ *   <li>Formato: el PIN devuelto es una cadena de exactamente 4 dígitos numéricos.</li>
+ * </ul>
+ *
+ * <p><strong>Lectura de empleado por id (E15) — Opción A:</strong>
+ * <ul>
+ *   <li>ADMIN recibe pinTerminal, email, username y rol con valor real.</li>
+ *   <li>ENCARGADO recibe esos cuatro campos a null (filtrado por rol).</li>
+ *   <li>NotFoundException si el id no existe, independientemente del rol.</li>
+ * </ul>
  *
  * @author Santiago Castillo
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("EmpleadoService — regenerarPin (E65)")
+@DisplayName("EmpleadoService — regenerarPin (E65) y obtenerPorId (E15)")
 class EmpleadoServiceTest {
 
     @Mock private EmpleadoRepository empleadoRepository;
