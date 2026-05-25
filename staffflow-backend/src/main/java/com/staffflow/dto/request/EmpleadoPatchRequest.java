@@ -13,7 +13,9 @@ import java.time.LocalDate;
  * lleguen con valor no null (patrón PATCH).
  * usuarioId y numeroEmpleado no son modificables por este endpoint:
  * usuarioId es el vínculo permanente con Usuario y numeroEmpleado se autogenera
- * como EMP-XXX al crear el empleado. PIN se regenera aparte vía E65.
+ * como EMP-XXX al crear el empleado. PIN se regenera aparte vía E65 y la
+ * activación/desactivación va por endpoints dedicados E17 (baja) y E18
+ * (reactivar): el estado activo NO se modifica por este patch.
  * dni y fechaAlta SÍ son modificables: el ADMIN puede corregir errores de
  * registro o cambios contractuales. La unicidad del DNI se valida en el
  * servicio. fechaAlta admite valores retroactivos para corregir altas mal
@@ -67,8 +69,4 @@ public class EmpleadoPatchRequest {
     // y se valida, pero ningún endpoint de fichaje lo consume en v1.
     @Size(max = 100)
     private String codigoNfc;
-
-    // Baja lógica: activo=false desactiva al empleado sin borrar su historial
-    // No confundir con DELETE físico, que no existe.
-    private Boolean activo;
 }
