@@ -26,6 +26,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,13 +46,13 @@ import static org.mockito.Mockito.when;
  * fecha futura y restriccion del ENCARGADO. Mismo patron que
  * {@link PausaServiceTest} y {@link com.staffflow.service.scheduled.ProcesoCierreDiarioTest}.</p>
  *
- * <p>La cobertura de E24/E25/E26 se aborda en un commit posterior para
- * mantener cada PR acotado.</p>
+ * <p>Cubre los cinco endpoints publicos: E22 crear, E23 actualizar,
+ * E24 listar, E25 listarIncompletos y E26 listarPropios.</p>
  *
  * @author Santiago Castillo
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("FichajeService — crear (E22) y actualizar (E23)")
+@DisplayName("FichajeService — E22/E23/E24/E25/E26")
 class FichajeServiceTest {
 
     @Mock private FichajeRepository fichajeRepository;
@@ -522,6 +524,219 @@ class FichajeServiceTest {
             assertThat(actualizado.getHoraEntrada()).isEqualTo(HOY.atTime(8, 0));
             assertThat(actualizado.getHoraSalida()).isEqualTo(HOY.atTime(16, 0));
             assertThat(actualizado.getObservaciones()).isEqualTo("Solo cambia el motivo");
+        }
+    }
+
+    // =================================================================
+    // E24 — listar()
+    // =================================================================
+
+    @Nested
+    @DisplayName("listar (E24) — listado con filtros opcionales")
+    class ListarTests {
+
+        @Test
+        @DisplayName("sin filtros → propaga nulos al repositorio y mapea a DTO")
+        void sinFiltrosDelegaConNulos() {
+            Fichaje f = nuevoFichajePersistido(1L, HOY);
+            f.setHoraEntrada(HOY.atTime(9, 0));
+            f.setHoraSalida(HOY.atTime(17, 0));
+            f.setJornadaEfectivaMinutos(480);
+            when(fichajeRepository.findByFiltros(null, null, null, null))
+                    .thenReturn(List.of(f));
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listar(null, null, null, null);
+
+            assertThat(resultado).hasSize(1);
+            FichajeResponse dto = resultado.get(0);
+            assertThat(dto.getId()).isEqualTo(1L);
+            assertThat(dto.getEmpleadoId()).isEqualTo(10L);
+            assertThat(dto.getFecha()).isEqualTo(HOY);
+            assertThat(dto.getJornadaEfectivaMinutos()).isEqualTo(480);
+            assertThat(dto.getNombreCompleto()).isEqualTo("Carlos Lopez Garcia");
+            verify(fichajeRepository).findByFiltros(null, null, null, null);
+        }
+
+        @Test
+        @DisplayName("filtros combinados → propaga argumentos al repositorio")
+        void filtrosCombinadosSePropagan() {
+            when(fichajeRepository.findByFiltros(10L, AYER, HOY, TipoFichaje.NORMAL))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listar(10L, AYER, HOY, TipoFichaje.NORMAL);
+
+            assertThat(resultado).isEmpty();
+            verify(fichajeRepository).findByFiltros(10L, AYER, HOY, TipoFichaje.NORMAL);
+        }
+
+        @Test
+        @DisplayName("repositorio vacio → lista vacia sin error")
+        void resultadoVacio() {
+            when(fichajeRepository.findByFiltros(null, null, null, null))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listar(null, null, null, null);
+
+            assertThat(resultado).isEmpty();
+        }
+    }
+
+    // =================================================================
+    // E25 — listarIncompletos()
+    // =================================================================
+
+    @Nested
+    @DisplayName("listarIncompletos (E25) — fichajes con entrada sin salida")
+    class ListarIncompletosTests {
+
+        @Test
+        @DisplayName("fecha null → consulta hoy segun el Clock inyectado")
+        void fechaNullUsaHoyDelClock() {
+            // Construye un fichaje incompleto: con entrada, sin salida.
+            Fichaje f = nuevoFichajePersistido(1L, HOY);
+            f.setHoraEntrada(HOY.atTime(9, 0));
+            f.setHoraSalida(null);
+
+            when(fichajeRepository.findByFechaAndHoraSalidaIsNull(HOY))
+                    .thenReturn(List.of(f));
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listarIncompletos(null);
+
+            assertThat(resultado).hasSize(1);
+            assertThat(resultado.get(0).getHoraSalida()).isNull();
+            // El service debe haber resuelto HOY (=2026-01-15) desde Clock,
+            // no haber consultado por null ni por una fecha distinta.
+            verify(fichajeRepository).findByFechaAndHoraSalidaIsNull(HOY);
+        }
+
+        @Test
+        @DisplayName("fecha dada → consulta esa fecha exacta")
+        void fechaDadaSeRespeta() {
+            when(fichajeRepository.findByFechaAndHoraSalidaIsNull(AYER))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listarIncompletos(AYER);
+
+            assertThat(resultado).isEmpty();
+            verify(fichajeRepository).findByFechaAndHoraSalidaIsNull(AYER);
+        }
+
+        @Test
+        @DisplayName("repositorio vacio → lista vacia sin error")
+        void resultadoVacio() {
+            when(fichajeRepository.findByFechaAndHoraSalidaIsNull(HOY))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado = service.listarIncompletos(null);
+
+            assertThat(resultado).isEmpty();
+        }
+    }
+
+    // =================================================================
+    // E26 — listarPropios()
+    // =================================================================
+
+    @Nested
+    @DisplayName("listarPropios (E26) — fichajes del empleado autenticado")
+    class ListarPropiosTests {
+
+        @Test
+        @DisplayName("usuario inexistente → EntityNotFoundException (404)")
+        void usuarioInexistenteLanzaNotFound() {
+            when(usuarioRepository.findByUsername("fantasma")).thenReturn(Optional.empty());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+
+            assertThatThrownBy(() ->
+                    service.listarPropios("fantasma", null, null, null))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("Usuario autenticado no encontrado");
+
+            // No debe llegar al repositorio de empleados ni al de fichajes.
+            verify(empleadoRepository, never()).findByUsuarioId(any());
+            verify(fichajeRepository, never()).findByFiltros(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("usuario sin perfil de empleado → EntityNotFoundException (404)")
+        void usuarioSinPerfilEmpleadoLanzaNotFound() {
+            when(usuarioRepository.findByUsername("admin"))
+                    .thenReturn(Optional.of(usuarioAdmin));
+            when(empleadoRepository.findByUsuarioId(1L)).thenReturn(Optional.empty());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+
+            assertThatThrownBy(() ->
+                    service.listarPropios("admin", null, null, null))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("no tiene perfil de empleado");
+
+            verify(fichajeRepository, never()).findByFiltros(any(), any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("flujo normal sin filtros → filtra por empleadoId del usuario")
+        void flujoNormalFiltraPorEmpleadoId() {
+            // usuarioEncargado.id = 2, asociado a empleado.id = 10.
+            Fichaje f = nuevoFichajePersistido(1L, HOY);
+            f.setHoraEntrada(HOY.atTime(9, 0));
+            f.setHoraSalida(HOY.atTime(17, 0));
+
+            when(usuarioRepository.findByUsername("encargado"))
+                    .thenReturn(Optional.of(usuarioEncargado));
+            when(empleadoRepository.findByUsuarioId(2L)).thenReturn(Optional.of(empleado));
+            when(fichajeRepository.findByFiltros(10L, null, null, null))
+                    .thenReturn(List.of(f));
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado =
+                    service.listarPropios("encargado", null, null, null);
+
+            assertThat(resultado).hasSize(1);
+            assertThat(resultado.get(0).getEmpleadoId()).isEqualTo(10L);
+            // Verifica que el filtro empleadoId es el del empleado resuelto,
+            // no el id del usuario.
+            verify(fichajeRepository).findByFiltros(10L, null, null, null);
+        }
+
+        @Test
+        @DisplayName("filtros desde/hasta/tipo → se propagan al repositorio")
+        void filtrosOpcionalesSePropagan() {
+            when(usuarioRepository.findByUsername("encargado"))
+                    .thenReturn(Optional.of(usuarioEncargado));
+            when(empleadoRepository.findByUsuarioId(2L)).thenReturn(Optional.of(empleado));
+            when(fichajeRepository.findByFiltros(10L, AYER, HOY, TipoFichaje.VACACIONES))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado =
+                    service.listarPropios("encargado", AYER, HOY, TipoFichaje.VACACIONES);
+
+            assertThat(resultado).isEmpty();
+            verify(fichajeRepository).findByFiltros(10L, AYER, HOY, TipoFichaje.VACACIONES);
+        }
+
+        @Test
+        @DisplayName("repositorio vacio → lista vacia sin error")
+        void resultadoVacio() {
+            when(usuarioRepository.findByUsername("encargado"))
+                    .thenReturn(Optional.of(usuarioEncargado));
+            when(empleadoRepository.findByUsuarioId(2L)).thenReturn(Optional.of(empleado));
+            when(fichajeRepository.findByFiltros(10L, null, null, null))
+                    .thenReturn(Collections.emptyList());
+
+            FichajeService service = nuevoServiceConFecha(HOY);
+            List<FichajeResponse> resultado =
+                    service.listarPropios("encargado", null, null, null);
+
+            assertThat(resultado).isEmpty();
         }
     }
 
