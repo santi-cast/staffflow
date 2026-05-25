@@ -2,6 +2,7 @@ package com.staffflow.service;
 
 import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.enums.Rol;
+import com.staffflow.domain.repository.EmpleadoRepository;
 import com.staffflow.domain.repository.UsuarioRepository;
 import com.staffflow.dto.request.AdminPasswordResetRequest;
 import com.staffflow.dto.request.UsuarioPatchRequest;
@@ -51,6 +52,7 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final EmpleadoRepository empleadoRepository;
     private final PasswordEncoder passwordEncoder;
 
     // E08 — POST /api/v1/usuarios
@@ -180,12 +182,20 @@ public class UsuarioService {
      * Valida unicidad de email excluyendo al propio usuario que se está
      * editando (puede conservar su propio valor sin conflicto).
      *
+     * Guard de transición de rol: si se envía un rol distinto al actual, se
+     * valida la invariante rol↔empleado antes de aplicar el cambio:
+     *   - ADMIN puro (sin empleado asociado) no puede cambiar de rol.
+     *   - Usuario con empleado asociado (ENCARGADO o EMPLEADO) no puede
+     *     ser promovido a ADMIN, ya que ADMIN nunca tiene perfil de empleado.
+     *   - El cambio ENCARGADO ↔ EMPLEADO (ambos con empleado) está permitido.
+     *
      * Códigos HTTP producidos:
      *   200 OK          → usuario actualizado correctamente
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → usuario con el id indicado no existe
      *   409 Conflict    → email ya existe en otro usuario
+     *   409 Conflict    → transición de rol prohibida (guard rol↔empleado)
      *
      * @param id      ID del usuario a actualizar
      * @param request campos a actualizar (email, rol — ambos opcionales)
@@ -206,7 +216,21 @@ public class UsuarioService {
             usuario.setEmail(request.getEmail());
         }
 
-        if (request.getRol() != null) {
+        if (request.getRol() != null && !request.getRol().equals(usuario.getRol())) {
+            boolean tieneEmpleado = empleadoRepository.existsByUsuarioId(id);
+            if (!tieneEmpleado) {
+                // Usuario ADMIN puro: no puede cambiar de rol
+                throw new ConflictException(
+                        "Un usuario ADMIN no puede cambiar de rol");
+            }
+            if (Rol.ADMIN.equals(request.getRol())) {
+                // Usuario con empleado asociado: no puede ser promovido a ADMIN
+                throw new ConflictException(
+                        "Un usuario con empleado asociado no puede ser promovido a ADMIN");
+            }
+            usuario.setRol(request.getRol());
+        } else if (request.getRol() != null) {
+            // El rol nuevo es igual al actual — asignación sin efecto pero válida
             usuario.setRol(request.getRol());
         }
 

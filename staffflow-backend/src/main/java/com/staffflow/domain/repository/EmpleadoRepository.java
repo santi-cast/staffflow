@@ -219,6 +219,18 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     List<Empleado> buscarPorTexto(@Param("termino") String termino);
 
     /**
+     * Comprueba si existe un perfil de empleado vinculado al usuario indicado.
+     *
+     * <p>Usado en UsuarioService.actualizar() (E11) para el guard de transición
+     * de rol: un usuario SIN empleado asociado es ADMIN puro y no puede cambiar
+     * de rol; un usuario CON empleado asociado no puede ser promovido a ADMIN.</p>
+     *
+     * @param usuarioId ID del usuario cuyo perfil de empleado se verifica
+     * @return true si existe un empleado vinculado a ese usuario
+     */
+    boolean existsByUsuarioId(Long usuarioId);
+
+    /**
      * Busca el perfil de empleado a partir del username de su usuario vinculado.
      *
      * @param username username del usuario vinculado al empleado

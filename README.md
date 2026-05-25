@@ -187,7 +187,7 @@ Convenciones de la tabla:
 | E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username ya existe (carrera entre dos altas simultáneas); P29 reacciona regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66) | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66). HTTP 409 si la transición de rol viola la invariante rol↔empleado (ADMIN puro no puede cambiar de rol; usuario con empleado asociado no puede ser promovido a ADMIN) | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
 | E66 | PATCH /{id}/password | ADMIN | Restablece la contraseña de un usuario directamente (caso de uso helpdesk). Sin envío de correo. Mínimo 8 caracteres | P29 |
 | E67 | PATCH /{id}/reactivar | ADMIN | Reactiva un usuario previamente desactivado (activo = true). Simétrico a E12 (desactivar) y a E18 (reactivar empleado). HTTP 409 si el usuario ya estaba activo | P29 |
