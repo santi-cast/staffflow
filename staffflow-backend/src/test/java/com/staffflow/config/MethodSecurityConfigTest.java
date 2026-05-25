@@ -134,8 +134,9 @@ class MethodSecurityConfigTest {
     }
 
     // -----------------------------------------------------------------------
-    // Triangulación: ningún @PreAuthorize con hasRole('EMPLEADO') solo en los 7 controllers
-    // (busca la expresion incorrecta — debe retornar false después de los cambios)
+    // Triangulación: ningún @PreAuthorize con hasRole('EMPLEADO') solo en los 7
+    // controllers /me — la expresion correcta es hasAnyRole('EMPLEADO','ENCARGADO').
+    // Este test busca el patron INCORRECTO y exige conteo cero.
     // -----------------------------------------------------------------------
 
     @Test
