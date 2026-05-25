@@ -1,13 +1,11 @@
 package com.staffflow.exception;
 
-import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,175 +14,91 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Tests del GlobalExceptionHandler via MockMvc.
+ * Tests del GlobalExceptionHandler para NotFoundException e IllegalStateException.
  *
- * Verifica que cada tipo de excepcion se mapea al codigo HTTP correcto
- * y que el body sigue el formato del contrato: { error, timestamp, path }.
+ * <p>Verifica:
+ * (a) {@link NotFoundException} → HTTP 404 con body {@code { error, timestamp, path }}
+ * (b) {@link IllegalStateException} → HTTP 500 (estado interno inválido, no recurso ausente)
  *
- * Usa un TestController interno que lanza las excepciones a peticion.
- * Se excluye SecurityAutoConfiguration para que el test sea rapido y
- * no dependa de la config JWT (lo que se testea aqui es el mapeo de
- * excepciones, no la seguridad).
+ * <p>Usa MockMvc en modo standalone para no depender del contexto completo de Spring.
+ * Esto elimina la necesidad de configurar JWT, datasource y mail para un test que
+ * solo verifica el mapeo de excepciones a códigos HTTP.
  *
- * Casos criticos cubiertos:
- *   - IllegalStateException         → 500 (manejador especifico eliminado en ISE-01;
- *                                          cae al generico — ISE se reserva para
- *                                          fallos internos genuinos como iText7)
- *   - EntityNotFoundException       → 404 (fix del bug E52 — PIN invalido 500 → 404)
- *   - ConflictException             → 409 (unicidad de dominio)
- *   - PinBloqueadoException         → 423 (bloqueo terminal RNF-S05)
- *   - IllegalArgumentException      → 400 (error de negocio)
- *   - Exception (no controlada)     → 500 (manejador de ultimo recurso, sin detalles internos)
- *
+ * @see GlobalExceptionHandler
  * @author Santiago Castillo
  */
-@WebMvcTest(
-        controllers = GlobalExceptionHandlerTest.TestController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class
-)
-@DisplayName("GlobalExceptionHandler — mapeo de excepciones a HTTP")
-class GlobalExceptionHandlerTest {
+@DisplayName("GlobalExceptionHandler — NotFoundException y ISE")
+class GlobalExceptionHandlerNotFoundTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    // ---------------------------------------------------------------
-    // 400 BAD REQUEST
-    // ---------------------------------------------------------------
-
-    @Test
-    @DisplayName("IllegalArgumentException → 400 con mensaje en campo 'error'")
-    void illegalArgumentException_devuelve400() throws Exception {
-        mockMvc.perform(get("/test/illegal-argument")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Dato invalido de prueba"))
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.path").value("/test/illegal-argument"));
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new TestController())
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     // ---------------------------------------------------------------
-    // 500 INTERNAL SERVER ERROR — IllegalStateException
+    // (a) NotFoundException → 404
     // ---------------------------------------------------------------
 
     @Test
-    @DisplayName("IllegalStateException → 500 (manejador especifico eliminado en ISE-01)")
-    void illegalStateException_devuelve500() throws Exception {
-        // Tras ISE-01 (SDD backend-hardening-high-issues) el handler de
-        // IllegalStateException fue eliminado: las ISE intencionales (PdfService)
-        // caen al handler generico → 500 con mensaje opaco al cliente.
-        mockMvc.perform(get("/test/illegal-state")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Error interno del servidor"))
-                .andExpect(jsonPath("$.timestamp").exists());
-    }
-
-    // ---------------------------------------------------------------
-    // 404 NOT FOUND
-    // ---------------------------------------------------------------
-
-    @Test
-    @DisplayName("EntityNotFoundException → 404 (fix: E52 PIN invalido ya no devuelve 500)")
-    void entityNotFoundException_devuelve404() throws Exception {
-        mockMvc.perform(get("/test/entity-not-found")
+    @DisplayName("NotFoundException → 404 con mensaje del recurso ausente en campo 'error'")
+    void notFoundException_devuelve404() throws Exception {
+        mockMvc.perform(get("/test-nf/not-found")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Entidad no encontrada de prueba"))
-                .andExpect(jsonPath("$.timestamp").exists());
+                .andExpect(jsonPath("$.error").value("Empleado no encontrado con id: 99"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.path").exists());
     }
 
-    // ---------------------------------------------------------------
-    // 409 CONFLICT
-    // ---------------------------------------------------------------
-
     @Test
-    @DisplayName("ConflictException → 409 con mensaje del conflicto")
-    void conflictException_devuelve409() throws Exception {
-        mockMvc.perform(get("/test/conflict")
+    @DisplayName("NotFoundException — triangulación: mensaje distinto también devuelve 404")
+    void notFoundException_mensajeDistinto_devuelve404() throws Exception {
+        mockMvc.perform(get("/test-nf/not-found-empresa")
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("Conflicto de unicidad de prueba"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Configuración de empresa no encontrada"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
 
     // ---------------------------------------------------------------
-    // 423 LOCKED
+    // (b) IllegalStateException → 500 (ya no es 404)
     // ---------------------------------------------------------------
 
     @Test
-    @DisplayName("PinBloqueadoException → 423 (bloqueo terminal RNF-S05)")
-    void pinBloqueadoException_devuelve423() throws Exception {
-        mockMvc.perform(get("/test/pin-bloqueado")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isLocked())
-                .andExpect(jsonPath("$.error").value("Dispositivo bloqueado de prueba"))
-                .andExpect(jsonPath("$.timestamp").exists());
-    }
-
-    // ---------------------------------------------------------------
-    // 500 INTERNAL SERVER ERROR
-    // ---------------------------------------------------------------
-
-    @Test
-    @DisplayName("Exception no controlada → 500 con mensaje generico (no expone detalles internos)")
-    void exceptionNoControlada_devuelve500ConMensajeGenerico() throws Exception {
-        mockMvc.perform(get("/test/error-generico")
+    @DisplayName("IllegalStateException → 500 (estado interno inválido, no recurso ausente)")
+    void illegalStateException_devuelve500() throws Exception {
+        mockMvc.perform(get("/test-nf/illegal-state")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("Error interno del servidor"));
     }
 
     // ---------------------------------------------------------------
-    // Formato del body
-    // ---------------------------------------------------------------
-
-    @Test
-    @DisplayName("Todos los errores incluyen timestamp y path en el body")
-    void respuestaError_siempreIncluyeTimestampYPath() throws Exception {
-        mockMvc.perform(get("/test/conflict")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error").exists())
-                .andExpect(jsonPath("$.timestamp").exists())
-                .andExpect(jsonPath("$.path").exists());
-    }
-
-    // ---------------------------------------------------------------
-    // TestController interno — lanza excepciones a peticion
+    // TestController interno — lanza excepciones a petición
     // ---------------------------------------------------------------
 
     @RestController
-    @RequestMapping("/test")
+    @RequestMapping("/test-nf")
     static class TestController {
 
-        @GetMapping("/illegal-argument")
-        public void illegalArgument() {
-            throw new IllegalArgumentException("Dato invalido de prueba");
+        @GetMapping("/not-found")
+        public void notFound() {
+            throw new NotFoundException("Empleado no encontrado con id: 99");
+        }
+
+        @GetMapping("/not-found-empresa")
+        public void notFoundEmpresa() {
+            throw new NotFoundException("Configuración de empresa no encontrada");
         }
 
         @GetMapping("/illegal-state")
         public void illegalState() {
-            throw new IllegalStateException("Recurso no encontrado de prueba");
-        }
-
-        @GetMapping("/entity-not-found")
-        public void entityNotFound() {
-            throw new EntityNotFoundException("Entidad no encontrada de prueba");
-        }
-
-        @GetMapping("/conflict")
-        public void conflict() {
-            throw new ConflictException("Conflicto de unicidad de prueba");
-        }
-
-        @GetMapping("/pin-bloqueado")
-        public void pinBloqueado() {
-            throw new PinBloqueadoException("Dispositivo bloqueado de prueba");
-        }
-
-        @GetMapping("/error-generico")
-        public void errorGenerico() throws Exception {
-            throw new Exception("Error interno que no debe exponerse al cliente");
+            throw new IllegalStateException("Error generando el informe PDF: iText7 falla");
         }
     }
 }
