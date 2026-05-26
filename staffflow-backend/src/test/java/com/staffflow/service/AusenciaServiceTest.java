@@ -2,6 +2,7 @@ package com.staffflow.service;
 
 import com.staffflow.domain.entity.Empleado;
 import com.staffflow.domain.entity.PlanificacionAusencia;
+import com.staffflow.domain.entity.SaldoAnual;
 import com.staffflow.domain.entity.Usuario;
 import com.staffflow.domain.enums.Rol;
 import com.staffflow.domain.enums.TipoAusencia;
@@ -13,6 +14,7 @@ import com.staffflow.dto.request.AusenciaPatchRequest;
 import com.staffflow.dto.request.AusenciaRangoRequest;
 import com.staffflow.dto.request.AusenciaRequest;
 import com.staffflow.dto.response.AusenciaResponse;
+import com.staffflow.dto.response.PlanificacionVacApResponse;
 import com.staffflow.exception.ConflictException;
 import com.staffflow.exception.NotFoundException;
 import com.staffflow.exception.RangoConflictException;
@@ -43,23 +45,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests unitarios de AusenciaService — cubre las ramas dependientes de
- * fecha y rol de los endpoints CRUD del servicio (E30, E31, E32, E33, E63).
+ * Tests unitarios de AusenciaService — cubre los siete endpoints publicos
+ * del servicio (E30, E31, E32, E33, E34, E63, E64).
  *
  * <p>Estrategia: Mockito puro sin contexto Spring, inyectando un
  * {@code Clock.fixed(...)} para volver deterministas las comprobaciones
- * de fecha y restriccion del ENCARGADO. Mismo patron que
+ * de fecha y restriccion del ENCARGADO, ademas de la rama
+ * anioFuturoSinCierre de E64. Mismo patron que
  * {@link FichajeServiceTest}, {@link PausaServiceTest} y
  * {@link com.staffflow.service.scheduled.ProcesoCierreDiarioTest}.</p>
- *
- * <p>Los tests de lectura E34 (listarMias) y E64 (getPlanificacionVacAp)
- * viven en un commit posterior para mantener este archivo enfocado en
- * el CRUD.</p>
  *
  * @author Santiago Castillo
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AusenciaService — E30/E31/E32/E33/E63 (CRUD)")
+@DisplayName("AusenciaService — E30/E31/E32/E33/E34/E63/E64")
 class AusenciaServiceTest {
 
     @Mock private PlanificacionAusenciaRepository ausenciaRepository;
@@ -654,6 +653,208 @@ class AusenciaServiceTest {
     }
 
     // =================================================================
+    // E34 — listarMias()
+    // =================================================================
+
+    @Nested
+    @DisplayName("listarMias (E34) — ausencias propias del empleado autenticado")
+    class ListarMiasTests {
+
+        @Test
+        @DisplayName("usuario sin perfil de empleado → NotFoundException (404)")
+        void usuarioSinPerfilLanzaNotFound() {
+            when(empleadoRepository.findByUsuarioUsername("empleado1"))
+                    .thenReturn(Optional.empty());
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+
+            assertThatThrownBy(() ->
+                    service.listarMias("empleado1", null, null))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining("Perfil de empleado no encontrado");
+        }
+
+        @Test
+        @DisplayName("sin filtros → resuelve empleadoId y delega al repo con nulls")
+        void sinFiltrosDelegaConNulls() {
+            when(empleadoRepository.findByUsuarioUsername("empleado1"))
+                    .thenReturn(Optional.of(empleado));
+            when(ausenciaRepository.findByEmpleadoIdAndRango(10L, null, null))
+                    .thenReturn(Collections.emptyList());
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+            List<AusenciaResponse> resultado =
+                    service.listarMias("empleado1", null, null);
+
+            assertThat(resultado).isEmpty();
+            verify(ausenciaRepository).findByEmpleadoIdAndRango(10L, null, null);
+        }
+
+        @Test
+        @DisplayName("con rango [desde, hasta] → mapea cada entidad y conserva el orden")
+        void conRangoMapeaResultados() {
+            PlanificacionAusencia a1 = nuevaAusenciaPersistida(1L, HOY, false);
+            PlanificacionAusencia a2 = nuevaAusenciaPersistida(2L, MANANA, false);
+
+            when(empleadoRepository.findByUsuarioUsername("empleado1"))
+                    .thenReturn(Optional.of(empleado));
+            when(ausenciaRepository.findByEmpleadoIdAndRango(10L, HOY, MANANA))
+                    .thenReturn(List.of(a1, a2));
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+            List<AusenciaResponse> resultado =
+                    service.listarMias("empleado1", HOY, MANANA);
+
+            assertThat(resultado)
+                    .extracting(AusenciaResponse::getId)
+                    .containsExactly(1L, 2L);
+            assertThat(resultado)
+                    .extracting(AusenciaResponse::getFecha)
+                    .containsExactly(HOY, MANANA);
+        }
+    }
+
+    // =================================================================
+    // E64 — getPlanificacionVacAp()
+    // =================================================================
+
+    @Nested
+    @DisplayName("getPlanificacionVacAp (E64) — dias pendientes de planificar")
+    class GetPlanificacionVacApTests {
+
+        @Test
+        @DisplayName("empleado inexistente → NotFoundException (404)")
+        void empleadoInexistenteLanzaNotFound() {
+            when(empleadoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+
+            assertThatThrownBy(() ->
+                    service.getPlanificacionVacAp(99L, 2026))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining("Empleado no encontrado");
+
+            verify(saldoAnualRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("saldo existente + anio actual → anioFuturoSinCierre=false, no crea saldo")
+        void saldoExistenteAnioActualNoCreaSaldo() {
+            empleado.setDiasVacacionesAnuales(22);
+            empleado.setDiasAsuntosPropiosAnuales(3);
+
+            SaldoAnual saldo = nuevoSaldoAnual(2026, 22, 3);
+            when(empleadoRepository.findById(10L)).thenReturn(Optional.of(empleado));
+            when(saldoAnualRepository.findByEmpleadoIdAndAnio(10L, 2026))
+                    .thenReturn(Optional.of(saldo));
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    10L, TipoAusencia.VACACIONES,
+                    LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+                    .thenReturn(5);
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    10L, TipoAusencia.ASUNTO_PROPIO,
+                    LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+                    .thenReturn(1);
+
+            AusenciaService service = nuevoServiceConFecha(HOY); // HOY = 2026-01-15
+            PlanificacionVacApResponse response =
+                    service.getPlanificacionVacAp(10L, 2026);
+
+            assertThat(response.anioFuturoSinCierre()).isFalse();
+            assertThat(response.vacaciones().disponibles()).isEqualTo(22);
+            assertThat(response.vacaciones().planificados()).isEqualTo(5);
+            assertThat(response.vacaciones().pendientesPlanificar()).isEqualTo(17);
+            assertThat(response.asuntosPropios().disponibles()).isEqualTo(3);
+            assertThat(response.asuntosPropios().planificados()).isEqualTo(1);
+            assertThat(response.asuntosPropios().pendientesPlanificar()).isEqualTo(2);
+            verify(saldoAnualRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("saldo existente + anio futuro → anioFuturoSinCierre=true")
+        void saldoExistenteAnioFuturoMarcaSinCierre() {
+            empleado.setDiasVacacionesAnuales(22);
+            empleado.setDiasAsuntosPropiosAnuales(3);
+
+            SaldoAnual saldo = nuevoSaldoAnual(2027, 22, 3);
+            when(empleadoRepository.findById(10L)).thenReturn(Optional.of(empleado));
+            when(saldoAnualRepository.findByEmpleadoIdAndAnio(10L, 2027))
+                    .thenReturn(Optional.of(saldo));
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    any(), any(), any(), any()))
+                    .thenReturn(0);
+
+            AusenciaService service = nuevoServiceConFecha(HOY); // 2026 → 2027 es futuro
+            PlanificacionVacApResponse response =
+                    service.getPlanificacionVacAp(10L, 2027);
+
+            assertThat(response.anioFuturoSinCierre()).isTrue();
+            verify(saldoAnualRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("saldo inexistente → crea on-demand con derechoAnio del empleado")
+        void saldoInexistenteCreaOnDemand() {
+            empleado.setDiasVacacionesAnuales(22);
+            empleado.setDiasAsuntosPropiosAnuales(3);
+
+            when(empleadoRepository.findById(10L)).thenReturn(Optional.of(empleado));
+            when(saldoAnualRepository.findByEmpleadoIdAndAnio(10L, 2027))
+                    .thenReturn(Optional.empty());
+
+            ArgumentCaptor<SaldoAnual> captor = ArgumentCaptor.forClass(SaldoAnual.class);
+            when(saldoAnualRepository.save(captor.capture()))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    any(), any(), any(), any()))
+                    .thenReturn(0);
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+            PlanificacionVacApResponse response =
+                    service.getPlanificacionVacAp(10L, 2027);
+
+            SaldoAnual creado = captor.getValue();
+            assertThat(creado.getAnio()).isEqualTo(2027);
+            assertThat(creado.getDiasVacacionesDerechoAnio()).isEqualTo(22);
+            assertThat(creado.getDiasVacacionesDisponibles()).isEqualTo(22);
+            assertThat(creado.getDiasAsuntosPropiosDerechoAnio()).isEqualTo(3);
+            assertThat(creado.getDiasAsuntosPropiosDisponibles()).isEqualTo(3);
+            assertThat(creado.getDiasVacacionesPendientesAnioAnterior()).isZero();
+            assertThat(creado.getDiasAsuntosPropiosPendientesAnterior()).isZero();
+            assertThat(response.anioFuturoSinCierre()).isTrue();
+            assertThat(response.vacaciones().disponibles()).isEqualTo(22);
+        }
+
+        @Test
+        @DisplayName("planificados > disponibles → pendientesPlanificar = 0 (nunca negativo)")
+        void pendientesPlanificarNuncaNegativo() {
+            empleado.setDiasVacacionesAnuales(22);
+            empleado.setDiasAsuntosPropiosAnuales(3);
+
+            SaldoAnual saldo = nuevoSaldoAnual(2026, 22, 3);
+            when(empleadoRepository.findById(10L)).thenReturn(Optional.of(empleado));
+            when(saldoAnualRepository.findByEmpleadoIdAndAnio(10L, 2026))
+                    .thenReturn(Optional.of(saldo));
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    10L, TipoAusencia.VACACIONES,
+                    LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+                    .thenReturn(30); // mas que disponibles
+            when(ausenciaRepository.countPlanificadasByEmpleadoAndTipoAndRango(
+                    10L, TipoAusencia.ASUNTO_PROPIO,
+                    LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31)))
+                    .thenReturn(5);  // mas que disponibles
+
+            AusenciaService service = nuevoServiceConFecha(HOY);
+            PlanificacionVacApResponse response =
+                    service.getPlanificacionVacAp(10L, 2026);
+
+            assertThat(response.vacaciones().pendientesPlanificar()).isZero();
+            assertThat(response.asuntosPropios().pendientesPlanificar()).isZero();
+        }
+    }
+
+    // =================================================================
     // Helpers
     // =================================================================
 
@@ -698,5 +899,20 @@ class AusenciaServiceTest {
         ausencia.setObservaciones("inicial");
         ausencia.setFechaCreacion(LocalDateTime.now());
         return ausencia;
+    }
+
+    private SaldoAnual nuevoSaldoAnual(int anio, int diasVacDisponibles, int diasApDisponibles) {
+        SaldoAnual saldo = new SaldoAnual();
+        saldo.setEmpleado(empleado);
+        saldo.setAnio(anio);
+        saldo.setDiasVacacionesDerechoAnio(diasVacDisponibles);
+        saldo.setDiasVacacionesPendientesAnioAnterior(0);
+        saldo.setDiasVacacionesConsumidos(0);
+        saldo.setDiasVacacionesDisponibles(diasVacDisponibles);
+        saldo.setDiasAsuntosPropiosDerechoAnio(diasApDisponibles);
+        saldo.setDiasAsuntosPropiosPendientesAnterior(0);
+        saldo.setDiasAsuntosPropiosConsumidos(0);
+        saldo.setDiasAsuntosPropiosDisponibles(diasApDisponibles);
+        return saldo;
     }
 }
