@@ -59,12 +59,18 @@ public class PausaController {
      * no estaba disponible. horaFin es opcional: si no se proporciona,
      * la pausa queda activa (hora_fin = NULL).
      *
-     * El service verifica que no haya ya una pausa activa ese día
-     * para ese empleado (409 si la hay).
+     * Validaciones que aplica el service:
+     *   - Empleado debe existir (404 si no).
+     *   - No se permiten pausas en fechas futuras para ningún rol (400).
+     *   - ENCARGADO solo puede gestionar pausas del día actual y fechas
+     *     futuras; el pasado lo rechaza con 400. ADMIN sin restricción
+     *     de fecha.
+     *   - No puede haber otra pausa activa ese día para ese empleado
+     *     (409 si la hay).
      *
      * Códigos HTTP:
      *   201 Created → pausa creada correctamente
-     *   400         → datos inválidos (@Valid)
+     *   400         → datos inválidos (@Valid) o restricción de fecha
      *   403         → rol insuficiente
      *   404         → empleadoId no existe
      *   409         → ya hay pausa activa ese día para ese empleado
@@ -94,17 +100,23 @@ public class PausaController {
      * Cierra o modifica una pausa existente (RF-23).
      *
      * Caso A — Cerrar pausa activa: se proporciona horaFin en el request.
-     *   El service calcula duracionMinutos con Math.floor y actualiza
-     *   totalPausasMinutos en el fichaje del día (si la pausa no es
-     *   AUSENCIA_RETRIBUIDA).
+     *   El service calcula duracionMinutos con Math.floor y, si la pausa
+     *   no es AUSENCIA_RETRIBUIDA, actualiza totalPausasMinutos en el
+     *   fichaje del día y recalcula jornadaEfectivaMinutos.
      *
      * Caso B — Modificar observaciones: solo se envía observaciones.
      *
      * Observaciones obligatorias (RNF-L02).
      *
+     * Restricción de fecha (validada sobre la pausa cargada de BD):
+     *   - Pausas en fechas futuras no son modificables para ningún rol (400).
+     *   - ENCARGADO solo puede modificar pausas del día actual y fechas
+     *     futuras (400 si intenta modificar una del pasado). ADMIN sin
+     *     restricción.
+     *
      * Códigos HTTP:
      *   200 OK → pausa actualizada con duración calculada
-     *   400    → observaciones vacías
+     *   400    → observaciones vacías o restricción de fecha
      *   403    → rol insuficiente
      *   404    → pausa no encontrada
      *
@@ -128,7 +140,10 @@ public class PausaController {
     }
 
     // E55 — GET /api/v1/pausas/me
-    // RF: Pausas propias del empleado autenticado
+    // Pausas propias del empleado autenticado.
+    // Encaja conceptualmente en el bloque RF-50 a RF-54 (acceso del empleado
+    // a sus propios datos), pero el catálogo de B6 no asigna un RF específico
+    // a las pausas propias.
     // NOTA: declarado ANTES de GET / para que Spring MVC no trate
     //       "me" como parámetro de query.
 
@@ -141,6 +156,7 @@ public class PausaController {
      * Códigos HTTP:
      *   200 OK → lista de pausas propias (puede ser vacía)
      *   403    → acceso denegado (rol incorrecto)
+     *   404    → el usuario autenticado no tiene perfil de empleado
      *
      * @param desde          filtro opcional fecha inicio
      * @param hasta          filtro opcional fecha fin

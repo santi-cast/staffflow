@@ -222,7 +222,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual sobre un fichaje | P20 |
+| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. Si existe fichaje del día, su `totalPausasMinutos` se actualiza al cerrar la pausa (E28) y se recalcula `jornadaEfectivaMinutos` salvo que la pausa sea `AUSENCIA_RETRIBUIDA` | P20 |
 | E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente | P20 |
 | E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales | P16 |
 | E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON | — |
