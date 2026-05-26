@@ -24,8 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Servicio de autenticación y gestión de credenciales.
@@ -87,6 +87,19 @@ public class AuthService {
 
     /** Servicio de email: envía el correo de recuperación de contraseña (E04). */
     private final EmailService emailService;
+
+    /**
+     * Reloj inyectado para resolver la fecha y hora actuales.
+     *
+     * <p>Lo consume {@link #restablecerPassword(PasswordResetRequest)} (E05)
+     * al comparar {@code resetTokenExpiry} con el instante actual. Inyectar
+     * {@code Clock} en lugar de llamar a {@code LocalDateTime.now()}
+     * directamente permite sustituirlo por {@code Clock.fixed(...)} en los
+     * tests y hacer deterministas las ramas de token vigente y token caducado.
+     * El bean lo expone {@link com.staffflow.config.ClockConfig} con la zona
+     * {@code Europe/Madrid}.</p>
+     */
+    private final Clock clock;
 
     // E01 — POST /api/v1/auth/login
 
@@ -309,8 +322,9 @@ public class AuthService {
 
         // 2. Verificar que el token no ha caducado
         // resetTokenExpiry se guardó como ahora + 30 minutos en E04
+        // (usar el reloj inyectado para que los tests puedan fijarlo con Clock.fixed(...))
         if (usuario.getResetTokenExpiry() == null ||
-                LocalDateTime.now().isAfter(usuario.getResetTokenExpiry())) {
+                LocalDateTime.now(clock).isAfter(usuario.getResetTokenExpiry())) {
             throw new IllegalArgumentException("El token de recuperación ha caducado");
         }
 
