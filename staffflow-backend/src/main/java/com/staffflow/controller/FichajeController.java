@@ -68,9 +68,19 @@ public class FichajeController {
      * El username del autenticado se pasa al service para auditoría:
      * el service resuelve el usuarioId y lo almacena en usuario_id del fichaje.
      *
+     * Validaciones que aplica el service:
+     *   - Observaciones obligatorias (RNF-L02): 400 si llegan null o vacías.
+     *   - Empleado debe existir (404 si no).
+     *   - No se permiten fichajes en fechas futuras para ningún rol (400).
+     *   - ENCARGADO solo puede gestionar fichajes del día actual y fechas
+     *     futuras; el pasado lo rechaza con 400. ADMIN sin restricción
+     *     de fecha.
+     *   - No puede haber ya un fichaje ese día para ese empleado (409).
+     *
      * Códigos HTTP:
      *   201 Created → fichaje creado correctamente
-     *   400         → observaciones vacías o datos inválidos (@Valid)
+     *   400         → observaciones vacías, datos inválidos (@Valid)
+     *                  o restricción de fecha
      *   403         → rol insuficiente
      *   404         → empleadoId no existe
      *   409         → ya existe fichaje ese día para ese empleado
@@ -107,9 +117,15 @@ public class FichajeController {
      * Si se modifican las horas, el service recalcula jornadaEfectivaMinutos
      * usando el totalPausasMinutos ya almacenado (E23 no toca pausas).
      *
+     * Restricción de fecha (validada sobre la fecha del fichaje cargado de BD):
+     *   - Fichajes en fechas futuras no son modificables para ningún rol (400).
+     *   - ENCARGADO solo puede modificar fichajes del día actual y fechas
+     *     futuras (400 si intenta modificar uno del pasado). ADMIN sin
+     *     restricción.
+     *
      * Códigos HTTP:
      *   200 OK → fichaje modificado con jornada recalculada
-     *   400    → observaciones vacías
+     *   400    → observaciones vacías o restricción de fecha
      *   403    → rol insuficiente
      *   404    → fichaje no encontrado
      *
@@ -223,6 +239,7 @@ public class FichajeController {
      * Códigos HTTP:
      *   200 OK → lista de fichajes propios (puede ser vacía)
      *   403    → acceso denegado (rol incorrecto)
+     *   404    → el usuario autenticado no tiene perfil de empleado
      *
      * @param desde          filtro opcional fecha inicio
      * @param hasta          filtro opcional fecha fin
