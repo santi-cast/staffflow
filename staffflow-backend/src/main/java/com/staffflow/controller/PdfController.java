@@ -156,7 +156,10 @@ public class PdfController {
     }
 
     // E57 — GET /api/v1/informes/pdf/vacaciones
-    // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
+    // Informe de vacaciones y asuntos propios disfrutados, firmable.
+    // Encaja conceptualmente en el bloque RF-32 a RF-40 (informes y saldos)
+    // de B6, pero el catalogo no asigna un RF numerico individual a este
+    // endpoint: B6 reserva RF-41 a RF-44 para autenticacion (no PDF).
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados
@@ -164,7 +167,7 @@ public class PdfController {
      *
      * <p>Dos tablas con listado de fechas y total por tipo. Mismo estilo que
      * E47. Documento firmable para acreditar las vacaciones y asuntos propios
-     * del empleado en el año consultado (RD-ley 8/2019, RF-41).</p>
+     * del empleado en el año consultado (RD-ley 8/2019).</p>
      *
      * <p>El fichero se descarga con nombre:
      * informe_vacaciones_{empleadoId}_{yyyyMMdd}.pdf</p>

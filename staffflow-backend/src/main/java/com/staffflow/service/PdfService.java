@@ -316,7 +316,10 @@ public class PdfService {
     }
 
     // E57 — GET /api/v1/informes/pdf/vacaciones
-    // RF-41: informe de vacaciones y asuntos propios disfrutados, firmable
+    // Informe de vacaciones y asuntos propios disfrutados, firmable.
+    // Encaja conceptualmente en el bloque RF-32 a RF-40 (informes y saldos)
+    // de B6, pero el catalogo no asigna un RF numerico individual a este
+    // endpoint: B6 reserva RF-41 a RF-44 para autenticacion (no PDF).
 
     /**
      * Genera el PDF del informe de vacaciones y asuntos propios disfrutados
