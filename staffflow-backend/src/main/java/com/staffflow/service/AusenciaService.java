@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,14 @@ public class AusenciaService {
     private final UsuarioRepository               usuarioRepository;
     private final SaldoAnualRepository            saldoAnualRepository;
 
+    /**
+     * Reloj inyectado para obtener la fecha actual. Permite que los tests
+     * fijen un instante determinista con {@link Clock#fixed} en lugar de
+     * depender del reloj del sistema. En producción se resuelve al bean
+     * definido en {@code ClockConfig} (zona Europe/Madrid).
+     */
+    private final Clock clock;
+
     // E30 — POST /api/v1/ausencias
     // RF-25 ausencia individual | RF-26 festivo global (empleadoId null)
 
@@ -91,7 +100,7 @@ public class AusenciaService {
         // ADMIN puede planificar ausencias para cualquier fecha sin restriccion.
         // Ausencias futuras están permitidas para ambos roles (a diferencia de fichajes/pausas).
         if (usuario.getRol() == Rol.ENCARGADO
-                && request.getFecha().isBefore(LocalDate.now())) {
+                && request.getFecha().isBefore(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -166,7 +175,7 @@ public class AusenciaService {
 
         // ENCARGADO solo puede gestionar hoy y fechas futuras
         if (usuario.getRol() == Rol.ENCARGADO
-                && request.getFechaDesde().isBefore(LocalDate.now())) {
+                && request.getFechaDesde().isBefore(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -267,7 +276,7 @@ public class AusenciaService {
         // La fecha a validar es la de la ausencia cargada de BD, no del request.
         // ADMIN puede modificar ausencias de cualquier fecha sin restriccion.
         if (usuario.getRol() == Rol.ENCARGADO
-                && ausencia.getFecha().isBefore(LocalDate.now())) {
+                && ausencia.getFecha().isBefore(LocalDate.now(clock))) {
             throw new IllegalArgumentException(
                     "El ENCARGADO solo puede gestionar registros del dia actual y fechas futuras");
         }
@@ -405,7 +414,7 @@ public class AusenciaService {
 
         Optional<SaldoAnual> existente = saldoAnualRepository
                 .findByEmpleadoIdAndAnio(empleadoId, anio);
-        boolean anioFuturoSinCierre = anio > LocalDate.now().getYear();
+        boolean anioFuturoSinCierre = anio > LocalDate.now(clock).getYear();
 
         SaldoAnual saldo = existente.orElseGet(() -> {
             SaldoAnual nuevo = new SaldoAnual();
