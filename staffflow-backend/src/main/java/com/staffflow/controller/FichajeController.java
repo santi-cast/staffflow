@@ -82,7 +82,8 @@ public class FichajeController {
      *   400         → observaciones vacías, datos inválidos (@Valid)
      *                  o restricción de fecha
      *   403         → rol insuficiente
-     *   404         → empleadoId no existe
+     *   404         → empleadoId no existe o el username del JWT
+     *                  no corresponde a un usuario en BD
      *   409         → ya existe fichaje ese día para ese empleado
      *
      * @param request        datos del fichaje (validados con @Valid)
@@ -127,7 +128,8 @@ public class FichajeController {
      *   200 OK → fichaje modificado con jornada recalculada
      *   400    → observaciones vacías o restricción de fecha
      *   403    → rol insuficiente
-     *   404    → fichaje no encontrado
+     *   404    → fichaje no encontrado o el username del JWT
+     *             no corresponde a un usuario en BD
      *
      * @param id      ID del fichaje a modificar (path variable)
      * @param request campos a modificar (observaciones obligatorio, resto opcional)

@@ -212,11 +212,11 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E22 | POST / | ADMIN, ENCARGADO | Crea un fichaje manual con observaciones obligatorias | P20 |
-| E23 | PATCH /{id} | ADMIN, ENCARGADO | Modifica un fichaje existente con observaciones obligatorias | P20 |
-| E24 | GET / | ADMIN, ENCARGADO | Lista fichajes con filtros (empleado, rango de fechas, tipo) | P16 |
-| E25 | GET /incompletos | ADMIN, ENCARGADO | Lista fichajes sin hora de salida (jornadas abiertas) | — |
-| E26 | GET /me | EMPLEADO, ENCARGADO | Lista los fichajes del empleado autenticado en formato JSON | — |
+| E22 | POST / | ADMIN, ENCARGADO | Crea un fichaje manual con observaciones obligatorias (RNF-L02). ENCARGADO solo puede registrarlo hoy o en el futuro; ADMIN sin restricción de fecha. Fichajes en fecha futura prohibidos para cualquier rol. 404 si el empleado no existe o si el username del JWT no está en BD; 409 si ya existe fichaje para ese empleado en esa fecha (UNIQUE empleado+fecha) | P20 |
+| E23 | PATCH /{id} | ADMIN, ENCARGADO | Modifica un fichaje existente con observaciones obligatorias (RNF-L02). Misma restricción de fecha que E22, validada sobre la fecha del fichaje cargado de BD. Si llegan `horaEntrada` y `horaSalida`, recalcula `jornadaEfectivaMinutos` con `Math.ceil` descontando el `totalPausasMinutos` ya almacenado (E23 no toca pausas). 404 si el fichaje no existe o si el username del JWT no está en BD | P20 |
+| E24 | GET / | ADMIN, ENCARGADO | Lista fichajes con filtros opcionales y combinables: `empleadoId`, `desde`, `hasta`, `tipo`. Sin filtros devuelve todos. La query usa `JOIN FETCH` sobre `empleado` para evitar el problema N+1 | P16 |
+| E25 | GET /incompletos | ADMIN, ENCARGADO | Lista fichajes con entrada registrada y sin hora de salida (jornadas abiertas) para una fecha. Parámetro `fecha` opcional (defecto: hoy vía `Clock` inyectado). Útil para detectar al cierre del día quién olvidó fichar la salida | — |
+| E26 | GET /me | EMPLEADO, ENCARGADO | Lista los fichajes del empleado autenticado en formato JSON. Filtros opcionales `desde`, `hasta`, `tipo` con la misma lógica que E24. 404 si el usuario autenticado no tiene perfil de empleado | — |
 
 #### Pausas (`/api/v1/pausas`)
 

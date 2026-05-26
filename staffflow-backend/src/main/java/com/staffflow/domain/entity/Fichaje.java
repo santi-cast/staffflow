@@ -54,7 +54,8 @@ public class Fichaje {
     @Column(name = "total_pausas_minutos", nullable = false)
     private Integer totalPausasMinutos = 0;
 
-    // (horaSalida - horaEntrada) - totalPausasMinutos. Math.floor (beneficia al empleado).
+    // (horaSalida - horaEntrada) - totalPausasMinutos. Math.ceil sobre minutos brutos
+    // (redondeo al alza, beneficia al empleado al contabilizar la jornada).
     @Column(name = "jornada_efectiva_minutos", nullable = false)
     private Integer jornadaEfectivaMinutos = 0;
 
