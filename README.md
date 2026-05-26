@@ -275,10 +275,10 @@ Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JS
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P27 |
-| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P27 |
-| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P27 |
-| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P27 |
+| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado en un periodo (iText 7). Mismo contenido que E42 (Opción C: reutiliza datos vía InformeService) en formato firmable con espacio para firma física. 404 si el empleado no existe. Nombre del fichero: `informe_horas_{id}_{desde}_{hasta}.pdf` | P27 |
+| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas de todos los empleados activos en un periodo. Genera un PDF E45 por empleado activo y los concatena con PdfMerger; si no hay empleados activos, devuelve un PDF sin páginas. Nombre del fichero: `informe_horas_global_{desde}_{hasta}.pdf` | P27 |
+| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales. `anio` opcional (defecto: año actual). `empleadoId` opcional (lista; defecto: todos los empleados activos con saldo en ese año, ordenados por nombre); si se pasan ids sin saldo registrado se omiten silenciosamente. Si no hay saldos, devuelve un PDF de una página con mensaje informativo. Nombre del fichero: `informe_saldos_{yyyyMMdd}.pdf` | P27 |
+| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios disfrutados por un empleado en un año. `empleadoId` obligatorio. `anio` opcional (defecto: año actual). 404 si el empleado no existe. Si no hay registro de SaldoAnual para el año, los días pendientes se reportan como 0. Nombre del fichero: `informe_vacaciones_{id}_{yyyyMMdd}.pdf` | P27 |
 
 #### Terminal PIN (`/api/v1/terminal`)
 

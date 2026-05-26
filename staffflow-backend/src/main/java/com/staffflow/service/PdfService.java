@@ -79,7 +79,13 @@ import java.util.Map;
  *
  * <p>E57: genera el informe de vacaciones y asuntos propios disfrutados por un
  * empleado en un año. Dos tablas (una por tipo) con listado de fechas y total.
- * Mismo estilo que E47. Ruta base: /api/v1/informes/pdf/ausencias.</p>
+ * Mismo estilo que E47. Ruta: /api/v1/informes/pdf/vacaciones.</p>
+ *
+ * <p>Empresa: los cuatro endpoints usan obtenerEmpresa() con fallback
+ * silencioso a EmpresaResponse(1L, "StaffFlow", "", null, ...) si
+ * empresaService.obtenerEmpresa() falla. El PDF se genera igualmente
+ * para no bloquear la descarga ante un fallo transitorio de lectura
+ * de configuracion_empresa.</p>
  *
  * @author Santiago Castillo
  */
@@ -116,7 +122,7 @@ public class PdfService {
     private static final DateTimeFormatter FMT_GENERA = DateTimeFormatter.ofPattern("dd/MM/yyyy 'a las' HH:mm");
     private static final DateTimeFormatter FMT_DIA_SEM = DateTimeFormatter.ofPattern("EEE", new java.util.Locale("es", "ES"));
 
-    // E45 — GET /api/v1/informes/horas/{empleadoId}/pdf
+    // E45 — GET /api/v1/informes/pdf/horas/{empleadoId}
     // RF-38: informe de horas de un empleado, firmable
 
     /**
@@ -126,6 +132,12 @@ public class PdfService {
      * para obtener los datos ya procesados. Construye el PDF con iText 7
      * siguiendo el diseno acordado: cabecera repetida por pagina, tabla de
      * detalle, seccion de intervenciones manuales (condicional) y firma.</p>
+     *
+     * <p>Contrato de errores: lanza NotFoundException si el empleado no
+     * existe (404); lanza IllegalStateException envolviendo cualquier fallo
+     * de iText 7 durante la generacion del documento (500 via
+     * GlobalExceptionHandler; PdfService es whitelist de DEBT-05 en
+     * ServiceLayerArchitectureTest).</p>
      *
      * @param empleadoId id del empleado
      * @param desde      fecha de inicio del periodo
@@ -189,16 +201,21 @@ public class PdfService {
         }
     }
 
-    // E46 — GET /api/v1/informes/horas/pdf
+    // E46 — GET /api/v1/informes/pdf/horas
     // RF-39: informe global de horas de todos los empleados, firmable
 
     /**
      * Genera el PDF del informe global de horas de todos los empleados (E46).
      *
-     * <p>Genera un PDF E45 independiente por cada empleado activo (con su propia
-     * cabecera, paginacion "Pagina X de Y" y seccion de firma) y los concatena
-     * en un unico documento con PdfMerger. Esto permite imprimir todos los
-     * informes de una vez sin perder la paginacion individual por empleado.</p>
+     * <p>Itera empleadoRepository.findByActivo(true) y, por cada empleado,
+     * genera un PDF E45 independiente (con su propia cabecera, paginacion
+     * "Pagina X de Y" y seccion de firma) y los concatena en un unico
+     * documento con PdfMerger. Esto permite imprimir todos los informes de
+     * una vez sin perder la paginacion individual por empleado.</p>
+     *
+     * <p>Si no hay empleados activos, devuelve un PDF sin paginas (sin
+     * lanzar excepcion). Lanza IllegalStateException envolviendo cualquier
+     * fallo de iText 7 durante la generacion o la concatenacion.</p>
      *
      * @param desde fecha de inicio del periodo
      * @param hasta fecha de fin del periodo
@@ -234,7 +251,7 @@ public class PdfService {
         }
     }
 
-    // E47 — GET /api/v1/informes/saldos/pdf
+    // E47 — GET /api/v1/informes/pdf/saldos
     // RF-40: informe de saldos anuales firmable
 
     /**
@@ -243,11 +260,19 @@ public class PdfService {
      * <p>Genera un PDF independiente por cada empleado con saldo registrado
      * (cabecera de empresa, tabla de vacaciones/asuntos propios, resto de datos
      * y seccion de firma con numeracion "Pagina X de Y" propia) y los concatena
-     * en un unico documento con PdfMerger. Si no hay saldos, devuelve un PDF
-     * con mensaje informativo.</p>
+     * en un unico documento con PdfMerger.</p>
+     *
+     * <p>Resolucion del parametro empleadoIds: si es null o vacio, lista los
+     * saldos del anio filtrados a empleados activos; si trae una lista, busca
+     * cada id con findByEmpleadoIdAndAnio y omite silenciosamente los que no
+     * tengan saldo registrado para ese anio. Ambos casos se ordenan por
+     * nombre completo del empleado. Si no hay saldos resultantes, devuelve un
+     * PDF de una sola pagina con el mensaje "No hay saldos registrados para
+     * el año X". Lanza IllegalStateException envolviendo cualquier fallo de
+     * iText 7.</p>
      *
      * @param anio        año del informe
-     * @param empleadoIds lista de ids (null = todos los activos con saldo)
+     * @param empleadoIds lista de ids (null o vacia = todos los activos con saldo)
      * @return bytes del PDF concatenado
      */
     public byte[] generarPdfSaldos(Integer anio, List<Long> empleadoIds) {
@@ -333,11 +358,19 @@ public class PdfService {
      * sobreescribirNumeracionSaldos().</p>
      *
      * <p>Los fichajes se obtienen de FichajeRepository.findByFiltros() filtrando
-     * por empleadoId, rango anual y tipo (VACACIONES / ASUNTO_PROPIO).
-     * Los dias disponibles se obtienen de SaldoAnual del empleado para el año.</p>
+     * por empleadoId, rango anual (1 enero - 31 diciembre del anio) y tipo
+     * (VACACIONES / ASUNTO_PROPIO). Los dias disponibles se obtienen de
+     * SaldoAnual del empleado para ese anio; si no existe registro de saldo
+     * para el anio, los pendientes se reportan como 0 (no se lanza error).
+     * El parametro anio se asume no nulo: el controller lo defaultea al anio
+     * actual.</p>
+     *
+     * <p>Contrato de errores: lanza NotFoundException si el empleado no
+     * existe (404); lanza IllegalStateException envolviendo cualquier fallo
+     * de iText 7 (500 via GlobalExceptionHandler).</p>
      *
      * @param empleadoId id del empleado
-     * @param anio       año del informe (defecto: año actual)
+     * @param anio       año del informe (el controller defaultea al actual si null)
      * @return bytes del PDF generado
      */
     public byte[] generarPdfAusencias(Long empleadoId, Integer anio) {
