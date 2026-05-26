@@ -26,6 +26,10 @@ import java.time.ZoneId;
  *       endpoints E30 (crear) y E63 (crearRango).</li>
  *   <li>{@link com.staffflow.service.AuthService}: comparacion de
  *       resetTokenExpiry en E05 (restablecerPassword).</li>
+ *   <li>{@link com.staffflow.service.InformeService}: dia actual en
+ *       E59 (informeSemana) y E60 (informeAusenciasGlobal), y checkpoint
+ *       "ayer" del helper privado calcularSaldoHastaFecha invocado por
+ *       E59 para reutilizar el SaldoAnual del cierre nocturno.</li>
  * </ul>
  *
  * <p>Regla del proyecto: NO propagar {@code Clock} proactivamente al resto

@@ -20,11 +20,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -48,17 +49,17 @@ import static org.mockito.Mockito.when;
  *       ausencias de todos los empleados activos (ADMIN/ENCARGADO).</li>
  * </ul>
  *
- * <p><b>Estrategia sin Clock</b>: E61 y E62 no usan {@code LocalDate.now()}
- * funcionalmente (solo decorativo en cabecera "Generado el ..."). E60 SI
- * usa {@code LocalDate.now()} funcionalmente en L1722 para calcular
+ * <p><b>Estrategia con Clock fijo en 2026-01-15</b>: E61 y E62 no consumen
+ * el reloj funcionalmente (los {@code .now()} que aparecen son decorativos
+ * en la cabecera "Generado el ..."). E60 SI usa {@code LocalDate.now(clock)}
+ * funcionalmente en {@code informeAusenciasGlobal} para calcular
  * {@code esPasado}, {@code esFuturo}, {@code esSeleccionable} y las clases
- * CSS {@code td-hoy/td-futuro}. Para evitar inyectar Clock en esta sesion
- * los tests de E60 usan rangos en pasado lejano (2020) de modo que
- * {@code LocalDate.now()} (siempre &gt; 2020) garantiza que todos los dias
- * caigan en {@code esPasado=true}, dando un HTML determinista. Las ramas
- * {@code hoy/futuro/seleccionable=true} de E60 quedan sin cubrir y se
- * trataran en {@code InformeServiceSemanaTest} cuando se inyecte Clock
- * para E59, aprovechando el mismo bean.
+ * CSS {@code td-hoy/td-futuro}. El {@code Clock.fixed} del test apunta a
+ * 2026-01-15: como los rangos usados en los tests de E60 caen en pasado
+ * lejano (2020), todos los dias quedan en {@code esPasado=true} con HTML
+ * determinista. Las ramas {@code hoy/futuro/seleccionable=true} de E60 se
+ * cubriran en {@code InformeServiceSemanaTest} aprovechando el mismo bean
+ * Clock ya inyectado en {@code InformeService}.
  *
  * <p>Patron Mockito puro alineado con {@link InformeServiceHorasTest} y
  * {@link InformeServiceSaldosTest}: sin contexto de Spring, sin
@@ -80,10 +81,17 @@ class InformeServiceAusenciasTest {
     @Mock private PlanificacionAusenciaRepository planificacionRepository;
     @Mock private UsuarioRepository usuarioRepository;
 
-    @InjectMocks
+    // Clock real fijado en 2026-01-15 (no @Mock) por exigencia del constructor.
+    // E60 invoca LocalDate.now(clock) en informeAusenciasGlobal; un Mock plano
+    // tiraria NPE en clock.instant().
+    private final Clock clock = Clock.fixed(
+            LocalDate.of(2026, 1, 15).atStartOfDay(ZoneId.of("Europe/Madrid")).toInstant(),
+            ZoneId.of("Europe/Madrid"));
+
     private InformeService informeService;
 
-    // Rango en pasado lejano: garantiza esPasado=true en E60 sin depender de Clock.
+    // Rango en pasado lejano (2020): garantiza esPasado=true en E60 porque
+    // el Clock del test apunta a 2026-01-15 y 2020 < 2026.
     private static final LocalDate DESDE = LocalDate.of(2020, 6, 1);
     private static final LocalDate HASTA = LocalDate.of(2020, 6, 7);
 
@@ -92,6 +100,17 @@ class InformeServiceAusenciasTest {
 
     @BeforeEach
     void setUp() {
+        informeService = new InformeService(
+                fichajeRepository,
+                pausaRepository,
+                empleadoRepository,
+                saldoRepository,
+                saldoService,
+                empresaService,
+                planificacionRepository,
+                usuarioRepository,
+                clock);
+
         usuario = new Usuario();
         usuario.setId(10L);
         usuario.setUsername("emp.juan");

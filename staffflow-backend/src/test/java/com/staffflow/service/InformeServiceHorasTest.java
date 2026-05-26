@@ -19,12 +19,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +47,15 @@ import static org.mockito.Mockito.when;
  *   <li>E43 informeHorasGlobal: informe de horas de todos los empleados activos.</li>
  * </ul>
  *
- * <p>Service sin Clock para este bloque: los tres endpoints no invocan
- * {@code calcularSaldoHastaFecha} (unico punto con logica temporal real,
- * exclusivo de E59). Los {@code LocalDateTime.now()} que aparecen en los
- * helpers HTML son decorativos (cabecera "Generado el ...") y no afectan
- * el calculo, por lo que los tests no necesitan determinismo temporal.
+ * <p>Service con Clock inyectado (sexto service del backend con Clock), pero
+ * este bloque no lo consume funcionalmente: ninguno de los tres endpoints
+ * invoca {@code calcularSaldoHastaFecha} (helper privado de E59 con
+ * {@code LocalDate.now(clock).minusDays(1)} para el checkpoint del cierre
+ * nocturno). Los {@code LocalDateTime.now()} que aparecen en los helpers
+ * HTML son decorativos (cabecera "Generado el ...") y no afectan el calculo.
+ * Se declara un {@code Clock.fixed(2026-01-15, Europe/Madrid)} real como
+ * campo inicializado por exigencia del constructor de {@code InformeService};
+ * Mockito respeta el valor no nulo y {@code @InjectMocks} no lo sobreescribe.
  *
  * <p>Patron Mockito puro alineado con {@link AusenciaServiceTest} y
  * {@link FichajeServiceTest}: sin contexto de Spring, sin SecurityContextHolder.
@@ -70,7 +75,13 @@ class InformeServiceHorasTest {
     @Mock private PlanificacionAusenciaRepository planificacionRepository;
     @Mock private UsuarioRepository usuarioRepository;
 
-    @InjectMocks
+    // Clock real fijado (no @Mock) por exigencia del constructor. Ningun path
+    // de este bloque invoca clock.instant(); el valor solo evita NPE si en
+    // el futuro algun test cae en las ramas funcionales del service.
+    private final Clock clock = Clock.fixed(
+            LocalDate.of(2026, 1, 15).atStartOfDay(ZoneId.of("Europe/Madrid")).toInstant(),
+            ZoneId.of("Europe/Madrid"));
+
     private InformeService informeService;
 
     private Usuario usuario;
@@ -78,6 +89,17 @@ class InformeServiceHorasTest {
 
     @BeforeEach
     void setUp() {
+        informeService = new InformeService(
+                fichajeRepository,
+                pausaRepository,
+                empleadoRepository,
+                saldoRepository,
+                saldoService,
+                empresaService,
+                planificacionRepository,
+                usuarioRepository,
+                clock);
+
         usuario = new Usuario();
         usuario.setId(10L);
         usuario.setUsername("emp.juan");

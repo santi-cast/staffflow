@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -85,6 +86,7 @@ public class InformeService {
     private final EmpresaService       empresaService;
     private final PlanificacionAusenciaRepository planificacionRepository;
     private final UsuarioRepository    usuarioRepository;
+    private final Clock                clock;
 
     // Tipos excluidos siempre del informe de ausencias (NORMAL y festivos)
     private static final Set<String> TIPOS_EXCLUIDOS_AUSENCIAS = Set.of(
@@ -1392,7 +1394,7 @@ public class InformeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario no encontrado: " + username));
         Rol rol = usuario.getRol();
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(clock);
 
         // Empleados operativos en el rango (fechaAlta <= hasta), ordenados por nombre.
         List<Empleado> empleados = empleadoRepository
@@ -1719,7 +1721,7 @@ public class InformeService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Usuario no encontrado: " + username));
         Rol rol = usuario.getRol();
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = LocalDate.now(clock);
 
         // Empleados operativos en el rango (fechaAlta <= hasta), ordenados por nombre.
         List<Empleado> empleados = empleadoRepository
@@ -2305,7 +2307,7 @@ public class InformeService {
         if (hasta.isBefore(desde)) return result;
 
         int anio = desde.getYear();
-        LocalDate ayer = LocalDate.now().minusDays(1);
+        LocalDate ayer = LocalDate.now(clock).minusDays(1);
 
         // Intentar usar SaldoAnual como checkpoint
         Map<Long, BigDecimal> baseMap = new HashMap<>();
