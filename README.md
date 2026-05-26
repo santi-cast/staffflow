@@ -178,7 +178,7 @@ Convenciones de la tabla:
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
 | E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P30 |
-| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa | P30 |
+| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa (singleton id=1). Crea el registro si no existe (primera configuración del sistema) | P30 |
 
 #### Usuarios (`/api/v1/usuarios`)
 
