@@ -253,10 +253,10 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P25 |
-| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados con registro en ese año (incluye inactivos con histórico) en formato JSON | — |
-| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P25 |
-| E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
+| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas). 404 si el empleado no existe. Para el año actual, si no hay registro de saldo persistido, lo crea on-demand antes de devolverlo (find-or-create); en años pasados o futuros sin registro devuelve 404 | P25 |
+| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados con registro en ese año en formato JSON. Para el año actual, crea on-demand el saldo de cada empleado activo sin registro antes de listar (find-or-create restringido a activos); en años pasados o futuros se devuelven solo los registros ya persistidos, incluyendo empleados inactivos con histórico | — |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado. 404 si el empleado no existe. Si no existe registro de saldo para el año lo crea con los valores iniciales del contrato (find-or-create) antes de recalcular desde cero | P20, P24, P25 |
+| E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado. 404 si el usuario autenticado no tiene perfil de empleado, si el año solicitado es posterior al actual, o si es anterior a la fechaAlta del empleado. Para años válidos sin registro, lo crea on-demand antes de devolverlo (find-or-create) | P09 |
 
 #### Informes HTML (`/api/v1/informes`)
 

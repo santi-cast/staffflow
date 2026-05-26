@@ -40,9 +40,12 @@ import java.util.List;
  * desglose de planificadas frente a disponibles. Es un N+1 acotado por el
  * número de empleados consultados, aceptable para volúmenes PYME.</p>
  *
- * <p>Patron findOrCreate en E40: si no existe el registro de saldo para
- * el año solicitado se crea con los valores iniciales del contrato del
- * empleado antes de recalcular.</p>
+ * <p>Patron findOrCreate transversal al grupo: si no existe el registro
+ * de saldo para el año solicitado se crea on-demand con los valores
+ * iniciales del contrato del empleado (prorrateados desde fechaAlta si
+ * el alta es del mismo año). Aplica a E40 siempre, y a E38, E39 y E41
+ * cuando la consulta apunta al año actual. En E39 el on-demand recae
+ * solo sobre empleados activos sin registro.</p>
  *
  * <p>recalcularParaProceso() es el metodo interno usado por
  * ProcesoCierreDiario (Tarea C). Contiene toda la logica de recalculo

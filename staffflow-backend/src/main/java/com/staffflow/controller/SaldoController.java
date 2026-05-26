@@ -108,7 +108,12 @@ public class SaldoController {
      *
      * <p>Roles: ADMIN, ENCARGADO. RF-36.
      * Devuelve lista vacia si no hay saldos registrados para ese año.
-     * Incluye empleados inactivos con saldo historico valido.</p>
+     * Para el año actual, SaldoService crea on-demand el saldo de cada
+     * empleado activo sin registro antes de devolver la lista (mismo
+     * patron find-or-create que E38 y E41, restringido a activos). Para
+     * años pasados o futuros no se crean registros: solo se devuelven
+     * los ya persistidos, incluyendo empleados inactivos con saldo
+     * historico valido.</p>
      *
      * @param anio año a consultar (opcional, defecto: año actual)
      * @return lista de saldos anuales de todos los empleados con registro ese año
