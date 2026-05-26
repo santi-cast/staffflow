@@ -53,8 +53,10 @@ public class InformeController {
      * <p>Codigos HTTP:</p>
      * <ul>
      *   <li>200: HTML del informe.</li>
-     *   <li>404: si el usuario autenticado no tiene perfil de empleado
-     *   asociado (caso tipico: ENCARGADO puro sin ficha de empleado).</li>
+     *   <li>404: si el usuario autenticado no existe en BD (caso teorico,
+     *   el JWT ya valida la existencia del usuario) o si no tiene perfil
+     *   de empleado asociado (caso tipico: ENCARGADO puro sin ficha de
+     *   empleado).</li>
      * </ul>
      *
      * @param desde          fecha de inicio del periodo (?desde=yyyy-MM-dd)
@@ -165,10 +167,11 @@ public class InformeController {
      * <p>Los enlaces de edicion se generan condicionalmente segun rol y
      * fecha de cada celda:</p>
      * <ul>
-     *   <li>Fichajes y pausas: editables si la fecha no es futura y
-     *   (rol = ADMIN o fecha = hoy). ENCARGADO no puede editar pasado.</li>
-     *   <li>Ausencias planificadas: editables si rol = ADMIN o fecha
-     *   &gt;= hoy. ENCARGADO no puede editar ausencias pasadas.</li>
+     *   <li>Fichajes y pausas: ADMIN edita cualquier fecha no futura;
+     *   ENCARGADO solo edita hoy. Ninguno edita fechas futuras.</li>
+     *   <li>Ausencias planificadas: ADMIN edita cualquier fecha;
+     *   ENCARGADO edita hoy y futuro. ENCARGADO no edita ausencias
+     *   pasadas.</li>
      * </ul>
      *
      * <p>Codigos HTTP:</p>
@@ -257,7 +260,8 @@ public class InformeController {
      * Muestra ausencias ejecutadas (fichajes con tipo != NORMAL y
      * != DIA_LIBRE) y ausencias planificadas (planificacion_ausencias).
      * Incluye tambien festivos globales (planificacion con empleado=null)
-     * resaltados como columna comun. Sin columnas de saldo ni totales.</p>
+     * replicados en la celda de cada empleado el dia del festivo. Sin
+     * columnas de saldo ni totales.</p>
      *
      * <p>Los enlaces de edicion se generan condicionalmente segun rol y
      * fecha de cada celda:</p>

@@ -34,8 +34,10 @@ import java.util.stream.Collectors;
 /**
  * Servicio de informes de horas, saldos anuales y vacaciones en formato JSON o HTML.
  *
- * <p>Cubre los endpoints E42-E44 (Grupo 10) y E58-E62 (informes /me, semanal
- * y de ausencias). Devuelve datos estructurados como Map o HTML imprimible
+ * <p>Cubre los endpoints E42-E44 y E58-E60 del catalogo de
+ * /api/v1/informes. Tambien implementa la generacion HTML de los
+ * informes E61 y E62, cuyos endpoints REST viven en AusenciaController
+ * bajo /api/v1/ausencias. Devuelve datos estructurados como Map o HTML imprimible
  * según el parámetro ?formato= de la petición. El formato HTML está diseñado
  * para PrintManager + WebView en Android.</p>
  *
@@ -164,8 +166,9 @@ public class InformeService {
         BLOQUES.put("CONTROL",             List.of("CALCULADO_HASTA", "ULTIMA_MODIFICACION"));
     }
 
-    // E42 — GET /api/v1/informes/horas/{empleadoId}
-    // RF-32: informe de horas de un empleado en un período
+    // E58 — GET /api/v1/informes/me/horas
+    // Encaja en el bloque RF-50 a RF-54 (acceso del empleado a sus
+    // propios datos); B6 no asigna RF numerico individual a E58.
 
     /**
      * Informe de horas del empleado autenticado (E58).
@@ -191,6 +194,10 @@ public class InformeService {
 
         return informeHorasEmpleado(empleado.getId(), desde, hasta, "html", null);
     }
+
+    // E42 — GET /api/v1/informes/horas/{empleadoId}
+    // Encaja en el bloque RF-32 a RF-40 (informes y saldos);
+    // B6 no asigna RF numerico individual a este endpoint.
 
     /**
      * Genera el informe de horas de un empleado en un periodo (E42).
@@ -232,7 +239,8 @@ public class InformeService {
     }
 
     // E43 — GET /api/v1/informes/horas
-    // RF-33: informe global de horas de todos los empleados
+    // Encaja en el bloque RF-32 a RF-40 (informes y saldos);
+    // B6 no asigna RF numerico individual a este endpoint.
 
     /**
      * Genera el informe global de horas de todos los empleados activos (E43).
@@ -276,7 +284,8 @@ public class InformeService {
     }
 
     // E44 — GET /api/v1/informes/saldos
-    // RF-34: informe de saldos anuales (vacaciones, asuntos propios, horas)
+    // Encaja en el bloque RF-32 a RF-40 (informes y saldos);
+    // B6 no asigna RF numerico individual a este endpoint.
 
     /**
      * Genera el informe de saldos anuales por empleado (E44).
@@ -1554,13 +1563,18 @@ public class InformeService {
                     sb.append(celdaConFichaje(fichaje, pausasDia, emp.getId(), dia, puedeEditarFichajePausa));
                     int minFichaje = fichaje.getJornadaEfectivaMinutos() != null
                             ? fichaje.getJornadaEfectivaMinutos() : 0;
-                    // BAJA y PERMISO: crédito de jornada teórica para total y saldo
+                    // BAJA y PERMISO: cuentan jornada teorica solo en el
+                    // total semanal (administrativo); su contribucion al
+                    // saldo de horas es neutra (0) segun B7 §7.3.
                     if (fichaje.getTipo() == TipoFichaje.BAJA_MEDICA
                             || fichaje.getTipo() == TipoFichaje.PERMISO_RETRIBUIDO) {
                         minFichaje = emp.getJornadaDiariaMinutos();
                     }
                     totalMinutosSemana += minFichaje;
-                    // Contribución al saldo: NORMAL=(efectiva-diaria), BAJA/PERMISO=+diaria, resto=0
+                    // Contribucion al saldo (B7 §7.3): NORMAL=(efectiva-diaria);
+                    // DIA_LIBRE_COMPENSATORIO y AUSENCIA_INJUSTIFICADA=-diaria;
+                    // BAJA, PERMISO, VACACIONES, ASUNTO_PROPIO, FESTIVOS y
+                    // DIA_LIBRE=0.
                     weekSaldoMinutos += saldoContribMinutos(fichaje.getTipo(), minFichaje, emp.getJornadaDiariaMinutos());
                 } else if (ausencia != null) {
                     sb.append(celdaAusenciaPlanificada(ausencia, emp.getId(), dia, puedeEditarAusencia));
@@ -2361,11 +2375,17 @@ public class InformeService {
     }
 
     /**
-     * Contribución de un fichaje al saldo de horas (en minutos):
+     * Contribucion de un fichaje al saldo de horas (en minutos)
+     * segun la tabla canonica B7 §7.3:
      * <ul>
-     *   <li>NORMAL: efectivo − jornada diaria teórica (puede ser negativo)</li>
-     *   <li>BAJA_MEDICA / PERMISO_RETRIBUIDO: +jornada diaria teórica</li>
-     *   <li>resto (VACACIONES, ASUNTO_PROPIO, FESTIVOS, DIA_LIBRE*, AUSENCIA_*): 0</li>
+     *   <li>NORMAL: efectivo − jornada diaria teorica (puede ser negativo)</li>
+     *   <li>DIA_LIBRE_COMPENSATORIO y AUSENCIA_INJUSTIFICADA: −jornada
+     *   diaria teorica (consumen horas previamente acumuladas o
+     *   sancionan una jornada sin presentarse)</li>
+     *   <li>BAJA_MEDICA, PERMISO_RETRIBUIDO, VACACIONES, ASUNTO_PROPIO,
+     *   FESTIVO_NACIONAL, FESTIVO_LOCAL, DIA_LIBRE: 0 (neutros).
+     *   BAJA y PERMISO cuentan administrativamente como dias trabajados
+     *   pero no afectan al saldo de horas.</li>
      * </ul>
      */
     private int saldoContribMinutos(TipoFichaje tipo, int efectivoMinutos, int jornadaDiariaMinutos) {

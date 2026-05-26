@@ -264,12 +264,12 @@ Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JS
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P27 |
-| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P27 |
-| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P26, P27 |
-| E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado | P10 |
-| E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal interactiva con fichajes, pausas y ausencias | P19 |
-| E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados en un rango | P23 |
+| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe de horas trabajadas de un empleado en un rango. Dual-format JSON/HTML (`?formato=`, defecto JSON); con `?formato=html` devuelve HTML imprimible para WebView + PrintManager. Filtro opcional `?tipo=` por uno o varios `TipoFichaje` separados por coma, mas `DIA_LIBRE` y `SIN_REGISTRO`. 404 si el empleado no existe | P21, P27 |
+| E43 | GET /horas | ADMIN, ENCARGADO | Informe global de horas trabajadas de todos los empleados activos en un rango. Dual-format JSON/HTML igual que E42. Mismo filtro opcional `?tipo=`. Solo incluye empleados operativos en el rango (`fechaAlta <= hasta`) | P27 |
+| E44 | GET /saldos | ADMIN, ENCARGADO | Informe de saldos anuales de empleados. Dual-format JSON/HTML. `?anio=` opcional (defecto año actual). `?empleadoId=` lista opcional de ids (sin parametro = todos los activos). `?campos=` opcional con bloques (`DIAS_VACACIONES`, `DIAS_ASUNTOS_PROPIOS`, `RESTO_DIAS`, `HORAS`, `CONTROL`) o campos individuales. Efecto colateral find-or-create: si el año ya tiene al menos un `SaldoAnual`, completa on-demand los empleados activos sin registro via `SaldoService.recalcularParaProceso`. 404 si ningun empleado activo tiene saldo para ese año | P26, P27 |
+| E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado. HTML-only (la firma del controller no acepta `?formato=`). Delega en E42 con `formato=html`. `?desde=` y `?hasta=` obligatorios. 404 si el usuario autenticado no existe en BD o no tiene perfil de empleado (caso tipico: ENCARGADO puro sin ficha) | P10 |
+| E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal de presencia de todos los empleados activos (empleado × dia). HTML-only. Cada celda muestra fichaje, pausas y/o ausencia planificada del dia; saldo inicial al lunes y contribucion semanal al saldo en columnas dedicadas. URLs `staffflow://` permiten editar celdas desde el WebView Android: ADMIN edita cualquier fecha no futura, ENCARGADO solo hoy (fichajes/pausas); ADMIN cualquier fecha y ENCARGADO hoy y futuro (ausencias planificadas) | P19 |
+| E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados activos en un rango (empleado × dia). HTML-only. Incluye fichajes de tipo != `NORMAL` y != `DIA_LIBRE` (ausencias ejecutadas), planificaciones individuales y festivos globales (`empleado=null`) replicados en cada celda del dia del festivo. Edicion via URLs `staffflow://`: ADMIN edita fichajes de ausencia en fechas no futuras (ENCARGADO no edita fichajes desde este informe); ADMIN cualquier fecha y ENCARGADO hoy y futuro (ausencias planificadas). Selector JS multi-celda para acciones masivas | P23 |
 
 #### PDF para firmar (`/api/v1/informes/pdf`)
 
