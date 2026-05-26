@@ -26,7 +26,10 @@ import java.util.Map;
  * <p>Seguridad: ruta publica declarada en SecurityConfig como
  * permitAll(). No requiere JWT ni PIN.</p>
  *
- * <p>RF cubierto: RF-45 (comprobacion de disponibilidad del servicio).</p>
+ * <p>Endpoint tecnico de monitorizacion: no esta vinculado a ningun
+ * requisito funcional del catalogo (RF-01 a RF-54 cubren funciones
+ * de los actores ADMIN, ENCARGADO y EMPLEADO; el health check es
+ * infraestructura operativa).</p>
  *
  * @author Santiago Castillo
  */
@@ -36,7 +39,7 @@ import java.util.Map;
 public class HealthController {
 
     // E56 — GET /api/health
-    // RF-45: Comprobacion de disponibilidad del servicio
+    // Endpoint tecnico de monitorizacion (no asociado a ningun RF del catalogo)
 
     /**
      * Devuelve el estado actual del servidor (E56).
@@ -60,7 +63,7 @@ public class HealthController {
      */
     @Operation(
             summary = "Estado del servidor",
-            description = "Endpoint publico. Sin JWT. Devuelve {\"status\": \"UP\"} si el servidor esta en ejecucion (RF-45)."
+            description = "Endpoint publico. Sin JWT. Devuelve {\"status\": \"UP\"} si el servidor esta en ejecucion."
     )
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
