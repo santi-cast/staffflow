@@ -260,7 +260,7 @@ Convenciones de la tabla:
 
 #### Informes HTML (`/api/v1/informes`)
 
-Endpoints dual-format: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML".
+Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML". E58, E59 y E60 son HTML-only (la firma del controller no acepta `?formato=` y el service siempre genera HTML).
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
