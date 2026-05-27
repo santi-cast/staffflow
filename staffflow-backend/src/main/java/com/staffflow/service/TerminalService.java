@@ -45,16 +45,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   E53 GET    /api/v1/terminal/bloqueo         → hayTerminalBloqueado()
  *   E54 DELETE /api/v1/terminal/bloqueo         → desbloquearTerminal()
  *
- * Todos los endpoints son PÚBLICOS: no usan JWT. La autenticación se
- * realiza exclusivamente por PIN de 4 dígitos.
+ * El service expone 7 metodos publicos repartidos entre las dos cadenas
+ * de Spring Security:
+ *   - E48-E52 (5 endpoints publicos): viajan por `terminalFilterChain`
+ *     (Order=1). Sin JWT. Autenticacion exclusivamente por PIN de 4
+ *     digitos contra el campo `pin_terminal` de la tabla `empleados`
+ *     (indice UNIQUE, RNF-R03 P95 menor a 100 ms).
+ *   - E53-E54 (2 endpoints privados): viajan por `apiFilterChain`. Exigen
+ *     JWT con rol ADMIN o ENCARGADO. Pensados para la app de gestion.
  *
  * Bloqueo por dispositivo (RNF-S05):
  *   Los intentos fallidos de PIN se acumulan en memoria (ConcurrentHashMap).
  *   Tras 5 intentos fallidos consecutivos desde el mismo dispositivoId,
- *   el service lanza HTTP 423 hasta que se reinicia el contador.
- *   El contador se reinicia con un intento exitoso.
+ *   el service lanza HTTP 423 hasta que se reinicia el contador. El
+ *   contador se reinicia con (1) un intento de PIN exitoso desde el mismo
+ *   dispositivo (cualquier endpoint E48-E52), (2) la invocacion de
+ *   `desbloquearTerminal()` por E54 (clear global del mapa) o
+ *   (3) un reinicio del backend.
  *   Limitación documentada: el contador se pierde al reiniciar el servidor.
- *   Esta implementación es suficiente para el alcance del TFG.
+ *   Esta implementación es suficiente para el alcance del TFG; la
+ *   migracion a un campo persistente en la entidad `Empleado` esta
+ *   prevista para v2.0.
  *
  * @author Santiago Castillo
  */
