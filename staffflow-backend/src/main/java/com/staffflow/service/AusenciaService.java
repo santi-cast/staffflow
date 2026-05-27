@@ -44,10 +44,11 @@ import java.util.stream.Collectors;
  * ProcesoCierreDiario y no puede modificarse ni eliminarse.</p>
  *
  * <p>ENCARGADO solo puede gestionar ausencias del dia actual y
- * fechas futuras. La restriccion se aplica en crear() (E30) y actualizar() (E31).
- * E32 no necesita restriccion de fecha: se protege solo con procesado=false.
- * En condiciones normales, si la fecha ya paso, ProcesoCierreDiario ya
- * habra marcado procesado=true y E32 devuelve 409 automaticamente.</p>
+ * fechas futuras. La restriccion se aplica en crear() (E30), crearRango()
+ * (E63) y actualizar() (E31). E32 no necesita restriccion de fecha: se
+ * protege solo con procesado=false. En condiciones normales, si la fecha
+ * ya paso, ProcesoCierreDiario ya habra marcado procesado=true y E32
+ * devuelve 409 automaticamente.</p>
  *
  * @author Santiago Castillo
  * @see com.staffflow.domain.repository.PlanificacionAusenciaRepository
@@ -56,9 +57,34 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AusenciaService {
 
+    /**
+     * Repositorio principal del agregado planificacion_ausencias. Soporta
+     * lecturas filtradas (listar, listarMias), escrituras con UNIQUE check
+     * previo (crear, crearRango) y el unico DELETE real del sistema (eliminar).
+     */
     private final PlanificacionAusenciaRepository ausenciaRepository;
+
+    /**
+     * Repositorio de empleados. Se usa para validar empleadoId cuando no
+     * es null (E30, E63, E64) y para resolver el perfil del usuario
+     * autenticado en los endpoints /me (E34, E61).
+     */
     private final EmpleadoRepository              empleadoRepository;
+
+    /**
+     * Repositorio de usuarios. Se usa para cargar el usuario autenticado
+     * a partir del username del JWT y aplicar la restriccion de rol
+     * ENCARGADO (no puede gestionar ausencias en fechas pasadas) en E30,
+     * E31 y E63.
+     */
     private final UsuarioRepository               usuarioRepository;
+
+    /**
+     * Repositorio de saldos anuales. Se usa exclusivamente en E64
+     * (getPlanificacionVacAp) con patron find-or-create: si no existe
+     * SaldoAnual para el empleado y año consultado, se crea on-demand con
+     * derechoAnio del empleado y pendientesAnterior=0.
+     */
     private final SaldoAnualRepository            saldoAnualRepository;
 
     /**

@@ -36,7 +36,7 @@ import java.util.List;
  *   E34 GET    /api/v1/ausencias/me                    → ausencias propias          (EMPLEADO, ENCARGADO)
  *   E61 GET    /api/v1/ausencias/me/informe            → informe HTML propio        (EMPLEADO, ENCARGADO)
  *   E62 GET    /api/v1/ausencias/{empleadoId}/informe  → informe HTML por empleado  (ADMIN, ENCARGADO)
- *   E63 POST   /api/v1/ausencias/rango                 → listar ausencias por rango (ADMIN, ENCARGADO)
+ *   E63 POST   /api/v1/ausencias/rango                 → crear ausencias en rango   (ADMIN, ENCARGADO)
  *   E64 GET    /api/v1/ausencias/planificacion-vac-ap  → planificación vac. y AP    (ADMIN, ENCARGADO)
  *
  * Patrón /me: igual que FichajeController (E26).
@@ -46,7 +46,9 @@ import java.util.List;
  * Único DELETE real del sistema (E32): ejecuta SQL DELETE solo si
  * procesado=false. Si procesado=true devuelve 409 (RNF-L01).
  *
- * RF cubiertos: RF-25, RF-26, RF-27, RF-28, RF-29, RF-52.
+ * RF cubiertos: RF-25 a RF-29 (planificacion de ausencias) y RF-50 a RF-54
+ * (acceso del empleado a sus propios datos, aplicable a E34 y E61). B6 §6.1
+ * no asigna RF numerico individual a los endpoints del bloque RF-50 a RF-54.
  */
 @Tag(name = "Ausencias", description = "Planificación de ausencias y festivos")
 @RestController
@@ -106,6 +108,33 @@ public class AusenciaController {
     // E61 — GET /api/v1/ausencias/me/informe
     // Informe HTML de ausencias del empleado autenticado
 
+    /**
+     * Devuelve el informe HTML de ausencias del empleado autenticado (E61).
+     *
+     * Combina dos fuentes: planificacion_ausencias (procesado=false y
+     * procesado=true) y fichajes con tipo distinto de NORMAL. Para una
+     * misma fecha el fichaje tiene prioridad (es el dato ejecutado real).
+     * Excluye siempre los tipos NORMAL, FESTIVO_NACIONAL, FESTIVO_LOCAL
+     * y DIA_LIBRE.
+     *
+     * Params opcionales: desde, hasta (defecto 1 enero / 31 diciembre del
+     * año actual) y filtro ("TODAS" por defecto, "VACACIONES_AP" para
+     * mostrar solo VACACIONES y ASUNTO_PROPIO).
+     *
+     * Misma logica que E62 pero resolviendo el empleadoId a partir del
+     * username del JWT.
+     *
+     * Códigos HTTP:
+     *   200 OK → HTML con el informe (text/html;charset=UTF-8)
+     *   403    → rol insuficiente
+     *   404    → usuario sin perfil de empleado asociado
+     *
+     * @param desde          fecha de inicio (defecto: 1 enero del año actual)
+     * @param hasta          fecha de fin (defecto: 31 diciembre del año actual)
+     * @param filtro         "TODAS" (defecto) o "VACACIONES_AP"
+     * @param authentication objeto de seguridad para extraer el username
+     * @return 200 con HTML del informe de ausencias propio
+     */
     @Operation(summary = "Informe HTML de mis ausencias (E61)",
                description = "Genera el informe HTML de ausencias del empleado autenticado. Combina planificadas y ejecutadas.")
     @GetMapping("/me/informe")
@@ -171,15 +200,23 @@ public class AusenciaController {
     /**
      * Planifica una ausencia para cada día del rango [fechaDesde, fechaHasta] (E63).
      *
-     * Si hay conflictos (algún día ya tiene ausencia) y sobrescribir=false,
-     * devuelve 409 con la lista de fechasConflictivas en el cuerpo. Si
-     * sobrescribir=true, elimina los conflictos antes de crear el rango.
+     * Si hay conflictos (algún día ya tiene ausencia) con procesado=false y
+     * sobrescribir=false, devuelve 409 (RangoConflictException) con la lista
+     * de fechasConflictivas en el cuerpo. Si sobrescribir=true, elimina los
+     * conflictos procesado=false antes de crear el rango.
+     *
+     * Restriccion: ENCARGADO solo puede iniciar el rango con fechaDesde hoy
+     * o futura; ADMIN sin restriccion. Si algun dia del rango ya tiene
+     * procesado=true (ya materializado en fichaje), devuelve 400: no se
+     * puede sobrescribir un fichaje generado.
      *
      * Códigos HTTP:
      *   201 Created → todas las ausencias del rango creadas
-     *   400         → datos inválidos (@Valid)
+     *   400         → datos inválidos (@Valid), ENCARGADO con fechaDesde pasada,
+     *                 fechaDesde > fechaHasta, o algun dia con procesado=true
      *   403         → rol insuficiente
-     *   409         → conflicto con ausencias existentes (con fechasConflictivas)
+     *   404         → empleadoId no existe
+     *   409         → RangoConflictException con fechasConflictivas (procesado=false)
      *
      * @param request        datos del rango (empleadoId, fechaDesde, fechaHasta, tipo, sobrescribir)
      * @param authentication objeto de seguridad para auditoría
@@ -208,9 +245,14 @@ public class AusenciaController {
      * Si empleadoId es null en el body, crea un festivo global que
      * ProcesoDiario aplicará a todos los empleados activos ese día (RF-26).
      *
+     * Restriccion: ENCARGADO solo puede planificar ausencias para el dia
+     * actual y fechas futuras; ADMIN sin restriccion. La validacion se aplica
+     * sobre request.getFecha(). Si ENCARGADO envia fecha anterior a hoy se
+     * lanza IllegalArgumentException (400).
+     *
      * Códigos HTTP:
      *   201 Created → ausencia creada con procesado=false
-     *   400         → datos inválidos (@Valid)
+     *   400         → datos inválidos (@Valid) o ENCARGADO con fecha pasada
      *   403         → rol insuficiente
      *   404         → empleadoId no existe
      *   409         → ya existe ausencia ese día para ese empleado
@@ -305,9 +347,14 @@ public class AusenciaController {
      * la ausencia ya tiene un fichaje asociado y hay que modificar
      * ese fichaje directamente mediante E23.
      *
+     * Restriccion: ENCARGADO solo puede modificar ausencias cuya fecha
+     * (la de la entidad cargada de BD, no la del request) sea hoy o futura;
+     * ADMIN sin restriccion. Si la fecha de la ausencia es anterior a hoy
+     * se lanza IllegalArgumentException (400).
+     *
      * Códigos HTTP:
      *   200 OK → ausencia actualizada
-     *   400    → datos inválidos
+     *   400    → datos inválidos o ENCARGADO con fecha pasada
      *   403    → rol insuficiente
      *   404    → ausencia no encontrada
      *   409    → procesado=true, modifica el fichaje directamente

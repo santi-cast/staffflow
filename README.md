@@ -20,7 +20,7 @@ El sistema permite a una empresa gestionar el registro horario de sus empleados 
 
 - Fichaje de entrada y salida (desde app o terminal con PIN)
 - Registro y gestión de pausas durante la jornada
-- Planificación de ausencias (vacaciones, permisos, festivos nacionales y locales)
+- Planificación de ausencias (vacaciones, asuntos propios, permisos retribuidos, días libres compensatorios, festivos nacionales y locales)
 - Cálculo automático de saldos de horas y días disponibles
 - Parte diario de presencia con 6 estados posibles por empleado
 - Generación de informes operativos y PDFs firmables
@@ -231,15 +231,15 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E30 | POST / | ADMIN, ENCARGADO | Planifica una ausencia individual o festivo global (empleadoId null) | P24 |
-| E31 | PATCH /{id} | ADMIN, ENCARGADO | Modifica una ausencia planificada no procesada | P24 |
+| E30 | POST / | ADMIN, ENCARGADO | Planifica una ausencia individual o festivo global (`empleadoId` null). ENCARGADO solo puede planificar para hoy o fechas futuras; ADMIN sin restricción | P24 |
+| E31 | PATCH /{id} | ADMIN, ENCARGADO | Modifica una ausencia planificada no procesada. ENCARGADO solo puede modificar ausencias cuya fecha (la de la entidad, no la del request) sea hoy o futura; ADMIN sin restricción | P24 |
 | E32 | DELETE /{id} | ADMIN, ENCARGADO | Elimina una ausencia planificada no procesada | P24 |
-| E33 | GET / | ADMIN, ENCARGADO | Lista ausencias planificadas con filtros opcionales | P16 |
+| E33 | GET / | ADMIN, ENCARGADO | Lista ausencias planificadas con filtros opcionales: `empleadoId`, `desde`, `hasta` y `procesado`. Sin filtros devuelve todas, incluyendo festivos globales (`empleado_id = null`) | P16 |
 | E34 | GET /me | EMPLEADO, ENCARGADO | Lista las ausencias del empleado autenticado en formato JSON | — |
-| E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado | P11 |
-| E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto | P22 |
-| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada con detección de conflictos (`RangoConflictException` 409 con payload de fechas en conflicto si no se fuerza la sobrescritura) | P24 |
-| E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios | P23, P24 |
+| E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado. Params opcionales: `?desde=`, `?hasta=` (defecto: año actual completo) y `?filtro=VACACIONES_AP` (defecto `TODAS`). Combina planificaciones y fichajes; el fichaje tiene prioridad en la misma fecha | P11 |
+| E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto. Mismos params opcionales que E61 (`?desde=`, `?hasta=`, `?filtro=VACACIONES_AP`). Misma lógica que E61 resolviendo por `empleadoId` | P22 |
+| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada. ENCARGADO solo puede iniciar el rango con `fechaDesde` hoy o futura; ADMIN sin restricción. Si algún día del rango tiene `procesado=false` y `sobrescribir=false`, devuelve 409 (`RangoConflictException` con `fechasConflictivas`). Si algún día tiene `procesado=true` (ya materializado en fichaje), devuelve 400: no se puede sobrescribir un fichaje generado | P24 |
+| E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios de un empleado en un año concreto (params `empleadoId` obligatorio y `anio` opcional, defecto año actual). Si no existe `SaldoAnual` para ese año, lo crea on-demand (find-or-create). Devuelve `anioFuturoSinCierre=true` cuando el año consultado es posterior al actual | P23, P24 |
 
 #### Presencia (`/api/v1/presencia`)
 
@@ -260,7 +260,7 @@ Convenciones de la tabla:
 
 #### Informes HTML (`/api/v1/informes`)
 
-Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML". E58, E59 y E60 son HTML-only (la firma del controller no acepta `?formato=` y el service siempre genera HTML).
+Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML". E58, E59 y E60 son HTML-only (la firma del controller no acepta `?formato=` y el service siempre genera HTML). E61 y E62 (informes de ausencias, agrupados bajo `/api/v1/ausencias`) también son HTML-only por el mismo motivo.
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
