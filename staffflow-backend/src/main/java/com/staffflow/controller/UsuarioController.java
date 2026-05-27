@@ -21,8 +21,20 @@ import java.util.List;
  * Cubre los endpoints E08-E12, E66 y E67 del Grupo 3 (Gestión de Usuarios).
  * Ruta base: /api/v1/usuarios
  *
- * Todos los endpoints de este controller son exclusivos del rol ADMIN.
- * ENCARGADO y EMPLEADO reciben HTTP 403 en cualquier intento de acceso.
+ * Todos los endpoints de este controller corren bajo la cadena de filtros
+ * apiFilterChain (autenticación JWT Bearer), no bajo terminalFilterChain.
+ * Todos están protegidos con @PreAuthorize("hasRole('ADMIN')"): un cliente
+ * sin JWT recibe HTTP 401 en el filtro de autenticación antes de llegar al
+ * controller; un cliente autenticado como ENCARGADO o EMPLEADO recibe
+ * HTTP 403 al evaluar la anotación de método.
+ *
+ * Nota sobre el usuario sistema `terminal_service` (id=5, ver data.sql):
+ * es un usuario técnico, autor de los fichajes generados por el proceso
+ * nocturno ProcesoCierreDiario, nunca pensado para login. La API de
+ * gestión actual lo trata como un usuario regular: E10, E11, E12, E66 y
+ * E67 lo aceptan por id sin guard especial. Una desactivación accidental
+ * vía E12 dejaría sin autor técnico al proceso nocturno. Pendiente añadir
+ * protección explícita (registrada en MEJORAS_V2 como M-042).
  *
  * Responsabilidad única (SRP, decisión D del documento de endpoints):
  *   - Recibe la petición HTTP y extrae parámetros.
@@ -31,7 +43,9 @@ import java.util.List;
  *   - Devuelve la respuesta con el código HTTP correcto.
  *   - Sin lógica de negocio en ningún método (RNF-M01).
  *
- * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07, RF-08.
+ * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07. Los endpoints E66 y
+ * E67 son post-catálogo: encajan en el bloque RF-03 a RF-07 (Gestión de
+ * usuarios) pero B6 no asigna RF numérico individual.
  */
 @RestController
 @RequestMapping("/api/v1/usuarios")
@@ -49,11 +63,20 @@ public class UsuarioController {
      * El body se valida con @Valid antes de llegar al service.
      * La respuesta incluye los datos del usuario creado sin password_hash.
      *
+     * El usuario se crea siempre con activo=true (el service fuerza el
+     * valor, no se acepta desde el cliente). El rol ADMIN se crea sin
+     * perfil de empleado por diseño (decisión documentada en B6 §6.1 y
+     * B7); para ENCARGADO y EMPLEADO el perfil de empleado se crea por
+     * separado vía E13. El 409 distingue por campo en conflicto con
+     * mensajes específicos: uno para username duplicado y otro para
+     * email duplicado.
+     *
      * Códigos HTTP:
      *   201 Created      → usuario creado correctamente
      *   400 Bad Request  → datos de entrada inválidos (Bean Validation)
      *   403 Forbidden    → rol insuficiente
-     *   409 Conflict     → username o email ya existen
+     *   409 Conflict     → username o email ya existen (mensaje específico
+     *                      por campo en conflicto)
      *
      * @param request body JSON con username, email, password y rol
      * @return 201 Created con UsuarioResponse
@@ -126,12 +149,17 @@ public class UsuarioController {
      * (DELETE, baja lógica) y E67 (PATCH /reactivar), no por este endpoint.
      * Solo actualiza los campos enviados con valor no nulo (PATCH semántico).
      *
+     * Si el rol llega no nulo e igual al actual, el service ejecuta setRol
+     * con el mismo valor: es un no-op aceptado que devuelve 200 OK sin
+     * disparar el guard de transición.
+     *
      * Códigos HTTP:
      *   200 OK          → usuario actualizado correctamente
      *   400 Bad Request → datos de entrada inválidos
      *   403 Forbidden   → rol insuficiente
      *   404 Not Found   → usuario no encontrado
-     *   409 Conflict    → email ya existe en otro usuario
+     *   409 Conflict    → email ya existe en otro usuario, o transición de
+     *                     rol prohibida por el guard rol↔empleado
      *
      * @param id      ID del usuario a actualizar (path variable)
      * @param request body JSON con los campos a actualizar (todos opcionales)
@@ -175,7 +203,8 @@ public class UsuarioController {
     }
 
     // E66 — PATCH /api/v1/usuarios/{id}/password
-    // RF-08: Restablecer contraseña de usuario (solo ADMIN)
+    // Encaja en el bloque RF-03 a RF-07 (Gestión de usuarios) pero B6 no
+    // asigna RF numérico individual.
 
     /**
      * Restablece la contraseña de un usuario existente.
@@ -204,7 +233,8 @@ public class UsuarioController {
     }
 
     // E67 — PATCH /api/v1/usuarios/{id}/reactivar
-    // RF-07: Reactivar usuario
+    // Encaja en el bloque RF-03 a RF-07 (Gestión de usuarios) pero B6 no
+    // asigna RF numérico individual.
 
     /**
      * Reactiva un usuario previamente desactivado (activo = true).

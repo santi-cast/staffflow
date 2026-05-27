@@ -184,7 +184,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username ya existe (carrera entre dos altas simultáneas); P29 reacciona regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
+| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username o el email ya existen (validación preventiva con mensaje específico por campo en conflicto); P29 reacciona ante el 409 de username regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
 | E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66). HTTP 409 si la transición de rol viola la invariante rol↔empleado (ADMIN puro no puede cambiar de rol; usuario con empleado asociado no puede ser promovido a ADMIN) | P29 |
@@ -447,7 +447,7 @@ El sistema usa dos identificadores legibles para personas con convenciones delib
 - `username` (campo de login): lowercase, sin separador, prefijo según rol. `admin001` para ADMIN; `usu001`, `usu002`, ... para ENCARGADO y EMPLEADO (ambos comparten prefijo porque ambos tienen empleado asociado). Excepción: `terminal_service` (id=5) es el usuario de sistema autor técnico de los fichajes generados por `ProcesoCierreDiario`; no se renombra para preservar la trazabilidad histórica.
 - `numeroEmpleado` (código de empleado): mayúsculas, con guion, prefijo fijo. `EMP-001`, `EMP-002`, ... Solo lo tienen ENCARGADO y EMPLEADO (ADMIN no tiene perfil de empleado por diseño).
 
-La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 LoginFragment varias veces al día, por eso se diseñó sin separador y en lowercase. `EMP-001` es un código que aparece en informes, listados y nóminas, por eso se diseñó con guion y en mayúsculas para destacar visualmente. El prefijo `usu` compartido por ENCARGADO y EMPLEADO refleja la regla de dominio "tiene perfil de empleado", que también es la invariante validada por el guard de transición de rol (E11): un usuario con empleado asociado nunca puede ser promovido a ADMIN, ni un ADMIN puro puede pasar a tener empleado.
+La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 LoginFragment varias veces al día, por eso se diseñó sin separador y en lowercase. `EMP-001` es un código que aparece en informes, listados y nóminas, por eso se diseñó con guion y en mayúsculas para destacar visualmente. El prefijo `usu` compartido por ENCARGADO y EMPLEADO refleja la regla de dominio "tiene perfil de empleado", que también es la invariante validada por el guard de transición de rol (E11): un usuario con empleado asociado no puede ser promovido a ADMIN, y un ADMIN puro (sin empleado asociado) no puede cambiar de rol.
 
 ---
 
