@@ -58,6 +58,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmpleadoController {
 
+    /** Servicio de negocio del perfil laboral de los empleados. Delega la lógica de los endpoints E13-E21, E65 y E68. */
     private final EmpleadoService empleadoService;
 
     // E13 — POST /api/v1/empleados

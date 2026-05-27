@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 /**
  * Servicio de gestión del perfil laboral de los empleados.
  *
- * Cubre los endpoints E13-E21 y E68 del Grupo 4 (Gestión de Empleados).
+ * Cubre los endpoints E13-E21, E65 y E68 del Grupo 4 (Gestión de Empleados).
  * ADMIN y ENCARGADO acceden a todos los empleados (E13-E20).
  * E68 es exclusivo ADMIN: alimenta la cabecera de P29 con el empleado vinculado a un usuarioId.
  * EMPLEADO y ENCARGADO acceden a sus propios datos mediante /me (E21).
@@ -67,9 +67,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EmpleadoService {
 
+    /** Repositorio JPA de la entidad Empleado; acceso a BD para todos los endpoints del grupo (E13-E21, E65, E68). */
     private final EmpleadoRepository empleadoRepository;
+    /** Repositorio JPA de Usuario; necesario en crear() (E13) para resolver el usuarioId y en obtenerMiPerfil() (E21) para buscar por username. */
     private final UsuarioRepository usuarioRepository;
+    /** Servicio de presencia; delegado por obtenerEstado() (E19) para calcular el parte diario (misma respuesta que E35). */
     private final PresenciaService presenciaService;
+    /** Servicio de generación de PDF; delegado por exportar() (E20) cuando el parámetro formato="pdf". */
     private final PdfService pdfService;
 
     // E13 — POST /api/v1/empleados
