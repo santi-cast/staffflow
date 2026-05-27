@@ -85,7 +85,11 @@ public class TerminalService {
     /**
      * Mapa de intentos fallidos acumulados por dispositivoId.
      * Clave: dispositivoId (String). Valor: contador de fallos consecutivos.
-     * Se reinicia al 0 con un intento de PIN exitoso.
+     * El contador se reinicia por tres vías:
+     * 1) intento de PIN exitoso (reset por dispositivoId al obtener el estado);
+     * 2) E54 desbloquearTerminal() invocada por ADMIN o ENCARGADO, que ejecuta
+     *    clear() global sobre el mapa (afecta a todos los dispositivos);
+     * 3) reinicio del backend (el mapa vive en memoria, no se persiste).
      */
     private final ConcurrentHashMap<String, AtomicInteger> intentosFallidos =
             new ConcurrentHashMap<>();
