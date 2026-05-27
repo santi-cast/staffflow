@@ -245,9 +245,9 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado. Incluye solo empleados operativos a la fecha consultada (`activo = true` AND `fechaAlta <= fecha`); los empleados con alta diferida no aparecen hasta su primer día de trabajo | P17 |
-| E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha | P18 |
-| E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del propio empleado en una fecha | P12 |
+| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado. Acepta `?fecha` opcional (formato ISO, default = hoy). Incluye solo empleados operativos a la fecha consultada (`activo = true` AND `fechaAlta <= fecha`); los empleados con alta diferida no aparecen hasta su primer día de trabajo | P17 |
+| E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha. Acepta `?fecha` opcional (formato ISO, default = hoy) | P18 |
+| E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del empleado autenticado. Acepta `?fecha` opcional (formato ISO, default = hoy). HTTP 404 si el usuario autenticado no tiene perfil de empleado | P12 |
 
 #### Saldos (`/api/v1/saldos`)
 
