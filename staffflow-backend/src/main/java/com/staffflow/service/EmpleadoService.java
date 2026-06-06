@@ -19,9 +19,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +33,11 @@ import java.util.stream.Collectors;
  * EMPLEADO y ENCARGADO acceden a sus propios datos mediante /me (E21).
  *
  * Decisiones de diseño aplicadas:
+ *   - Reloj inyectado ({@link java.time.Clock}): crear() (E13) consume
+ *     el bean Clock para resolver "hoy" tanto al asignar la fecha de alta
+ *     por defecto como al rechazar altas retroactivas. Permite a los
+ *     tests fijar la fecha con Clock.fixed(...) sin tocar el reloj del
+ *     sistema. El bean vive en ClockConfig (Europe/Madrid en producción).
  *   - Relación 1:1 usuario-empleado inmutable: una vez
  *     vinculado un usuario a un empleado, el campo usuarioId no puede
  *     modificarse. Esta restricción se aplica en actualizar() ignorando
@@ -75,6 +80,13 @@ public class EmpleadoService {
     private final PresenciaService presenciaService;
     /** Servicio de generación de PDF; delegado por exportar() (E20) cuando el parámetro formato="pdf". */
     private final PdfService pdfService;
+    /**
+     * Reloj inyectado para resolver "hoy" en {@link #crear(EmpleadoRequest)} (E13).
+     * En producción es {@code Clock.system(Europe/Madrid)} (bean de ClockConfig);
+     * en tests se reemplaza por {@code Clock.fixed(...)} para deterministar las
+     * ramas de alta diferida y rechazo de alta retroactiva.
+     */
+    private final Clock clock;
 
     // E13 — POST /api/v1/empleados
     // RF-08: Crear perfil de empleado
@@ -98,10 +110,12 @@ public class EmpleadoService {
      * El campo fechaAlta es opcional: si el cliente lo envía, debe ser
      * igual o posterior a la fecha actual del sistema (soporta altas
      * diferidas: usuario que se registra hoy y empieza a trabajar
-     * en una fecha futura). Si llega null, se asigna LocalDate.now().
-     * Una fecha anterior a hoy responde HTTP 400 vía ConflictException
+     * en una fecha futura). Si llega null, se asigna {@code LocalDate.now(clock)}.
+     * Una fecha anterior a hoy responde HTTP 400 vía IllegalArgumentException
      * para preservar la coherencia con el cálculo prorrateado de saldos
      * en SaldoService (un empleado no puede trabajar antes de su alta).
+     * "Hoy" se resuelve contra el bean Clock inyectado, lo que permite a
+     * los tests fijarlo con {@code Clock.fixed(...)}.
      *
      * Códigos HTTP producidos:
      *   201 Created      → perfil creado correctamente
@@ -151,11 +165,13 @@ public class EmpleadoService {
         // Resolver fecha de alta: si el cliente la envía, validar que no
         // sea anterior a hoy (soporta altas diferidas pero no retroactivas,
         // por coherencia con el prorrateo de saldos en SaldoService).
-        // Si no se envía, se asigna LocalDate.now().
+        // Si no se envía, se asigna LocalDate.now(clock). "Hoy" se resuelve
+        // contra el bean Clock inyectado para que los tests puedan fijarlo.
+        LocalDate hoy = LocalDate.now(clock);
         LocalDate fechaAlta = request.getFechaAlta();
         if (fechaAlta == null) {
-            fechaAlta = LocalDate.now();
-        } else if (fechaAlta.isBefore(LocalDate.now())) {
+            fechaAlta = hoy;
+        } else if (fechaAlta.isBefore(hoy)) {
             throw new IllegalArgumentException(
                     "La fecha de alta no puede ser anterior a hoy");
         }

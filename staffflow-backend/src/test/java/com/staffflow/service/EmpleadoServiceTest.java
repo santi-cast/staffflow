@@ -13,13 +13,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +48,13 @@ import static org.mockito.Mockito.*;
  *   <li>NotFoundException si el id no existe, independientemente del rol.</li>
  * </ul>
  *
+ * <p>Patrón de construcción del SUT: construcción manual con {@code new}
+ * en {@code @BeforeEach} pasando los mocks y un {@code Clock.fixed(...)} real
+ * al constructor. NO se usa {@code @InjectMocks} porque Lombok
+ * {@code @RequiredArgsConstructor} aplica constructor injection sobre el
+ * service, y un campo {@code Clock} inicializado en el test llegaría null
+ * al constructor — provocando NPE en E13 cuando consume {@code LocalDate.now(clock)}.
+ *
  * @author Santiago Castillo
  */
 @ExtendWith(MockitoExtension.class)
@@ -57,15 +66,30 @@ class EmpleadoServiceTest {
     @Mock private PresenciaService presenciaService;
     @Mock private PdfService pdfService;
 
-    @InjectMocks
     private EmpleadoService empleadoService;
 
     private static final long EMPLEADO_ID = 1L;
+
+    /**
+     * Reloj fijo Europe/Madrid 15/01/2026. No consumido por E15 ni E65,
+     * pero el constructor del service lo exige tras la inyección de Clock
+     * para soportar E13. Se mantiene por homogeneidad con el resto de tests
+     * de EmpleadoService.
+     */
+    private static final Clock CLOCK_FIJO = Clock.fixed(
+            LocalDate.of(2026, 1, 15).atStartOfDay(ZoneId.of("Europe/Madrid")).toInstant(),
+            ZoneId.of("Europe/Madrid"));
 
     private Empleado empleado;
 
     @BeforeEach
     void setUp() {
+        // Construcción manual del SUT con Clock real (NO @InjectMocks: Lombok
+        // @RequiredArgsConstructor aplica constructor injection y un campo
+        // Clock inicializado en el test llegaría null al constructor).
+        empleadoService = new EmpleadoService(
+                empleadoRepository, usuarioRepository, presenciaService, pdfService, CLOCK_FIJO);
+
         empleado = new Empleado();
         empleado.setId(EMPLEADO_ID);
         empleado.setPinTerminal("0000");

@@ -13,11 +13,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -36,6 +37,13 @@ import static org.mockito.Mockito.*;
  * codigoNfc) ya estaban cubiertos por el comportamiento existente y no
  * son alcance de esta clase.
  *
+ * <p>Patrón de construcción del SUT: construcción manual con {@code new}
+ * en {@code @BeforeEach} pasando los mocks y un {@code Clock.fixed(...)} real
+ * al constructor. NO se usa {@code @InjectMocks} porque Lombok
+ * {@code @RequiredArgsConstructor} aplica constructor injection sobre el
+ * service, y un campo {@code Clock} inicializado en el test llegaría null
+ * al constructor — provocando NPE en E13 cuando consume {@code LocalDate.now(clock)}.
+ *
  * @author Santiago Castillo
  */
 @ExtendWith(MockitoExtension.class)
@@ -47,15 +55,28 @@ class EmpleadoServiceActualizarTest {
     @Mock private PresenciaService presenciaService;
     @Mock private PdfService pdfService;
 
-    @InjectMocks
     private EmpleadoService empleadoService;
 
     private static final long EMPLEADO_ID = 1L;
+
+    /**
+     * Reloj fijo Europe/Madrid 15/01/2026. No consumido por E16 (actualizar
+     * acepta fechaAlta retroactiva por diseño, sin contraste contra "hoy"),
+     * pero el constructor del service lo exige tras la inyección de Clock
+     * para soportar E13.
+     */
+    private static final Clock CLOCK_FIJO = Clock.fixed(
+            LocalDate.of(2026, 1, 15).atStartOfDay(ZoneId.of("Europe/Madrid")).toInstant(),
+            ZoneId.of("Europe/Madrid"));
 
     private Empleado empleado;
 
     @BeforeEach
     void setUp() {
+        // Construcción manual del SUT con Clock real (ver Javadoc clase).
+        empleadoService = new EmpleadoService(
+                empleadoRepository, usuarioRepository, presenciaService, pdfService, CLOCK_FIJO);
+
         // El usuario asociado es necesario para que toEmpleadoResponse() no
         // explote: el response cablea usuarioId, username y rol del usuario.
         Usuario usuario = new Usuario();
