@@ -23,8 +23,9 @@ import java.time.LocalDate;
  * indicado (debe ser igual o posterior a la fecha actual del sistema, para
  * cubrir altas diferidas: empleado que se registra hoy y empieza a trabajar
  * en una fecha futura). Si el cliente lo omite, el servicio asigna
- * LocalDate.now(). El campo es inmutable una vez creado el empleado
- * (no figura en EmpleadoPatchRequest).
+ * LocalDate.now(clock) usando el bean Clock inyectado en EmpleadoService
+ * (Europe/Madrid en producción). El campo es inmutable una vez creado el
+ * empleado (no figura en EmpleadoPatchRequest).
  *
  * @author Santiago Castillo
  */
@@ -75,7 +76,7 @@ public class EmpleadoRequest {
     private String codigoNfc;
 
     // Fecha en la que el empleado empieza a contar laboralmente.
-    // Opcional: si es null, el servicio asigna LocalDate.now().
+    // Opcional: si es null, el servicio asigna LocalDate.now(clock).
     // Cuando viene informada, debe ser igual o posterior a la fecha actual
     // (validación en el servicio para soportar altas diferidas).
     private LocalDate fechaAlta;
