@@ -14,13 +14,13 @@ El proyecto se compone de:
 
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 217 tests verdes (0 errors, 0 skipped) — 167 tests unitarios de servicio (Mockito puro, incluidos `PausaService`, el proceso nocturno `ProcesoCierreDiario`, `FichajeService` con cobertura completa de los cinco endpoints E22-E26, `AusenciaService` con cobertura completa de los siete endpoints E30-E34/E63/E64 y `AuthService` con cobertura completa de los cinco endpoints E01-E05, todos con `Clock` inyectado, más `EmpresaService` con cobertura completa de los dos endpoints E06/E07 sobre la tabla singleton `configuracion_empresa` sin Clock) + 10 tests del proveedor JWT + 9 tests del `GlobalExceptionHandler` (MockMvc en modo standalone) + 30 tests estructurales de seguridad declarativa por reflexión + 1 test de arquitectura (ArchUnit), todos sin levantar el contexto de Spring. Stack JUnit 5 + Mockito + ArchUnit. Verificación funcional completa con MySQL 8.0 y H2.
+> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 315 tests verdes (0 errors, 0 skipped) — 265 tests unitarios de servicio (Mockito puro, incluidos `PausaService`, el proceso nocturno `ProcesoCierreDiario`, `FichajeService` con cobertura completa de los cinco endpoints E22-E26, `AusenciaService` con cobertura completa de los siete endpoints E30-E34/E63/E64, `AuthService` con cobertura completa de los cinco endpoints E01-E05 e `InformeService` con `Clock` inyectado para E59 (`informeSemana`), E60 (`informeAusenciasGlobal`) y el helper `calcularSaldoHastaFecha` invocado por E59 — sexto service del backend con `Clock` inyectado; `EmpresaService` con cobertura completa de los dos endpoints E06/E07 sobre la tabla singleton `configuracion_empresa` sin `Clock`; `InformeServiceHorasTest` con cobertura completa de los tres endpoints de informes de horas E58/E42/E43, `InformeServiceSaldosTest` con cobertura completa del endpoint de informe de saldos E44 e `InformeServiceAusenciasTest` con cobertura de los tres endpoints de informes de ausencias E61/E62/E60 — los tres bloques de `InformeService*Test` construyen el SUT manualmente en `@BeforeEach` con `Clock.fixed(2026-01-15, Europe/Madrid)` (no `@InjectMocks`) porque el constructor de `InformeService` exige el `Clock`; los `.now()` del SUT en E58/E42/E43, E44 y E61/E62 son decorativos en la cabecera HTML, mientras que E60 con rangos en pasado lejano (2020) mantiene `esPasado=true` determinista bajo el `Clock` fijo. Las ramas hoy/futuro/seleccionable de E60 y la cobertura completa de E59 se añadirán en `InformeServiceSemanaTest` aprovechando el `Clock` ya inyectado; `PresenciaServiceTest` con cobertura completa de los tres endpoints del grupo Presencia E35/E36/E37 (Mockito puro sin `Clock` —la fecha llega del controlador— mockeando los cuatro repositorios, 15 tests que ejercitan las seis ramas de `EstadoPresencia` más el festivo global); `EmpleadoService` con cobertura completa de los once endpoints del grupo Empleados E13-E21, E65 y E68 distribuida en ocho clases de test — séptimo service del backend con `Clock` inyectado para E13 (`crear`, ramas funcionales de alta diferida y rechazo de alta retroactiva), las otras siete clases (`EmpleadoServiceTest` con E15 y E65, `EmpleadoServiceActualizarTest` con E16, `EmpleadoServiceListarTest` con las cuatro ramas de filtros de E14, `EmpleadoServiceBajaReactivarTest` con E17/E18, `EmpleadoServiceEstadoTest` con la delegación de E19 en `PresenciaService`, `EmpleadoServiceExportarTest` con las ramas CSV/PDF y el filtro `activo` de E20, `EmpleadoServiceMePerfilTest` con E21/E68) construyen el SUT manualmente con `Clock.fixed(2026-01-15, Europe/Madrid)` aunque solo `EmpleadoServiceCrearTest` lo consume funcionalmente, porque el constructor del service ya exige el `Clock`. Cierra el último GAP del frente M-039 (cobertura de los services heredados sin tests) salvo los GAP deliberados de `PdfService` y `EmailService`. + 10 tests del proveedor JWT + 9 tests del `GlobalExceptionHandler` (MockMvc en modo standalone) + 30 tests estructurales de seguridad declarativa por reflexión + 1 test de arquitectura (ArchUnit), todos sin levantar el contexto de Spring. Stack JUnit 5 + Mockito + ArchUnit. Verificación funcional completa con MySQL 8.0 y H2.
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
 - Fichaje de entrada y salida (desde app o terminal con PIN)
 - Registro y gestión de pausas durante la jornada
-- Planificación de ausencias (vacaciones, permisos, festivos nacionales y locales)
+- Planificación de ausencias (vacaciones, asuntos propios, permisos retribuidos, días libres compensatorios, festivos nacionales y locales)
 - Cálculo automático de saldos de horas y días disponibles
 - Parte diario de presencia con 6 estados posibles por empleado
 - Generación de informes operativos y PDFs firmables
@@ -61,7 +61,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Lombok
 - spring-boot-starter-mail
 - iText 7.2.6 (informes PDF para firmar)
-- JUnit 5 + Mockito (167 tests unitarios de servicio + 10 tests JWT + 9 tests del exception handler con MockMvc standalone + 30 tests estructurales de seguridad declarativa por reflexión) + ArchUnit 1.4.0 (1 test de arquitectura). 217 tests verdes (0 errors, 0 skipped) sin contexto Spring.
+- JUnit 5 + Mockito (265 tests unitarios de servicio + 10 tests JWT + 9 tests del exception handler con MockMvc standalone + 30 tests estructurales de seguridad declarativa por reflexión) + ArchUnit 1.4.0 (1 test de arquitectura). 315 tests verdes (0 errors, 0 skipped) sin contexto Spring.
 
 ### Cliente Android
 
@@ -132,7 +132,7 @@ Características principales:
 - Control de acceso basado en **roles** con Spring Security (`@PreAuthorize`)
 - Roles con reparto matricial por módulo (no jerarquía estricta):
   - **ADMIN**: gestión total. Único rol con acceso a configuración de empresa (E06-E07), gestión de usuarios (E08-E12, E66, E67) y recálculo forzado de saldos (E40). No tiene perfil de empleado, por lo que NO puede usar los endpoints `/me` ni fichar desde el terminal.
-  - **ENCARGADO**: mismos permisos que ADMIN sobre los módulos operativos (empleados, fichajes, pausas, ausencias, presencia, saldos sin recálculo, informes, desbloqueo del terminal E53/E54), pero SIN acceso a empresa, usuarios ni recálculo. Tiene perfil de empleado: usa `/me` y ficha por PIN.
+  - **ENCARGADO**: mismos permisos que ADMIN sobre los módulos operativos (empleados, fichajes, pausas, ausencias, presencia, saldos sin recálculo, informes, desbloqueo del terminal E53/E54), pero SIN acceso a empresa, usuarios ni recálculo. En el módulo de empleados, E68 (`GET /by-usuario/{usuarioId}`) es exclusivo de ADMIN (alimenta la cabecera de P29). Tiene perfil de empleado: usa `/me` y ficha por PIN.
   - **EMPLEADO**: acceso exclusivo a sus propios datos vía endpoints `/me`. Tiene perfil de empleado: ficha por PIN.
 - Separación entre **entidades de dominio y DTOs** (nunca se exponen entidades directamente)
 - Persistencia mediante **JPA / Hibernate**
@@ -167,24 +167,24 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E01 | POST /login | público | Autentica con username y password, devuelve un JWT con rol y empleadoId | P02 |
-| E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual | — |
-| E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado | P04 |
-| E04 | POST /password/recovery | público | Solicita recuperación: genera contraseña temporal y la envía por email | P03 |
-| E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email. Implementado como contrato preparado; en v1.0 el flujo activo es contraseña temporal vía E04 (E05 responde siempre "token inválido" porque ningún endpoint popula `resetToken` en producción — populado pendiente para v2.0) | P05 |
+| E01 | POST /login | público | Autentica con username y password, devuelve un JWT (12h, HMAC‑SHA) junto con `rol`, `username`, `empleadoId` (null si ADMIN) y `nombre` para mostrar (nombre + apellido1 del empleado, o `username` como fallback si ADMIN) | P02 |
+| E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual; 404 si el `username` extraído del token ya no existe en BD | — |
+| E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado verificando primero la contraseña actual (RNF‑S01); 400 si la contraseña actual no coincide, 404 si el usuario del token no existe | P04 |
+| E04 | POST /password/recovery | público | Solicita recuperación: si el email existe en BD, genera una contraseña temporal de 8 caracteres alfanuméricos sin caracteres ambiguos (excluidos `0/1/O/I/i/l`), sobrescribe el `passwordHash` y envía la temporal al email **registrado en BD** (no al tipeado, que solo identifica la cuenta). Por anti‑enumeración (RNF‑S04) siempre devuelve 200 con el mismo mensaje genérico, exista o no el email | P03 |
+| E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email. Implementado como contrato preparado; en v1.0 el flujo activo es contraseña temporal vía E04 y E05 responde siempre 400 «token inválido o ya utilizado» porque ningún endpoint popula `resetToken` en producción. En v2.0, además, la rama 400 «ha caducado» se activará cuando `resetTokenExpiry` sea null o anterior al instante actual — populado pendiente para v2.0 | P05 |
 
 #### Empresa (`/api/v1/empresa`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
 | E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P30 |
-| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa | P30 |
+| E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa (singleton id=1). Crea el registro si no existe (primera configuración del sistema) | P30 |
 
 #### Usuarios (`/api/v1/usuarios`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username ya existe (carrera entre dos altas simultáneas); P29 reacciona regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
+| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username o el email ya existen (validación preventiva con mensaje específico por campo en conflicto); P29 reacciona ante el 409 de username regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
 | E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66). HTTP 409 si la transición de rol viola la invariante rol↔empleado (ADMIN puro no puede cambiar de rol; usuario con empleado asociado no puede ser promovido a ADMIN) | P29 |
@@ -196,101 +196,101 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos. `fechaAlta` es opcional: si llega, debe ser ≥ hoy (altas diferidas); si se omite, se asigna `LocalDate.now()` | P29 |
-| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría). Sin filtros devuelve todos (activos e inactivos) | P13 |
-| E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal`, `email`, `username` y `rol` del usuario asociado; ENCARGADO los recibe a `null` (Opción A) | P14, P15 |
-| E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado. ADMIN puede corregir `dni` (409 si ya existe en otro empleado) y `fechaAlta` (sin restricción de rango: pasado o futuro). PIN de terminal NO se modifica aquí — usar E65 | P15 |
-| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial | — |
-| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja | — |
-| E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado | — |
-| E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF | — |
+| E13 | POST / | ADMIN, ENCARGADO | Crea un empleado nuevo. Genera PIN único y número de empleado automáticos. `fechaAlta` es opcional: si llega, debe ser ≥ hoy (altas diferidas); si se omite, se asigna `LocalDate.now()`. HTTP 400 si `fechaAlta` es anterior a hoy; HTTP 404 si `usuarioId` no existe; HTTP 409 si `dni` o `codigoNfc` ya pertenecen a otro empleado | P29 |
+| E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría). Sin filtros devuelve todos (activos e inactivos). HTTP 400 si el valor de `categoría` no es un enum válido | P13 |
+| E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal`, `email`, `username` y `rol` del usuario asociado; ENCARGADO los recibe a `null` (Opción A). HTTP 404 si el `id` no existe | P14, P15 |
+| E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado. Permite corregir `dni` (409 si ya existe en otro empleado) y `fechaAlta` (sin restricción de rango: pasado o futuro). PIN de terminal NO se modifica aquí — usar E65 | P15 |
+| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial. HTTP 404 si el `id` no existe | — |
+| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja. HTTP 404 si el `id` no existe; HTTP 409 si el empleado ya estaba activo | — |
+| E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado. Acepta `?fecha` opcional (formato ISO, default = hoy). Respuesta idéntica a E35 (ParteDiarioResponse) | — |
+| E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF. El parámetro `formato` es obligatorio (`csv` o `pdf`); HTTP 400 si el valor no es válido. Acepta `?activo` opcional para filtrar por estado | — |
 | E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve en la respuesta. El PIN queda persistido; tras la regeneración solo es re-consultable por ADMIN vía E15 | P14 |
 | E68 | GET /by-usuario/{usuarioId} | ADMIN | Devuelve el empleado vinculado a un usuario dado (relación 1:1 garantizada por UNIQUE sobre `usuario_id`). Alimenta la cabecera read-only de P29 que identifica al empleado y permite saltar a P14. HTTP 404 si el usuario no tiene empleado asociado (caso típico: usuario ADMIN). Devuelve `EmpleadoResponse` sin `pinTerminal`, `email`, `username` ni `rol` (la cabecera solo consume nombre, apellidos y `numeroEmpleado`) | P29 |
-| E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado | P08 |
+| E21 | GET /me | EMPLEADO, ENCARGADO | Perfil del empleado autenticado. HTTP 404 si el usuario autenticado no tiene perfil de empleado asociado | P08 |
 
 #### Fichajes (`/api/v1/fichajes`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E22 | POST / | ADMIN, ENCARGADO | Crea un fichaje manual con observaciones obligatorias | P20 |
-| E23 | PATCH /{id} | ADMIN, ENCARGADO | Modifica un fichaje existente con observaciones obligatorias | P20 |
-| E24 | GET / | ADMIN, ENCARGADO | Lista fichajes con filtros (empleado, rango de fechas, tipo) | P16 |
-| E25 | GET /incompletos | ADMIN, ENCARGADO | Lista fichajes sin hora de salida (jornadas abiertas) | — |
-| E26 | GET /me | EMPLEADO, ENCARGADO | Lista los fichajes del empleado autenticado en formato JSON | — |
+| E22 | POST / | ADMIN, ENCARGADO | Crea un fichaje manual con observaciones obligatorias (RNF-L02). ENCARGADO solo puede registrarlo hoy o en el futuro; ADMIN sin restricción de fecha. Fichajes en fecha futura prohibidos para cualquier rol. 404 si el empleado no existe o si el username del JWT no está en BD; 409 si ya existe fichaje para ese empleado en esa fecha (UNIQUE empleado+fecha) | P20 |
+| E23 | PATCH /{id} | ADMIN, ENCARGADO | Modifica un fichaje existente con observaciones obligatorias (RNF-L02). Misma restricción de fecha que E22, validada sobre la fecha del fichaje cargado de BD. Si llegan `horaEntrada` y `horaSalida`, recalcula `jornadaEfectivaMinutos` con `Math.ceil` descontando el `totalPausasMinutos` ya almacenado (E23 no toca pausas). 404 si el fichaje no existe o si el username del JWT no está en BD | P20 |
+| E24 | GET / | ADMIN, ENCARGADO | Lista fichajes con filtros opcionales y combinables: `empleadoId`, `desde`, `hasta`, `tipo`. Sin filtros devuelve todos. La query usa `JOIN FETCH` sobre `empleado` para evitar el problema N+1 | P16 |
+| E25 | GET /incompletos | ADMIN, ENCARGADO | Lista fichajes con entrada registrada y sin hora de salida (jornadas abiertas) para una fecha. Parámetro `fecha` opcional (defecto: hoy vía `Clock` inyectado). Útil para detectar al cierre del día quién olvidó fichar la salida | — |
+| E26 | GET /me | EMPLEADO, ENCARGADO | Lista los fichajes del empleado autenticado en formato JSON. Filtros opcionales `desde`, `hasta`, `tipo` con la misma lógica que E24. 404 si el usuario autenticado no tiene perfil de empleado | — |
 
 #### Pausas (`/api/v1/pausas`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual sobre un fichaje | P20 |
-| E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente | P20 |
-| E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales | P16 |
-| E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON | — |
+| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. `horaFin` opcional: si se omite, la pausa queda activa | P20 |
+| E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente. Observaciones obligatorias (RNF-L02). Misma restricción de fecha que E27 sobre la fecha de la pausa cargada de BD. Si llega `horaFin`, calcula `duracionMinutos` con `Math.floor` y, salvo `AUSENCIA_RETRIBUIDA`, actualiza `totalPausasMinutos` y recalcula `jornadaEfectivaMinutos` del fichaje del día (si existe) | P20 |
+| E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales y combinables: `empleadoId`, `desde`, `hasta`, `tipoPausa` | P16 |
+| E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON. 404 si el usuario autenticado no tiene perfil de empleado | — |
 
 #### Ausencias (`/api/v1/ausencias`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E30 | POST / | ADMIN, ENCARGADO | Planifica una ausencia individual o festivo global (empleadoId null) | P24 |
-| E31 | PATCH /{id} | ADMIN, ENCARGADO | Modifica una ausencia planificada no procesada | P24 |
+| E30 | POST / | ADMIN, ENCARGADO | Planifica una ausencia individual o festivo global (`empleadoId` null). ENCARGADO solo puede planificar para hoy o fechas futuras; ADMIN sin restricción | P24 |
+| E31 | PATCH /{id} | ADMIN, ENCARGADO | Modifica una ausencia planificada no procesada. ENCARGADO solo puede modificar ausencias cuya fecha (la de la entidad, no la del request) sea hoy o futura; ADMIN sin restricción | P24 |
 | E32 | DELETE /{id} | ADMIN, ENCARGADO | Elimina una ausencia planificada no procesada | P24 |
-| E33 | GET / | ADMIN, ENCARGADO | Lista ausencias planificadas con filtros opcionales | P16 |
+| E33 | GET / | ADMIN, ENCARGADO | Lista ausencias planificadas con filtros opcionales: `empleadoId`, `desde`, `hasta` y `procesado`. Sin filtros devuelve todas, incluyendo festivos globales (`empleado_id = null`) | P16 |
 | E34 | GET /me | EMPLEADO, ENCARGADO | Lista las ausencias del empleado autenticado en formato JSON | — |
-| E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado | P11 |
-| E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto | P22 |
-| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada con detección de conflictos (`RangoConflictException` 409 con payload de fechas en conflicto si no se fuerza la sobrescritura) | P24 |
-| E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios | P23, P24 |
+| E61 | GET /me/informe | EMPLEADO, ENCARGADO | Informe HTML de ausencias del empleado autenticado. Params opcionales: `?desde=`, `?hasta=` (defecto: año actual completo) y `?filtro=VACACIONES_AP` (defecto `TODAS`). Combina planificaciones y fichajes; el fichaje tiene prioridad en la misma fecha | P11 |
+| E62 | GET /{empleadoId}/informe | ADMIN, ENCARGADO | Informe HTML de ausencias de un empleado concreto. Mismos params opcionales que E61 (`?desde=`, `?hasta=`, `?filtro=VACACIONES_AP`). Misma lógica que E61 resolviendo por `empleadoId` | P22 |
+| E63 | POST /rango | ADMIN, ENCARGADO | Planifica un rango de ausencias en una sola llamada. ENCARGADO solo puede iniciar el rango con `fechaDesde` hoy o futura; ADMIN sin restricción. Si algún día del rango tiene `procesado=false` y `sobrescribir=false`, devuelve 409 (`RangoConflictException` con `fechasConflictivas`). Si algún día tiene `procesado=true` (ya materializado en fichaje), devuelve 400: no se puede sobrescribir un fichaje generado | P24 |
+| E64 | GET /planificacion-vac-ap | ADMIN, ENCARGADO | Días pendientes de planificar para vacaciones y asuntos propios de un empleado en un año concreto (params `empleadoId` obligatorio y `anio` opcional, defecto año actual). Si no existe `SaldoAnual` para ese año, lo crea on-demand (find-or-create). Devuelve `anioFuturoSinCierre=true` cuando el año consultado es posterior al actual | P23, P24 |
 
 #### Presencia (`/api/v1/presencia`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado. Incluye solo empleados operativos a la fecha consultada (`activo = true` AND `fechaAlta <= fecha`); los empleados con alta diferida no aparecen hasta su primer día de trabajo | P17 |
-| E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha | P18 |
-| E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del propio empleado en una fecha | P12 |
+| E35 | GET /parte-diario | ADMIN, ENCARGADO | Parte diario de presencia con 6 estados por empleado. Acepta `?fecha` opcional (formato ISO, default = hoy). Incluye solo empleados operativos a la fecha consultada (`activo = true` AND `fechaAlta <= fecha`); los empleados con alta diferida no aparecen hasta su primer día de trabajo | P17 |
+| E36 | GET /sin-justificar | ADMIN, ENCARGADO | Lista de empleados sin fichaje ni ausencia justificada en una fecha. Acepta `?fecha` opcional (formato ISO, default = hoy) | P18 |
+| E37 | GET /parte-diario/me | EMPLEADO, ENCARGADO | Estado de presencia del empleado autenticado. Acepta `?fecha` opcional (formato ISO, default = hoy). HTTP 404 si el usuario autenticado no tiene perfil de empleado | P12 |
 
 #### Saldos (`/api/v1/saldos`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas) | P25 |
-| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados con registro en ese año (incluye inactivos con histórico) en formato JSON | — |
-| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado | P20, P24, P25 |
-| E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado | P09 |
+| E38 | GET /{empleadoId} | ADMIN, ENCARGADO | Saldo anual de un empleado concreto (vacaciones, AP, horas). 404 si el empleado no existe. Para el año actual, si no hay registro de saldo persistido, lo crea on-demand antes de devolverlo (find-or-create); en años pasados o futuros sin registro devuelve 404 | P25 |
+| E39 | GET / | ADMIN, ENCARGADO | Lista de saldos anuales de todos los empleados con registro en ese año en formato JSON. Para el año actual, crea on-demand el saldo de cada empleado activo sin registro antes de listar (find-or-create restringido a activos); en años pasados o futuros se devuelven solo los registros ya persistidos, incluyendo empleados inactivos con histórico | — |
+| E40 | POST /{empleadoId}/recalcular | ADMIN | Fuerza el recálculo idempotente del saldo anual de un empleado. 404 si el empleado no existe. Si no existe registro de saldo para el año lo crea con los valores iniciales del contrato (find-or-create) antes de recalcular desde cero | P20, P24, P25 |
+| E41 | GET /me | EMPLEADO, ENCARGADO | Saldo anual del empleado autenticado. 404 si el usuario autenticado no tiene perfil de empleado, si el año solicitado es posterior al actual, o si es anterior a la fechaAlta del empleado. Para años válidos sin registro, lo crea on-demand antes de devolverlo (find-or-create) | P09 |
 
 #### Informes HTML (`/api/v1/informes`)
 
-Endpoints dual-format: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML".
+Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JSON; añadiendo `?formato=html` devuelven HTML para WebView. La app Android los consume siempre con `?formato=html`, por eso se agrupan aquí como "Informes HTML". E58, E59 y E60 son HTML-only (la firma del controller no acepta `?formato=` y el service siempre genera HTML). E61 y E62 (informes de ausencias, agrupados bajo `/api/v1/ausencias`) también son HTML-only por el mismo motivo.
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe HTML de horas trabajadas de un empleado en un rango | P21, P27 |
-| E43 | GET /horas | ADMIN, ENCARGADO | Informe HTML de horas trabajadas globales en un rango | P27 |
-| E44 | GET /saldos | ADMIN, ENCARGADO | Informe HTML de saldos anuales de todos los empleados | P26, P27 |
-| E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado | P10 |
-| E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal interactiva con fichajes, pausas y ausencias | P19 |
-| E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados en un rango | P23 |
+| E42 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | Informe de horas trabajadas de un empleado en un rango. Dual-format JSON/HTML (`?formato=`, defecto JSON); con `?formato=html` devuelve HTML imprimible para WebView + PrintManager. Filtro opcional `?tipo=` por uno o varios `TipoFichaje` separados por coma, mas `DIA_LIBRE` y `SIN_REGISTRO`. 404 si el empleado no existe | P21, P27 |
+| E43 | GET /horas | ADMIN, ENCARGADO | Informe global de horas trabajadas de todos los empleados activos en un rango. Dual-format JSON/HTML igual que E42. Mismo filtro opcional `?tipo=`. Solo incluye empleados operativos en el rango (`fechaAlta <= hasta`) | P27 |
+| E44 | GET /saldos | ADMIN, ENCARGADO | Informe de saldos anuales de empleados. Dual-format JSON/HTML. `?anio=` opcional (defecto año actual). `?empleadoId=` lista opcional de ids (sin parametro = todos los activos). `?campos=` opcional con bloques (`DIAS_VACACIONES`, `DIAS_ASUNTOS_PROPIOS`, `RESTO_DIAS`, `HORAS`, `CONTROL`) o campos individuales. Efecto colateral find-or-create: si el año ya tiene al menos un `SaldoAnual`, completa on-demand los empleados activos sin registro via `SaldoService.recalcularParaProceso`. 404 si ningun empleado activo tiene saldo para ese año | P26, P27 |
+| E58 | GET /me/horas | EMPLEADO, ENCARGADO | Informe HTML de horas del empleado autenticado. HTML-only (la firma del controller no acepta `?formato=`). Delega en E42 con `formato=html`. `?desde=` y `?hasta=` obligatorios. 404 si el usuario autenticado no existe en BD o no tiene perfil de empleado (caso tipico: ENCARGADO puro sin ficha) | P10 |
+| E59 | GET /semana | ADMIN, ENCARGADO | Tabla HTML semanal de presencia de todos los empleados activos (empleado × dia). HTML-only. Cada celda muestra fichaje, pausas y/o ausencia planificada del dia; saldo inicial al lunes y contribucion semanal al saldo en columnas dedicadas. URLs `staffflow://` permiten editar celdas desde el WebView Android: ADMIN edita cualquier fecha no futura, ENCARGADO solo hoy (fichajes/pausas); ADMIN cualquier fecha y ENCARGADO hoy y futuro (ausencias planificadas) | P19 |
+| E60 | GET /ausencias | ADMIN, ENCARGADO | Tabla HTML interactiva de ausencias de todos los empleados activos en un rango (empleado × dia). HTML-only. Incluye fichajes de tipo != `NORMAL` y != `DIA_LIBRE` (ausencias ejecutadas), planificaciones individuales y festivos globales (`empleado=null`) replicados en cada celda del dia del festivo. Edicion via URLs `staffflow://`: ADMIN edita fichajes de ausencia en fechas no futuras (ENCARGADO no edita fichajes desde este informe); ADMIN cualquier fecha y ENCARGADO hoy y futuro (ausencias planificadas). Selector JS multi-celda para acciones masivas | P23 |
 
 #### PDF para firmar (`/api/v1/informes/pdf`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado (iText 7) | P27 |
-| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas globales | P27 |
-| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales | P27 |
-| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios | P27 |
+| E45 | GET /horas/{empleadoId} | ADMIN, ENCARGADO | PDF firmable del informe de horas de un empleado en un periodo (iText 7). Mismo contenido que E42 (Opción C: reutiliza datos vía InformeService) en formato firmable con espacio para firma física. 404 si el empleado no existe. Nombre del fichero: `informe_horas_{id}_{desde}_{hasta}.pdf` | P27 |
+| E46 | GET /horas | ADMIN, ENCARGADO | PDF firmable del informe de horas de todos los empleados activos en un periodo. Genera un PDF E45 por empleado activo y los concatena con PdfMerger; si no hay empleados activos, devuelve un PDF sin páginas. Nombre del fichero: `informe_horas_global_{desde}_{hasta}.pdf` | P27 |
+| E47 | GET /saldos | ADMIN, ENCARGADO | PDF firmable del informe de saldos anuales. `anio` opcional (defecto: año actual). `empleadoId` opcional (lista; defecto: todos los empleados activos con saldo en ese año, ordenados por nombre); si se pasan ids sin saldo registrado se omiten silenciosamente. Si no hay saldos, devuelve un PDF de una página con mensaje informativo. Nombre del fichero: `informe_saldos_{yyyyMMdd}.pdf` | P27 |
+| E57 | GET /vacaciones | ADMIN, ENCARGADO | PDF firmable del informe de vacaciones y asuntos propios disfrutados por un empleado en un año. `empleadoId` obligatorio. `anio` opcional (defecto: año actual). 404 si el empleado no existe. Si no hay registro de SaldoAnual para el año, los días pendientes se reportan como 0. Nombre del fichero: `informe_vacaciones_{id}_{yyyyMMdd}.pdf` | P27 |
 
 #### Terminal PIN (`/api/v1/terminal`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E48 | POST /entrada | público | Registra el inicio de jornada con PIN de 4 dígitos | P06 |
-| E49 | POST /salida | público | Registra el fin de jornada con PIN | P06 |
-| E50 | POST /pausa/iniciar | público | Inicia una pausa con PIN y tipo (comida, descanso, etc.) | P06 |
-| E51 | POST /pausa/finalizar | público | Finaliza la pausa activa del empleado | P06 |
-| E52 | POST /estado | público | Verifica el PIN y devuelve el estado actual del empleado para mostrar bienvenida | P01 |
-| E53 | GET /bloqueo | ADMIN, ENCARGADO | Consulta si algún terminal está bloqueado por intentos fallidos | P17 |
-| E54 | DELETE /bloqueo | ADMIN, ENCARGADO | Desbloquea el terminal tras un bloqueo por fuerza bruta | P17 |
+| E48 | POST /entrada | público | Registra el inicio de jornada por PIN de 4 dígitos. Crea un nuevo `Fichaje` con tipo `NORMAL`, `horaEntrada=now()`, `horaSalida=null` y `usuario_id=terminal_service` (autor técnico, RNF-L01). Restricción «1 fichaje por empleado y día» (constraint UNIQUE `(empleado_id, fecha)`, RNF-I02): 409 si ya hay fichaje hoy. 400 si el empleado está de baja (`activo=false`). 404 si el PIN no existe (incrementa el contador del `dispositivoId`). 423 tras 5 intentos fallidos consecutivos desde el mismo dispositivo (RNF-S05). 200 reinicia el contador del dispositivo | P06 |
+| E49 | POST /salida | público | Registra el fin de jornada por PIN y calcula la jornada efectiva. Persiste `jornadaEfectivaMinutos = Math.ceil(minutosBrutos − totalPausasMinutos)` en la entidad `Fichaje` (consumida por `SaldoService`) y devuelve además `jornadaEfectivaSegundos = max(0, segundosBrutos − totalPausasSegundos)` calculado sobre los segundos exactos de las pausas cerradas no retribuidas del día para el display del terminal. 400 si no hay entrada registrada hoy. 409 si la salida ya está registrada o si hay una pausa activa pendiente de cerrar. 404 PIN inexistente. 423 dispositivo bloqueado | P06 |
+| E50 | POST /pausa/iniciar | público | Inicia una pausa por PIN. El cliente envía además el `tipoPausa` (`COMIDA`, `DESCANSO`, `AUSENCIA_RETRIBUIDA`, `OTROS`) seleccionado previamente en P07. Crea una `Pausa` con `horaInicio=now()`, `horaFin=null`, `duracionMinutos=null` y `usuario_id=terminal_service`. Solo puede haber una pausa activa por empleado y día: 409 si ya existe pausa con `horaFin=null` hoy. 400 si no hay entrada registrada hoy. 404 PIN inexistente. 423 dispositivo bloqueado | P06 |
+| E51 | POST /pausa/finalizar | público | Finaliza la pausa activa del empleado. Persiste `duracionMinutos = Math.floor(minutos)` en la `Pausa` (consumida por `SaldoService`) y devuelve `duracionSegundos` exactos para el display. Si el `tipoPausa` NO es `AUSENCIA_RETRIBUIDA` actualiza `totalPausasMinutos` en el fichaje del día sumando la duración (las retribuidas no descuentan de jornada efectiva). Caso borde: si no existe fichaje del día la pausa se cierra igual sin tocar ningún fichaje y sin error. NO emite 409 (el único conflicto posible —ausencia de pausa activa— se mapea a 400). 404 PIN inexistente. 423 dispositivo bloqueado | P06 |
+| E52 | POST /estado | público | Verifica el PIN y devuelve el estado actual del empleado para la pantalla de bienvenida. Solo lectura: no modifica ningún dato. Llamado desde P01 (`TerminalFragment`) tras introducir el PIN; los datos pasan a P06 ya cargados (P06 NO invoca E52). Respuesta: `nombre`, `estado` (`SIN_ENTRADA`, `EN_JORNADA`, `EN_PAUSA` o `JORNADA_CERRADA`, enum `EstadoTerminal` calculado en tiempo de ejecución y no persistido), `horaEntrada`, `horaSalida`, `horaInicioPausa` y `tipoPausa` según el estado del día. 404 PIN inexistente. 423 dispositivo bloqueado. 200 reinicia el contador del dispositivo | P01 |
+| E53 | GET /bloqueo | ADMIN, ENCARGADO | Consulta si hay ALGÚN dispositivo de terminal bloqueado por intentos fallidos de PIN (RNF-S05). Devuelve `{"bloqueado": true/false}` agregando globalmente todos los `dispositivoId` del `ConcurrentHashMap` en memoria; NO desglosa por dispositivo. Requiere JWT. 401 sin token o token inválido. 403 rol insuficiente. La autorización viaja a través de `SecurityConfig.requestMatchers` y NO de `@PreAuthorize` en el método (defensa en profundidad pendiente, ver M-033 en MEJORAS_V2) | P17 |
+| E54 | DELETE /bloqueo | ADMIN, ENCARGADO | Desbloquea el terminal tras un bloqueo por fuerza bruta. Resetea TODOS los contadores de intentos fallidos de TODOS los dispositivos haciendo `clear()` global del mapa en memoria (no permite desbloqueo individual por `dispositivoId`). Devuelve `{"bloqueado": false}` confirmando el estado tras el reset. Llamado desde P17 cuando un ADMIN o ENCARGADO confirma el desbloqueo manual en el diálogo del banner. Requiere JWT. 401/403 sin/con rol insuficiente. Misma observación que E53 sobre `@PreAuthorize` (M-033) | P17 |
 
 #### Health (`/api/health`)
 
@@ -358,7 +358,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (68 endpoints, JWT, iText 7) | ✅ Completada — 68/68 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 217 tests verdes (0 errors): 167 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring. Matrix de seguridad 35/35 |
+| Fase 4 | Testing | ✅ Completada — 315 tests verdes (0 errors): 265 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026 · 225 horas totales
@@ -447,7 +447,7 @@ El sistema usa dos identificadores legibles para personas con convenciones delib
 - `username` (campo de login): lowercase, sin separador, prefijo según rol. `admin001` para ADMIN; `usu001`, `usu002`, ... para ENCARGADO y EMPLEADO (ambos comparten prefijo porque ambos tienen empleado asociado). Excepción: `terminal_service` (id=5) es el usuario de sistema autor técnico de los fichajes generados por `ProcesoCierreDiario`; no se renombra para preservar la trazabilidad histórica.
 - `numeroEmpleado` (código de empleado): mayúsculas, con guion, prefijo fijo. `EMP-001`, `EMP-002`, ... Solo lo tienen ENCARGADO y EMPLEADO (ADMIN no tiene perfil de empleado por diseño).
 
-La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 LoginFragment varias veces al día, por eso se diseñó sin separador y en lowercase. `EMP-001` es un código que aparece en informes, listados y nóminas, por eso se diseñó con guion y en mayúsculas para destacar visualmente. El prefijo `usu` compartido por ENCARGADO y EMPLEADO refleja la regla de dominio "tiene perfil de empleado", que también es la invariante validada por el guard de transición de rol (E11): un usuario con empleado asociado nunca puede ser promovido a ADMIN, ni un ADMIN puro puede pasar a tener empleado.
+La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 LoginFragment varias veces al día, por eso se diseñó sin separador y en lowercase. `EMP-001` es un código que aparece en informes, listados y nóminas, por eso se diseñó con guion y en mayúsculas para destacar visualmente. El prefijo `usu` compartido por ENCARGADO y EMPLEADO refleja la regla de dominio "tiene perfil de empleado", que también es la invariante validada por el guard de transición de rol (E11): un usuario con empleado asociado no puede ser promovido a ADMIN, y un ADMIN puro (sin empleado asociado) no puede cambiar de rol.
 
 ---
 
@@ -456,10 +456,10 @@ La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 
 Sobre la base funcional se aplicó una capa adicional de hardening centrada en seguridad y resiliencia:
 
 - **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado". `IllegalStateException` queda reservada para errores internos genuinos (5xx).
-- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las 55 anotaciones `@PreAuthorize` de la capa controller del proyecto. Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
+- **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las anotaciones `@PreAuthorize` de la capa controller (57 anotaciones en código de producción al cierre del proyecto, más una en el controller de test del perfil `dev`). Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
 - **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
-- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize` de los endpoints `/me`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—), todos por reflexión sin arrancar el contexto de Spring. Más adelante se consolidó `GlobalExceptionHandlerTest` (9 tests con MockMvc en modo standalone) que cubre el contrato del handler (`NotFoundException` 404, `IllegalArgumentException` 400, `EntityNotFoundException` 404, `ConflictException` 409, `PinBloqueadoException` 423, `IllegalStateException` 500 tras ISE-01, `Exception` 500, y formato del body) sin depender del contexto JWT — sortea la deuda M-036 que afectaba a los tests `@WebMvcTest`/`@SpringBootTest` originales (ya eliminados).
+- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales sobre las anotaciones `@PreAuthorize` de los endpoints `/me`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—; E21 `/me` se excluye porque ya está cubierto en `MethodSecurityConfigTest`), todos por reflexión sin arrancar el contexto de Spring. Más adelante se consolidó `GlobalExceptionHandlerTest` (9 tests con MockMvc en modo standalone) que cubre el contrato del handler (`NotFoundException` 404, `IllegalArgumentException` 400, `EntityNotFoundException` 404, `ConflictException` 409, `PinBloqueadoException` 423, `IllegalStateException` 500 tras ISE-01, `Exception` 500, y formato del body) sin depender del contexto JWT — sortea la deuda M-036 que afectaba a los tests `@WebMvcTest`/`@SpringBootTest` originales (ya eliminados).
 
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 

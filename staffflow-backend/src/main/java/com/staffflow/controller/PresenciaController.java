@@ -48,6 +48,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class PresenciaController {
 
+    /** Servicio que calcula el estado de presencia agregando fichajes, pausas y ausencias planificadas. */
     private final PresenciaService presenciaService;
 
     /**

@@ -120,7 +120,8 @@ public interface FichajeRepository extends JpaRepository<Fichaje, Long> {
      *       filtros de fecha y tipo opcionales.</li>
      *   <li>PausaService: listado de pausas con filtros equivalentes.</li>
      *   <li>PdfService: extracción de vacaciones y asuntos propios para los PDF anuales.</li>
-     *   <li>InformeService: agregaciones por rango y tipo para los informes (E29-E33).</li>
+     *   <li>InformeService: agregaciones por rango y tipo para los informes
+     *       de horas y ausencias (E42, E43, E58, E60, E61, E62).</li>
      *   <li>AusenciaService: detección de fichajes con procesado=false o true en un rango.</li>
      * </ul></p>
      *

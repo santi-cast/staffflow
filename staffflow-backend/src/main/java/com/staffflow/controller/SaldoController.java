@@ -17,8 +17,13 @@ import java.util.List;
  * Controller de saldos anuales de vacaciones, asuntos propios y horas.
  *
  * <p>Grupo 9 de la API REST. Cubre E38-E41.
- * Todos los endpoints son de solo lectura excepto E40 (recalcular),
- * que es una operacion de escritura exclusiva del rol ADMIN.</p>
+ * E40 (recalcular) es la unica operacion de escritura explicita y siempre,
+ * exclusiva del rol ADMIN. E38, E39 y E41 son endpoints de consulta pero
+ * incluyen un efecto colateral de tipo "find-or-create": si la consulta
+ * apunta al ano actual (o a un ano valido en E41) y no existe registro de
+ * saldo todavia, SaldoService delega en recalcularParaProceso() para
+ * crearlo on-demand antes de devolver el DTO. En E39 ese on-demand solo
+ * aplica a los empleados activos sin registro.</p>
  *
  * <p>Convencion /me primero: E41 (/me) se declara antes que E38 (/{empleadoId})
  * para evitar que Spring interprete "me" como un Long al resolver el path.
@@ -75,8 +80,11 @@ public class SaldoController {
      * Devuelve el saldo anual de un empleado concreto (E38).
      *
      * <p>Roles: ADMIN, ENCARGADO. RF-35.
-     * Devuelve 404 si el empleado no existe o si no hay registro de
-     * saldo para el año solicitado.</p>
+     * Devuelve 404 si el empleado no existe. Para el ano actual, si no
+     * hay registro de saldo persistido, SaldoService lo crea on-demand
+     * antes de devolverlo (find-or-create), por lo que en la practica
+     * el 404 por "no hay saldo" solo aparece consultando anos pasados o
+     * futuros sin registro previo en BD.</p>
      *
      * @param empleadoId id del empleado
      * @param anio       año a consultar (opcional, defecto: año actual)
@@ -100,7 +108,12 @@ public class SaldoController {
      *
      * <p>Roles: ADMIN, ENCARGADO. RF-36.
      * Devuelve lista vacia si no hay saldos registrados para ese año.
-     * Incluye empleados inactivos con saldo historico valido.</p>
+     * Para el año actual, SaldoService crea on-demand el saldo de cada
+     * empleado activo sin registro antes de devolver la lista (mismo
+     * patron find-or-create que E38 y E41, restringido a activos). Para
+     * años pasados o futuros no se crean registros: solo se devuelven
+     * los ya persistidos, incluyendo empleados inactivos con saldo
+     * historico valido.</p>
      *
      * @param anio año a consultar (opcional, defecto: año actual)
      * @return lista de saldos anuales de todos los empleados con registro ese año

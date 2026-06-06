@@ -44,7 +44,9 @@ import java.util.stream.Collectors;
  *   - Filtros combinables en listar(): rol y activo son independientes
  *     y pueden usarse simultáneamente o por separado (RF-04).
  *
- * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07, RF-08.
+ * RF cubiertos: RF-03, RF-04, RF-05, RF-06, RF-07. Los endpoints E66 y
+ * E67 son post-catálogo: encajan en el bloque RF-03 a RF-07 (Gestión de
+ * usuarios) pero B6 no asigna RF numérico individual.
  * RNF aplicados: RNF-S01 (BCrypt), RNF-M01 (sin lógica en controller).
  */
 @Service
@@ -109,9 +111,12 @@ public class UsuarioService {
      * Lista todos los usuarios del sistema con filtros opcionales y combinables.
      *
      * Sin parámetros devuelve todos los usuarios (activos e inactivos).
-     * Los parámetros rol y activo son independientes y combinables:
-     * se puede filtrar solo por rol, solo por activo, o por ambos
-     * simultáneamente.
+     * Los parámetros rol y activo son independientes y combinables. Hay
+     * cuatro ramas de despacho según qué parámetros llegan no nulos:
+     *   - rol != null y activo != null → findByRolAndActivo(rol, activo)
+     *   - rol != null y activo == null → findByRol(rol)
+     *   - rol == null y activo != null → findByActivo(activo)
+     *   - ambos null                    → findAll()
      *
      * Códigos HTTP producidos:
      *   200 OK          → lista devuelta correctamente (puede ser lista vacía)
@@ -185,11 +190,18 @@ public class UsuarioService {
      * editando (puede conservar su propio valor sin conflicto).
      *
      * Guard de transición de rol: si se envía un rol distinto al actual, se
-     * valida la invariante rol↔empleado antes de aplicar el cambio:
+     * valida la invariante rol↔empleado antes de aplicar el cambio. La
+     * condición real del guard es la existencia o no de empleado asociado
+     * al usuario (vía EmpleadoRepository.existsByUsuarioId), no el valor
+     * literal del rol actual; en la práctica coinciden porque la única
+     * vía documentada para llegar a "sin empleado" es haber sido creado
+     * como ADMIN:
      *   - ADMIN puro (sin empleado asociado) no puede cambiar de rol.
      *   - Usuario con empleado asociado (ENCARGADO o EMPLEADO) no puede
      *     ser promovido a ADMIN, ya que ADMIN nunca tiene perfil de empleado.
      *   - El cambio ENCARGADO ↔ EMPLEADO (ambos con empleado) está permitido.
+     *   - Si el rol nuevo es igual al actual, el guard no se evalúa y el
+     *     service ejecuta setRol con el mismo valor (no-op aceptado).
      *
      * Códigos HTTP producidos:
      *   200 OK          → usuario actualizado correctamente
@@ -276,7 +288,8 @@ public class UsuarioService {
     }
 
     // E67 — PATCH /api/v1/usuarios/{id}/reactivar
-    // RF-07: Reactivar usuario
+    // Encaja en el bloque RF-03 a RF-07 (Gestión de usuarios) pero B6 no
+    // asigna RF numérico individual.
 
     /**
      * Reactiva un usuario previamente desactivado (activo = true).
@@ -313,7 +326,8 @@ public class UsuarioService {
     }
 
     // E66 — PATCH /api/v1/usuarios/{id}/password
-    // RF-08: Restablecer contraseña de usuario (solo ADMIN)
+    // Encaja en el bloque RF-03 a RF-07 (Gestión de usuarios) pero B6 no
+    // asigna RF numérico individual.
 
     /**
      * Restablece la contraseña de un usuario a un valor elegido por el ADMIN.

@@ -168,7 +168,10 @@ public class FichajeService {
 
         // Calcular jornadaEfectivaMinutos según el tipo de fichaje
         if (request.getHoraEntrada() != null && request.getHoraSalida() != null) {
-            // Jornada normal con horas: diferencia entrada-salida menos pausas
+            // Jornada normal con horas: minutos brutos (salida - entrada).
+            // En crear() totalPausasMinutos = 0 por construcción (L167), por lo que
+            // no se descuentan pausas aquí; el descuento vive en actualizar() cuando
+            // ya hay un valor almacenado en BD.
             long minutosBrutos = ChronoUnit.MINUTES.between(
                     request.getHoraEntrada(), request.getHoraSalida());
             int jornadaEfectiva = (int) Math.ceil((double) minutosBrutos);

@@ -69,9 +69,13 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class PresenciaService {
 
+    /** Repositorio de empleados, para listar los activos operativos a la fecha del parte. */
     private final EmpleadoRepository empleadoRepository;
+    /** Repositorio de fichajes, para resolver el estado de jornada de cada empleado. */
     private final FichajeRepository fichajeRepository;
+    /** Repositorio de pausas, para detectar pausas activas y resumirlas por empleado. */
     private final PausaRepository pausaRepository;
+    /** Repositorio de ausencias planificadas, para detectar AUSENCIA_PLANIFICADA y festivos globales. */
     private final PlanificacionAusenciaRepository ausenciaRepository;
 
     // E35 — GET /api/v1/presencia/parte-diario

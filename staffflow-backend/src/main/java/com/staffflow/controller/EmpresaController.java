@@ -70,8 +70,13 @@ public class EmpresaController {
      * Actualiza o crea la configuración de la empresa (E07).
      *
      * <p>Opera siempre sobre id=1. Si el registro no existe (primera
-     * configuración), EmpresaService lo crea. Todos los campos excepto
-     * logoPath son obligatorios (@NotBlank en EmpresaRequest).
+     * configuración del sistema), EmpresaService lo crea con id=1
+     * mediante save(); Hibernate decide entre INSERT y UPDATE según
+     * si el id existe en BD.
+     *
+     * <p>Campos obligatorios en EmpresaRequest (@NotBlank): nombreEmpresa,
+     * cif. Campos opcionales: direccion, email (validado como RFC 5322
+     * si llega), telefono, logoPath. Todos con límite @Size.
      *
      * <p>Solo el rol ADMIN puede modificar la configuración de empresa.
      *

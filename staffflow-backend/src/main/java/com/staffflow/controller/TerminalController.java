@@ -34,7 +34,7 @@ import java.util.Map;
  *   E49 POST /api/v1/terminal/salida          → registrar salida   (RF-47)
  *   E50 POST /api/v1/terminal/pausa/iniciar   → iniciar pausa      (RF-48)
  *   E51 POST /api/v1/terminal/pausa/finalizar → finalizar pausa    (RF-49)
- *   E52 POST /api/v1/terminal/estado          → consultar estado del día (P06 bienvenida)
+ *   E52 POST /api/v1/terminal/estado          → consultar estado del día (P01 → bienvenida en P06)
  *
  * Endpoints privados (JWT, ADMIN o ENCARGADO):
  *   E53 GET    /api/v1/terminal/bloqueo       → consultar bloqueo del terminal
@@ -104,9 +104,14 @@ public class TerminalController {
     /**
      * Consulta el estado de la jornada del empleado para el dia actual (E52).
      *
-     * Llamado desde P06 justo despues de introducir el PIN, antes de
-     * seleccionar la accion. Devuelve el nombre del empleado y su estado
-     * actual (sin entrada, en jornada, en pausa o jornada cerrada).
+     * Llamado desde P01 (`TerminalFragment`) tras introducir el PIN. La
+     * respuesta se procesa en P01 para verificar el PIN y obtener el estado
+     * actual del empleado, y solo entonces se navega a P06
+     * (`ConfirmacionFragment`) con los datos ya cargados. P06 NO invoca
+     * directamente E52. Devuelve el nombre del empleado y su estado actual
+     * segun `EstadoTerminal`: SIN_ENTRADA, EN_JORNADA, EN_PAUSA o
+     * JORNADA_CERRADA. Solo lectura: no modifica ningun dato. Un PIN
+     * correcto reinicia el contador de intentos fallidos del dispositivo.
      *
      * Codigos HTTP:
      *   200 OK  → estado consultado correctamente
@@ -114,7 +119,8 @@ public class TerminalController {
      *   423     → dispositivo bloqueado
      *
      * @param request pin + dispositivoId
-     * @return nombre del empleado y estado de su jornada de hoy
+     * @return nombre del empleado, estado, horaEntrada, horaSalida,
+     *         horaInicioPausa y tipoPausa segun el estado del dia
      */
     @Operation(summary = "Consultar estado del dia por PIN",
                description = "Endpoint publico. Sin JWT. Devuelve el nombre y estado actual del empleado.")
@@ -158,8 +164,15 @@ public class TerminalController {
     /**
      * Registra la salida del empleado y calcula la jornada efectiva (RF-47).
      *
-     * Verifica que no hay pausa activa antes de registrar la salida.
-     * La jornada efectiva se calcula como Math.ceil(minutos_brutos - totalPausasMinutos).
+     * Verifica que no hay pausa activa antes de registrar la salida. El
+     * service mantiene dos calculos independientes:
+     *   - `jornadaEfectivaMinutos` que se persiste en la entidad `Fichaje`
+     *     como `Math.ceil(minutosBrutos - totalPausasMinutos)`. Lo consume
+     *     `SaldoService`.
+     *   - `jornadaEfectivaSegundos` que viaja en la respuesta para el
+     *     display del terminal, calculado como
+     *     `max(0, segundosBrutos - totalPausasSegundos)` sobre los segundos
+     *     exactos de las pausas cerradas no retribuidas del dia.
      *
      * Códigos HTTP:
      *   200 OK  → salida registrada con jornada efectiva calculada
@@ -169,7 +182,10 @@ public class TerminalController {
      *   423     → dispositivo bloqueado
      *
      * @param request pin + dispositivoId
-     * @return nombre, hora de salida, jornada efectiva y mensaje
+     * @return nombre, horaEntrada, horaSalida, totalPausasSegundos,
+     *         numeroPausas (cuenta TODAS las pausas del dia, cerradas y
+     *         abiertas, sin filtrar por tipo), jornadaEfectivaSegundos y
+     *         mensaje
      */
     @Operation(summary = "Registrar salida por PIN",
                description = "Endpoint p\u00fablico. Sin JWT. Registra la salida y calcula jornada efectiva.")
@@ -213,9 +229,16 @@ public class TerminalController {
     /**
      * Finaliza la pausa activa del empleado desde el terminal (RF-49).
      *
-     * Busca la pausa con horaFin null del empleado hoy. Calcula la
-     * duración con Math.floor y actualiza totalPausasMinutos en el fichaje
-     * si la pausa no es AUSENCIA_RETRIBUIDA.
+     * Busca la pausa con horaFin null del empleado hoy. Calcula
+     * `duracionMinutos = Math.floor(minutos)` que se persiste en la
+     * entidad `Pausa` para consumo de `SaldoService` y `duracionSegundos`
+     * exactos que viajan en la respuesta para el display del terminal.
+     * Si la pausa NO es `AUSENCIA_RETRIBUIDA` actualiza
+     * `totalPausasMinutos` en el fichaje del dia sumando la duracion en
+     * minutos. Si el fichaje del dia no existe (caso borde) la pausa se
+     * cierra igual sin tocar ningun fichaje y sin lanzar error. NO emite
+     * HTTP 409: el unico conflicto posible (ausencia de pausa activa) se
+     * mapea a 400.
      *
      * Códigos HTTP:
      *   200 OK  → pausa finalizada con duración calculada
@@ -224,7 +247,7 @@ public class TerminalController {
      *   423     → dispositivo bloqueado
      *
      * @param request pin + dispositivoId
-     * @return nombre, duración de la pausa y mensaje
+     * @return nombre, horaInicio, horaFin, duracionSegundos y mensaje
      */
     @Operation(summary = "Finalizar pausa por PIN",
                description = "Endpoint p\u00fablico. Sin JWT. Finaliza la pausa activa desde terminal.")

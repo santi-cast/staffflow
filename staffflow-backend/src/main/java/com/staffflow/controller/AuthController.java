@@ -108,30 +108,29 @@ public class AuthController {
     // E04 — POST /api/v1/auth/password/recovery
 
     /**
-     * Solicita la recuperación de contraseña por email.
-     *
-     * <p><b>v1.0 — no operativo:</b> en v1 este flujo entrega una contraseña
-     * temporal de 8 caracteres por email (E04). El token UUID de 30 minutos
-     * descrito a continuación pertenece al andamiaje reservado para v2.0
-     * (ver memoria TFG, bloque B10 Vías Futuras → Reset password con token UUID).</p>
+     * Solicita la recuperación de contraseña por email (E04).
      *
      * <p>Ruta pública: no requiere token (el usuario no puede autenticarse
      * si ha olvidado su contraseña).</p>
      *
-     * <p>Siempre devuelve 200 con el mismo mensaje, exista o no el email en
-     * la BD. Esto impide la enumeración de usuarios registrados (RNF-S04):
-     * el cliente nunca puede distinguir un email registrado de uno que no
-     * lo está a partir de la respuesta del endpoint.</p>
-     *
-     * <p>Comportamiento real en v1: si el email existe, AuthService genera
-     * una contraseña temporal de 8 caracteres alfanuméricos, sobrescribe el
+     * <p>Comportamiento en v1: si el email existe, AuthService genera una
+     * contraseña temporal de 8 caracteres alfanuméricos, sobrescribe el
      * passwordHash del usuario y envía la contraseña en claro al correo
      * registrado de ese mismo usuario en la entidad Usuario, no al texto
      * tipeado por quien solicita la recuperación (el campo del DTO solo
      * actúa como identificador para localizar al usuario). El envío se
-     * realiza a través de EmailService (Gmail SMTP). Los campos resetToken y
-     * resetTokenExpiry de la entidad Usuario no se tocan; quedan reservados
-     * para el flujo de token UUID previsto en v2.0.</p>
+     * realiza a través de EmailService (Gmail SMTP).</p>
+     *
+     * <p>Siempre devuelve 200 con el mismo mensaje, exista o no el email
+     * en la BD. Esto impide la enumeración de usuarios registrados
+     * (RNF-S04): el cliente nunca puede distinguir un email registrado de
+     * uno que no lo está a partir de la respuesta del endpoint.</p>
+     *
+     * <p><b>Andamiaje reservado para v2.0:</b> los campos resetToken y
+     * resetTokenExpiry de la entidad Usuario no se tocan en v1 (E04 no los
+     * escribe), quedan reservados para un futuro flujo de reset con token
+     * UUID de 30 minutos descrito en E05 y en la memoria TFG (bloque B10
+     * Vías Futuras → Reset password con token UUID).</p>
      *
      * @param request DTO con el email del usuario
      * @return 200 OK con MensajeResponse (mensaje genérico)
