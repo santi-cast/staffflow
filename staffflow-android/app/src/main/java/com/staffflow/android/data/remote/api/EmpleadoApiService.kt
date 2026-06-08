@@ -17,14 +17,15 @@ import retrofit2.http.Query
  * Interfaz Retrofit para los endpoints de empleados.
  *
  * Endpoints cubiertos:
- *   E13 POST /empleados              -> EmpleadoResponse 201  (ADMIN, ENCARGADO)
- *   E14 GET  /empleados              -> List<EmpleadoResponse> (ADMIN, ENCARGADO)
- *   E15 GET  /empleados/{id}         -> EmpleadoResponse      (ADMIN, ENCARGADO)
- *   E16 PATCH /empleados/{id}        -> EmpleadoResponse      (ADMIN, ENCARGADO)
- *   E17 PATCH /empleados/{id}/baja   -> MensajeResponse       (ADMIN, ENCARGADO)
- *   E18 PATCH /empleados/{id}/reactivar -> MensajeResponse    (ADMIN, ENCARGADO)
- *   E21 GET  /empleados/me           -> EmpleadoResponse      (EMPLEADO)
- *   E68 GET  /empleados/by-usuario/{usuarioId} -> EmpleadoResponse (ADMIN)
+ *   E13 POST  /empleados                       -> EmpleadoResponse 201    (ADMIN, ENCARGADO)
+ *   E14 GET   /empleados                       -> List<EmpleadoResponse>  (ADMIN, ENCARGADO)
+ *   E15 GET   /empleados/{id}                  -> EmpleadoResponse        (ADMIN, ENCARGADO)
+ *   E16 PATCH /empleados/{id}                  -> EmpleadoResponse        (ADMIN, ENCARGADO)
+ *   E17 PATCH /empleados/{id}/baja             -> MensajeResponse         (ADMIN, ENCARGADO)
+ *   E18 PATCH /empleados/{id}/reactivar        -> MensajeResponse         (ADMIN, ENCARGADO)
+ *   E21 GET   /empleados/me                    -> EmpleadoResponse        (EMPLEADO)
+ *   E65 POST  /empleados/{id}/regenerar-pin    -> RegenerarPinResponse    (ADMIN, ENCARGADO)
+ *   E68 GET   /empleados/by-usuario/{usuarioId}-> EmpleadoResponse        (ADMIN)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  * El PIN del empleado nunca se incluye en ninguna respuesta por seguridad.
