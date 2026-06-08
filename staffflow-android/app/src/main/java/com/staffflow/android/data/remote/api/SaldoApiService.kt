@@ -12,10 +12,10 @@ import retrofit2.http.Query
  * Interfaz Retrofit para los endpoints de saldos anuales.
  *
  * Endpoints cubiertos:
- *   E41 GET  /saldos/me              -> SaldoResponse        (EMPLEADO)
+ *   E41 GET  /saldos/me              -> SaldoResponse        (EMPLEADO, ENCARGADO)
  *   E38 GET  /saldos/{id}            -> SaldoResponse        (ADMIN, ENCARGADO)
  *   E39 GET  /saldos                 -> List<SaldoResponse>  (ADMIN, ENCARGADO)
- *   E40 POST /saldos/{id}/recalcular -> MensajeResponse      (ADMIN, ENCARGADO)
+ *   E40 POST /saldos/{id}/recalcular -> MensajeResponse      (ADMIN)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  *
