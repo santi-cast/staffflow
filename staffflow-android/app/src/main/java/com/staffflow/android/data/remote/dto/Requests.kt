@@ -119,7 +119,7 @@ data class EmpleadoRequest(
  * valida con 409 si ya existe en otro empleado.
  *
  * No incluye pinTerminal ni activo: el PIN se regenera via E65
- * (POST /empleados/{id}/pin/regenerar) y la activacion/desactivacion va
+ * (POST /empleados/{id}/regenerar-pin) y la activacion/desactivacion va
  * por endpoints dedicados E17 (PATCH /empleados/{id}/baja) y E18
  * (PATCH /empleados/{id}/reactivar). El backend ignora ambos campos si
  * llegan en este patch.
