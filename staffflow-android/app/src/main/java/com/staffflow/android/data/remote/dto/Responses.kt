@@ -261,21 +261,6 @@ data class SinJustificarResponse(
 data class MensajeResponse(val mensaje: String)
 
 /**
- * Respuesta de error estandar del backend.
- *
- * Todos los errores (4xx, 5xx) devuelven esta estructura.
- * El campo mensaje es el texto legible para mostrar al usuario.
- * Codigos relevantes: 400 datos invalidos | 401 no autenticado |
- * 403 rol insuficiente | 404 no encontrado | 409 conflicto | 423 bloqueado.
- */
-data class ErrorResponse(
-    val status: Int,
-    val error: String,
-    val mensaje: String,
-    val timestamp: String
-)
-
-/**
  * Cuerpo del 409 de POST /ausencias/rango cuando hay conflictos y sobrescribir=false.
  */
 data class RangoConflictResponse(
