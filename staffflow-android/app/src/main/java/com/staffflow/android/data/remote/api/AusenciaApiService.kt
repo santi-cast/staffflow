@@ -4,7 +4,6 @@ import com.staffflow.android.data.remote.dto.AusenciaPatchRequest
 import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.AusenciaResponse
-import com.staffflow.android.data.remote.dto.MensajeResponse
 import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -23,7 +22,7 @@ import retrofit2.http.Streaming
  * Endpoints cubiertos:
  *   E30 POST /ausencias          -> AusenciaResponse 201  (ADMIN, ENCARGADO)
  *   E31 PATCH /ausencias/{id}    -> AusenciaResponse      (ADMIN, ENCARGADO)
- *   E32 DELETE /ausencias/{id}   -> MensajeResponse       (ADMIN, ENCARGADO)
+ *   E32 DELETE /ausencias/{id}   -> Response<Unit> (204)  (ADMIN, ENCARGADO)
  *   E33 GET  /ausencias          -> List<AusenciaResponse> (ADMIN, ENCARGADO)
  *   E34 GET  /ausencias/me       -> List<AusenciaResponse> (EMPLEADO)
  *
