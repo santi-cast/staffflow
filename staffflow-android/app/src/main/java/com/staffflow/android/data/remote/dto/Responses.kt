@@ -329,7 +329,7 @@ data class TerminalSalidaResponse(
  * Respuesta al iniciar (E50) o finalizar (E51) una pausa desde el terminal.
  *
  * horaInicioPausa es null en E51 (finalizar pausa).
- * duracionPausaMinutos es null en E50 (iniciar pausa).
+ * duracionPausaSegundos es null en E50 (iniciar pausa).
  * Mostrada en P06 (ConfirmacionFragment) durante 3 segundos.
  */
 data class TerminalPausaResponse(

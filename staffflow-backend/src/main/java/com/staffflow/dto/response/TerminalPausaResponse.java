@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 /**
  * Respuesta del terminal al iniciar (E50) o finalizar (E51) una pausa.
  *
- * En E50 (iniciar): horaInicioPausa tiene valor; horaFinPausa y duracionPausaMinutos son null.
+ * En E50 (iniciar): horaInicioPausa tiene valor; horaFinPausa y duracionPausaSegundos son null.
  * En E51 (finalizar): los tres campos tienen valor (inicio, fin y duración).
  * El mismo DTO sirve para ambos endpoints — los campos no usados llegan null.
  *
