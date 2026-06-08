@@ -40,12 +40,7 @@ class PresenciaAdapter(
 ) : ListAdapter<DetallePresenciaResponse, PresenciaAdapter.ViewHolder>(DiffCallback()) {
 
     private companion object {
-        /**
-         * Lapiz (U+270E) usado como affordance de "tocar para editar". Mismo
-         * caracter que el informe semanal del backend (InformeService) usa
-         * en las celdas editables del HTML, manteniendo coherencia visual
-         * entre el cliente Android y el informe impreso.
-         */
+        /** Lapiz (U+270E) usado como affordance de "tocar para editar". */
         const val LAPIZ = "\u270E"
     }
 

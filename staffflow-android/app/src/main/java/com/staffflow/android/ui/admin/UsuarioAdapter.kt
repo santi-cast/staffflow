@@ -33,9 +33,9 @@ class UsuarioAdapter(
 
     private companion object {
         /**
-         * Lapiz (U+270E) usado como affordance de "tocar para editar". Mismo
-         * caracter que usa PresenciaAdapter y el informe semanal del backend
-         * (InformeService) para indicar que la celda es editable.
+         * Lapiz (U+270E) usado como affordance de "tocar para editar".
+         * Mismo caracter que usa PresenciaAdapter para mantener consistencia
+         * visual entre listados editables del cliente.
          */
         const val LAPIZ = "\u270E"
 
