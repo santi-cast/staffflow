@@ -39,9 +39,9 @@ import java.net.Socket
  *   1. LoginViewModel persiste sesion en DataStore y actualiza NetworkModule.authToken.
  *   2. LoginFragment llama a MainActivity.refreshDrawerMenu() para cargar grupos por rol.
  *   3. LoginFragment llama a MainActivity.navigateToInitialDestination(rol):
- *        ADMIN     -> P13 EmpleadosFragment
+ *        ADMIN     -> P17 ParteDiarioFragment
  *        ENCARGADO -> P17 ParteDiarioFragment
- *        EMPLEADO  -> P09 MiSaldoFragment
+ *        EMPLEADO  -> P12 MiHoyFragment
  *      La accion usa popUpTo(terminalFragment, inclusive=true) para limpiar el back stack.
  *
  * Errores:
