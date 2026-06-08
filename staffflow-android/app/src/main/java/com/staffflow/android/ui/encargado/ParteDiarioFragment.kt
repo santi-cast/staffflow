@@ -225,7 +225,15 @@ class ParteDiarioFragment : Fragment() {
                 binding.chipEstadoDia.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor("#E8F5E9"))
                 binding.chipEstadoDia.setTextColor(Color.parseColor("#2E7D32"))
             } else {
-                binding.chipEstadoDia.text = getString(R.string.parte_diario_chip_sin_completar)
+                // Pendientes = jornada abierta (con o sin pausa) + sin justificar.
+                // No sumamos enPausa: el backend (PresenciaService) ya lo incluye
+                // dentro de trabajando, sumarlo contaria al mismo empleado dos veces.
+                val pendientes = data.trabajando + data.sinJustificar
+                binding.chipEstadoDia.text = resources.getQuantityString(
+                    R.plurals.parte_diario_chip_sin_completar,
+                    pendientes,
+                    pendientes
+                )
                 binding.chipEstadoDia.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor("#FFEBEE"))
                 binding.chipEstadoDia.setTextColor(Color.parseColor("#C62828"))
             }
