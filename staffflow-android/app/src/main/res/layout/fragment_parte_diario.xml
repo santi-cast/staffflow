@@ -13,8 +13,11 @@
           EXITO:    SwipeRefreshLayout > RecyclerView
 
     El selector de fecha se muestra en la toolbar via MenuProvider (menu_parte_diario.xml).
-    El chip "Sin justificar" navega a P18 (action_parte_diario_to_sin_justificar).
-    Tap en fila del RecyclerView -> P14 (action_parte_diario_to_detalle_empleado).
+
+    Navegaciones desde el RecyclerView:
+      - Chip "Sin justificar" -> P18 (action_parte_diario_to_sin_justificar).
+      - Tap en fichaje o pausa -> P20 FormFichaje (action_parte_diario_to_form_fichaje).
+      - Tap en ausencia -> P24 FormAusencia (action_parte_diario_to_form_ausencia).
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

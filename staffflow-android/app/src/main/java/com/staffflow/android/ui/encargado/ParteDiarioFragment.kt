@@ -32,8 +32,14 @@ import kotlinx.coroutines.launch
  *   Empty   -> icono + "No hay empleados registrados hoy"
  *   Success -> chips de resumen + RecyclerView con pull-to-refresh
  *
- * Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
- * Tap en fila -> action_parte_diario_to_detalle_empleado (P14).
+ * Navegaciones:
+ *   Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
+ *   Tap en evento de fichaje o pausa -> action_parte_diario_to_form_fichaje (P20).
+ *   Tap en evento de ausencia        -> action_parte_diario_to_form_ausencia (P24).
+ *   Tap en "Sin justificar" inline   -> action_parte_diario_to_form_fichaje (P20) con fichajeId=-1.
+ *
+ * La accion action_parte_diario_to_detalle_dia (P16) esta declarada en el
+ * nav_graph pero no la consume este fragment en v1 (huerfana, candidata a limpieza).
  */
 class ParteDiarioFragment : Fragment() {
 
