@@ -405,8 +405,8 @@ class MainActivity : AppCompatActivity() {
      * Lanza el dialogo nativo de impresion del sistema para el contenido
      * actual de un WebView.
      *
-     * Llamado desde Fragments que muestran informes en WebView (P22 Fichajes
-     * globales, P23 Ausencias globales) via:
+     * Llamado desde Fragments que muestran informes en WebView (P19
+     * Resumen semanal de fichajes, P23 Ausencias globales) via:
      * `(requireActivity() as MainActivity).imprimirWebView(webView, nombre)`.
      *
      * Vive aqui en la Activity y no en una utilidad estatica porque
