@@ -146,7 +146,7 @@
         android:label="Mi perfil"
         tools:layout="@layout/fragment_mi_perfil" />
 
-    <!-- P09 Mi saldo anual (destino inicial EMPLEADO) -->
+    <!-- P09 Mi saldo anual -->
     <fragment
         android:id="@+id/miSaldoFragment"
         android:name="com.staffflow.android.ui.empleado.MiSaldoFragment"
@@ -167,7 +167,7 @@
         android:label="Mis ausencias"
         tools:layout="@layout/fragment_mis_ausencias" />
 
-    <!-- P12 Mi hoy (estado del dia del empleado) -->
+    <!-- P12 Mi hoy (estado del dia del empleado, destino inicial EMPLEADO) -->
     <fragment
         android:id="@+id/miHoyFragment"
         android:name="com.staffflow.android.ui.empleado.MiHoyFragment"
@@ -178,7 +178,7 @@
     <!-- ZONA AUTENTICADA -ENCARGADO y ADMIN                        -->
     <!-- ============================================================ -->
 
-    <!-- P17 Parte diario de presencia (destino inicial ENCARGADO) -->
+    <!-- P17 Parte diario de presencia (destino inicial ADMIN y ENCARGADO) -->
     <fragment
         android:id="@+id/parteDiarioFragment"
         android:name="com.staffflow.android.ui.encargado.ParteDiarioFragment"
@@ -324,7 +324,7 @@
     <!-- ZONA AUTENTICADA -ADMIN y ENCARGADO (gestion empleados)    -->
     <!-- ============================================================ -->
 
-    <!-- P13 Lista de empleados (destino inicial ADMIN) -->
+    <!-- P13 Lista de empleados -->
     <fragment
         android:id="@+id/empleadosFragment"
         android:name="com.staffflow.android.ui.shared.EmpleadosFragment"
