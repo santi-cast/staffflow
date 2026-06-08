@@ -30,7 +30,7 @@ import java.time.LocalDate
  *
  * Modo alta   (ausenciaId = -1): E30 POST /ausencias.
  * Modo edicion (ausenciaId > 0): E31 PATCH /ausencias/{id}.
- * Eliminar    (ausenciaId > 0, procesado=false): E32 DELETE con dialogo previo (Decision 26).
+ * Eliminar    (ausenciaId > 0, procesado=false): E32 DELETE con dialogo previo.
  * Modo rango  (fechaDesde + fechaHasta presentes): POST /ausencias/rango.
  *   - empleadoId, fechaDesde y fechaHasta vienen bloqueados desde P23.
  *   - 409 con fechas conflictivas → dialogo "¿Sobrescribir?".
@@ -227,7 +227,7 @@ class FormAusenciaFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogo de confirmacion antes de eliminar (Decision 26)
+    // Dialogo de confirmacion antes de eliminar
     // ------------------------------------------------------------------
 
     private fun mostrarDialogoConfirmacion() {

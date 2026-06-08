@@ -40,7 +40,7 @@ import java.util.Locale
  *   4. Gestionar la sesion expirada (HTTP 401): limpiar DataStore,
  *      ocultar Drawer, navegar a LoginFragment y mostrar Snackbar.
  *   5. Al arrancar, si hay JWT valido en DataStore, navegar directamente
- *      al destino inicial por rol sin pasar por el login (Decision 24-C).
+ *      al destino inicial por rol sin pasar por el login.
  *
  * La navegacion post-login se delega a LoginFragment, que llama a
  * navigateToInitialDestination(rol) tras un login exitoso (E01).
@@ -309,7 +309,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Al arrancar, comprueba si hay token en DataStore.
      * Si existe, configura el Drawer y navega al destino inicial por rol
-     * sin pasar por el login (Decision 24-C).
+     * sin pasar por el login.
      *
      * Para la URL base del backend:
      *   1. Si hay BASE_URL en DataStore (configurada previamente) -> usarla directamente.
@@ -451,7 +451,7 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     /**
-     * Confirmacion antes de cerrar sesion (Decision 26).
+     * Confirmacion antes de cerrar sesion.
      * El boton destructivo es setNegativeButton, que en Material Design 3
      * aparece en rojo para indicar accion destructiva.
      */

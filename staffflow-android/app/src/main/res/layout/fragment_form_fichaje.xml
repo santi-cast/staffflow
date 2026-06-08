@@ -8,7 +8,7 @@
 
     Campos comunes: empleadoId, fecha, observaciones (OBLIGATORIAS RNF-L02).
     El titulo de la toolbar lo establece FormFichajeFragment segun el modo.
-    El boton GUARDAR se deshabilita durante la llamada al API (Decision 25).
+    El boton GUARDAR se deshabilita durante la llamada al API.
     Observaciones con helperText para recordar que son obligatorias.
 -->
 <ScrollView

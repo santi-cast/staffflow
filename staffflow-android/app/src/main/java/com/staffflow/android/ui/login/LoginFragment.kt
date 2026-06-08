@@ -35,7 +35,7 @@ import java.net.Socket
  *
  * Patron B - Autenticacion. Endpoint: E01 POST /auth/login.
  *
- * Flujo de exito (Decision 24-C):
+ * Flujo de exito:
  *   1. LoginViewModel persiste sesion en DataStore y actualiza NetworkModule.authToken.
  *   2. LoginFragment llama a MainActivity.refreshDrawerMenu() para cargar grupos por rol.
  *   3. LoginFragment llama a MainActivity.navigateToInitialDestination(rol):
@@ -48,7 +48,7 @@ import java.net.Socket
  *   401 -> mensaje inline en tilPassword.error
  *   Red  -> mensaje de sin conexion en tilPassword.error
  *
- * Decision 25: btnLogin queda deshabilitado durante la llamada de red.
+ * btnLogin queda deshabilitado durante la llamada de red.
  */
 class LoginFragment : Fragment() {
 
@@ -143,7 +143,7 @@ class LoginFragment : Fragment() {
 
     private fun procesarEstado(estado: LoginUiState) {
         val cargando = estado is LoginUiState.Loading
-        // Decision 25: deshabilitar boton durante la llamada
+        // Deshabilitar boton durante la llamada
         binding.btnLogin.isEnabled = !cargando
         binding.progressIndicator.isVisible = cargando
         binding.btnOlvidePassword.isEnabled = !cargando

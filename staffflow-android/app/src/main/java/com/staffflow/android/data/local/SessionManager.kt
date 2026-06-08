@@ -19,7 +19,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  *
  * Almacena token JWT, rol, username y empleadoId tras el login (E01).
  * Los datos se leen al arrancar la app para:
- *   - Navegar directamente al destino inicial por rol (Decision 24-C).
+ *   - Navegar directamente al destino inicial por rol.
  *   - Configurar los grupos visibles del Drawer en MainActivity.
  *   - Adjuntar el token en el header Authorization de cada llamada
  *     autenticada (NetworkModule.authToken).

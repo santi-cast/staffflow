@@ -409,7 +409,7 @@ class FormUsuarioFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogos de confirmacion antes de cambiar estado (Decision 26)
+    // Dialogos de confirmacion antes de cambiar estado
     // ------------------------------------------------------------------
 
     private fun mostrarDialogoDesactivar() {

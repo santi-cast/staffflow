@@ -16,7 +16,7 @@
 
     El item nav_cerrar_sesion no tiene destino en el nav_graph:
     se gestiona manualmente en MainActivity con un AlertDialog
-    de confirmacion (Decision 26).
+    de confirmacion.
 -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
