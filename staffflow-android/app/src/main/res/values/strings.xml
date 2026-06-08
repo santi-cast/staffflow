@@ -35,7 +35,10 @@
     <string name="parte_diario_selector_fecha_titulo">Selecciona una fecha</string>
     <string name="parte_diario_vacio">No hay empleados registrados hoy</string>
     <string name="parte_diario_chip_dia_completo">✓ Todos los empleados con día completo</string>
-    <string name="parte_diario_chip_sin_completar">⚠ Quedan empleados por completar el día</string>
+    <plurals name="parte_diario_chip_sin_completar">
+        <item quantity="one">⚠ Queda %1$d empleado por completar el día</item>
+        <item quantity="other">⚠ Quedan %1$d empleados por completar el día</item>
+    </plurals>
     <string name="parte_diario_banner_bloqueado">⚠ Terminal bloqueado por intentos fallidos de PIN</string>
     <string name="parte_diario_btn_desbloquear">Desbloquear</string>
     <string name="parte_diario_dialogo_desbloquear_titulo">Desbloquear terminal</string>

@@ -1,6 +1,7 @@
 package com.staffflow.controller;
 
 import com.staffflow.service.scheduled.ProcesoCierreDiario;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/test")
 @RequiredArgsConstructor
 @Profile("dev")
+@Tag(name = "Cierre diario", description = "Disparo manual del proceso nocturno (solo perfil dev).")
 public class TestProcesoCierreDiarioController {
 
     private final ProcesoCierreDiario procesoCierreDiario;
