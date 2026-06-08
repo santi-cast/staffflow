@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.List;
@@ -62,6 +63,7 @@ public class SaldoService {
     private final EmpleadoRepository empleadoRepository;
     private final FichajeRepository fichajeRepository;
     private final PlanificacionAusenciaRepository planificacionRepository;
+    private final Clock clock;
 
     // E38 — GET /api/v1/saldos/{empleadoId}
 
@@ -86,7 +88,7 @@ public class SaldoService {
 
         // Crear on-demand solo para el año actual: evita persistir registros vacíos
         // para años pasados o futuros sin fichajes reales.
-        if (anioConsulta == Year.now().getValue()
+        if (anioConsulta == Year.now(clock).getValue()
                 && saldoRepository.findByEmpleadoIdAndAnio(empleadoId, anioConsulta).isEmpty()) {
             recalcularParaProceso(empleadoId, anioConsulta);
         }
@@ -118,7 +120,7 @@ public class SaldoService {
 
         // Crear on-demand solo para el año actual: evita persistir registros vacíos
         // para años pasados o futuros sin fichajes reales.
-        if (anioConsulta == Year.now().getValue()) {
+        if (anioConsulta == Year.now(clock).getValue()) {
             empleadoRepository.findAll().stream()
                     .filter(e -> Boolean.TRUE.equals(e.getActivo()))
                     .filter(e -> saldoRepository.findByEmpleadoIdAndAnio(e.getId(), anioConsulta).isEmpty())
@@ -300,7 +302,7 @@ public class SaldoService {
                 - saldo.getDiasAsuntosPropiosConsumidos());
 
         // Actualizar calculadoHastaFecha al dia de hoy
-        saldo.setCalculadoHastaFecha(LocalDate.now());
+        saldo.setCalculadoHastaFecha(LocalDate.now(clock));
 
         saldoRepository.save(saldo);
     }
@@ -341,7 +343,7 @@ public class SaldoService {
         // contrato que el 404 del final del metodo cuando no se encuentra el
         // registro tras intentar calcularlo. IllegalStateException queda
         // reservada para fallos internos genuinos (5xx).
-        int anioActual = Year.now().getValue();
+        int anioActual = Year.now(clock).getValue();
         LocalDate fechaAlta = empleado.getFechaAlta();
         if (anioConsulta > anioActual) {
             throw new NotFoundException(
@@ -379,7 +381,7 @@ public class SaldoService {
      * @return año a usar en la consulta
      */
     private int resolverAnio(Integer anio) {
-        return anio != null ? anio : Year.now().getValue();
+        return anio != null ? anio : Year.now(clock).getValue();
     }
 
     /**

@@ -30,6 +30,13 @@ import java.time.ZoneId;
  *       E59 (informeSemana) y E60 (informeAusenciasGlobal), y checkpoint
  *       "ayer" del helper privado calcularSaldoHastaFecha invocado por
  *       E59 para reutilizar el SaldoAnual del cierre nocturno.</li>
+ *   <li>{@link com.staffflow.service.EmpleadoService}: resolucion del
+ *       dia actual en E13 (crear) para validar alta diferida y rechazar
+ *       altas retroactivas.</li>
+ *   <li>{@link com.staffflow.service.SaldoService}: resolucion del ano
+ *       actual en E38, E39 y E41 para decidir el patron findOrCreate
+ *       on-demand, validacion del ano contra fechaAlta en E41 y marca
+ *       calculadoHastaFecha del saldo recalculado.</li>
  * </ul>
  *
  * <p>Regla del proyecto: NO propagar {@code Clock} proactivamente al resto
