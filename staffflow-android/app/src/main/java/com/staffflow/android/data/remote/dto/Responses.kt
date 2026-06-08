@@ -40,7 +40,7 @@ data class UsuarioResponse(
 /**
  * Datos de un empleado (E14, E15, E21).
  *
- * numeroEmpleado tiene formato EMP-001 (renombrado desde nss).
+ * numeroEmpleado tiene formato EMP-001.
  * apellido2 y codigoNfc son opcionales (pueden ser null).
  *
  * pinTerminal, email, username y rol son nullables y dependen del endpoint y del rol:
