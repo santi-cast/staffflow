@@ -19,7 +19,9 @@ import retrofit2.http.Query
  *   E23 PATCH /fichajes/{id}              -> FichajeResponse      (ADMIN, ENCARGADO)
  *   E24 GET  /fichajes                    -> List<FichajeResponse> (ADMIN, ENCARGADO)
  *   E25 GET  /fichajes/incompletos        -> List<FichajeResponse> (ADMIN, ENCARGADO)
- *   E26 GET  /fichajes/me                 -> List<FichajeResponse> (EMPLEADO)
+ *
+ * E26 (GET /fichajes/me) NO se consume desde Android: P10 (MisFichajesFragment)
+ * usa el informe HTML E58 via InformeApiService.
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  * Las observaciones son OBLIGATORIAS en E22 y E23 (RNF-L02).
