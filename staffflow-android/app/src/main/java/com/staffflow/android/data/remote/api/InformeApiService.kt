@@ -25,6 +25,12 @@ import retrofit2.http.Streaming
  *       -> ResponseBody (PDF byte[] saldos anuales)
  *   E57 GET /informes/pdf/vacaciones?empleadoId=&anio=
  *       -> ResponseBody (PDF byte[] vacaciones de un empleado)
+ *   E58 GET /informes/me/horas?desde=&hasta=
+ *       -> ResponseBody (HTML horas del empleado autenticado para P10)
+ *   E59 GET /informes/semana?desde=&hasta=
+ *       -> ResponseBody (HTML tabla semanal para ResumenSemanalFragment)
+ *   E60 GET /informes/ausencias?desde=&hasta=
+ *       -> ResponseBody (HTML ausencias globales para AusenciasFragment)
  *
  * Los endpoints PDF usan @Streaming para evitar cargar el binario completo
  * en memoria antes de escribirlo al fichero temporal (FileProvider).

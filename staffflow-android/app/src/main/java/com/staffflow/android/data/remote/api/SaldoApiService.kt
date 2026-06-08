@@ -35,7 +35,7 @@ interface SaldoApiService {
 
     /**
      * E38 - Saldo anual de un empleado concreto.
-     * P25 (SaldoIndividualFragment) llama a este metodo.
+     * P25 (SaldoFragment) llama a este metodo.
      * @param empleadoId Id del empleado a consultar.
      * @param anio       Año a consultar. Si es null el backend usa el año actual.
      */
@@ -55,7 +55,7 @@ interface SaldoApiService {
 
     /**
      * E40 - Recalcula el saldo anual de un empleado concreto.
-     * P25 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
+     * P25 (SaldoFragment) llama a este metodo desde el boton "Recalcular saldo".
      * @param empleadoId Id del empleado a recalcular.
      * @param anio       Año a recalcular.
      */

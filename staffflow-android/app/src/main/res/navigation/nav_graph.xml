@@ -278,6 +278,11 @@
             android:id="@+id/action_ausencias_to_form_ausencia"
             app:destination="@id/formAusenciaFragment" />
 
+        <!-- P23 -> P20 Editar fichaje desde enlace inline del informe E60 -->
+        <action
+            android:id="@+id/action_ausencias_to_form_fichaje"
+            app:destination="@id/formFichajeFragment" />
+
     </fragment>
 
     <!-- P24 Crear o editar ausencia -->

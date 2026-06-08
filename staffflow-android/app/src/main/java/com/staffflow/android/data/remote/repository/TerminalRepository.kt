@@ -11,7 +11,7 @@ import com.staffflow.android.data.remote.dto.TerminalSalidaResponse
 import com.staffflow.android.util.safeApiCall
 
 /**
- * Repositorio para los endpoints del terminal de fichaje (E48-E51).
+ * Repositorio para los endpoints del terminal de fichaje (E48-E54).
  *
  * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
  * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo

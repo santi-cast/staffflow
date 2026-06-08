@@ -215,7 +215,7 @@ class AusenciasFragment : Fragment() {
             uri.getQueryParameter("horaEntrada")?.let { putString("horaEntrada", it) }
             uri.getQueryParameter("horaSalida")?.let  { putString("horaSalida", it) }
         }
-        findNavController().navigate(R.id.action_ausencias_to_form_ausencia, args)
+        findNavController().navigate(R.id.action_ausencias_to_form_fichaje, args)
     }
 
     /**

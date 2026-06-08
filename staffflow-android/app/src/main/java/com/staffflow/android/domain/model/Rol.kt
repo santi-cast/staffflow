@@ -4,9 +4,9 @@ package com.staffflow.android.domain.model
  * Roles de usuario del sistema StaffFlow.
  *
  * Determina las pantallas accesibles y el destino inicial tras el login:
- *   ADMIN     -> P13 EmpleadosFragment
+ *   ADMIN     -> P17 ParteDiarioFragment
  *   ENCARGADO -> P17 ParteDiarioFragment
- *   EMPLEADO  -> P09 MiSaldoFragment
+ *   EMPLEADO  -> P12 MiHoyFragment
  *
  * El rol se recibe en LoginResponse y se persiste en Preferences DataStore
  * para construir el Drawer dinamico en MainActivity.

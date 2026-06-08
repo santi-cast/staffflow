@@ -31,7 +31,7 @@ class SaldoRepository(private val api: SaldoApiService) {
 
     /**
      * E38 - Saldo anual de un empleado concreto.
-     * P25 (SaldoIndividualFragment) llama a este metodo al cargar o cambiar el ano.
+     * P25 (SaldoFragment) llama a este metodo al cargar o cambiar el ano.
      */
     suspend fun getSaldoEmpleado(empleadoId: Long, anio: Int? = null): Result<SaldoResponse> =
         safeApiCall { api.getSaldoEmpleado(empleadoId, anio) }
@@ -45,7 +45,7 @@ class SaldoRepository(private val api: SaldoApiService) {
 
     /**
      * E40 - Recalcula el saldo anual de un empleado concreto.
-     * P25 (SaldoIndividualFragment) llama a este metodo desde el boton "Recalcular saldo".
+     * P25 (SaldoFragment) llama a este metodo desde el boton "Recalcular saldo".
      */
     suspend fun recalcularSaldo(empleadoId: Long, anio: Int): Result<MensajeResponse> =
         safeApiCall { api.recalcularSaldo(empleadoId, anio) }

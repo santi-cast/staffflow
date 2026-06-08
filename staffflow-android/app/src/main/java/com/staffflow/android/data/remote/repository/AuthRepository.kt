@@ -46,6 +46,10 @@ class AuthRepository(private val api: AuthApiService) {
     /**
      * E05 - Restablecer contraseña con token del email.
      * Sin JWT. Error 400 si el token ha expirado o es invalido.
+     *
+     * NOTA v1.0: no operativo. Devuelve siempre HTTP 400 porque el
+     * backend no escribe resetToken en v1 (ver AuthApiService.kt para
+     * el detalle del andamiaje reservado a v2.0).
      */
     suspend fun restablecerPassword(request: PasswordResetRequest): Result<MensajeResponse> =
         safeApiCall { api.restablecerPassword(request) }

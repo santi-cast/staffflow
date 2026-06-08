@@ -24,6 +24,11 @@ import kotlinx.coroutines.launch
  *   VerificandoPin -> llamando a E52; spinner visible, numpad deshabilitado
  *   Error          -> E52 fallo (PIN incorrecto u otro error); mensaje visible,
  *                     numpad deshabilitado; se resetea automaticamente tras 2s
+ *   Bloqueado      -> 5 intentos fallidos consecutivos sobre el mismo dispositivoId;
+ *                     numpad deshabilitado hasta que un ENCARGADO/ADMIN desbloquee
+ *                     via E54 desde P17
+ *   ErrorConexion  -> fallo de red en E52; conserva el PIN tecleado para reintentar
+ *                     sin obligar al usuario a volver a marcarlo
  *   PinVerificado  -> E52 OK; el Fragment navega a P06 con todos los datos del estado
  */
 sealed class TerminalUiState {

@@ -40,7 +40,7 @@ data class UsuarioResponse(
 /**
  * Datos de un empleado (E14, E15, E21).
  *
- * numeroEmpleado tiene formato EMP-001 (renombrado desde nss).
+ * numeroEmpleado tiene formato EMP-001.
  * apellido2 y codigoNfc son opcionales (pueden ser null).
  *
  * pinTerminal, email, username y rol son nullables y dependen del endpoint y del rol:
@@ -259,21 +259,6 @@ data class SinJustificarResponse(
 
 /** Respuesta generica de confirmacion para operaciones sin datos de retorno. */
 data class MensajeResponse(val mensaje: String)
-
-/**
- * Respuesta de error estandar del backend.
- *
- * Todos los errores (4xx, 5xx) devuelven esta estructura.
- * El campo mensaje es el texto legible para mostrar al usuario.
- * Codigos relevantes: 400 datos invalidos | 401 no autenticado |
- * 403 rol insuficiente | 404 no encontrado | 409 conflicto | 423 bloqueado.
- */
-data class ErrorResponse(
-    val status: Int,
-    val error: String,
-    val mensaje: String,
-    val timestamp: String
-)
 
 /**
  * Cuerpo del 409 de POST /ausencias/rango cuando hay conflictos y sobrescribir=false.

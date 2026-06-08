@@ -23,7 +23,7 @@ import java.util.Calendar
  * El año por defecto es el año actual.
  *
  * Mismo patron que MiSaldoViewModel (P09) pero para un empleado concreto.
- * SaldoIndividualFragment.init() guarda el empleadoId en el ViewModel para
+ * SaldoFragment.init() guarda el empleadoId en el ViewModel para
  * no recargar datos en rotaciones de pantalla.
  *
  * UiState:
