@@ -41,7 +41,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 - Parte diario de presencia (Jornada iniciada · En pausa · Jornada completada · Ausencia registrada · Ausencia planificada · Sin justificar)
 - Informes operativos de horas trabajadas y ausencias en JSON y HTML imprimible
 - Generación de informes PDF firmables con iText 7: horas por empleado (E45), horas global de todos los empleados (E46), saldos anuales (E47) y vacaciones/asuntos propios (E57)
-- Informes HTML interactivos para WebView Android: horas individuales (E58), tabla semanal global (E59), ausencias globales (E60), informes individuales por empleado (E61, E62) y planificación de vacaciones/asuntos propios (E64)
+- Informes HTML interactivos para WebView Android, diseñados específicamente como HTML (no como respuesta dual JSON/HTML): horas individuales del empleado (E58), tabla semanal global con enlaces de edición `staffflow://` (E59), ausencias globales (E60), informes individuales por empleado (E61, E62) y planificación de vacaciones/asuntos propios (E64). Los informes E42, E43 y E44 también ofrecen una versión HTML imprimible mediante `?formato=html`, complementaria a su respuesta JSON por defecto
 - Creación de ausencias por rango de fechas en una sola llamada (E63), con detección de conflictos y opción de sobrescritura
 - Recuperación de contraseña por email: se genera una contraseña temporal de 8 caracteres y se envía vía Gmail SMTP al email que el usuario tenga registrado en la base de datos (no al texto introducido en la pantalla, que solo sirve para identificar al usuario). Por seguridad anti-enumeración (RNF-S04), la API siempre devuelve la misma respuesta genérica exista o no el email solicitado, por lo que la pantalla no revela si la cuenta está registrada. El usuario inicia sesión con la contraseña temporal y la cambia desde la aplicación (E03). La recuperación por token de un solo uso está documentada como mejora para v2.0
 
@@ -200,8 +200,8 @@ Convenciones de la tabla:
 | E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría). Sin filtros devuelve todos (activos e inactivos). HTTP 400 si el valor de `categoría` no es un enum válido | P13 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal`, `email`, `username` y `rol` del usuario asociado; ENCARGADO los recibe a `null` (Opción A). HTTP 404 si el `id` no existe | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado. Permite corregir `dni` y `codigoNfc` (409 si alguno ya existe en otro empleado) y `fechaAlta` (sin restricción de rango: pasado o futuro). PIN de terminal NO se modifica aquí — usar E65 | P15 |
-| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial. HTTP 404 si el `id` no existe | — |
-| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja. HTTP 404 si el `id` no existe; HTTP 409 si el empleado ya estaba activo | — |
+| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial. HTTP 404 si el `id` no existe | P14 |
+| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja. HTTP 404 si el `id` no existe; HTTP 409 si el empleado ya estaba activo | P14 |
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado. Acepta `?fecha` opcional (formato ISO, default = hoy). Respuesta idéntica a E35 (ParteDiarioResponse) | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF. El parámetro `formato` es obligatorio (`csv` o `pdf`); HTTP 400 si el valor no es válido. Acepta `?activo` opcional para filtrar por estado | — |
 | E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve en la respuesta. El PIN queda persistido; tras la regeneración solo es re-consultable por ADMIN vía E15 | P14 |
@@ -222,10 +222,10 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. `horaFin` opcional: si se omite, la pausa queda activa | P20 |
+| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. `horaFin` opcional: si se omite, la pausa queda activa. HTTP 409 si ya hay una pausa activa abierta (`horaFin=null`) ese día para el empleado — solo puede existir una | P20 |
 | E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente. Observaciones obligatorias (RNF-L02). Misma restricción de fecha que E27 sobre la fecha de la pausa cargada de BD. Si llega `horaFin`, calcula `duracionMinutos` con `Math.floor` y, salvo `AUSENCIA_RETRIBUIDA`, actualiza `totalPausasMinutos` y recalcula `jornadaEfectivaMinutos` del fichaje del día (si existe) | P20 |
 | E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales y combinables: `empleadoId`, `desde`, `hasta`, `tipoPausa` | P16 |
-| E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON. 404 si el usuario autenticado no tiene perfil de empleado | — |
+| E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON. Filtros opcionales `desde` y `hasta` (a diferencia de E29, no acepta `tipoPausa` porque el lookup se hace por empleado, no por filtros administrativos). 404 si el username del JWT no existe en BD o no tiene perfil de empleado | — |
 
 #### Ausencias (`/api/v1/ausencias`)
 
@@ -328,7 +328,7 @@ El sistema utiliza **7 tablas** relacionales:
 | Obligación | Implementación |
 |---|---|
 | Registro diario con hora de inicio y fin | `UNIQUE(empleado_id, fecha)` en `fichajes` |
-| Conservación mínima 4 años | Sin endpoint DELETE en `/fichajes` ni `/pausas` |
+| Conservación mínima 4 años | Garantía estructural: la API no expone ningún endpoint DELETE sobre `/fichajes` ni `/pausas`, ni sobre los saldos anuales. No hay job de purga ni TTL activos. La trazabilidad temporal de los 4 años exigidos por el RD-ley se delega a la política de backup de la base de datos del operador (responsabilidad operativa, no aplicativa) |
 | Acceso de los trabajadores | RF‑51: el EMPLEADO consulta su historial en cualquier momento |
 | Acceso para Inspección de Trabajo | RF‑38, RF‑39, RF‑40: PDFs firmables con iText 7 |
 | Correcciones con trazabilidad | Modificación con campo `observaciones` obligatorio y no vacío |
@@ -427,7 +427,7 @@ Esta estrategia redujo el tiempo estimado de implementación de las pantallas An
 | P24 | FormAusenciaFragment | 4 — Encargado | E30, E31, E32, E40, E63, E64 | ADMIN, ENCARGADO |
 | P25 | SaldoFragment | 4 — Encargado | E38, E40 | ADMIN, ENCARGADO |
 | P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
-| P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
+| P27 | InformesFragment | 4 — Encargado | E14, E42–E47, E57 | ADMIN, ENCARGADO |
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
 | P29 | FormUsuarioFragment | 5 — Admin | E08–E13, E66, E67, E68 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
