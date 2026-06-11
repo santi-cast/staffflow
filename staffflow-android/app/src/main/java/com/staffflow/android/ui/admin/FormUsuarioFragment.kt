@@ -51,7 +51,7 @@ import java.time.format.DateTimeParseException
  * activo NO se edita por el campo `activo`: el boton btnCambiarEstado alterna
  * entre "Desactivar" (E12 DELETE) y "Activar" (E67 PATCH /reactivar) segun
  * usuario.activo, ambos con confirmacion via MaterialAlertDialog. Patron
- * simetrico al de DetalleEmpleadoFragment (P15).
+ * simetrico al de DetalleEmpleadoFragment (P14).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -395,7 +395,7 @@ class FormUsuarioFragment : Fragment() {
 
         binding.btnCambiarEstado.setOnClickListener {
             // Decidir desactivar vs activar segun el estado del usuario cargado.
-            // Mismo patron que DetalleEmpleadoFragment (P15).
+            // Mismo patron que DetalleEmpleadoFragment (P14).
             when (usuarioActivo) {
                 true  -> mostrarDialogoDesactivar()
                 false -> mostrarDialogoActivar()
@@ -437,7 +437,7 @@ class FormUsuarioFragment : Fragment() {
     /**
      * Configura el texto y el color del boton bimodal Desactivar/Activar
      * segun el estado actual del usuario cargado. Se invoca desde SuccessAlta
-     * en procesarEstado(). Patron simetrico al de DetalleEmpleadoFragment (P15).
+     * en procesarEstado(). Patron simetrico al de DetalleEmpleadoFragment (P14).
      *
      * Activo   -> "Desactivar" outlined rojo  (#C62828)
      * Inactivo -> "Activar"    outlined verde (#2E7D32)
