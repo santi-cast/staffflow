@@ -64,7 +64,9 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
     /**
      * E17 - Desactiva al empleado (baja logica: activo=false).
      * P14 (DetalleEmpleadoFragment) llama a este metodo desde el boton
-     * "Desactivar" tras confirmacion del usuario. Solo accesible a ADMIN.
+     * "Desactivar" tras confirmacion del usuario.
+     * Endpoint: ADMIN o ENCARGADO. La UI restringe el boton a ADMIN
+     * por decision propia (btnCambiarEstado.isVisible = rol == Rol.ADMIN).
      */
     suspend fun desactivar(id: Long): Result<MensajeResponse> =
         safeApiCall { api.desactivar(id) }
@@ -72,7 +74,9 @@ class EmpleadoRepository(private val api: EmpleadoApiService) {
     /**
      * E18 - Activa al empleado (activo=true).
      * P14 (DetalleEmpleadoFragment) llama a este metodo desde el boton
-     * "Activar" tras confirmacion del usuario. Solo accesible a ADMIN.
+     * "Activar" tras confirmacion del usuario.
+     * Endpoint: ADMIN o ENCARGADO. La UI restringe el boton a ADMIN
+     * por decision propia (btnCambiarEstado.isVisible = rol == Rol.ADMIN).
      */
     suspend fun activar(id: Long): Result<MensajeResponse> =
         safeApiCall { api.activar(id) }
