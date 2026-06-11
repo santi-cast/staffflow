@@ -318,7 +318,7 @@ El sistema utiliza **7 tablas** relacionales:
 | `empleados` | Perfil laboral. PIN de terminal (UNIQUE), jornada diaria, vacaciones, categoría. |
 | `fichajes` | Central. UNIQUE(empleado\_id, fecha). Sin DELETE (RD‑ley 8/2019). |
 | `pausas` | Sin DELETE. `hora_fin = NULL` indica pausa activa. |
-| `planificacion_ausencias` | `procesado = false` hasta que el proceso diario crea el fichaje correspondiente. |
+| `planificacion_ausencias` | UNIQUE(empleado\_id, fecha). `procesado = false` hasta que el proceso diario crea el fichaje correspondiente. |
 | `saldos_anuales` | Calculado por SaldoService. UNIQUE(empleado\_id, anio). Recálculo idempotente. |
 
 ---
@@ -331,7 +331,7 @@ El sistema utiliza **7 tablas** relacionales:
 | Conservación mínima 4 años | Garantía estructural: la API no expone ningún endpoint DELETE sobre `/fichajes` ni `/pausas`, ni sobre los saldos anuales. No hay job de purga ni TTL activos. La trazabilidad temporal de los 4 años exigidos por el RD-ley se delega a la política de backup de la base de datos del operador (responsabilidad operativa, no aplicativa) |
 | Acceso de los trabajadores | RF‑51: el EMPLEADO consulta su historial en cualquier momento |
 | Acceso para Inspección de Trabajo | RF‑38, RF‑39, RF‑40: PDFs firmables con iText 7 |
-| Correcciones con trazabilidad | Modificación con campo `observaciones` obligatorio y no vacío |
+| Correcciones con trazabilidad | Doble traza: campo `usuario_id` no nullable (QUIÉN realiza la modificación, distinto del empleado afectado) y campo `observaciones` obligatorio y no vacío (MOTIVO). Patrón aplicado en `fichajes`, `pausas` y `planificacion_ausencias` |
 
 ---
 
@@ -455,10 +455,10 @@ La asimetría es intencional: `usu001` es un login que el usuario teclea en P02 
 
 Sobre la base funcional se aplicó una capa adicional de hardening centrada en seguridad y resiliencia:
 
-- **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado". `IllegalStateException` queda reservada para errores internos genuinos (5xx).
+- **Modelo de excepciones de dominio**: nueva clase `NotFoundException` (404) que reemplaza el uso indebido de `IllegalStateException` para casos "no encontrado" (Spring mapea `IllegalStateException` a 500 por defecto, lo que confunde al monitoreo basado en códigos HTTP: un "no encontrado" termina reportado como fallo de servidor en lugar de error de cliente). `IllegalStateException` queda reservada para errores internos genuinos (5xx).
 - **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las anotaciones `@PreAuthorize` de la capa controller (57 anotaciones en código de producción al cierre del proyecto; el controller de test del perfil `dev` no usa `@PreAuthorize` porque su bean no se registra en perfil `mysql`). Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
-- **Estrategia de fetch JPA explícita**: todas las relaciones `@ManyToOne` y `@OneToOne` declaran `fetch = FetchType.LAZY` explícitamente. Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
+- **Estrategia de fetch JPA explícita**: las 8 relaciones `@ManyToOne` (6) y `@OneToOne` (2) del modelo declaran `fetch = FetchType.LAZY` de forma explícita (8/8). Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
 - **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales: 8 sobre las anotaciones `@PreAuthorize` de los endpoints `/me`, 1 sobre la activación de `@EnableMethodSecurity` en `SecurityConfig` y 2 de triangulación negativa que verifican que `AusenciaController` y `FichajeController` no usan `hasRole('EMPLEADO')` sin `ENCARGADO`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—; E21 `/me` se excluye porque ya está cubierto en `MethodSecurityConfigTest`), todos por reflexión sin arrancar el contexto de Spring. Más adelante se consolidó `GlobalExceptionHandlerTest` (9 tests con MockMvc en modo standalone) que cubre el contrato del handler (`NotFoundException` 404, `IllegalArgumentException` 400, `EntityNotFoundException` 404, `ConflictException` 409, `PinBloqueadoException` 423, `IllegalStateException` 500 tras ISE-01, `Exception` 500, y formato del body) sin depender del contexto JWT — sortea la deuda M-036 que afectaba a los tests `@WebMvcTest`/`@SpringBootTest` originales (ya eliminados).
 
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
