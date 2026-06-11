@@ -200,8 +200,8 @@ Convenciones de la tabla:
 | E14 | GET / | ADMIN, ENCARGADO | Lista empleados con filtros opcionales (q, activo, categoría). Sin filtros devuelve todos (activos e inactivos). HTTP 400 si el valor de `categoría` no es un enum válido | P13 |
 | E15 | GET /{id} | ADMIN, ENCARGADO | Detalle de un empleado. ADMIN ve `pinTerminal`, `email`, `username` y `rol` del usuario asociado; ENCARGADO los recibe a `null` (Opción A). HTTP 404 si el `id` no existe | P14, P15 |
 | E16 | PATCH /{id} | ADMIN, ENCARGADO | Actualiza campos parciales del empleado. Permite corregir `dni` y `codigoNfc` (409 si alguno ya existe en otro empleado) y `fechaAlta` (sin restricción de rango: pasado o futuro). PIN de terminal NO se modifica aquí — usar E65 | P15 |
-| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial. HTTP 404 si el `id` no existe | — |
-| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja. HTTP 404 si el `id` no existe; HTTP 409 si el empleado ya estaba activo | — |
+| E17 | PATCH /{id}/baja | ADMIN, ENCARGADO | Da de baja lógica al empleado (activo=false). Conserva historial. HTTP 404 si el `id` no existe | P14 |
+| E18 | PATCH /{id}/reactivar | ADMIN, ENCARGADO | Reactiva un empleado dado de baja. HTTP 404 si el `id` no existe; HTTP 409 si el empleado ya estaba activo | P14 |
 | E19 | GET /estado | ADMIN, ENCARGADO | Resumen del estado de presencia de cada empleado. Acepta `?fecha` opcional (formato ISO, default = hoy). Respuesta idéntica a E35 (ParteDiarioResponse) | — |
 | E20 | GET /export | ADMIN, ENCARGADO | Exporta el listado de empleados a CSV o PDF. El parámetro `formato` es obligatorio (`csv` o `pdf`); HTTP 400 si el valor no es válido. Acepta `?activo` opcional para filtrar por estado | — |
 | E65 | POST /{id}/regenerar-pin | ADMIN, ENCARGADO | Regenera el PIN de terminal del empleado y lo devuelve en la respuesta. El PIN queda persistido; tras la regeneración solo es re-consultable por ADMIN vía E15 | P14 |
