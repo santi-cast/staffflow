@@ -4,8 +4,10 @@
 
     Destino raiz: terminalFragment (P01).
     La app arranca siempre en el terminal. Si hay sesion valida en
-    DataStore, MainActivity.checkExistingSession() navega directamente
-    al destino inicial por rol sin pasar por el login.
+    DataStore, MainActivity.checkExistingSession() solo restaura el
+    token en NetworkModule y refresca el Drawer; la navegacion al
+    destino inicial por rol se ejecuta unicamente tras un login
+    explicito en LoginFragment (E01).
 
     Zona publica (sin Drawer, sin JWT):
       P01 terminalFragment    <- raiz del grafo

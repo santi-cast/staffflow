@@ -39,13 +39,15 @@ import java.util.Locale
  *   3. Bloquear el Drawer en la zona publica (Terminal, Login, Recovery).
  *   4. Gestionar la sesion expirada (HTTP 401): limpiar DataStore,
  *      ocultar Drawer, navegar a LoginFragment y mostrar Snackbar.
- *   5. Al arrancar, si hay JWT valido en DataStore, navegar directamente
- *      al destino inicial por rol sin pasar por el login.
+ *   5. Al arrancar, si hay JWT valido en DataStore, restaurar el token
+ *      en NetworkModule y refrescar el Drawer. El terminal (P01) sigue
+ *      siendo la pantalla de inicio; NO se navega automaticamente al
+ *      destino del rol (ver checkExistingSession).
  *
  * La navegacion post-login se delega a LoginFragment, que llama a
  * navigateToInitialDestination(rol) tras un login exitoso (E01).
  *
- * Destinos iniciales por rol:
+ * Destinos iniciales por rol (solo tras login explicito):
  *   ADMIN     -> parteDiarioFragment (P17)
  *   ENCARGADO -> parteDiarioFragment (P17)
  *   EMPLEADO  -> miHoyFragment       (P12)
