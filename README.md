@@ -43,6 +43,7 @@ El sistema se compone de:
 - [Estado del proyecto](#estado-del-proyecto)
 - [Decisiones de arquitectura](#decisiones-de-arquitectura)
 - [Endurecimiento de seguridad y robustez](#endurecimiento-de-seguridad-y-robustez)
+- [Roadmap v2.0](#roadmap-v20)
 - [Licencia](#licencia)
 - [Autor](#autor)
 
@@ -628,6 +629,51 @@ Sobre la base funcional se aplicó una capa adicional de hardening centrada en s
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 
 El endpoint E65 (`POST /empleados/{id}/regenerar-pin`) fue especificado e implementado siguiendo el mismo flujo SDD. Su trazabilidad completa (proposal, spec, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-10-regenerar-pin-empleado/`.
+
+---
+
+## Roadmap v2.0
+
+Roadmap de evolución post-TFG. **No forma parte del alcance entregado el 15/06/2026.** Recoge las líneas de trabajo planteadas como continuación natural del proyecto, ordenadas por dependencias internas.
+
+### 2.1 App móvil para empleado
+
+Aplicación Android dedicada al rol EMPLEADO (separada de la app actual, que queda como herramienta multi-rol para ADMIN/ENCARGADO/EMPLEADO en terminal compartido). Concentra todo lo que el empleado necesita en autoservicio:
+
+- Fichar entrada y salida desde el móvil con GPS opcional y geofencing del centro de trabajo.
+- Solicitar vacaciones y ausencias, con flujo de aprobación o rechazo gestionado por el ENCARGADO desde la app de escritorio (ver 2.3).
+- Consultar fichajes propios y su historial completo.
+- Recibir y descargar nóminas (depende de 2.7 para la integración automática; sin ella, requiere subida manual por el ADMIN).
+- Ver horarios próximos asignados por el ENCARGADO (depende de 2.2 para el modelo de turnos).
+- Consultar saldos de vacaciones y asuntos propios en tiempo real.
+
+### 2.2 Planificación de horarios laborales
+
+Modelo de turnos en el backend y endpoints asociados. No existe en v1 (el sistema actual asume jornada diaria fija por empleado calculada a partir de la categoría laboral). Es prerrequisito para las funciones de horario en 2.1 y 2.3.
+
+### 2.3 App de escritorio para ENCARGADO
+
+Aplicación de escritorio orientada a la productividad del rol ENCARGADO, separada de la app Android actual. Concentra las tareas de gestión que hoy se hacen en la app móvil multi-rol:
+
+- Consulta intensiva de datos (informes, presencia, saldos, listados).
+- Planificación de horarios laborales (depende de 2.2).
+- Aprobación o rechazo de solicitudes de vacaciones y ausencias enviadas por los empleados desde 2.1.
+
+### 2.4 Refresh tokens
+
+Reemplazar el JWT actual (single-token, 12 h) por el patrón estándar **access token corto (15-30 min) + refresh token largo**. Reduce la ventana de exposición ante un token filtrado y permite revocación efectiva sin invalidar sesiones legítimas.
+
+### 2.5 Bloqueo de PIN persistente
+
+Mover el contador de intentos fallidos del terminal (hoy en un `ConcurrentHashMap` en memoria del proceso) a un campo persistente en la entidad `Empleado`. El estado actual se pierde con cada reinicio del backend y no escala si la aplicación corre en más de una instancia.
+
+### 2.6 Multitenant
+
+Soportar varias empresas conviviendo en una única instancia del backend, con aislamiento de datos por organización. Requiere rediseñar la tabla singleton `configuracion_empresa`, añadir una columna de tenant a todas las entidades del dominio y propagar el tenant resuelto a través de la cadena de seguridad.
+
+### 2.7 Integración con sistemas de nóminas
+
+Conectores con sistemas de nóminas habituales en PYMES españolas (A3 Nóminas, Sage Despachos, etc.) para exportar las horas fichadas y los saldos consolidados sin pasos manuales intermedios. Habilita el bullet de nóminas de 2.1.
 
 ---
 
