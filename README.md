@@ -328,7 +328,7 @@ El sistema utiliza **7 tablas** relacionales:
 | Obligación | Implementación |
 |---|---|
 | Registro diario con hora de inicio y fin | `UNIQUE(empleado_id, fecha)` en `fichajes` |
-| Conservación mínima 4 años | Sin endpoint DELETE en `/fichajes` ni `/pausas` |
+| Conservación mínima 4 años | Garantía estructural: la API no expone ningún endpoint DELETE sobre `/fichajes` ni `/pausas`, ni sobre los saldos anuales. No hay job de purga ni TTL activos. La trazabilidad temporal de los 4 años exigidos por el RD-ley se delega a la política de backup de la base de datos del operador (responsabilidad operativa, no aplicativa) |
 | Acceso de los trabajadores | RF‑51: el EMPLEADO consulta su historial en cualquier momento |
 | Acceso para Inspección de Trabajo | RF‑38, RF‑39, RF‑40: PDFs firmables con iText 7 |
 | Correcciones con trazabilidad | Modificación con campo `observaciones` obligatorio y no vacío |
