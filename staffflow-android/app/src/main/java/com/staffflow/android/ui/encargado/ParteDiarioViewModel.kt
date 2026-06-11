@@ -18,7 +18,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * ViewModel del parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+ * ViewModel del parte diario de presencia (P17). Destino inicial de los roles ADMIN y ENCARGADO.
  *
  * Llama a E35 GET /presencia/parte-diario?fecha= via PresenciaRepository.
  * La fecha por defecto es hoy. ParteDiarioFragment actualiza la fecha via setFecha()

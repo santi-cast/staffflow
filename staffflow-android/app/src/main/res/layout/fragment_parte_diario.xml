@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout del parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+    Layout del parte diario de presencia (P17). Destino inicial de los roles ADMIN y ENCARGADO.
 
     Patron D - lista solo lectura. Endpoint: E35 GET /presencia/parte-diario?fecha=
 

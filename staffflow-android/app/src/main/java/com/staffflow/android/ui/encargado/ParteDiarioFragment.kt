@@ -22,7 +22,7 @@ import com.staffflow.android.data.remote.dto.ParteDiarioResponse
 import kotlinx.coroutines.launch
 
 /**
- * Parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+ * Parte diario de presencia (P17). Destino inicial de los roles ADMIN y ENCARGADO.
  *
  * Patron D - lista solo lectura. Endpoint: E35 GET /presencia/parte-diario?fecha=
  *
