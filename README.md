@@ -429,7 +429,7 @@ Esta estrategia redujo el tiempo estimado de implementación de las pantallas An
 | P26 | SaldosGlobalesFragment | 4 — Encargado | E44 | ADMIN, ENCARGADO |
 | P27 | InformesFragment | 4 — Encargado | E42–E47, E57 | ADMIN, ENCARGADO |
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
-| P29 | FormUsuarioFragment | 5 — Admin | E08–E12, E66, E67, E68 | ADMIN |
+| P29 | FormUsuarioFragment | 5 — Admin | E08–E13, E66, E67, E68 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
 
 ### 7. Auto-detección de la URL del backend en Android
