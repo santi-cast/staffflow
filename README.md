@@ -28,6 +28,7 @@ El sistema se compone de:
 
 ## Tabla de contenidos
 
+- [Convenciones](#convenciones)
 - [El problema](#el-problema)
 - [Por qué StaffFlow](#por-qué-staffflow)
 - [Descripción](#descripción)
@@ -46,6 +47,28 @@ El sistema se compone de:
 - [Roadmap v2.0](#roadmap-v20)
 - [Licencia](#licencia)
 - [Autor](#autor)
+
+---
+
+## Convenciones
+
+El proyecto usa los siguientes códigos cortos para referirse a artefactos internos. Aparecen a lo largo del README y en los nombres de tests, comentarios y documentación.
+
+| Código | Significado |
+|---|---|
+| **RF-XX** | Requisito funcional. Describe una capacidad concreta que el sistema debe ofrecer (por ejemplo, "RF-35: las pausas de tipo `AUSENCIA_RETRIBUIDA` no descuentan jornada efectiva"). |
+| **RNF-S** | Requisito no funcional de **seguridad** (autenticación, autorización, anti-enumeración, bloqueo por fuerza bruta). |
+| **RNF-L** | Requisito no funcional **legal** (trazabilidad y cumplimiento del RD-ley 8/2019). |
+| **RNF-I** | Requisito no funcional de **integridad** (restricciones de unicidad y coherencia de datos). |
+| **E01-E68** | Identificador de endpoint REST (por ejemplo, E01 = `POST /api/v1/auth/login`). El catálogo completo está en la sección [Diseño de la API](#diseño-de-la-api). |
+| **P01-P30** | Identificador de pantalla Android. El catálogo completo está al final de la sección [Diseño de la API](#diseño-de-la-api). |
+| **DTO** | Data Transfer Object: clase de transporte entre la capa de API y el cliente, sin lógica de dominio. |
+| **JPA** | Jakarta Persistence API: especificación de mapeo objeto-relacional usada vía Hibernate y Spring Data. |
+| **JWT** | JSON Web Token: token firmado que transporta la identidad del usuario autenticado en el `Authorization: Bearer` header. |
+| **NFC** | Near Field Communication: tecnología de identificación por radiofrecuencia de corto alcance usada como alternativa al PIN en el fichaje por terminal. |
+| **PIN** | Código numérico de 4 dígitos usado por el empleado para fichar en el terminal compartido. |
+| **DDL** | Data Definition Language: scripts SQL que crean y modifican el esquema de la base de datos. |
+| **SDD** | Spec-Driven Development: flujo de trabajo en el que cada cambio nace de una especificación versionada antes de tocar código. La carpeta `openspec/` recoge las especificaciones del proyecto. |
 
 ---
 
@@ -287,7 +310,7 @@ El perfil `dev` es la red de seguridad para la evaluación: permite demostrar to
 
 StaffFlow utiliza una **arquitectura en capas (Layered Architecture)**:
 
-```
+```text
 Request → Controller → Service → Repository → Entity → Response
 ```
 
@@ -457,8 +480,8 @@ Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JS
 | E50 | POST /pausa/iniciar | público | Inicia una pausa por PIN. El cliente envía además el `tipoPausa` (`COMIDA`, `DESCANSO`, `AUSENCIA_RETRIBUIDA`, `OTROS`) seleccionado previamente en P07. Crea una `Pausa` con `horaInicio=now()`, `horaFin=null`, `duracionMinutos=null` y `usuario_id=terminal_service`. Solo puede haber una pausa activa por empleado y día: 409 si ya existe pausa con `horaFin=null` hoy. 400 si no hay entrada registrada hoy. 404 PIN inexistente. 423 dispositivo bloqueado | P06 |
 | E51 | POST /pausa/finalizar | público | Finaliza la pausa activa del empleado. Persiste `duracionMinutos = Math.floor(minutos)` en la `Pausa` (consumida por `SaldoService`) y devuelve `duracionSegundos` exactos para el display. Si el `tipoPausa` NO es `AUSENCIA_RETRIBUIDA` actualiza `totalPausasMinutos` en el fichaje del día sumando la duración (las retribuidas no descuentan de jornada efectiva). Caso borde: si no existe fichaje del día la pausa se cierra igual sin tocar ningún fichaje y sin error. NO emite 409 (el único conflicto posible —ausencia de pausa activa— se mapea a 400). 404 PIN inexistente. 423 dispositivo bloqueado | P06 |
 | E52 | POST /estado | público | Verifica el PIN y devuelve el estado actual del empleado para la pantalla de bienvenida. Solo lectura: no modifica ningún dato. Llamado desde P01 (`TerminalFragment`) tras introducir el PIN; los datos pasan a P06 ya cargados (P06 NO invoca E52). Respuesta: `nombre`, `estado` (`SIN_ENTRADA`, `EN_JORNADA`, `EN_PAUSA` o `JORNADA_CERRADA`, enum `EstadoTerminal` calculado en tiempo de ejecución y no persistido), `horaEntrada`, `horaSalida`, `horaInicioPausa` y `tipoPausa` según el estado del día. 404 PIN inexistente. 423 dispositivo bloqueado. 200 reinicia el contador del dispositivo | P01 |
-| E53 | GET /bloqueo | ADMIN, ENCARGADO | Consulta si hay ALGÚN dispositivo de terminal bloqueado por intentos fallidos de PIN (RNF-S05). Devuelve `{"bloqueado": true/false}` agregando globalmente todos los `dispositivoId` del `ConcurrentHashMap` en memoria; NO desglosa por dispositivo. Requiere JWT. 401 sin token o token inválido. 403 rol insuficiente. La autorización viaja a través de `SecurityConfig.requestMatchers` y NO de `@PreAuthorize` en el método (defensa en profundidad pendiente, ver M-033 en MEJORAS_V2) | P17 |
-| E54 | DELETE /bloqueo | ADMIN, ENCARGADO | Desbloquea el terminal tras un bloqueo por fuerza bruta. Resetea TODOS los contadores de intentos fallidos de TODOS los dispositivos haciendo `clear()` global del mapa en memoria (no permite desbloqueo individual por `dispositivoId`). Devuelve `{"bloqueado": false}` confirmando el estado tras el reset. Llamado desde P17 cuando un ADMIN o ENCARGADO confirma el desbloqueo manual en el diálogo del banner. Requiere JWT. 401/403 sin/con rol insuficiente. Misma observación que E53 sobre `@PreAuthorize` (M-033) | P17 |
+| E53 | GET /bloqueo | ADMIN, ENCARGADO | Consulta si hay ALGÚN dispositivo de terminal bloqueado por intentos fallidos de PIN (RNF-S05). Devuelve `{"bloqueado": true/false}` agregando globalmente todos los `dispositivoId` del `ConcurrentHashMap` en memoria; NO desglosa por dispositivo. Requiere JWT. 401 sin token o token inválido. 403 rol insuficiente. La autorización viaja a través de `SecurityConfig.requestMatchers` y NO de `@PreAuthorize` en el método (defensa en profundidad pendiente para v2.0) | P17 |
+| E54 | DELETE /bloqueo | ADMIN, ENCARGADO | Desbloquea el terminal tras un bloqueo por fuerza bruta. Resetea TODOS los contadores de intentos fallidos de TODOS los dispositivos haciendo `clear()` global del mapa en memoria (no permite desbloqueo individual por `dispositivoId`). Devuelve `{"bloqueado": false}` confirmando el estado tras el reset. Llamado desde P17 cuando un ADMIN o ENCARGADO confirma el desbloqueo manual en el diálogo del banner. Requiere JWT. 401/403 sin/con rol insuficiente. Misma observación que E53 sobre `@PreAuthorize` | P17 |
 
 #### Health (`/api/health`)
 
@@ -495,7 +518,7 @@ El sistema utiliza **7 tablas** relacionales:
 
 ## Estructura del repositorio
 
-```
+```text
 staffflow/
 ├── staffflow-backend/    # API REST — Spring Boot + Java 21
 └── staffflow-android/    # App Android — Kotlin + Retrofit
@@ -603,7 +626,7 @@ En el primer arranque la app sondea exactamente dos hosts en orden fijo —`10.0
 
 ### 8. Cierre nocturno automático como única tarea programada
 
-`ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas y un bloque salvaguarda intermedio, todos en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. Las tres tareas operan únicamente sobre empleados operativos esa noche (`activo = true` AND `fechaAlta <= hoy`); los empleados con alta diferida quedan fuera hasta su primer día de trabajo. La **Tarea A** cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado operativo sin fichaje. La **Tarea B** materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior. A continuación, un **bloque salvaguarda** independiente (no es parte de Tarea B) deja sembrado el `DIA_LIBRE` del sábado o domingo siguientes cuando mañana cae en fin de semana, garantizando el descanso semanal obligatorio aunque no exista planificación previa. Finalmente, la **Tarea C** recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo viven en B7 §7.1 y §7.3.
+`ProcesoCierreDiario` se ejecuta cada noche a las 23:55 mediante `@Scheduled(cron = "0 55 23 * * *")` y es el único proceso automático del sistema. Es transaccional e idempotente: tres tareas encadenadas y un bloque salvaguarda intermedio, todos en una única transacción que se puede repetir sobre la misma fecha sin duplicar datos. Las tres tareas operan únicamente sobre empleados operativos esa noche (`activo = true` AND `fechaAlta <= hoy`); los empleados con alta diferida quedan fuera hasta su primer día de trabajo. La **Tarea A** cierra el día creando `AUSENCIA_INJUSTIFICADA` (laborables) o `DIA_LIBRE` (fines de semana) para todo empleado operativo sin fichaje. La **Tarea B** materializa las planificaciones con fecha ≤ mañana, lo que permite generar los festivos globales la noche anterior. A continuación, un **bloque salvaguarda** independiente (no es parte de Tarea B) deja sembrado el `DIA_LIBRE` del sábado o domingo siguientes cuando mañana cae en fin de semana, garantizando el descanso semanal obligatorio aunque no exista planificación previa. Finalmente, la **Tarea C** recalcula los saldos anuales llamando a `SaldoService.recalcularParaProceso`. Todos los fichajes auto-generados llevan `usuario_id = terminal_service` (autor técnico); el `usuario_id` de la planificación original conserva al humano que la decidió. La descomposición completa de las tres tareas y la contribución de cada `TipoFichaje` al recálculo de saldo está documentada en la memoria académica.
 
 ### 9. Convenciones de naming de identificadores humanos
 
@@ -624,7 +647,7 @@ Sobre la base funcional se aplicó una capa adicional de hardening centrada en s
 - **Autorización por método**: activación de `@EnableMethodSecurity` con auditoría completa de las anotaciones `@PreAuthorize` de la capa controller (57 anotaciones en código de producción al cierre del proyecto; el controller de test del perfil `dev` no usa `@PreAuthorize` porque su bean no se registra en perfil `mysql`). Las verificaciones de "ownership" (que un EMPLEADO solo acceda a sus propios datos) se delegan a la capa de servicio en lugar de SpEL inline, manteniendo la lógica testeable.
 - **Externalización del secreto JWT**: eliminado del código y movido a la variable de entorno `JWT_SECRET`. En perfil `mysql` el arranque falla si la variable no está definida; en perfil `dev` existe un fallback claramente marcado como dev-only.
 - **Estrategia de fetch JPA explícita**: las 8 relaciones `@ManyToOne` (6) y `@OneToOne` (2) del modelo declaran `fetch = FetchType.LAZY` de forma explícita (8/8). Las rutas de lectura que atraviesan asociaciones lazy están protegidas con `@Transactional(readOnly = true)` y `JOIN FETCH` para prevenir `LazyInitializationException`.
-- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales: 8 sobre las anotaciones `@PreAuthorize` de los endpoints `/me`, 1 sobre la activación de `@EnableMethodSecurity` en `SecurityConfig` y 2 de triangulación negativa que verifican que `AusenciaController` y `FichajeController` no usan `hasRole('EMPLEADO')` sin `ENCARGADO`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—; E21 `/me` se excluye porque ya está cubierto en `MethodSecurityConfigTest`), todos por reflexión sin arrancar el contexto de Spring. Más adelante se consolidó `GlobalExceptionHandlerTest` (9 tests con MockMvc en modo standalone) que cubre el contrato del handler (`NotFoundException` 404, `IllegalArgumentException` 400, `EntityNotFoundException` 404, `ConflictException` 409, `PinBloqueadoException` 423, `IllegalStateException` 500 tras ISE-01, `Exception` 500, y formato del body) sin depender del contexto JWT — sortea la deuda M-036 que afectaba a los tests `@WebMvcTest`/`@SpringBootTest` originales (ya eliminados).
+- **Cobertura de tests reforzada**: se añadieron `MethodSecurityConfigTest` (11 tests estructurales: 8 sobre las anotaciones `@PreAuthorize` de los endpoints `/me`, 1 sobre la activación de `@EnableMethodSecurity` en `SecurityConfig` y 2 de triangulación negativa que verifican que `AusenciaController` y `FichajeController` no usan `hasRole('EMPLEADO')` sin `ENCARGADO`), `UsuarioControllerSecurityTest` (8 tests sobre los endpoints de gestión de usuarios E08-E12, E66 y E67) y `EmpleadoControllerSecurityTest` (11 tests sobre los endpoints de gestión de empleados E13-E18, parte diario, exportación, E65 y E68 —este último con `hasRole('ADMIN')` por servir a P29—; E21 `/me` se excluye porque ya está cubierto en `MethodSecurityConfigTest`), todos por reflexión sin arrancar el contexto de Spring. Más adelante se consolidó `GlobalExceptionHandlerTest` (9 tests con MockMvc en modo standalone) que cubre el contrato del handler (`NotFoundException` 404, `IllegalArgumentException` 400, `EntityNotFoundException` 404, `ConflictException` 409, `PinBloqueadoException` 423, `IllegalStateException` 500 tras ISE-01, `Exception` 500, y formato del body) sin depender del contexto JWT — sortea la deuda técnica abierta sobre los tests `@WebMvcTest`/`@SpringBootTest` originales (ya eliminados) que dependían de un wiring JWT incompatible con esos slices de Spring.
 
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 
