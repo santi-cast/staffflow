@@ -434,7 +434,7 @@ Esta estrategia redujo el tiempo estimado de implementación de las pantallas An
 
 ### 7. Auto-detección de la URL del backend en Android
 
-En el primer arranque la app sondea una lista de hosts candidatos hasta encontrar el backend activo, eliminando la necesidad de configurar manualmente la URL. La dirección detectada se persiste en `DataStore` y sobrevive a los cierres de sesión (`SessionManager.clear()` la preserva intencionalmente). Si la detección automática falla, el usuario puede introducir la URL manualmente desde la pantalla de configuración de la app.
+En el primer arranque la app sondea exactamente dos hosts en orden fijo —`10.0.2.2` (loopback del emulador Android Studio hacia el host) y `127.0.0.1` (demo standalone con backend en la misma tablet)—, ambos contra el puerto 8080, usando el endpoint público `GET /api/health` (E56) como prueba de vida. El primero que responde 200 OK fija la `baseUrl` y elimina la necesidad de configurar la URL manualmente. La dirección detectada se persiste en `DataStore` y sobrevive a los cierres de sesión (`SessionManager.clear()` la preserva intencionalmente). Si la detección automática falla, el usuario puede introducir la URL manualmente desde la pantalla de configuración de la app.
 
 ### 8. Cierre nocturno automático como única tarea programada
 
