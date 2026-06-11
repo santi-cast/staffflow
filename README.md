@@ -34,6 +34,7 @@ El sistema se compone de:
 - [Cumplimiento legal — RD‑ley 8/2019](#cumplimiento-legal--rdley-82019)
 - [Funcionalidades principales](#funcionalidades-principales)
 - [Stack tecnológico](#stack-tecnológico)
+- [Cómo correrlo](#cómo-correrlo)
 - [Perfiles de ejecución](#perfiles-de-ejecución)
 - [Arquitectura](#arquitectura)
 - [Diseño de la API](#diseño-de-la-api)
@@ -173,37 +174,110 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 
 ---
 
+## Cómo correrlo
+
+### Requisitos previos
+
+- JDK 21 LTS (Temurin recomendado)
+- Maven wrapper (`./mvnw`, incluido en el repo — no requiere Maven instalado globalmente)
+- Android Studio Panda 1 o superior (para el cliente móvil)
+- (Opcional) MySQL 8.0 si se desea usar el perfil `mysql` en lugar del perfil `dev` por defecto
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/santi-cast/staffflow.git
+cd staffflow
+```
+
+### 2. Arrancar el backend (perfil `dev` con H2)
+
+```bash
+cd staffflow-backend
+./mvnw spring-boot:run
+```
+
+El backend queda disponible en `http://localhost:8080`. Por defecto se activa el perfil `dev`, que monta una base H2 en memoria y carga los datos de prueba de `data.sql` (1 empresa, 5 usuarios, 3 empleados con PIN).
+
+Verificación rápida tras el arranque:
+
+```bash
+curl http://localhost:8080/api/health
+# Respuesta esperada: {"status":"UP"}
+```
+
+URLs útiles del backend en `dev`:
+
+| Recurso | URL |
+|---|---|
+| Health check | `http://localhost:8080/api/health` |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| Consola H2 | `http://localhost:8080/h2-console` |
+
+### 3. Arrancar la app Android
+
+Abrir `staffflow-android/` en Android Studio y ejecutar la configuración por defecto sobre un emulador o un dispositivo físico.
+
+La app auto-detecta el backend probando dos hosts contra el puerto 8080 (decisión 7): `10.0.2.2` (emulador estándar) y `127.0.0.1` (Android Studio con redirección). Si el backend está en otra máquina de la red local, la app muestra un diálogo para introducir la IP manualmente; la elección se persiste en DataStore.
+
+### 4. Credenciales de prueba (perfil `dev`)
+
+Todas las contraseñas seed son `admin1234`. Las credenciales están comentadas también en `data.sql`.
+
+| Usuario | Contraseña | Rol | PIN terminal |
+|---|---|---|---|
+| `admin001` | `admin1234` | ADMIN | — |
+| `usu001` | `admin1234` | ENCARGADO | 3333 (Laura) |
+| `usu002` | `admin1234` | EMPLEADO | 1111 (Ana) |
+| `usu003` | `admin1234` | EMPLEADO | 2222 (Carlos) |
+| `terminal_service` | (uso interno) | sistema | — |
+
+> Onboarding sugerido como ADMIN la primera vez: **Mi empresa → Usuarios → Empleados**.
+
+### 5. Correr los tests del backend
+
+```bash
+cd staffflow-backend
+./mvnw test
+```
+
+Salida esperada: 341 tests verdes, 0 errors, 0 skipped (291 servicios + 30 estructurales de seguridad + 10 JWT + 9 `GlobalExceptionHandler` + 1 ArchUnit).
+
+---
+
 ## Perfiles de ejecución
 
 El backend soporta dos perfiles Spring:
 
-### Perfil `mysql` (despliegue en producción)
-
-Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
-
-```
-Memoria final/Diagramas/staffflow_v8_ddl_mysql.sql
-```
-
-Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
-
 ### Perfil `dev` (desarrollo con H2)
 
-Base de datos en memoria. No requiere instalación de MySQL. Los datos de prueba se cargan automáticamente desde `data.sql` en cada arranque:
+Activo por defecto (fijado en `application.yaml`). Base de datos H2 en memoria, sin instalación de MySQL. Los datos de prueba se cargan automáticamente desde `data.sql` en cada arranque:
 
 - 1 configuración de empresa
 - 5 usuarios: admin001, usu001, usu002, usu003, terminal\_service (ver Decisión 9 sobre las convenciones de naming)
 - 3 empleados con PIN asignado: Ana García (1111), Carlos López (2222), Laura Fernández (3333)
 
-El perfil `dev` es el activo por defecto (fijado en `application.yaml`), así que basta con:
-
-```
-./mvnw spring-boot:run
-```
-
-Para forzar el perfil `mysql` en producción se usa `-Dspring-boot.run.profiles=mysql` o la variable de entorno `SPRING_PROFILES_ACTIVE=mysql`. El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
-
 Adicionalmente, el perfil `dev` expone un endpoint auxiliar **`POST /api/v1/test/cierre-diario`** (`TestProcesoCierreDiarioController`, anotado con `@Profile("dev")`) que permite disparar manualmente el proceso nocturno de cierre de jornada sin esperar al cron de las 23:55. **Este endpoint NO se registra en el perfil `mysql`** — Spring lo excluye del contexto y por tanto no existe en producción.
+
+### Perfil `mysql` (despliegue en producción)
+
+Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
+
+```sql
+-- Memoria final/Diagramas/staffflow_v8_ddl_mysql.sql
+```
+
+Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
+
+Para activarlo:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
+# o bien
+SPRING_PROFILES_ACTIVE=mysql ./mvnw spring-boot:run
+```
+
+El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
 
 ---
 
