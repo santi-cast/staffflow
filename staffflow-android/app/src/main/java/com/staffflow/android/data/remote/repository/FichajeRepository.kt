@@ -37,7 +37,9 @@ class FichajeRepository(private val api: FichajeApiService) {
 
     /**
      * E24 - Lista fichajes con filtros opcionales.
-     * P16 (DetalleDiaFragment) lo usa para cargar los fichajes de un empleado en un dia concreto.
+     * Endpoint preparado para v2.0: P16 (DetalleDiaFragment) lo consume al
+     * cargar los fichajes de un empleado en un dia concreto, pero P16 no es
+     * navegable desde la UI en v1.0 (ver M-047 en MEJORAS_V2.md).
      * @param empleadoId null = todos los empleados
      * @param desde      Fecha inicio "yyyy-MM-dd"
      * @param hasta      Fecha fin "yyyy-MM-dd"

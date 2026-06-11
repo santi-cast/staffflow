@@ -187,16 +187,6 @@
         android:label="Parte diario"
         tools:layout="@layout/fragment_parte_diario">
 
-        <!-- P17 -> P18 Sin justificar (via chip) -->
-        <action
-            android:id="@+id/action_parte_diario_to_sin_justificar"
-            app:destination="@id/sinJustificarFragment" />
-
-        <!-- P17 -> P16 Timeline completo del dia de un empleado (tap en fila) -->
-        <action
-            android:id="@+id/action_parte_diario_to_detalle_dia"
-            app:destination="@id/detalleDiaFragment" />
-
         <!-- P17 -> P20 Editar fichaje o pausa desde evento inline del parte diario -->
         <action
             android:id="@+id/action_parte_diario_to_form_fichaje"

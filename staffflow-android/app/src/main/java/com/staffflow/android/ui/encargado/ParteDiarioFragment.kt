@@ -33,13 +33,14 @@ import kotlinx.coroutines.launch
  *   Success -> chips de resumen + RecyclerView con pull-to-refresh
  *
  * Navegaciones:
- *   Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
  *   Tap en evento de fichaje o pausa -> action_parte_diario_to_form_fichaje (P20).
  *   Tap en evento de ausencia        -> action_parte_diario_to_form_ausencia (P24).
  *   Tap en "Sin justificar" inline   -> action_parte_diario_to_form_fichaje (P20) con fichajeId=-1.
  *
- * La accion action_parte_diario_to_detalle_dia (P16) esta declarada en el
- * nav_graph pero no la consume este fragment en v1 (huerfana, candidata a limpieza).
+ * El chip "Sin justificar: N" muestra el contador pero no es navegable en v1.0
+ * (clickable=false en el layout). La navegacion a P18 (SinJustificarFragment) y
+ * el tap en fila para abrir P16 (DetalleDiaFragment) estan reservados para v2.0
+ * (ver M-047 en MEJORAS_V2.md).
  */
 class ParteDiarioFragment : Fragment() {
 

@@ -32,7 +32,9 @@ class PresenciaRepository(private val api: PresenciaApiService) {
 
     /**
      * E36 - Empleados sin justificar para una fecha concreta.
-     * P18 (SinJustificarFragment) llama a este metodo al cargar.
+     * Endpoint preparado para v2.0: P18 (SinJustificarFragment) lo consume en
+     * la pantalla, pero P18 no es navegable desde la UI en v1.0 (ver M-047 en
+     * MEJORAS_V2.md).
      * @param fecha Fecha en formato "yyyy-MM-dd". null = hoy.
      */
     suspend fun getSinJustificar(fecha: String? = null): Result<List<SinJustificarResponse>> =

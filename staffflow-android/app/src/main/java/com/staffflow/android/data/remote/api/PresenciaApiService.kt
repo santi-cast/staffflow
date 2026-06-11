@@ -28,7 +28,9 @@ interface PresenciaApiService {
 
     /**
      * E36 - Empleados sin justificar para una fecha concreta.
-     * P18 (SinJustificarFragment) usa este endpoint. ADMIN y ENCARGADO.
+     * Endpoint preparado para v2.0 (ver M-047 en MEJORAS_V2.md): el cliente
+     * tiene P18 (SinJustificarFragment) y su ViewModel listos para consumirlo,
+     * pero P18 no es accesible desde la UI en v1.0. ADMIN y ENCARGADO.
      * @param fecha Fecha en formato "yyyy-MM-dd". Si es null el backend usa hoy.
      */
     @GET("presencia/sin-justificar")

@@ -15,9 +15,12 @@
     El selector de fecha se muestra en la toolbar via MenuProvider (menu_parte_diario.xml).
 
     Navegaciones desde el RecyclerView:
-      - Chip "Sin justificar" -> P18 (action_parte_diario_to_sin_justificar).
       - Tap en fichaje o pausa -> P20 FormFichaje (action_parte_diario_to_form_fichaje).
       - Tap en ausencia -> P24 FormAusencia (action_parte_diario_to_form_ausencia).
+
+    El chip "Sin justificar" muestra el contador pero no es navegable en v1.0
+    (clickable=false). La navegacion a P18 (SinJustificarFragment) esta reservada
+    para v2.0 (ver M-047 en MEJORAS_V2.md).
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

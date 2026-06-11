@@ -37,7 +37,9 @@ class PausaRepository(private val api: PausaApiService) {
 
     /**
      * E29 - Lista pausas con filtros opcionales.
-     * P16 (DetalleDiaFragment) lo usa para cargar las pausas de un empleado en un dia concreto.
+     * Endpoint preparado para v2.0: P16 (DetalleDiaFragment) lo consume al
+     * cargar las pausas de un empleado en un dia concreto, pero P16 no es
+     * navegable desde la UI en v1.0 (ver M-047 en MEJORAS_V2.md).
      */
     suspend fun listarPausas(
         empleadoId: Long? = null,

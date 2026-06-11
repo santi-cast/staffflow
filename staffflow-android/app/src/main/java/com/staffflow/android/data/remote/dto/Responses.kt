@@ -196,8 +196,9 @@ data class SaldoResponse(
  * Parte diario de presencia de toda la empresa (E35 GET /presencia/parte-diario).
  *
  * Usado en P17 (ParteDiarioFragment). Los chips del resumen muestran
- * fichados, enPausa, ausencias y sinJustificar.
- * El chip sinJustificar navega a P18 (SinJustificarFragment).
+ * fichados, enPausa, ausencias y sinJustificar. En v1.0 el chip
+ * sinJustificar es solo informativo; la navegacion a P18 esta reservada
+ * para v2.0 (ver M-047 en MEJORAS_V2.md).
  */
 data class ParteDiarioResponse(
     val fecha: String,
@@ -248,7 +249,8 @@ data class DetallePresenciaResponse(
 
 /**
  * Empleado sin justificar del dia (E36 GET /presencia/sin-justificar).
- * Listado en P18 (SinJustificarFragment).
+ * Listado en P18 (SinJustificarFragment), pantalla preparada para v2.0
+ * pero no navegable desde la UI en v1.0 (ver M-047 en MEJORAS_V2.md).
  */
 data class SinJustificarResponse(
     val empleadoId: Long,
