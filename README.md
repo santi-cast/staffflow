@@ -28,14 +28,16 @@ El sistema se compone de:
 
 ## Tabla de contenidos
 
+- [El problema](#el-problema)
+- [Por qué StaffFlow](#por-qué-staffflow)
 - [Descripción](#descripción)
+- [Cumplimiento legal — RD‑ley 8/2019](#cumplimiento-legal--rdley-82019)
 - [Funcionalidades principales](#funcionalidades-principales)
 - [Stack tecnológico](#stack-tecnológico)
 - [Perfiles de ejecución](#perfiles-de-ejecución)
 - [Arquitectura](#arquitectura)
 - [Diseño de la API](#diseño-de-la-api)
 - [Modelo de datos](#modelo-de-datos)
-- [Cumplimiento legal — RD‑ley 8/2019](#cumplimiento-legal--rdley-82019)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Estado del proyecto](#estado-del-proyecto)
 - [Decisiones de arquitectura](#decisiones-de-arquitectura)
@@ -44,9 +46,52 @@ El sistema se compone de:
 
 ---
 
+## El problema
+
+El Real Decreto‑ley 8/2019 obliga a TODAS las empresas españolas, sin importar su tamaño, a registrar diariamente la jornada de cada trabajador y a conservar esos registros durante cuatro años. En la práctica, muchas Pymes resuelven la obligación con hojas de cálculo o registros en papel; las suites comerciales que cubren bien el caso son caras y operan solo en la nube, sin opción de despliegue local ni de fichaje por hardware estándar.
+
+StaffFlow ataca ese hueco: un registro de jornada cumple‑normativa, autoalojable, con terminal PIN nativo sobre cualquier tablet Android, y enfocado a una Pyme — no a una multinacional.
+
+## Por qué StaffFlow
+
+Comparativa frente a las suites HR analizadas en el estado del arte del proyecto:
+
+| Característica | Factorial | Sesame HR | Bizneo HR | Sage 200 Laboral | **StaffFlow** |
+|---|---|---|---|---|---|
+| Cumplimiento RD‑ley 8/2019 | Sí | Sí | Sí | Sí | **Sí** |
+| Fichaje por PIN o NFC en hardware estándar | Parcial | Parcial | No | No | **Sí (PIN; NFC reservado para v2)** |
+| Despliegue self‑hosted, sin licencia | No | No | No | No | **Sí** |
+| Foco PYME (no suite HR completa) | No | No | No | No | **Sí** |
+
+A diferencia de las suites HR del mercado, StaffFlow no cubre el ciclo completo del talento: resuelve con precisión control de jornada, ausencias planificadas, saldos anuales e informes firmables, cumpliendo la normativa vigente, y deja la arquitectura preparada para crecer.
+
+---
+
 ## Descripción
 
-> Proyecto completamente implementado y verificado. El backend cuenta con 68 endpoints operativos: autenticación JWT completa, gestión de contraseñas con recuperación por contraseña temporal vía email, configuración de empresa, gestión de usuarios y empleados (incluida reactivación de usuarios desactivados y consulta del empleado vinculado a un usuario), fichajes, pausas, terminal PIN, ausencias planificadas, presencia en tiempo real, saldos anuales, proceso nocturno automático de cierre de jornada, informes HTML/JSON y PDFs firmables con iText 7. La app Android tiene 30 pantallas implementadas en 6 bloques: terminal PIN (NFC reservado para v2), login, dashboards por rol, gestión de fichajes, pausas, ausencias, saldos, informes y PDFs. Testing completo: 341 tests verdes (0 errors, 0 skipped) — 291 tests unitarios de servicio (Mockito puro, incluidos `PausaService`, el proceso nocturno `ProcesoCierreDiario`, `FichajeService` con cobertura completa de los cinco endpoints E22-E26, `AusenciaService` con cobertura completa de los siete endpoints E30-E34/E63/E64, `AuthService` con cobertura completa de los cinco endpoints E01-E05 e `InformeService` con `Clock` inyectado para E59 (`informeSemana`), E60 (`informeAusenciasGlobal`) y el helper `calcularSaldoHastaFecha` invocado por E59 — sexto service del backend con `Clock` inyectado; `EmpresaService` con cobertura completa de los dos endpoints E06/E07 sobre la tabla singleton `configuracion_empresa` sin `Clock`; `InformeServiceHorasTest` con cobertura completa de los tres endpoints de informes de horas E58/E42/E43, `InformeServiceSaldosTest` con cobertura completa del endpoint de informe de saldos E44 e `InformeServiceAusenciasTest` con cobertura de los tres endpoints de informes de ausencias E61/E62/E60 — los tres bloques de `InformeService*Test` construyen el SUT manualmente en `@BeforeEach` con `Clock.fixed(2026-01-15, Europe/Madrid)` (no `@InjectMocks`) porque el constructor de `InformeService` exige el `Clock`; los `.now()` del SUT en E58/E42/E43, E44 y E61/E62 son decorativos en la cabecera HTML, mientras que E60 con rangos en pasado lejano (2020) mantiene `esPasado=true` determinista bajo el `Clock` fijo. Las ramas hoy/futuro/seleccionable de E60 y la cobertura completa de E59 se añadirán en `InformeServiceSemanaTest` aprovechando el `Clock` ya inyectado; `PresenciaServiceTest` con cobertura completa de los tres endpoints del grupo Presencia E35/E36/E37 (Mockito puro sin `Clock` —la fecha llega del controlador— mockeando los cuatro repositorios, 15 tests que ejercitan las seis ramas de `EstadoPresencia` más el festivo global); `EmpleadoService` con cobertura completa de los once endpoints del grupo Empleados E13-E21, E65 y E68 distribuida en ocho clases de test — séptimo service del backend con `Clock` inyectado para E13 (`crear`, ramas funcionales de alta diferida y rechazo de alta retroactiva), las otras siete clases (`EmpleadoServiceTest` con E15 y E65, `EmpleadoServiceActualizarTest` con E16, `EmpleadoServiceListarTest` con las cuatro ramas de filtros de E14, `EmpleadoServiceBajaReactivarTest` con E17/E18, `EmpleadoServiceEstadoTest` con la delegación de E19 en `PresenciaService`, `EmpleadoServiceExportarTest` con las ramas CSV/PDF y el filtro `activo` de E20, `EmpleadoServiceMePerfilTest` con E21/E68) construyen el SUT manualmente con `Clock.fixed(2026-01-15, Europe/Madrid)` aunque solo `EmpleadoServiceCrearTest` lo consume funcionalmente, porque el constructor del service ya exige el `Clock`. `SaldoServiceTest` con cobertura completa de los cuatro endpoints públicos del grupo Saldos E38/E39/E40/E41 y del helper interno `recalcularParaProceso` (25 tests sobre contadores por tipo de fichaje, saldo de horas, idempotencia y patrón findOrCreate on-demand); `SaldoService` es el octavo service del backend con `Clock` inyectado para `resolverAnio`, las ramas on-demand de E38/E39, la validación contra `fechaAlta` y futuro de E41 y la marca `calculadoHastaFecha` del recálculo. `TerminalServiceTest` con cobertura completa de los siete endpoints públicos del grupo Terminal E48-E54 (21 tests, service sin `Clock` porque sus cálculos de duración son relativos a la ejecución y E53/E54 no usan reloj). Cierra el frente M-039 (cobertura de los services heredados sin tests) salvo los GAP deliberados de `PdfService` y `EmailService`. + 10 tests del proveedor JWT + 9 tests del `GlobalExceptionHandler` (MockMvc en modo standalone) + 30 tests estructurales de seguridad declarativa por reflexión + 1 test de arquitectura (ArchUnit), todos sin levantar el contexto de Spring. Stack JUnit 5 + Mockito + ArchUnit. Verificación funcional completa con MySQL 8.0 y H2.
+Proyecto completamente implementado y verificado:
+
+- **Backend Spring Boot 3.5** con 68 endpoints REST en 14 controladores, JWT por roles (ADMIN/ENCARGADO/EMPLEADO), terminal PIN público sin JWT, proceso nocturno automático de cierre de jornada, informes HTML/JSON e informes PDF firmables con iText 7.
+- **App Android nativa** con 30 pantallas en 6 bloques (terminal PIN, login, dashboards por rol, fichajes, ausencias, saldos/informes/PDFs).
+- **341 tests verdes** (0 errors, 0 skipped) — Mockito puro sobre servicios, reflexión para `@PreAuthorize`, MockMvc standalone para el `GlobalExceptionHandler`, ArchUnit para reglas de capa. Cero `@SpringBootTest`/`@WebMvcTest` (deuda M‑036 cerrada operativamente). El detalle de cobertura por servicio se documenta en la memoria académica.
+
+<details>
+<summary>Cifras agregadas del proyecto</summary>
+
+| Métrica | Valor |
+|---|---|
+| Requisitos funcionales analizados | 54 (49 únicos) |
+| Requisitos no funcionales | 29 en diez bloques |
+| Controladores REST | 14 |
+| Endpoints productivos | 68 |
+| Tipos de fichaje (enum `TipoFichaje`) | 10 |
+| Estados de presencia (enum `EstadoPresencia`) | 6 |
+| Enumerados del dominio | 7 (Rol, CategoriaEmpleado, TipoFichaje, TipoPausa, TipoAusencia, EstadoPresencia, EstadoTerminal) |
+| Tablas relacionales | 7 |
+| Pantallas Android | 30 |
+| Tests verdes | 341 |
+
+</details>
 
 El sistema permite a una empresa gestionar el registro horario de sus empleados mediante:
 
@@ -58,6 +103,18 @@ El sistema permite a una empresa gestionar el registro horario de sus empleados 
 - Generación de informes operativos y PDFs firmables
 
 La arquitectura separa completamente **backend y cliente**, permitiendo que múltiples aplicaciones consuman la misma API REST.
+
+---
+
+## Cumplimiento legal — RD‑ley 8/2019
+
+| Obligación | Implementación |
+|---|---|
+| Registro diario con hora de inicio y fin | `UNIQUE(empleado_id, fecha)` en `fichajes` |
+| Conservación mínima 4 años | Garantía estructural: la API no expone ningún endpoint DELETE sobre `/fichajes` ni `/pausas`, ni sobre los saldos anuales. No hay job de purga ni TTL activos. La trazabilidad temporal de los 4 años exigidos por el RD-ley se delega a la política de backup de la base de datos del operador (responsabilidad operativa, no aplicativa) |
+| Acceso de los trabajadores | RF‑51: el EMPLEADO consulta su historial en cualquier momento |
+| Acceso para Inspección de Trabajo | RF‑38, RF‑39, RF‑40: PDFs firmables con iText 7 |
+| Correcciones con trazabilidad | Doble traza: campo `usuario_id` no nullable (QUIÉN realiza la modificación, distinto del empleado afectado) y campo `observaciones` obligatorio y no vacío (MOTIVO). Patrón aplicado en `fichajes`, `pausas` y `planificacion_ausencias` |
 
 ---
 
@@ -352,18 +409,6 @@ El sistema utiliza **7 tablas** relacionales:
 | `pausas` | Sin DELETE. `hora_fin = NULL` indica pausa activa. |
 | `planificacion_ausencias` | UNIQUE(empleado\_id, fecha). `procesado = false` hasta que el proceso diario crea el fichaje correspondiente. |
 | `saldos_anuales` | Calculado por SaldoService. UNIQUE(empleado\_id, anio). Recálculo idempotente. |
-
----
-
-## Cumplimiento legal — RD‑ley 8/2019
-
-| Obligación | Implementación |
-|---|---|
-| Registro diario con hora de inicio y fin | `UNIQUE(empleado_id, fecha)` en `fichajes` |
-| Conservación mínima 4 años | Garantía estructural: la API no expone ningún endpoint DELETE sobre `/fichajes` ni `/pausas`, ni sobre los saldos anuales. No hay job de purga ni TTL activos. La trazabilidad temporal de los 4 años exigidos por el RD-ley se delega a la política de backup de la base de datos del operador (responsabilidad operativa, no aplicativa) |
-| Acceso de los trabajadores | RF‑51: el EMPLEADO consulta su historial en cualquier momento |
-| Acceso para Inspección de Trabajo | RF‑38, RF‑39, RF‑40: PDFs firmables con iText 7 |
-| Correcciones con trazabilidad | Doble traza: campo `usuario_id` no nullable (QUIÉN realiza la modificación, distinto del empleado afectado) y campo `observaciones` obligatorio y no vacío (MOTIVO). Patrón aplicado en `fichajes`, `pausas` y `planificacion_ausencias` |
 
 ---
 
