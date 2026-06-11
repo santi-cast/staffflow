@@ -222,7 +222,7 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. `horaFin` opcional: si se omite, la pausa queda activa | P20 |
+| E27 | POST / | ADMIN, ENCARGADO | Registra una pausa manual para un empleado. ENCARGADO solo puede gestionarla hoy o en el futuro; ADMIN sin restricción de fecha. `horaFin` opcional: si se omite, la pausa queda activa. HTTP 409 si ya hay una pausa activa abierta (`horaFin=null`) ese día para el empleado — solo puede existir una | P20 |
 | E28 | PATCH /{id} | ADMIN, ENCARGADO | Cierra o modifica una pausa existente. Observaciones obligatorias (RNF-L02). Misma restricción de fecha que E27 sobre la fecha de la pausa cargada de BD. Si llega `horaFin`, calcula `duracionMinutos` con `Math.floor` y, salvo `AUSENCIA_RETRIBUIDA`, actualiza `totalPausasMinutos` y recalcula `jornadaEfectivaMinutos` del fichaje del día (si existe) | P20 |
 | E29 | GET / | ADMIN, ENCARGADO | Lista pausas con filtros opcionales y combinables: `empleadoId`, `desde`, `hasta`, `tipoPausa` | P16 |
 | E55 | GET /me | EMPLEADO, ENCARGADO | Lista las pausas del empleado autenticado en formato JSON. Filtros opcionales `desde` y `hasta` (a diferencia de E29, no acepta `tipoPausa` porque el lookup se hace por empleado, no por filtros administrativos). 404 si el username del JWT no existe en BD o no tiene perfil de empleado | — |
