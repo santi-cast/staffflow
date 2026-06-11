@@ -86,7 +86,8 @@ interface AusenciaApiService {
 
     /**
      * E34 - Devuelve las ausencias del empleado autenticado.
-     * Solo accesible con rol EMPLEADO.
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado).
      * @param desde Fecha inicio "yyyy-MM-dd"
      * @param hasta Fecha fin "yyyy-MM-dd"
      */
