@@ -698,6 +698,10 @@ Soportar varias empresas conviviendo en una única instancia del backend, con ai
 
 Conectores con sistemas de nóminas habituales en PYMES españolas (A3 Nóminas, Sage Despachos, etc.) para exportar las horas fichadas y los saldos consolidados sin pasos manuales intermedios. Habilita el bullet de nóminas de 2.1.
 
+### 2.8 Recuperación de contraseña por token de un solo uso
+
+Reemplazar el mecanismo actual de recuperación (E04 genera una contraseña temporal de 8 caracteres y la envía al email registrado) por un token de un solo uso con caducidad corta enviado como enlace. El usuario hace clic, fija una contraseña nueva en una pantalla dedicada y el token queda invalidado tras el uso o tras expirar. El patrón actual obliga al usuario a memorizar o copiar una contraseña aleatoria y deja esa contraseña viva en el inbox del email hasta que el usuario la cambie manualmente.
+
 ---
 
 ## Licencia
