@@ -685,4 +685,7 @@ Este proyecto se distribuye bajo licencia MIT. Ver [LICENSE](./LICENSE) para el 
 
 ## Autor
 
-Santiago — Proyecto Final del Ciclo **Desarrollo de Aplicaciones Multiplataforma (DAM)** · iLERNA · 2025‑2026
+**Santiago Castillo**
+
+- Proyecto Final de Ciclo · **Desarrollo de Aplicaciones Multiplataforma (DAM)** · iLERNA · 2025‑2026
+- GitHub: [@santi-cast](https://github.com/santi-cast)
