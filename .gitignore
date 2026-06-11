@@ -7,6 +7,7 @@
 !openspec/**
 !.gitignore
 !README.md
+!LICENSE
 
 # Build artifacts dentro de los whitelisted (re-ignorados)
 staffflow-backend/target/
