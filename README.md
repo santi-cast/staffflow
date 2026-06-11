@@ -326,6 +326,9 @@ Convenciones de la tabla:
 - **Roles**: `público` (sin autenticación) · `autenticado` (cualquier rol con JWT válido) · uno o más de `EMPLEADO`, `ENCARGADO`, `ADMIN`.
 - **Pantalla(s)**: identificador `P##` de la pantalla Android que consume el endpoint, o `—` si la app actual no lo invoca (la API expone capacidades; otros clientes consumirán las suyas).
 
+<details>
+<summary><strong>Ver catálogo completo de los 68 endpoints en 13 grupos</strong></summary>
+
 #### Auth (`/api/v1/auth`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
@@ -463,6 +466,8 @@ Endpoints dual-format JSON/HTML solo en E42, E43 y E44: por defecto devuelven JS
 
 > **Sobre la columna "Pantalla(s)"**: el guión (—) en pantalla indica que la app Android actual no consume ese endpoint. La API expone el contrato completo del dominio (operaciones de gestión avanzada, listados JSON para tablas nativas, monitorización externa); cada cliente que se conecte a futuro consumirá las capacidades que necesite. Esta separación es la base de la arquitectura desacoplada del proyecto: el backend no asume qué cliente lo invoca.
 
+</details>
+
 ### Convención PUT / PATCH
 
 - **PUT** → formulario completo (empresa, cambio de contraseña)
@@ -512,7 +517,7 @@ staffflow/
 | Fase 4 | Testing | ✅ Completada — 341 tests verdes (0 errors): 291 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
-**Entrega final:** 15 de junio de 2026 · 225 horas totales
+**Entrega final:** 15 de junio de 2026
 
 ---
 
@@ -548,7 +553,12 @@ Concretamente:
 - Las pantallas con WebView de informe (P10, P11, P19, P23, P26, P27) comparten el mismo esqueleto: barra de filtros, WebView que renderiza HTML servido por el backend y botones de exportación CSV/PDF.
 - P21 y P22 reutilizan literalmente los layouts de P10/P11 cambiando solo el endpoint: ven el informe individual de un empleado concreto en lugar del propio.
 
-Esta estrategia redujo el tiempo estimado de implementación de las pantallas Android de ~60–70 horas a ~30 horas sin impacto visible para el usuario. La tabla siguiente lista las 30 pantallas con su bloque funcional, endpoints principales y roles que pueden acceder a cada una:
+Esta estrategia redujo el tiempo estimado de implementación de las pantallas Android de ~60–70 horas a ~30 horas sin impacto visible para el usuario.
+
+<details>
+<summary><strong>Ver tabla completa de las 30 pantallas Android</strong></summary>
+
+La tabla siguiente lista las 30 pantallas con su bloque funcional, endpoints principales y roles que pueden acceder a cada una:
 
 | ID | Fragment | Bloque | Endpoints principales | Roles |
 |---|---|---|---|---|
@@ -582,6 +592,8 @@ Esta estrategia redujo el tiempo estimado de implementación de las pantallas An
 | P28 | UsuariosFragment | 5 — Admin | E09 | ADMIN |
 | P29 | FormUsuarioFragment | 5 — Admin | E08–E13, E66, E67, E68 | ADMIN |
 | P30 | EmpresaFragment | 5 — Admin | E06, E07 | ADMIN |
+
+</details>
 
 ### 7. Auto-detección de la URL del backend en Android
 
