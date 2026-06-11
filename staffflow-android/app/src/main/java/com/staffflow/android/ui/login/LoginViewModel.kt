@@ -44,7 +44,9 @@ sealed class LoginUiState {
  *   - Emite LoginUiState.Exito(rol) para que LoginFragment
  *     llame a MainActivity.refreshDrawerMenu() y navigateToInitialDestination(rol).
  *
- * Instanciacion manual del repositorio (sin Hilt -- D-B2-03).
+ * Instanciacion manual del repositorio: el proyecto no usa Hilt ni
+ * ningun framework de inyeccion de dependencias. Las dependencias se
+ * construyen manualmente desde NetworkModule.
  */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 

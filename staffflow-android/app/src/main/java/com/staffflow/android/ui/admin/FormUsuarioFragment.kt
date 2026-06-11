@@ -43,7 +43,8 @@ import java.time.format.DateTimeParseException
  * desde sugerirUsername(rol) del ViewModel siguiendo el prefijo del rol
  * (usu001/usu002... para ENCARGADO y EMPLEADO, admin001/admin002... para ADMIN)
  * con padding de 3 digitos y numeracion compartida entre ENCARGADO y EMPLEADO
- * para que el username sea agnostico del rol operativo (M-040/M-041);
+ * para que el username sea agnostico del rol operativo (un cambio
+ * ENCARGADO <-> EMPLEADO no deja el username inconsistente);
  * en modo edicion el backend no admite
  * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
  * se introduce directamente; en modo edicion se puede cambiar pulsando
@@ -294,7 +295,7 @@ class FormUsuarioFragment : Fragment() {
                 // - cambioRol: solo cuenta si pasa entre ENCARGADO y EMPLEADO con
                 //   empleado asociado (la unica transicion permitida por el guard
                 //   del backend; ADMIN <-> otros lo bloquea la UI y tambien el
-                //   backend con HTTP 409, ver M-040).
+                //   backend con HTTP 409).
                 // - cambioEmail: solo cuenta si el email cambio respecto al
                 //   cargado y emailOriginal ya esta inicializado.
                 val rolAnterior = rolOriginal

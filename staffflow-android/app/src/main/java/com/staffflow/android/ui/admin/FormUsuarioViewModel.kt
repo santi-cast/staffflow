@@ -197,8 +197,8 @@ class FormUsuarioViewModel(application: Application) : AndroidViewModel(applicat
      *   - EMPLEADO  → prefijo "usu", numeracion COMPARTIDA con ENCARGADO.
      *
      * ENCARGADO y EMPLEADO comparten prefijo "usu" y numeracion correlativa porque
-     * el username es agnostico del rol operativo y no se regenera al cambiar de rol
-     * (M-040). Asi un cambio ENCARGADO ↔ EMPLEADO no deja el username inconsistente.
+     * el username es agnostico del rol operativo y no se regenera al cambiar de rol.
+     * Asi un cambio ENCARGADO ↔ EMPLEADO no deja el username inconsistente.
      *
      * El usuario de sistema "terminal_service" no sigue este esquema: es un seed de
      * sistema creado directamente en data.sql y nunca se crea desde la UI.
