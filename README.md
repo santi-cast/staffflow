@@ -167,27 +167,27 @@ Convenciones de la tabla:
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E01 | POST /login | público | Autentica con username y password, devuelve un JWT (12h, HMAC‑SHA) junto con `rol`, `username`, `empleadoId` (null si ADMIN) y `nombre` para mostrar (nombre + apellido1 del empleado, o `username` como fallback si ADMIN) | P02 |
+| E01 | POST /login | público | Autentica con username y password, devuelve un JWT firmado con HMAC-SHA (algoritmo HS256, HS384 o HS512 seleccionado por jjwt según la longitud del `JWT_SECRET`) con expiración de 12 h, junto con `rol`, `username`, `empleadoId` (null si ADMIN) y `nombre` para mostrar (nombre + apellido1 del empleado, o `username` como fallback si ADMIN) | P02 |
 | E02 | GET /me | autenticado | Devuelve los datos del usuario asociado al token actual; 404 si el `username` extraído del token ya no existe en BD | — |
 | E03 | PUT /password | autenticado | Cambia la contraseña del propio usuario autenticado verificando primero la contraseña actual (RNF‑S01); 400 si la contraseña actual no coincide, 404 si el usuario del token no existe | P04 |
-| E04 | POST /password/recovery | público | Solicita recuperación: si el email existe en BD, genera una contraseña temporal de 8 caracteres alfanuméricos sin caracteres ambiguos (excluidos `0/1/O/I/i/l/o`), sobrescribe el `passwordHash` y envía la temporal al email **registrado en BD** (no al tipeado, que solo identifica la cuenta). Por anti‑enumeración (RNF‑S04) siempre devuelve 200 con el mismo mensaje genérico, exista o no el email | P03 |
+| E04 | POST /password/recovery | público | Solicita recuperación: si el email existe en BD, genera una contraseña temporal de 8 caracteres alfanuméricos sin caracteres ambiguos (excluidos `0/1/O/I/i/l/o`), sobrescribe el `passwordHash` y envía la temporal al email **registrado en BD** (no al tipeado, que solo identifica la cuenta). Por anti‑enumeración (RNF‑S04) siempre devuelve 200 con el mismo mensaje genérico, exista o no el email, impidiendo que un atacante deduzca qué emails están registrados mediante consultas en batch (ataque de enumeración por respuesta diferenciada) | P03 |
 | E05 | POST /password/reset | público | Restablece la contraseña con un token de un solo uso recibido por email. Implementado como contrato preparado; en v1.0 el flujo activo es contraseña temporal vía E04 y E05 responde siempre 400 «token inválido o ya utilizado» porque ningún endpoint popula `resetToken` en producción. En v2.0, además, la rama 400 «ha caducado» se activará cuando `resetTokenExpiry` sea null o anterior al instante actual — populado pendiente para v2.0 | P05 |
 
 #### Empresa (`/api/v1/empresa`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1) | P30 |
+| E06 | GET / | ADMIN | Devuelve la configuración global de la empresa (singleton id=1). 404 si el singleton aún no existe en BD (sistema sin configurar; situación normal antes del primer PUT vía E07) | P30 |
 | E07 | PUT / | ADMIN | Actualiza la configuración global de la empresa (singleton id=1). Crea el registro si no existe (primera configuración del sistema) | P30 |
 
 #### Usuarios (`/api/v1/usuarios`)
 
 | E# | Verbo + Path | Roles | Descripción | Pantalla(s) |
 |----|--------------|-------|-------------|--------------|
-| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username o el email ya existen (validación preventiva con mensaje específico por campo en conflicto); P29 reacciona ante el 409 de username regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario | P29 |
+| E08 | POST / | ADMIN | Crea un usuario nuevo (autenticación + rol). HTTP 409 si el username o el email ya existen (validación preventiva con mensaje específico por campo en conflicto); P29 reacciona ante el 409 de username regenerando automáticamente el username con el siguiente prefijo libre sin perder el resto del formulario. Solo crea el `Usuario`; para los roles ENCARGADO y EMPLEADO el perfil de empleado vinculado se crea por separado vía E13 (P29 lo encadena en el flujo de alta combinada) | P29 |
 | E09 | GET / | ADMIN | Lista usuarios con filtros opcionales (rol, activo) | P28, P29 |
 | E10 | GET /{id} | ADMIN | Detalle de un usuario por id | P29 |
-| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66). HTTP 409 si la transición de rol viola la invariante rol↔empleado (ADMIN puro no puede cambiar de rol; usuario con empleado asociado no puede ser promovido a ADMIN) | P29 |
+| E11 | PATCH /{id} | ADMIN | Actualiza email y rol de un usuario (el estado activo no se modifica por esta vía; ver E12; la contraseña se gestiona por E66). HTTP 409 si la transición de rol viola la invariante rol↔empleado (ADMIN puro no puede cambiar de rol; usuario con empleado asociado no puede ser promovido a ADMIN). Enviar el mismo rol que el actual no dispara el guard y devuelve 200 (no-op aceptado). El guard refuerza la separación usuario↔empleado (Decisión 2): el modelo no soporta crear ni borrar perfiles de empleado como side-effect de un cambio de rol, lo que evita estados híbridos | P29 |
 | E12 | DELETE /{id} | ADMIN | Desactiva un usuario (baja lógica, no borrado físico) | P29 |
 | E66 | PATCH /{id}/password | ADMIN | Restablece la contraseña de un usuario directamente (caso de uso helpdesk). Sin envío de correo. Mínimo 8 caracteres | P29 |
 | E67 | PATCH /{id}/reactivar | ADMIN | Reactiva un usuario previamente desactivado (activo = true). Simétrico a E12 (desactivar) y a E18 (reactivar empleado). HTTP 409 si el usuario ya estaba activo | P29 |
