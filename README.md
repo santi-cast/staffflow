@@ -43,6 +43,7 @@ El sistema se compone de:
 - [Estado del proyecto](#estado-del-proyecto)
 - [Decisiones de arquitectura](#decisiones-de-arquitectura)
 - [Endurecimiento de seguridad y robustez](#endurecimiento-de-seguridad-y-robustez)
+- [Licencia](#licencia)
 - [Autor](#autor)
 
 ---
@@ -627,6 +628,12 @@ Sobre la base funcional se aplicó una capa adicional de hardening centrada en s
 La trazabilidad completa del hardening (proposal, specs delta, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-09-backend-hardening-high-issues/` siguiendo el flujo Spec-Driven Development. Los specs canónicos resultantes (`exception-domain-model`, `jpa-fetch-strategy`, `jwt-configuration`, `security-authorization`) están en `openspec/specs/`.
 
 El endpoint E65 (`POST /empleados/{id}/regenerar-pin`) fue especificado e implementado siguiendo el mismo flujo SDD. Su trazabilidad completa (proposal, spec, design, tasks, verify report y archive report) vive en `openspec/changes/archive/2026-05-10-regenerar-pin-empleado/`.
+
+---
+
+## Licencia
+
+Este proyecto se distribuye bajo licencia MIT. Ver [LICENSE](./LICENSE) para el texto completo.
 
 ---
 
