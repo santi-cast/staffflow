@@ -22,7 +22,7 @@ import com.staffflow.android.data.remote.dto.ParteDiarioResponse
 import kotlinx.coroutines.launch
 
 /**
- * Parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+ * Parte diario de presencia (P17). Destino inicial de los roles ADMIN y ENCARGADO.
  *
  * Patron D - lista solo lectura. Endpoint: E35 GET /presencia/parte-diario?fecha=
  *
@@ -32,8 +32,15 @@ import kotlinx.coroutines.launch
  *   Empty   -> icono + "No hay empleados registrados hoy"
  *   Success -> chips de resumen + RecyclerView con pull-to-refresh
  *
- * Chip "Sin justificar: N" -> action_parte_diario_to_sin_justificar (P18).
- * Tap en fila -> action_parte_diario_to_detalle_empleado (P14).
+ * Navegaciones:
+ *   Tap en evento de fichaje o pausa -> action_parte_diario_to_form_fichaje (P20).
+ *   Tap en evento de ausencia        -> action_parte_diario_to_form_ausencia (P24).
+ *   Tap en "Sin justificar" inline   -> action_parte_diario_to_form_fichaje (P20) con fichajeId=-1.
+ *
+ * El chip "Sin justificar: N" muestra el contador pero no es navegable en v1.0
+ * (clickable=false en el layout). La navegacion a P18 (SinJustificarFragment) y
+ * el tap en fila para abrir P16 (DetalleDiaFragment) estan reservados para v2.0
+ * (ver M-047 en MEJORAS_V2.md).
  */
 class ParteDiarioFragment : Fragment() {
 

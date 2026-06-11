@@ -23,7 +23,7 @@ import java.util.Calendar
 /**
  * Vista de fichajes del empleado autenticado (P10) — variante WebView.
  *
- * Endpoint: GET /api/v1/informes/me/horas?desde=&hasta=&formato=html
+ * Endpoint: GET /api/v1/informes/me/horas?desde=&hasta=
  *
  * Muestra el informe HTML del backend en un WebView.
  * Rango por defecto: semana actual de lunes a domingo.

@@ -19,10 +19,14 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  *
  * Almacena token JWT, rol, username y empleadoId tras el login (E01).
  * Los datos se leen al arrancar la app para:
- *   - Navegar directamente al destino inicial por rol (Decision 24-C).
  *   - Configurar los grupos visibles del Drawer en MainActivity.
  *   - Adjuntar el token en el header Authorization de cada llamada
  *     autenticada (NetworkModule.authToken).
+ *
+ * Al arrancar, MainActivity.checkExistingSession() solo restaura el
+ * token en memoria; no navega automaticamente. La pantalla de inicio
+ * siempre es el terminal (P01) y la navegacion al destino del rol
+ * ocurre unicamente tras un login explicito en LoginFragment.
  *
  * Al cerrar sesion o detectar un 401, clear() borra todos los datos
  * y MainActivity navega al LoginFragment.
@@ -63,7 +67,8 @@ class SessionManager private constructor(context: Context) {
     /**
      * Elimina los datos de sesion del usuario (token, rol, username, empleadoId, nombre).
      * NO borra la BASE_URL configurada para el dispositivo, que es configuracion persistente
-     * y no parte de la sesion (ver Decision auto-detect IP). Llamar al cerrar sesion o en 401.
+     * del dispositivo (auto-detectada o introducida manualmente) y no parte de la sesion
+     * del usuario. Llamar al cerrar sesion o en 401.
      */
     suspend fun clear() {
         dataStore.edit { prefs ->

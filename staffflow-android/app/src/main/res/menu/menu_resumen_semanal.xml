@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Menu de la toolbar para ResumenSemanalFragment (P22 Fichajes).
+    Menu de la toolbar para ResumenSemanalFragment (P19 Resumen semanal).
 
     action_imprimir: lanza el dialogo nativo de impresion del sistema con el
     contenido actual del WebView (MainActivity.imprimirWebView).

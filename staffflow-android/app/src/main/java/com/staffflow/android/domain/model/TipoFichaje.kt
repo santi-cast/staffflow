@@ -7,8 +7,12 @@ package com.staffflow.android.domain.model
  * que el sistema genera automaticamente o que ADMIN/ENCARGADO registran
  * manualmente (E22, E23).
  *
- * Se usa como filtro en P10 (mis fichajes) y P19 (lista fichajes).
- * Gson deserializa el valor String del backend directamente a este enum.
+ * Se usa para serializar y deserializar el tipo de fichaje en los DTO y
+ * para mostrar etiquetas y colores en las vistas que pintan fichajes
+ * (P09 Mi hoy, P11 detalle dia, P17 parte diario) y en el selector de
+ * tipo de los formularios de fichaje del encargado (E22 alta, E23
+ * edicion). Gson deserializa el valor String del backend directamente a
+ * este enum.
  */
 enum class TipoFichaje {
     NORMAL,

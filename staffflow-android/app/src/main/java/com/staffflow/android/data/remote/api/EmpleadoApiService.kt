@@ -17,23 +17,28 @@ import retrofit2.http.Query
  * Interfaz Retrofit para los endpoints de empleados.
  *
  * Endpoints cubiertos:
- *   E13 POST /empleados              -> EmpleadoResponse 201  (ADMIN, ENCARGADO)
- *   E14 GET  /empleados              -> List<EmpleadoResponse> (ADMIN, ENCARGADO)
- *   E15 GET  /empleados/{id}         -> EmpleadoResponse      (ADMIN, ENCARGADO)
- *   E16 PATCH /empleados/{id}        -> EmpleadoResponse      (ADMIN, ENCARGADO)
- *   E17 PATCH /empleados/{id}/baja   -> MensajeResponse       (ADMIN, ENCARGADO)
- *   E18 PATCH /empleados/{id}/reactivar -> MensajeResponse    (ADMIN, ENCARGADO)
- *   E21 GET  /empleados/me           -> EmpleadoResponse      (EMPLEADO)
- *   E68 GET  /empleados/by-usuario/{usuarioId} -> EmpleadoResponse (ADMIN)
+ *   E13 POST  /empleados                       -> EmpleadoResponse 201    (ADMIN, ENCARGADO)
+ *   E14 GET   /empleados                       -> List<EmpleadoResponse>  (ADMIN, ENCARGADO)
+ *   E15 GET   /empleados/{id}                  -> EmpleadoResponse        (ADMIN, ENCARGADO)
+ *   E16 PATCH /empleados/{id}                  -> EmpleadoResponse        (ADMIN, ENCARGADO)
+ *   E17 PATCH /empleados/{id}/baja             -> MensajeResponse         (ADMIN, ENCARGADO)
+ *   E18 PATCH /empleados/{id}/reactivar        -> MensajeResponse         (ADMIN, ENCARGADO)
+ *   E21 GET   /empleados/me                    -> EmpleadoResponse        (EMPLEADO)
+ *   E65 POST  /empleados/{id}/regenerar-pin    -> RegenerarPinResponse    (ADMIN, ENCARGADO)
+ *   E68 GET   /empleados/by-usuario/{usuarioId}-> EmpleadoResponse        (ADMIN)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
- * El PIN del empleado nunca se incluye en ninguna respuesta por seguridad.
+ * El PIN del empleado solo se incluye en las respuestas de E13 (alta) y E15
+ * (detalle por ADMIN) - Opcion A. El resto de respuestas (E14 listado, E16
+ * PATCH, E21 me, E68 by-usuario) nunca exponen pinTerminal.
  */
 interface EmpleadoApiService {
 
     /**
      * E13 - Crea un nuevo empleado vinculado a un usuario existente.
-     * Error 409 si DNI, numeroEmpleado o PIN ya existen.
+     * Error 409 si DNI o codigoNfc ya existen. numeroEmpleado se autogenera
+     * (EMP-XXX, while loop por colision) y pinTerminal lo asigna el sistema,
+     * por lo que ninguno de los dos puede colisionar desde el cliente.
      */
     @POST("empleados")
     suspend fun crearEmpleado(@Body request: EmpleadoRequest): Response<EmpleadoResponse>
@@ -61,7 +66,8 @@ interface EmpleadoApiService {
     /**
      * E16 - Actualiza parcialmente un empleado (PATCH semantics).
      * Solo se envian los campos que se quieren modificar.
-     * Error 404 si no existe | 409 si DNI o PIN duplicados.
+     * Error 404 si no existe | 409 si DNI o codigoNfc duplicados.
+     * pinTerminal no es editable via PATCH (se regenera con E65).
      */
     @PATCH("empleados/{id}")
     suspend fun actualizarEmpleado(
@@ -101,7 +107,9 @@ interface EmpleadoApiService {
 
     /**
      * E21 - Devuelve el perfil del empleado autenticado.
-     * Solo accesible con rol EMPLEADO. HTTP 403 para ADMIN y ENCARGADO.
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado). HTTP 403 para ADMIN.
+     * El PIN nunca se incluye en /me independientemente del rol.
      */
     @GET("empleados/me")
     suspend fun getMiPerfil(): Response<EmpleadoResponse>

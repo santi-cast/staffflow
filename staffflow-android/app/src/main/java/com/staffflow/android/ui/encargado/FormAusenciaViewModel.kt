@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  * Si procesado=true el formulario se abre en modo solo lectura.
  * La eliminacion solo esta disponible si procesado=false.
  * El dialogo de confirmacion antes de eliminar lo gestiona FormAusenciaFragment
- * con MaterialAlertDialogBuilder (Decision 26).
+ * con MaterialAlertDialogBuilder.
  *
  * empleadoId null = festivo global (afecta a todos los empleados).
  *

@@ -25,7 +25,7 @@
     Seccion perfil empleado solo visible en modo alta (en edicion se gestiona desde P14/P15).
     btnCambiarEstado solo visible en modo edicion: alterna entre "Desactivar"
     (rojo, llama a E12 DELETE) y "Activar" (verde, llama a E67 PATCH /reactivar)
-    segun usuario.activo. Patron simetrico al de DetalleEmpleadoFragment (P15).
+    segun usuario.activo. Patron simetrico al de DetalleEmpleadoFragment (P14).
     Acciones secundarias (btnCambiarPassword, btnCambiarEstado) wrap_content
     centradas; btnGuardar es la accion primaria y ocupa el ancho completo.
 -->

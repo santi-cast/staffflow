@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
  *   observaciones String                             (opcional, edicion)
  *
  * Las observaciones son OBLIGATORIAS al guardar (RNF-L02).
- * El boton GUARDAR se deshabilita durante la llamada al API (Decision 25).
+ * El boton GUARDAR se deshabilita durante la llamada al API.
  */
 class FormFichajeFragment : Fragment() {
 

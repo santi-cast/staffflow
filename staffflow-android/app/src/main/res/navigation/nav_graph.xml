@@ -4,8 +4,10 @@
 
     Destino raiz: terminalFragment (P01).
     La app arranca siempre en el terminal. Si hay sesion valida en
-    DataStore, MainActivity.checkExistingSession() navega directamente
-    al destino inicial por rol sin pasar por el login.
+    DataStore, MainActivity.checkExistingSession() solo restaura el
+    token en NetworkModule y refresca el Drawer; la navegacion al
+    destino inicial por rol se ejecuta unicamente tras un login
+    explicito en LoginFragment (E01).
 
     Zona publica (sin Drawer, sin JWT):
       P01 terminalFragment    <- raiz del grafo
@@ -146,7 +148,7 @@
         android:label="Mi perfil"
         tools:layout="@layout/fragment_mi_perfil" />
 
-    <!-- P09 Mi saldo anual (destino inicial EMPLEADO) -->
+    <!-- P09 Mi saldo anual -->
     <fragment
         android:id="@+id/miSaldoFragment"
         android:name="com.staffflow.android.ui.empleado.MiSaldoFragment"
@@ -167,7 +169,7 @@
         android:label="Mis ausencias"
         tools:layout="@layout/fragment_mis_ausencias" />
 
-    <!-- P12 Mi hoy (estado del dia del empleado) -->
+    <!-- P12 Mi hoy (estado del dia del empleado, destino inicial EMPLEADO) -->
     <fragment
         android:id="@+id/miHoyFragment"
         android:name="com.staffflow.android.ui.empleado.MiHoyFragment"
@@ -178,22 +180,12 @@
     <!-- ZONA AUTENTICADA -ENCARGADO y ADMIN                        -->
     <!-- ============================================================ -->
 
-    <!-- P17 Parte diario de presencia (destino inicial ENCARGADO) -->
+    <!-- P17 Parte diario de presencia (destino inicial ADMIN y ENCARGADO) -->
     <fragment
         android:id="@+id/parteDiarioFragment"
         android:name="com.staffflow.android.ui.encargado.ParteDiarioFragment"
         android:label="Parte diario"
         tools:layout="@layout/fragment_parte_diario">
-
-        <!-- P17 -> P18 Sin justificar (via chip) -->
-        <action
-            android:id="@+id/action_parte_diario_to_sin_justificar"
-            app:destination="@id/sinJustificarFragment" />
-
-        <!-- P17 -> P16 Timeline completo del dia de un empleado (tap en fila) -->
-        <action
-            android:id="@+id/action_parte_diario_to_detalle_dia"
-            app:destination="@id/detalleDiaFragment" />
 
         <!-- P17 -> P20 Editar fichaje o pausa desde evento inline del parte diario -->
         <action
@@ -324,7 +316,7 @@
     <!-- ZONA AUTENTICADA -ADMIN y ENCARGADO (gestion empleados)    -->
     <!-- ============================================================ -->
 
-    <!-- P13 Lista de empleados (destino inicial ADMIN) -->
+    <!-- P13 Lista de empleados -->
     <fragment
         android:id="@+id/empleadosFragment"
         android:name="com.staffflow.android.ui.shared.EmpleadosFragment"

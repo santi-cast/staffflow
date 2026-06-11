@@ -16,8 +16,10 @@ import kotlinx.coroutines.launch
  * ViewModel de la lista de empleados sin justificar (P18).
  *
  * E36 GET /presencia/sin-justificar?fecha=
- * Acceso: P17 (ParteDiarioFragment) -> chip "Sin justificar: N".
- * La fecha se pasa desde P17 via Bundle. Si no hay fecha se usa hoy (null).
+ * Pantalla preparada para v2.0 (ver M-047 en MEJORAS_V2.md): el ViewModel
+ * y el endpoint estan operativos, pero P18 no es accesible desde P17 en
+ * v1.0 (el chip "Sin justificar" no navega).
+ * La fecha se pasa via Bundle. Si no hay fecha se usa hoy (null).
  */
 class SinJustificarViewModel(application: Application) : AndroidViewModel(application) {
 

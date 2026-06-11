@@ -39,13 +39,15 @@ import java.util.Locale
  *   3. Bloquear el Drawer en la zona publica (Terminal, Login, Recovery).
  *   4. Gestionar la sesion expirada (HTTP 401): limpiar DataStore,
  *      ocultar Drawer, navegar a LoginFragment y mostrar Snackbar.
- *   5. Al arrancar, si hay JWT valido en DataStore, navegar directamente
- *      al destino inicial por rol sin pasar por el login (Decision 24-C).
+ *   5. Al arrancar, si hay JWT valido en DataStore, restaurar el token
+ *      en NetworkModule y refrescar el Drawer. El terminal (P01) sigue
+ *      siendo la pantalla de inicio; NO se navega automaticamente al
+ *      destino del rol (ver checkExistingSession).
  *
  * La navegacion post-login se delega a LoginFragment, que llama a
  * navigateToInitialDestination(rol) tras un login exitoso (E01).
  *
- * Destinos iniciales por rol:
+ * Destinos iniciales por rol (solo tras login explicito):
  *   ADMIN     -> parteDiarioFragment (P17)
  *   ENCARGADO -> parteDiarioFragment (P17)
  *   EMPLEADO  -> miHoyFragment       (P12)
@@ -309,7 +311,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Al arrancar, comprueba si hay token en DataStore.
      * Si existe, configura el Drawer y navega al destino inicial por rol
-     * sin pasar por el login (Decision 24-C).
+     * sin pasar por el login.
      *
      * Para la URL base del backend:
      *   1. Si hay BASE_URL en DataStore (configurada previamente) -> usarla directamente.
@@ -405,8 +407,8 @@ class MainActivity : AppCompatActivity() {
      * Lanza el dialogo nativo de impresion del sistema para el contenido
      * actual de un WebView.
      *
-     * Llamado desde Fragments que muestran informes en WebView (P22 Fichajes
-     * globales, P23 Ausencias globales) via:
+     * Llamado desde Fragments que muestran informes en WebView (P19
+     * Resumen semanal de fichajes, P23 Ausencias globales) via:
      * `(requireActivity() as MainActivity).imprimirWebView(webView, nombre)`.
      *
      * Vive aqui en la Activity y no en una utilidad estatica porque
@@ -451,7 +453,7 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     /**
-     * Confirmacion antes de cerrar sesion (Decision 26).
+     * Confirmacion antes de cerrar sesion.
      * El boton destructivo es setNegativeButton, que en Material Design 3
      * aparece en rojo para indicar accion destructiva.
      */

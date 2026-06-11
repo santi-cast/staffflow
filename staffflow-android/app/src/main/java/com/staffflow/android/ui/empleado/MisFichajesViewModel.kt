@@ -18,7 +18,7 @@ import java.util.Locale
 /**
  * ViewModel de la vista de fichajes del empleado autenticado (P10) — variante WebView.
  *
- * Endpoint: GET /api/v1/informes/me/horas?desde=&hasta=&formato=html
+ * Endpoint: GET /api/v1/informes/me/horas?desde=&hasta=
  *
  * Rango por defecto: semana actual de lunes a domingo.
  * El empleado puede seleccionar cualquier rango con el chip de periodo.

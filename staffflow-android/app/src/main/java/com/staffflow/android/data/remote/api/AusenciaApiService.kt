@@ -4,7 +4,6 @@ import com.staffflow.android.data.remote.dto.AusenciaPatchRequest
 import com.staffflow.android.data.remote.dto.AusenciaRangoRequest
 import com.staffflow.android.data.remote.dto.AusenciaRequest
 import com.staffflow.android.data.remote.dto.AusenciaResponse
-import com.staffflow.android.data.remote.dto.MensajeResponse
 import com.staffflow.android.data.remote.dto.PlanificacionVacApResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -21,11 +20,15 @@ import retrofit2.http.Streaming
  * Interfaz Retrofit para los endpoints de ausencias planificadas.
  *
  * Endpoints cubiertos:
- *   E30 POST /ausencias          -> AusenciaResponse 201  (ADMIN, ENCARGADO)
- *   E31 PATCH /ausencias/{id}    -> AusenciaResponse      (ADMIN, ENCARGADO)
- *   E32 DELETE /ausencias/{id}   -> MensajeResponse       (ADMIN, ENCARGADO)
- *   E33 GET  /ausencias          -> List<AusenciaResponse> (ADMIN, ENCARGADO)
- *   E34 GET  /ausencias/me       -> List<AusenciaResponse> (EMPLEADO)
+ *   E30 POST   /ausencias                       -> AusenciaResponse 201       (ADMIN, ENCARGADO)
+ *   E31 PATCH  /ausencias/{id}                  -> AusenciaResponse           (ADMIN, ENCARGADO)
+ *   E32 DELETE /ausencias/{id}                  -> Response<Unit> (204)       (ADMIN, ENCARGADO)
+ *   E33 GET    /ausencias                       -> List<AusenciaResponse>     (ADMIN, ENCARGADO)
+ *   E34 GET    /ausencias/me                    -> List<AusenciaResponse>     (EMPLEADO, ENCARGADO)
+ *   E61 GET    /ausencias/me/informe            -> ResponseBody (HTML)        (EMPLEADO, ENCARGADO)
+ *   E62 GET    /ausencias/{empleadoId}/informe  -> ResponseBody (HTML)        (ADMIN, ENCARGADO)
+ *   E63 POST   /ausencias/rango                 -> List<AusenciaResponse>     (ADMIN, ENCARGADO)
+ *   E64 GET    /ausencias/planificacion-vac-ap  -> PlanificacionVacApResponse (ADMIN, ENCARGADO)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
  * E31 y E32 devuelven 409 si la ausencia ya fue procesada (procesado=true).
@@ -83,7 +86,8 @@ interface AusenciaApiService {
 
     /**
      * E34 - Devuelve las ausencias del empleado autenticado.
-     * Solo accesible con rol EMPLEADO.
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado).
      * @param desde Fecha inicio "yyyy-MM-dd"
      * @param hasta Fecha fin "yyyy-MM-dd"
      */

@@ -43,7 +43,8 @@ import java.time.format.DateTimeParseException
  * desde sugerirUsername(rol) del ViewModel siguiendo el prefijo del rol
  * (usu001/usu002... para ENCARGADO y EMPLEADO, admin001/admin002... para ADMIN)
  * con padding de 3 digitos y numeracion compartida entre ENCARGADO y EMPLEADO
- * para que el username sea agnostico del rol operativo (M-040/M-041);
+ * para que el username sea agnostico del rol operativo (un cambio
+ * ENCARGADO <-> EMPLEADO no deja el username inconsistente);
  * en modo edicion el backend no admite
  * cambiarlo via PATCH y el campo aparece disabled. Password en modo alta
  * se introduce directamente; en modo edicion se puede cambiar pulsando
@@ -51,7 +52,7 @@ import java.time.format.DateTimeParseException
  * activo NO se edita por el campo `activo`: el boton btnCambiarEstado alterna
  * entre "Desactivar" (E12 DELETE) y "Activar" (E67 PATCH /reactivar) segun
  * usuario.activo, ambos con confirmacion via MaterialAlertDialog. Patron
- * simetrico al de DetalleEmpleadoFragment (P15).
+ * simetrico al de DetalleEmpleadoFragment (P14).
  *
  * Argumentos de navegacion esperados (Bundle):
  *   usuarioId  Long  -1 = alta | >0 = edicion
@@ -294,7 +295,7 @@ class FormUsuarioFragment : Fragment() {
                 // - cambioRol: solo cuenta si pasa entre ENCARGADO y EMPLEADO con
                 //   empleado asociado (la unica transicion permitida por el guard
                 //   del backend; ADMIN <-> otros lo bloquea la UI y tambien el
-                //   backend con HTTP 409, ver M-040).
+                //   backend con HTTP 409).
                 // - cambioEmail: solo cuenta si el email cambio respecto al
                 //   cargado y emailOriginal ya esta inicializado.
                 val rolAnterior = rolOriginal
@@ -395,7 +396,7 @@ class FormUsuarioFragment : Fragment() {
 
         binding.btnCambiarEstado.setOnClickListener {
             // Decidir desactivar vs activar segun el estado del usuario cargado.
-            // Mismo patron que DetalleEmpleadoFragment (P15).
+            // Mismo patron que DetalleEmpleadoFragment (P14).
             when (usuarioActivo) {
                 true  -> mostrarDialogoDesactivar()
                 false -> mostrarDialogoActivar()
@@ -409,7 +410,7 @@ class FormUsuarioFragment : Fragment() {
     }
 
     // ------------------------------------------------------------------
-    // Dialogos de confirmacion antes de cambiar estado (Decision 26)
+    // Dialogos de confirmacion antes de cambiar estado
     // ------------------------------------------------------------------
 
     private fun mostrarDialogoDesactivar() {
@@ -437,7 +438,7 @@ class FormUsuarioFragment : Fragment() {
     /**
      * Configura el texto y el color del boton bimodal Desactivar/Activar
      * segun el estado actual del usuario cargado. Se invoca desde SuccessAlta
-     * en procesarEstado(). Patron simetrico al de DetalleEmpleadoFragment (P15).
+     * en procesarEstado(). Patron simetrico al de DetalleEmpleadoFragment (P14).
      *
      * Activo   -> "Desactivar" outlined rojo  (#C62828)
      * Inactivo -> "Activar"    outlined verde (#2E7D32)

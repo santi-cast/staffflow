@@ -19,9 +19,13 @@ import kotlinx.coroutines.launch
 /**
  * Lista de empleados sin justificar para una fecha (P18).
  *
- * Acceso: P17 ParteDiarioFragment -> chip "Sin justificar: N".
- * La fecha se pasa via Bundle("fecha"). Si no viene, el backend usa hoy.
+ * Pantalla preparada para v2.0 (ver M-047 en MEJORAS_V2.md): la
+ * infraestructura (fragment, ViewModel, layout y endpoint E36) ya
+ * esta operativa, pero ningun destino del nav_graph navega aqui en
+ * v1.0. El chip "Sin justificar" del parte diario (P17) muestra el
+ * contador como informacion pero no es clickable.
  *
+ * La fecha se pasa via Bundle("fecha"). Si no viene, el backend usa hoy.
  * 4 estados: Loading (skeleton) / Error / Empty / Success (RecyclerView).
  * Lista de solo lectura.
  */

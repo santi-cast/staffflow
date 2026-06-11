@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Layout del parte diario de presencia (P17). Destino inicial del rol ENCARGADO.
+    Layout del parte diario de presencia (P17). Destino inicial de los roles ADMIN y ENCARGADO.
 
     Patron D - lista solo lectura. Endpoint: E35 GET /presencia/parte-diario?fecha=
 
@@ -13,8 +13,14 @@
           EXITO:    SwipeRefreshLayout > RecyclerView
 
     El selector de fecha se muestra en la toolbar via MenuProvider (menu_parte_diario.xml).
-    El chip "Sin justificar" navega a P18 (action_parte_diario_to_sin_justificar).
-    Tap en fila del RecyclerView -> P14 (action_parte_diario_to_detalle_empleado).
+
+    Navegaciones desde el RecyclerView:
+      - Tap en fichaje o pausa -> P20 FormFichaje (action_parte_diario_to_form_fichaje).
+      - Tap en ausencia -> P24 FormAusencia (action_parte_diario_to_form_ausencia).
+
+    El chip "Sin justificar" muestra el contador pero no es navegable en v1.0
+    (clickable=false). La navegacion a P18 (SinJustificarFragment) esta reservada
+    para v2.0 (ver M-047 en MEJORAS_V2.md).
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"

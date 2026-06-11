@@ -247,7 +247,7 @@ data class AusenciaPatchRequest(
 )
 
 /**
- * Identificacion por PIN en el terminal de fichaje (E48, E49, E51).
+ * Identificacion por PIN en el terminal de fichaje (E48, E49, E51, E52).
  *
  * pin debe tener exactamente 4 digitos numericos.
  * dispositivoId es el ID unico del dispositivo Android (usado por el

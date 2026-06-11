@@ -59,7 +59,9 @@ sealed class ConfirmacionUiState {
  * ViewModel de la pantalla de bienvenida y confirmacion de fichaje (P06).
  *
  * Flujo:
- *   1. init(pin) -> llama E52 -> estado BienvenidaConOpciones (o Error)
+ *   1. init(pin, datosEstado) -> recibe los datos del estado ya resueltos por
+ *      P01 (TerminalViewModel.verificarPin invoco E52 antes de navegar) y
+ *      publica el estado BienvenidaConOpciones. P06 no vuelve a llamar a E52.
  *   2. El usuario pulsa una accion -> ejecutarAccion() -> E48/E49/E50/E51
  *   3. Exito -> estado Resultado; el Fragment inicia la cuenta atras de 5s
  *   4. Error -> estado Error; el Fragment muestra el mensaje y reactiva botones

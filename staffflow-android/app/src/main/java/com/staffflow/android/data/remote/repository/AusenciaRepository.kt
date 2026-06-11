@@ -10,15 +10,18 @@ import com.staffflow.android.util.safeApiCall
 import okhttp3.ResponseBody
 
 /**
- * Repositorio para los endpoints de ausencias planificadas (E30-E34).
+ * Repositorio para los endpoints de ausencias planificadas (E30-E34, E61-E64).
  *
  * Todos los metodos son suspendibles y devuelven Result<T>. Los fallos
  * viajan como ApiException cuyo `error: ApiError` permite when exhaustivo
  * (ver util/ApiError.kt). ApiException.message preserva los mensajes
  * historicos para consumidores que aun leen el string crudo.
  *
- * Requiere JWT con rol ADMIN o ENCARGADO (excepto getMisAusencias que requiere EMPLEADO).
- * El AuthInterceptor adjunta el token automaticamente.
+ * Roles del backend (ver AusenciaController):
+ *   - E30, E31, E32, E33, E62, E63, E64 -> ADMIN, ENCARGADO.
+ *   - E34, E61                          -> EMPLEADO, ENCARGADO.
+ *
+ * El AuthInterceptor adjunta el JWT automaticamente.
  *
  * @param api Instancia de AusenciaApiService creada por NetworkModule.retrofit.
  */

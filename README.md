@@ -385,7 +385,7 @@ Los 5 endpoints públicos de terminal (`/api/v1/terminal/entrada`, `/salida`, `/
 
 ### 5. Single Activity + Navigation Component en Android
 
-La app Android usa una única `MainActivity` con `NavHostFragment`. Cada pantalla es un `Fragment`. Navigation Component gestiona el back stack automáticamente desde `nav_graph.xml`. El Navigation Drawer vive en `MainActivity` y se infla dinámicamente según el rol del JWT.
+La app Android usa una única `MainActivity` con `NavHostFragment`. Cada pantalla es un `Fragment`. Navigation Component gestiona el back stack automáticamente desde `nav_graph.xml`. El Navigation Drawer vive en `MainActivity` con un menú XML único, y los grupos visibles (`group_empleado`, `group_encargado`, `group_admin`, `group_ajustes`) se muestran u ocultan según el rol del JWT mediante `menu.setGroupVisible(...)`.
 
 ### 6. Estrategia de reutilización de Fragments en Android
 

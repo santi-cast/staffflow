@@ -196,8 +196,9 @@ data class SaldoResponse(
  * Parte diario de presencia de toda la empresa (E35 GET /presencia/parte-diario).
  *
  * Usado en P17 (ParteDiarioFragment). Los chips del resumen muestran
- * fichados, enPausa, ausencias y sinJustificar.
- * El chip sinJustificar navega a P18 (SinJustificarFragment).
+ * fichados, enPausa, ausencias y sinJustificar. En v1.0 el chip
+ * sinJustificar es solo informativo; la navegacion a P18 esta reservada
+ * para v2.0 (ver M-047 en MEJORAS_V2.md).
  */
 data class ParteDiarioResponse(
     val fecha: String,
@@ -248,7 +249,8 @@ data class DetallePresenciaResponse(
 
 /**
  * Empleado sin justificar del dia (E36 GET /presencia/sin-justificar).
- * Listado en P18 (SinJustificarFragment).
+ * Listado en P18 (SinJustificarFragment), pantalla preparada para v2.0
+ * pero no navegable desde la UI en v1.0 (ver M-047 en MEJORAS_V2.md).
  */
 data class SinJustificarResponse(
     val empleadoId: Long,
@@ -289,7 +291,10 @@ data class PlanificacionVacApResponse(
 
 /**
  * Respuesta al consultar el estado del dia por PIN (E52 POST /terminal/estado).
- * Devuelta por P06 (ConfirmacionFragment) antes de seleccionar la accion.
+ * TerminalViewModel.verificarPin invoca E52 desde P01 al completar el cuarto
+ * digito; el Fragment recibe la respuesta en el estado PinVerificado y navega
+ * a P06 (ConfirmacionFragment) con los datos ya cargados, para que P06 no
+ * tenga que volver a llamar a E52.
  * Las horas vienen formateadas como "HH:mm" desde el backend.
  */
 data class TerminalEstadoResponse(
@@ -329,7 +334,7 @@ data class TerminalSalidaResponse(
  * Respuesta al iniciar (E50) o finalizar (E51) una pausa desde el terminal.
  *
  * horaInicioPausa es null en E51 (finalizar pausa).
- * duracionPausaMinutos es null en E50 (iniciar pausa).
+ * duracionPausaSegundos es null en E50 (iniciar pausa).
  * Mostrada en P06 (ConfirmacionFragment) durante 3 segundos.
  */
 data class TerminalPausaResponse(

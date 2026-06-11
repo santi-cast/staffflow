@@ -28,8 +28,11 @@ import kotlinx.coroutines.launch
 /**
  * Detalle de jornada de un empleado para un dia concreto (P16).
  *
- * Accesible para ENCARGADO y ADMIN desde ParteDiarioFragment al tocar un empleado.
- * Carga en paralelo el fichaje y las pausas del dia via E24 y E29.
+ * Pantalla preparada para v2.0 (ver M-047 en MEJORAS_V2.md): la pantalla
+ * esta completa (carga en paralelo fichaje + pausas via E24 y E29, FAB
+ * de pausa manual, navegacion a P20/P24 para editar eventos) pero ningun
+ * destino del nav_graph navega aqui en v1.0. En v1.0 el flujo de detalle
+ * por empleado se cubre desde P17 con eventos inline.
  *
  * Muestra en orden cronologico:
  *   - Fichaje del dia (entrada, tipo, salida o "En curso") -> editar via FormFichajeFragment
