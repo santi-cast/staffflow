@@ -1,14 +1,46 @@
 # StaffFlow
 
-Sistema de control horario y gestión de ausencias para pequeñas y medianas empresas, desarrollado como **Proyecto Final del Grado Superior en Desarrollo de Aplicaciones Multiplataforma (DAM)**.
+> Control horario y gestión de ausencias para Pymes, con cumplimiento del RD‑ley 8/2019.
 
-StaffFlow digitaliza el registro de jornada laboral y la gestión de ausencias en Pymes, cumpliendo con el **Real Decreto‑ley 8/2019**, que obliga a registrar diariamente el horario de trabajo de los empleados.
+![Java](https://img.shields.io/badge/Java-21_LTS-orange)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.11-green)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-purple)
+![Tests](https://img.shields.io/badge/tests-341_passing-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![TFG](https://img.shields.io/badge/TFG-DAM_iLERNA_2025--2026-lightgrey)
 
-El proyecto se compone de:
+Proyecto Final del Grado Superior en Desarrollo de Aplicaciones Multiplataforma (DAM) — iLERNA, curso 2025‑2026.
 
-- **Backend:** API REST desarrollada con Java 21 y Spring Boot 3.5
+El sistema se compone de:
+
+- **Backend:** API REST con Java 21 y Spring Boot 3.5
 - **Cliente móvil:** aplicación Android nativa en Kotlin
-- **Arquitectura desacoplada** que permite futuros clientes (web o escritorio)
+- **Arquitectura desacoplada** que permite futuros clientes (escritorio, web)
+
+## Recursos
+
+| Recurso | Estado |
+|---|---|
+| Memoria académica (PDF) | Pendiente de entrega (15 de junio de 2026) |
+| Video de defensa | Pendiente de entrega (15 de junio de 2026) |
+| APK de release | Pendiente de entrega (15 de junio de 2026) |
+| Swagger UI (local) | `http://localhost:8080/swagger-ui.html` tras arrancar el backend |
+
+## Tabla de contenidos
+
+- [Descripción](#descripción)
+- [Funcionalidades principales](#funcionalidades-principales)
+- [Stack tecnológico](#stack-tecnológico)
+- [Perfiles de ejecución](#perfiles-de-ejecución)
+- [Arquitectura](#arquitectura)
+- [Diseño de la API](#diseño-de-la-api)
+- [Modelo de datos](#modelo-de-datos)
+- [Cumplimiento legal — RD‑ley 8/2019](#cumplimiento-legal--rdley-82019)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Estado del proyecto](#estado-del-proyecto)
+- [Decisiones de arquitectura](#decisiones-de-arquitectura)
+- [Endurecimiento de seguridad y robustez](#endurecimiento-de-seguridad-y-robustez)
+- [Autor](#autor)
 
 ---
 
