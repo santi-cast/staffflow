@@ -43,13 +43,15 @@ import java.util.Locale
  *   - Fecha corta sin año con letterSpacing amplio en mayusculas.
  *   - 4 circulos PIN: grises de placeholder → oscuros al introducir digito.
  *   - Numpad flat 3x3 + 0 centrado, sin ⌫ en el grid.
- *   - LIMPIAR (outlined): borra el PIN completo.
- *   - CONFIRMAR (filled dark): solo habilitado con 4 digitos, navega a P06.
+ *   - LIMPIAR (outlined): borra el PIN completo. Unico boton de accion del PIN.
  *   - Modo kiosk: barras del sistema ocultas en esta pantalla.
  *
- * Flujo (distinto al diseno anterior):
- *   Antes: 4o digito -> auto-navega a P06.
- *   Ahora: 4o digito -> habilita CONFIRMAR -> usuario confirma -> navega a P06.
+ * Flujo:
+ *   El 4o digito invoca automaticamente TerminalViewModel.verificarPin (E52).
+ *   Si el PIN es correcto, el ViewModel emite el estado PinVerificado y el
+ *   fragment navega a P06 (ConfirmacionFragment). Si es incorrecto, se muestra
+ *   feedback y el contador de bloqueo del backend se incrementa. No existe un
+ *   boton CONFIRMAR independiente: la verificacion se dispara al cuarto digito.
  */
 class TerminalFragment : Fragment() {
 
