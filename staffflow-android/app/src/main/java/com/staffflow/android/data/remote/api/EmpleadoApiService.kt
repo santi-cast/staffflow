@@ -107,7 +107,9 @@ interface EmpleadoApiService {
 
     /**
      * E21 - Devuelve el perfil del empleado autenticado.
-     * Solo accesible con rol EMPLEADO. HTTP 403 para ADMIN y ENCARGADO.
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado). HTTP 403 para ADMIN.
+     * El PIN nunca se incluye en /me independientemente del rol.
      */
     @GET("empleados/me")
     suspend fun getMiPerfil(): Response<EmpleadoResponse>

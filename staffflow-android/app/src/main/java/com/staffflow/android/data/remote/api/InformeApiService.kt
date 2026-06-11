@@ -42,7 +42,8 @@ interface InformeApiService {
 
     /**
      * E58 - Informe de horas del empleado autenticado en HTML.
-     * Solo accesible con rol EMPLEADO. P10 (MisFichajesFragment) lo usa para
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado). P10 (MisFichajesFragment) lo usa para
      * mostrar la vista de fichajes en WebView.
      */
     @GET("informes/me/horas")

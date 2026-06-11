@@ -14,8 +14,8 @@ import com.staffflow.android.util.safeApiCall
  * (ver util/ApiError.kt). ApiException.message preserva los mensajes
  * historicos para consumidores que aun leen el string crudo.
  *
- * E35 requiere JWT con rol ENCARGADO o ADMIN.
- * E37 requiere JWT con rol EMPLEADO.
+ * E35 y E36 requieren JWT con rol ADMIN o ENCARGADO.
+ * E37 requiere JWT con rol EMPLEADO o ENCARGADO.
  * El AuthInterceptor adjunta el token automaticamente.
  *
  * @param api Instancia de PresenciaApiService creada por NetworkModule.retrofit.

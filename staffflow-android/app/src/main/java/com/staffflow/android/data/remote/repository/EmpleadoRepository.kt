@@ -16,7 +16,9 @@ import com.staffflow.android.util.safeApiCall
  * (ver util/ApiError.kt). ApiException.message preserva los mensajes
  * historicos para consumidores que aun leen el string crudo.
  *
- * Requiere JWT con rol ADMIN o ENCARGADO (excepto getMiPerfil que requiere EMPLEADO).
+ * Requiere JWT. La mayoria de endpoints son ADMIN o ENCARGADO; getMiPerfil (E21)
+ * es EMPLEADO o ENCARGADO. El detalle de roles por endpoint vive en la cabecera
+ * de EmpleadoApiService.
  * El AuthInterceptor adjunta el token automaticamente.
  *
  * @param api Instancia de EmpleadoApiService creada por NetworkModule.retrofit.

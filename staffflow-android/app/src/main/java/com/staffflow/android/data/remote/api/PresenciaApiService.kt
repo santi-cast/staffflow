@@ -38,7 +38,8 @@ interface PresenciaApiService {
 
     /**
      * E37 - Estado de presencia del empleado autenticado para una fecha.
-     * Solo accesible con rol EMPLEADO. HTTP 403 para ADMIN y ENCARGADO.
+     * Accesible con rol EMPLEADO o ENCARGADO (ambos pueden ser personas
+     * fisicas con perfil de empleado). HTTP 403 para ADMIN.
      * P12 (MiHoyFragment) llama a este metodo al cargar y en onResume.
      * @param fecha Fecha en formato "yyyy-MM-dd". Si es null el backend usa hoy.
      */

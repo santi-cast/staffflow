@@ -13,7 +13,7 @@ import com.staffflow.android.util.safeApiCall
  * (ver util/ApiError.kt). ApiException.message preserva los mensajes
  * historicos para consumidores que aun leen el string crudo.
  *
- * E41 requiere JWT con rol EMPLEADO.
+ * E41 requiere JWT con rol EMPLEADO o ENCARGADO.
  * E38 y E39 requieren JWT con rol ADMIN o ENCARGADO.
  * El AuthInterceptor adjunta el token automaticamente.
  *
