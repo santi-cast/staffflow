@@ -35,7 +35,8 @@ interface TerminalApiService {
 
     /**
      * E52 - Consulta el estado de la jornada del empleado para el dia actual.
-     * Sin JWT. Llamado desde P06 antes de mostrar los botones de accion.
+     * Sin JWT. Llamado desde P01 (TerminalViewModel.verificarPin) al completar
+     * el cuarto digito del PIN, antes de navegar a P06 (ConfirmacionFragment).
      * Devuelve nombre y estado (SIN_ENTRADA / EN_JORNADA / EN_PAUSA / JORNADA_CERRADA).
      */
     @POST("terminal/estado")

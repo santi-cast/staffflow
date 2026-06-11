@@ -291,7 +291,10 @@ data class PlanificacionVacApResponse(
 
 /**
  * Respuesta al consultar el estado del dia por PIN (E52 POST /terminal/estado).
- * Devuelta por P06 (ConfirmacionFragment) antes de seleccionar la accion.
+ * TerminalViewModel.verificarPin invoca E52 desde P01 al completar el cuarto
+ * digito; el Fragment recibe la respuesta en el estado PinVerificado y navega
+ * a P06 (ConfirmacionFragment) con los datos ya cargados, para que P06 no
+ * tenga que volver a llamar a E52.
  * Las horas vienen formateadas como "HH:mm" desde el backend.
  */
 data class TerminalEstadoResponse(
