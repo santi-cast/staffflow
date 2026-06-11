@@ -28,13 +28,17 @@ import retrofit2.http.Query
  *   E68 GET   /empleados/by-usuario/{usuarioId}-> EmpleadoResponse        (ADMIN)
  *
  * Requiere JWT. El token lo adjunta AuthInterceptor en NetworkModule.
- * El PIN del empleado nunca se incluye en ninguna respuesta por seguridad.
+ * El PIN del empleado solo se incluye en las respuestas de E13 (alta) y E15
+ * (detalle por ADMIN) - Opcion A. El resto de respuestas (E14 listado, E16
+ * PATCH, E21 me, E68 by-usuario) nunca exponen pinTerminal.
  */
 interface EmpleadoApiService {
 
     /**
      * E13 - Crea un nuevo empleado vinculado a un usuario existente.
-     * Error 409 si DNI, numeroEmpleado o PIN ya existen.
+     * Error 409 si DNI o codigoNfc ya existen. numeroEmpleado se autogenera
+     * (EMP-XXX, while loop por colision) y pinTerminal lo asigna el sistema,
+     * por lo que ninguno de los dos puede colisionar desde el cliente.
      */
     @POST("empleados")
     suspend fun crearEmpleado(@Body request: EmpleadoRequest): Response<EmpleadoResponse>
@@ -62,7 +66,8 @@ interface EmpleadoApiService {
     /**
      * E16 - Actualiza parcialmente un empleado (PATCH semantics).
      * Solo se envian los campos que se quieren modificar.
-     * Error 404 si no existe | 409 si DNI o PIN duplicados.
+     * Error 404 si no existe | 409 si DNI o codigoNfc duplicados.
+     * pinTerminal no es editable via PATCH (se regenera con E65).
      */
     @PATCH("empleados/{id}")
     suspend fun actualizarEmpleado(
