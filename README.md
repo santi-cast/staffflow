@@ -581,7 +581,7 @@ staffflow/
 | Fase 1 | Análisis y diseño (requisitos, modelo de datos, API, wireframes) | ✅ Completada |
 | Fase 2 | Desarrollo del backend (68 endpoints, JWT, iText 7) | ✅ Completada — 68/68 endpoints operativos |
 | Fase 3 | Desarrollo de la app Android (30 pantallas, Kotlin, Navigation Component) | ✅ Completada — 30 pantallas en 6 bloques |
-| Fase 4 | Testing | ✅ Completada — 341 tests verdes (0 errors): 291 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring |
+| Fase 4 | Testing automatizado e iteración Android | ✅ Completada — 341 tests verdes (0 errors): 291 unitarios de servicio + 10 JWT + 9 exception handler (MockMvc standalone) + 30 seguridad declarativa por reflexión + 1 ArchUnit. Stack JUnit 5 + Mockito + ArchUnit, sin contexto Spring. En paralelo, iteración funcional sobre los treinta fragmentos del cliente Android: pulido de validaciones, mensajes de error y comportamiento de botones durante las llamadas de red |
 | Fase 5 | Documentación final | 🔄 En curso — memoria final en redacción |
 
 **Entrega final:** 15 de junio de 2026
