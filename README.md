@@ -690,9 +690,9 @@ Reemplazar el JWT actual (single-token, 12 h) por el patrón estándar **access 
 
 Mover el contador de intentos fallidos del terminal (hoy en un `ConcurrentHashMap` en memoria del proceso) a un campo persistente en la entidad `Empleado`. El estado actual se pierde con cada reinicio del backend y no escala si la aplicación corre en más de una instancia.
 
-### 2.6 Multitenant
+### 2.6 Multilocal y multitenant
 
-Soportar varias empresas conviviendo en una única instancia del backend, con aislamiento de datos por organización. Requiere rediseñar la tabla singleton `configuracion_empresa`, añadir una columna de tenant a todas las entidades del dominio y propagar el tenant resuelto a través de la cadena de seguridad.
+Cubre dos casos de uso reales con el mismo modelo de dos niveles jerárquicos (empresa → local). El **caso pyme multilocal** es un único empresario con varios centros de trabajo (por ejemplo, un propietario con tres bares): cada local tiene su terminal, su plantilla y sus turnos, pero los saldos y nóminas se consolidan al nivel de la empresa. El **caso SaaS multi-empresa** es la instancia única del backend dando servicio a varias organizaciones independientes con aislamiento de datos garantizado. Requiere añadir la tabla `configuracion_local` (un registro por centro de trabajo), vincular cada entidad del dominio a un local, vincular el local a una empresa, y propagar empresa + local resueltos a través de la cadena de seguridad.
 
 ### 2.7 Integración con sistemas de nóminas
 
@@ -701,6 +701,10 @@ Conectores con sistemas de nóminas habituales en PYMES españolas (A3 Nóminas,
 ### 2.8 Recuperación de contraseña por token de un solo uso
 
 Reemplazar el mecanismo actual de recuperación (E04 genera una contraseña temporal de 8 caracteres y la envía al email registrado) por un token de un solo uso con caducidad corta enviado como enlace. El usuario hace clic, fija una contraseña nueva en una pantalla dedicada y el token queda invalidado tras el uso o tras expirar. El patrón actual obliga al usuario a memorizar o copiar una contraseña aleatoria y deja esa contraseña viva en el inbox del email hasta que el usuario la cambie manualmente.
+
+### 2.9 Copias de seguridad y restauración desde el rol ADMIN
+
+Funcionalidad nativa accesible desde la aplicación de gestión que permita al ADMIN generar copias completas de la base de datos y restaurarlas posteriormente sin requerir acceso SSH al servidor ni utilidades externas como `mysqldump`. Cubre el caso de uso típico de las pymes que se autoalojan: el responsable funcional puede salvaguardar y recuperar el estado del sistema con una interfaz amigable, sin depender de un perfil técnico. La copia incluye el esquema y los datos; la restauración valida la versión del esquema antes de aplicar para evitar incompatibilidades.
 
 ---
 
