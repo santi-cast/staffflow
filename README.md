@@ -23,7 +23,7 @@ El sistema se compone de:
 |---|---|
 | Memoria académica (PDF) | Pendiente de entrega (15 de junio de 2026) |
 | Video de defensa | Pendiente de entrega (15 de junio de 2026) |
-| APK de release | Pendiente de entrega (15 de junio de 2026) |
+| APK del cliente Android | [Descargar `staffflow-android-apk.zip`](https://github.com/santi-cast/staffflow/releases/tag/v1.0.0) |
 | Swagger UI (local) | `http://localhost:8080/swagger-ui.html` tras arrancar el backend |
 
 ## Tabla de contenidos
