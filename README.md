@@ -289,7 +289,7 @@ StaffFlow se puede arrancar de tres maneras distintas para el backend y de dos p
 
 ### Configuración SMTP (opcional)
 
-El backend arranca con un fallback demo (`demo@staffflow.local`) que permite usar la aplicación sin configurar nada, pero los endpoints E04 (solicitar recuperación de contraseña) y E05 (restablecer contraseña con token) **fallan al intentar enviar el email real**. El resto de los endpoints funciona normalmente. Para activar el envío real, hay que pasar dos variables de entorno con credenciales SMTP reales:
+El backend arranca con un fallback demo (`demo@staffflow.local`) que permite usar la aplicación sin configurar nada, pero el endpoint E04 (solicitar recuperación de contraseña) **falla al intentar enviar el email real**. El resto de los endpoints funciona normalmente (E05, el restablecimiento por token, está implementado como contrato preparado para v2.0 y no usa SMTP en v1.0). Para activar el envío real, hay que pasar dos variables de entorno con credenciales SMTP reales:
 
 | Vía | Cómo configurar |
 |---|---|
