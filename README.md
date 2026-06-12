@@ -289,7 +289,7 @@ Adicionalmente, el perfil `dev` expone un endpoint auxiliar **`POST /api/v1/test
 Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
 
 ```sql
--- Memoria final/Diagramas/staffflow_v8_ddl_mysql.sql
+-- staffflow-backend/docs/StaffFlowDDL.sql
 ```
 
 Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
