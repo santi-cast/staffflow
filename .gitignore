@@ -3,8 +3,6 @@
 !staffflow-backend/**
 !staffflow-android/
 !staffflow-android/**
-!docs/
-!docs/**
 !openspec/
 !openspec/**
 !.gitignore
