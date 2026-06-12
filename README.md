@@ -36,6 +36,7 @@ El sistema se compone de:
 - [Funcionalidades principales](#funcionalidades-principales)
 - [Stack tecnológico](#stack-tecnológico)
 - [Cómo correrlo](#cómo-correrlo)
+- [Despliegue](#despliegue)
 - [Perfiles de ejecución](#perfiles-de-ejecución)
 - [Arquitectura](#arquitectura)
 - [Diseño de la API](#diseño-de-la-api)
@@ -267,6 +268,24 @@ cd staffflow-backend
 ```
 
 Salida esperada: 341 tests verdes, 0 errors, 0 skipped (291 servicios + 30 estructurales de seguridad + 10 JWT + 9 `GlobalExceptionHandler` + 1 ArchUnit).
+
+---
+
+## Despliegue
+
+StaffFlow se puede arrancar de tres maneras distintas para el backend y de dos para el cliente Android, según el perfil del evaluador. Las cinco vías llevan al mismo escenario: backend en `http://localhost:8080` con datos demo precargados (perfil `dev`, H2 en memoria) y cliente Android conectándose al backend en la misma red.
+
+| Vía | Para quién | Requisitos | Archivos en el repo | Cómo arrancar |
+|---|---|---|---|---|
+| **1. Backend repo + IDE** | Desarrollador con IDE | Git + Java 21 + IntelliJ (o equivalente) | `staffflow-backend/` | Abrir el proyecto en IntelliJ y ejecutar `StaffflowBackendApplication` (perfil `dev` por defecto). Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
+| **2. Backend JAR ejecutable** | Evaluador con Java, sin IDE | Java 21 | `docs/instalacion-backend-jar/INSTALACION.txt`<br>`docs/instalacion-backend-jar/staffflow-backend.jar` | `java -jar staffflow-backend.jar` desde la carpeta. Instrucciones completas en el `INSTALACION.txt`. |
+| **3. Backend Docker** | Evaluador sin Java ni IDE | Docker Desktop | `docs/instalacion-backend-docker/INSTALACION.txt`<br>`docs/instalacion-backend-docker/docker-compose.yml`<br>`docs/instalacion-backend-docker/staffflow-backend.tar.gz` | `docker load -i staffflow-backend.tar.gz` y luego `docker compose up`. Instrucciones completas en el `INSTALACION.txt`. |
+| **4. Android repo + IDE** | Desarrollador con Android Studio | Git + Android Studio Panda 1 o superior | `staffflow-android/` | Abrir el proyecto en Android Studio y ejecutar la configuración por defecto sobre un emulador o un dispositivo físico. Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
+| **5. Android APK** | Usuario con dispositivo Android | Android 7.0 Nougat (API 24) o superior, ~50 MB libres | `docs/instalacion-android/INSTALACION.txt`<br>`docs/instalacion-android/staffflow-android.apk` | Copiar el APK al dispositivo, instalarlo y configurar la URL del backend desde la pantalla de login. Instrucciones completas en el `INSTALACION.txt`. |
+
+> Las dos vías Android requieren Android 7.0 Nougat (API 24) o superior. El backend tiene que estar accesible en la misma red WiFi que el dispositivo Android.
+
+> El `INSTALACION.txt` de cada carpeta es autocontenido: incluye requisitos, comandos de arranque, URLs de acceso, credenciales demo y comando de parada. No hace falta volver al README para usar cada vía.
 
 ---
 
