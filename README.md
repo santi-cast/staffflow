@@ -286,23 +286,34 @@ Adicionalmente, el perfil `dev` expone un endpoint auxiliar **`POST /api/v1/test
 
 ### Perfil `mysql` (despliegue en producción)
 
-Conecta con MySQL 8.0. Requiere base de datos inicializada con el script DDL:
+Conecta con MySQL 8.0 real. Pensado para que cualquiera pueda usar StaffFlow con su propia base de datos (vocación open source del proyecto).
+
+**1. Crear la base de datos** con el script DDL canónico:
 
 ```sql
 -- staffflow-backend/docs/StaffFlowDDL.sql
 ```
 
-Configuración en `application-mysql.yml`. El validador de schema (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL.
+**2. Definir las variables de entorno** que apuntan a TU MySQL:
 
-Para activarlo:
+| Variable                     | Ejemplo                                        |
+|------------------------------|------------------------------------------------|
+| `SPRING_DATASOURCE_URL`      | `jdbc:mysql://miservidor:3306/staffflow`       |
+| `SPRING_DATASOURCE_USERNAME` | `staffflow_user`                               |
+| `SPRING_DATASOURCE_PASSWORD` | `(tu contraseña)`                              |
+| `JWT_SECRET`                 | `(cadena aleatoria de mínimo 256 bits)`        |
+
+Spring Boot las inyecta automáticamente sobre `application-mysql.yml` mediante el binding implícito (`SPRING_DATASOURCE_URL` → `spring.datasource.url`), así que NO hace falta editar ningún archivo del repo para apuntar a otra base de datos.
+
+**3. Arrancar con el perfil activo:**
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
-# o bien
 SPRING_PROFILES_ACTIVE=mysql ./mvnw spring-boot:run
+# o bien
+./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
 ```
 
-El perfil `dev` es la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
+El validador (`ddl-auto:validate`) comprueba en cada arranque que las entidades JPA coinciden exactamente con el DDL. El perfil `dev` sigue siendo la red de seguridad para la evaluación: permite demostrar todos los endpoints sin dependencia de MySQL.
 
 ---
 
