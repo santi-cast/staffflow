@@ -31,8 +31,12 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    # Fallback solo para entorno de desarrollo local. En produccion (perfil mysql)
+    # es OBLIGATORIO definir las variables MAIL_USERNAME y MAIL_PASSWORD. Sin
+    # credenciales SMTP reales la app arranca igual pero los endpoints E04/E05
+    # (recuperacion de password por email) fallan al intentar enviar el correo.
+    username: ${MAIL_USERNAME:demo@staffflow.local}
+    password: ${MAIL_PASSWORD:demo-password}
     properties:
       mail:
         smtp:
@@ -45,7 +49,7 @@ server:
 
 staffflow:
   mail:
-    from: ${MAIL_USERNAME}
+    from: ${MAIL_USERNAME:demo@staffflow.local}
     reset-url: staffflow://reset-password?token=
   jwt:
     # Fallback solo para entorno de desarrollo local. En produccion es OBLIGATORIO definir
