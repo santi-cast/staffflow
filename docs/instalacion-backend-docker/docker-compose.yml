@@ -1,0 +1,44 @@
+# docker-compose.yml para arrancar el backend de StaffFlow en una unica orden.
+#
+# Pensado para el evaluador del TFG: NO se ejecuta `docker build`. La imagen
+# se distribuye ya construida como archivo .tar.gz y se carga con:
+#
+#   docker load -i staffflow-backend.tar.gz
+#   docker compose up
+#
+# Perfil por defecto: dev (H2 en memoria + data.sql v6 precargado).
+# Credenciales de demo (admin001 / admin1234) ya cargadas en la base.
+
+services:
+  backend:
+    # Imagen ya construida y exportada con `docker save`.
+    # El evaluador la carga previamente con `docker load -i`.
+    image: staffflow-backend:1.0.0
+    container_name: staffflow-backend
+
+    ports:
+      # Puerto HTTP: API REST (/api/...) + Swagger UI (/swagger-ui/index.html)
+      # + consola H2 de desarrollo (/h2-console).
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+
+    # ------------------------------------------------------------------------
+    # Configuracion SMTP (opcional en perfil dev).
+    #
+    # Sin estas variables el backend arranca correctamente y todos los
+    # endpoints funcionan EXCEPTO E04 (solicitar recuperacion de password)
+    # y E05 (restablecer password), que requieren enviar un correo real.
+    #
+    # Para activar el envio real:
+    #   1. Crear una App Password en https://myaccount.google.com/apppasswords
+    #      (cuenta Gmail con verificacion en dos pasos).
+    #   2. Descomentar el bloque `environment:` siguiente y poner las
+    #      credenciales reales.
+    # ------------------------------------------------------------------------
+    # environment:
+    #   MAIL_USERNAME: tu-cuenta@gmail.com
+    #   MAIL_PASSWORD: xxxx xxxx xxxx xxxx   # App Password de 16 caracteres
+
+    restart: unless-stopped
