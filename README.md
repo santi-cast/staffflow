@@ -275,17 +275,29 @@ Salida esperada: 341 tests verdes, 0 errors, 0 skipped (291 servicios + 30 estru
 
 StaffFlow se puede arrancar de tres maneras distintas para el backend y de dos para el cliente Android, según el perfil del evaluador. Las cinco vías llevan al mismo escenario: backend en `http://localhost:8080` con datos demo precargados (perfil `dev`, H2 en memoria) y cliente Android conectándose al backend en la misma red.
 
-| Vía | Para quién | Requisitos | Archivos en el repo | Cómo arrancar |
+| Vía | Para quién | Requisitos | Cómo obtenerlo | Cómo arrancar |
 |---|---|---|---|---|
-| **1. Backend repo + IDE** | Desarrollador con IDE | Git + Java 21 + IntelliJ (o equivalente) | `staffflow-backend/` | Abrir el proyecto en IntelliJ y ejecutar `StaffflowBackendApplication` (perfil `dev` por defecto). Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
-| **2. Backend JAR ejecutable** | Evaluador con Java, sin IDE | Java 21 | `docs/instalacion-backend-jar/INSTALACION.txt`<br>`docs/instalacion-backend-jar/staffflow-backend.jar` | `java -jar staffflow-backend.jar` desde la carpeta. Instrucciones completas en el `INSTALACION.txt`. |
-| **3. Backend Docker** | Evaluador sin Java ni IDE | Docker Desktop | `docs/instalacion-backend-docker/INSTALACION.txt`<br>`docs/instalacion-backend-docker/docker-compose.yml`<br>`docs/instalacion-backend-docker/staffflow-backend.tar.gz` | `docker load -i staffflow-backend.tar.gz` y luego `docker compose up`. Instrucciones completas en el `INSTALACION.txt`. |
-| **4. Android repo + IDE** | Desarrollador con Android Studio | Git + Android Studio Panda 1 o superior | `staffflow-android/` | Abrir el proyecto en Android Studio y ejecutar la configuración por defecto sobre un emulador o un dispositivo físico. Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
-| **5. Android APK** | Usuario con dispositivo Android | Android 7.0 Nougat (API 24) o superior, ~50 MB libres | `docs/instalacion-android/INSTALACION.txt`<br>`docs/instalacion-android/staffflow-android.apk` | Copiar el APK al dispositivo, instalarlo y configurar la URL del backend desde la pantalla de login. Instrucciones completas en el `INSTALACION.txt`. |
+| **1. Backend repo + IDE** | Desarrollador con IDE | Git + Java 21 + IntelliJ (o equivalente) | `git clone` del repositorio | Abrir el proyecto en IntelliJ y ejecutar `StaffflowBackendApplication` (perfil `dev` por defecto). Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
+| **2. Backend JAR ejecutable** | Evaluador con Java, sin IDE | Java 21 | Descargar `staffflow-backend-jar.zip` desde la [Release v1.0.0](https://github.com/santi-cast/staffflow/releases/tag/v1.0.0) | Descomprimir el ZIP y ejecutar `java -jar staffflow-backend.jar` desde la carpeta resultante. Instrucciones completas en el `INSTALACION.txt` incluido. |
+| **3. Backend Docker** | Evaluador sin Java ni IDE | Docker Desktop | Descargar `staffflow-backend-docker.zip` desde la [Release v1.0.0](https://github.com/santi-cast/staffflow/releases/tag/v1.0.0) | Descomprimir el ZIP y ejecutar `docker load -i staffflow-backend.tar.gz` seguido de `docker compose up`. Instrucciones completas en el `INSTALACION.txt` incluido. |
+| **4. Android repo + IDE** | Desarrollador con Android Studio | Git + Android Studio Panda 1 o superior | `git clone` del repositorio | Abrir el proyecto en Android Studio y ejecutar la configuración por defecto sobre un emulador o un dispositivo físico. Detalle paso a paso en la sección [Cómo correrlo](#cómo-correrlo). |
+| **5. Android APK** | Usuario con dispositivo Android | Android 7.0 Nougat (API 24) o superior, ~50 MB libres | Descargar `staffflow-android-apk.zip` desde la [Release v1.0.0](https://github.com/santi-cast/staffflow/releases/tag/v1.0.0) *(próximamente)* | Descomprimir el ZIP, copiar el APK al dispositivo, instalarlo y configurar la URL del backend desde la pantalla de login. Instrucciones completas en el `INSTALACION.txt` incluido. |
 
 > Las dos vías Android requieren Android 7.0 Nougat (API 24) o superior. El backend tiene que estar accesible en la misma red WiFi que el dispositivo Android.
 
-> El `INSTALACION.txt` de cada carpeta es autocontenido: incluye requisitos, comandos de arranque, URLs de acceso, credenciales demo y comando de parada. No hace falta volver al README para usar cada vía.
+> El `INSTALACION.txt` incluido en cada ZIP es autocontenido: requisitos, comandos de arranque, URLs de acceso, credenciales demo (usuarios web y PINs del terminal compartido) y comando de parada. No hace falta volver al README para usar cada vía.
+
+### Configuración SMTP (opcional)
+
+El backend arranca con un fallback demo (`demo@staffflow.local`) que permite usar la aplicación sin configurar nada, pero los endpoints E04 (solicitar recuperación de contraseña) y E05 (restablecer contraseña con token) **fallan al intentar enviar el email real**. El resto de los endpoints funciona normalmente. Para activar el envío real, hay que pasar dos variables de entorno con credenciales SMTP reales:
+
+| Vía | Cómo configurar |
+|---|---|
+| Repo + IDE | IntelliJ Run Configuration → Environment variables: `MAIL_USERNAME=tu@gmail.com;MAIL_PASSWORD=app_password_16_chars` |
+| JAR | `export MAIL_USERNAME=tu@gmail.com && export MAIL_PASSWORD=app_password_16_chars && java -jar staffflow-backend.jar` (en Windows usar `set` en lugar de `export`) |
+| Docker | Editar `docker-compose.yml`, descomentar el bloque `environment:` entero (incluida la línea del propio `environment:`) y rellenar los dos valores. Reiniciar el container con `docker compose down` seguido de `docker compose up` |
+
+**App Password de Gmail**: la contraseña tiene que ser un App Password de Gmail, no la contraseña normal de la cuenta. Para generarlo: activar la verificación en dos pasos en la cuenta de Google, entrar en `https://myaccount.google.com/apppasswords`, generar una contraseña para la aplicación "Mail" y copiar la cadena de 16 caracteres sin espacios.
 
 ---
 
