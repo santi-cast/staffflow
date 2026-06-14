@@ -194,6 +194,7 @@ La arquitectura separa completamente **backend y cliente**, permitiendo que múl
 ### Herramientas
 
 - Git + GitHub
+- Spring Initializr (start.spring.io) — bootstrap inicial del backend
 - IntelliJ IDEA Community 2025.2.2
 - Android Studio Panda 1
 - MySQL Workbench
