@@ -18,11 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * de gestión de empleados (E13-E18, parte diario, exportación, E65 y E68) están
  * protegidos con la expresión {@code @PreAuthorize} correspondiente.
  * Los endpoints de gestión operativa usan {@code @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")}.
- * El endpoint E68 es excepción: usa {@code @PreAuthorize("hasRole('ADMIN')")}.
+ * Los endpoints E13 y E68 son excepción: usan {@code @PreAuthorize("hasRole('ADMIN')")}.
  *
  * <p>Cobertura:
  * <ul>
- *   <li>E13 POST /api/v1/empleados — {@code crear}</li>
+ *   <li>E13 POST /api/v1/empleados — {@code crear} (SOLO ADMIN)</li>
  *   <li>E14 GET /api/v1/empleados — {@code listar}</li>
  *   <li>E15 GET /api/v1/empleados/{id} — {@code obtenerPorId}</li>
  *   <li>E16 PATCH /api/v1/empleados/{id} — {@code actualizar}</li>
@@ -46,9 +46,9 @@ class EmpleadoControllerSecurityTest {
     private static final String EXPECTED_EXPR = "hasAnyRole('ADMIN', 'ENCARGADO')";
 
     @Test
-    @DisplayName("E13 EmpleadoController#crear usa hasAnyRole('ADMIN', 'ENCARGADO')")
-    void crear_exigeAdminOEncargado() {
-        assertPreAuthorizeValue(EmpleadoController.class, "crear", EXPECTED_EXPR);
+    @DisplayName("E13 EmpleadoController#crear usa hasRole('ADMIN')")
+    void crear_exigeSoloAdmin() {
+        assertPreAuthorizeValue(EmpleadoController.class, "crear", "hasRole('ADMIN')");
     }
 
     @Test

@@ -103,6 +103,16 @@ críticos de la app Android.
 - WHEN `GET /api/v1/empleados`
 - THEN HTTP 200 con la lista de empleados
 
+#### Scenario: creación de empleado E13 (SOLO ADMIN)
+
+- GIVEN un token JWT con rol ADMIN
+- WHEN `POST /api/v1/empleados` con un cuerpo válido
+- THEN HTTP 201 con el perfil creado
+
+- GIVEN un token JWT con rol ENCARGADO
+- WHEN `POST /api/v1/empleados` con un cuerpo válido
+- THEN HTTP 403 (`@PreAuthorize("hasRole('ADMIN')")`; el alta de perfiles laborales se reserva a ADMIN)
+
 #### Scenario: trigger cierre diario (ADMIN/ENCARGADO)
 
 - GIVEN un token JWT con rol ADMIN
