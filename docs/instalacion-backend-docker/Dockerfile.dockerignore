@@ -1,0 +1,10 @@
+# Excluir artefactos del build context del stage builder para reducir el
+# tamano de la imagen y acelerar el `docker build`. El build context apunta
+# a staffflow-backend/, asi que estos patrones se evaluan respecto a esa
+# carpeta.
+
+target/
+.idea/
+*.iml
+.git
+.gitignore

@@ -1,0 +1,58 @@
+# docker-compose.yml para construir y arrancar el backend de StaffFlow.
+#
+# Uso (desde la raiz del repo):
+#   docker compose -f docs/instalacion-backend-docker/docker-compose.yml up --build
+#
+# Perfil por defecto: dev (H2 en memoria + data.sql v6 precargado).
+# Credenciales de demo (admin001 / admin1234) ya cargadas en la base.
+#
+# Para el perfil mysql, exportar antes las variables en el host:
+#   SPRING_PROFILES_ACTIVE=mysql DB_USERNAME=... DB_PASSWORD=... JWT_SECRET=... \
+#   MAIL_USERNAME= MAIL_PASSWORD= \
+#     docker compose -f docs/instalacion-backend-docker/docker-compose.yml up --build
+# DB_URL es opcional: por defecto apunta al MySQL del host anfitrion a traves de
+# host.docker.internal (resuelto con extra_hosts tambien en Linux). Exportar
+# DB_URL solo si MySQL vive en otra maquina. Dentro del contenedor "localhost"
+# seria el propio contenedor, por eso no se usa el valor por defecto de
+# application-mysql.yml.
+# Ningun secreto se escribe en este archivo ni en la imagen.
+
+services:
+  backend:
+    build:
+      # El contexto es staffflow-backend/; el Dockerfile vive en docs/.
+      context: ../../staffflow-backend
+      dockerfile: ../docs/instalacion-backend-docker/Dockerfile
+    image: staffflow-backend:1.0.0
+    container_name: staffflow-backend
+
+    ports:
+      # API REST (/api/...) + Swagger UI (/swagger-ui/index.html)
+      # + consola H2 de desarrollo (/h2-console) en perfil dev.
+      - "8080:8080"
+
+    environment:
+      # Perfil activo: dev (por defecto) o mysql.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      # Solo se usan con SPRING_PROFILES_ACTIVE=mysql. Sin valor por defecto
+      # para las credenciales: el backend falla al arrancar si faltan.
+      # DB_URL siempre llega definida al contenedor (una cadena vacia NO
+      # activaria el valor por defecto de application-mysql.yml), asi que el
+      # valor por defecto se fija aqui y apunta al MySQL del host anfitrion.
+      DB_URL: ${DB_URL:-jdbc:mysql://host.docker.internal:3306/staffflow?useSSL=false&serverTimezone=Europe/Madrid&allowPublicKeyRetrieval=true&sslMode=DISABLED}
+      DB_USERNAME: ${DB_USERNAME:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      # SMTP (opcional en perfil dev). Sin estas variables todos los endpoints
+      # funcionan EXCEPTO E04 (solicitar recuperacion de password) y E05
+      # (restablecer password), que requieren enviar un correo real.
+      # Requiere una App Password de Gmail (cuenta con verificacion en dos pasos).
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+
+    # Hace resolvible host.docker.internal tambien en Docker Engine para Linux
+    # (en Docker Desktop ya existe). Requiere Docker 20.10 o superior.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: unless-stopped
