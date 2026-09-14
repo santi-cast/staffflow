@@ -5,6 +5,10 @@
 !staffflow-android/**
 !openspec/
 !openspec/**
+!docs/
+!docs/**
+!.github/
+!.github/**
 !.gitignore
 !README.md
 !LICENSE
@@ -25,3 +29,7 @@ staffflow-android/local.properties
 # OS
 **/.DS_Store
 **/Thumbs.db
+
+# Community docs
+!CONTRIBUTING.md
+!SECURITY.md

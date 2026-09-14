@@ -1,9 +1,15 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/staffflow?useSSL=false&serverTimezone=Europe/Madrid&allowPublicKeyRetrieval=true&sslMode=DISABLED
+    # DB_URL es opcional (por defecto MySQL local). DB_USERNAME y DB_PASSWORD son
+    # OBLIGATORIAS en este perfil y no tienen valor por defecto: si faltan, el arranque
+    # falla al abrir la conexion (Access denied for user '${DB_USERNAME}'), que es el
+    # comportamiento deseado. Nunca se distribuyen credenciales por defecto.
+    # Las variables SPRING_DATASOURCE_* documentadas en docs/despliegue.md siguen
+    # teniendo prioridad sobre este archivo (binding relajado de Spring Boot).
+    url: ${DB_URL:jdbc:mysql://localhost:3306/staffflow?useSSL=false&serverTimezone=Europe/Madrid&allowPublicKeyRetrieval=true&sslMode=DISABLED}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password:
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
@@ -37,8 +43,10 @@ staffflow:
     from: ${MAIL_USERNAME}
     reset-url: staffflow://reset-password?token=
   jwt:
-    # JWT_SECRET es OBLIGATORIA en este perfil. El arranque falla si no esta definida (intencional).
-    secret: ${JWT_SECRET:?La variable JWT_SECRET es obligatoria para el perfil mysql}
+    # JWT_SECRET es OBLIGATORIA en este perfil y no tiene valor por defecto: el arranque
+    # falla si no esta definida (intencional). Nota: Spring no soporta la sintaxis
+    # bash "${VAR:?mensaje}"; todo lo que sigue a ":" se toma como valor por defecto.
+    secret: ${JWT_SECRET}
     # Validez del token en milisegundos. 43200000 = 12 horas.
     # 12h cubre una jornada laboral con descanso de comida.
     # Refresh token queda como mejora para v2.0.

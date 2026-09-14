@@ -35,10 +35,10 @@ Android (`staffflow-android/`) is out of scope.
 
 ## Testing Gate
 
-Reliable unit tests (no DB required):
+The full backend suite runs without a database or Spring context (341 tests):
 ```bash
 cd staffflow-backend
-./mvnw test -Dtest='SaldoServiceTest,JwtTokenProviderTest,TerminalServiceTest'
+./mvnw -B test
 ```
 
-⚠️ `GlobalExceptionHandlerTest` and `StaffflowBackendApplicationTests` are pre-broken (require running MySQL/full context). Excluded from CI gate.
+CI (`.github/workflows/ci.yml`) runs this same command on every push and pull request.

@@ -26,7 +26,9 @@ import java.util.List;
  * Ruta base: /api/v1/empleados
  *
  * Control de acceso:
- *   - E13-E20: ADMIN y ENCARGADO. EMPLEADO recibe HTTP 403.
+ *   - E13 (POST /): SOLO ADMIN. La creación de perfiles laborales es
+ *     una operación de alta que se reserva al administrador.
+ *   - E14-E20: ADMIN y ENCARGADO. EMPLEADO recibe HTTP 403.
  *   - E21 (/me): EMPLEADO y ENCARGADO (ambos son personas físicas
  *     trabajadoras con perfil de empleado). ADMIN recibe HTTP 403
  *     porque no tiene perfil de empleado asociado.
@@ -70,7 +72,7 @@ public class EmpleadoController {
      * Códigos HTTP:
      *   201 Created      → perfil creado correctamente
      *   400 Bad Request  → datos de entrada inválidos (Bean Validation)
-     *   403 Forbidden    → rol insuficiente
+     *   403 Forbidden    → rol distinto de ADMIN (ENCARGADO no crea perfiles)
      *   404 Not Found    → usuarioId no existe
      *   409 Conflict     → DNI o NFC duplicados
      *                      (PIN y número de empleado se autogeneran en el service)
@@ -79,7 +81,7 @@ public class EmpleadoController {
      * @return 201 Created con EmpleadoResponse
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ENCARGADO')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmpleadoResponse> crear(@Valid @RequestBody EmpleadoRequest request) {
         EmpleadoResponse response = empleadoService.crear(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
